@@ -31,7 +31,8 @@ typedef enum {
   DT_GPU,    /**< GPU device type */
   DT_NPU,    /**< NPU device type */
   DT_ASCEND, /**< ASCEND device type */
-  DT_END     /**< NO device type */
+  DT_DSP = 6,
+  DT_END /**< NO device type */
 } DeviceType;
 
 typedef enum {

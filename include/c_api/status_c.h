@@ -22,54 +22,58 @@
 extern "C" {
 #endif
 
-enum MSCompCode {
-  kMSCompCodeCore = 0x00000000u,
-  kMSCompCodeMD = 0x10000000u,
-  kMSCompCodeME = 0x20000000u,
-  kMSCompCodeMC = 0x30000000u,
-  kMSCompCodeLite = 0xF0000000u,
+enum OH_AI_CompCode {
+  OH_AI_COMPCODE_CORE = 0x00000000u,
+  OH_AI_COMPCODE_MD = 0x10000000u,
+  OH_AI_COMPCODE_ME = 0x20000000u,
+  OH_AI_COMPCODE_MC = 0x30000000u,
+  OH_AI_COMPCODE_LITE = 0xF0000000u,
 };
 
-typedef enum MSStatus {
-  kMSStatusSuccess = 0,
+typedef enum OH_AI_Status {
+  OH_AI_STATUS_SUCCESS = 0,
   // Core
-  kMSStatusCoreFailed = kMSCompCodeCore | 0x1,
+  OH_AI_STATUS_CORE_FAILED = OH_AI_COMPCODE_CORE | 0x1,
 
   // Lite  // Common error code, range: [-1, -100）
-  kMSStatusLiteError = kMSCompCodeLite | (0x0FFFFFFF & -1),            /**< Common error code. */
-  kMSStatusLiteNullptr = kMSCompCodeLite | (0x0FFFFFFF & -2),          /**< NULL pointer returned.*/
-  kMSStatusLiteParamInvalid = kMSCompCodeLite | (0x0FFFFFFF & -3),     /**< Invalid parameter.*/
-  kMSStatusLiteNoChange = kMSCompCodeLite | (0x0FFFFFFF & -4),         /**< No change. */
-  kMSStatusLiteSuccessExit = kMSCompCodeLite | (0x0FFFFFFF & -5),      /**< No error but exit. */
-  kMSStatusLiteMemoryFailed = kMSCompCodeLite | (0x0FFFFFFF & -6),     /**< Fail to create memory. */
-  kMSStatusLiteNotSupport = kMSCompCodeLite | (0x0FFFFFFF & -7),       /**< Fail to support. */
-  kMSStatusLiteThreadPoolError = kMSCompCodeLite | (0x0FFFFFFF & -8),  /**< Error occur in thread pool. */
-  kMSStatusLiteUninitializedObj = kMSCompCodeLite | (0x0FFFFFFF & -9), /**< Object is not initialized. */
+  OH_AI_STATUS_LITE_ERROR = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -1),             /**< Common error code. */
+  OH_AI_STATUS_LITE_NULLPTR = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -2),           /**< NULL pointer returned.*/
+  OH_AI_STATUS_LITE_PARAM_INVALID = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -3),     /**< Invalid parameter.*/
+  OH_AI_STATUS_LITE_NO_CHANGE = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -4),         /**< No change. */
+  OH_AI_STATUS_LITE_SUCCESS_EXIT = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -5),      /**< No error but exit. */
+  OH_AI_STATUS_LITE_MEMORY_FAILED = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -6),     /**< Fail to create memory. */
+  OH_AI_STATUS_LITE_NOT_SUPPORT = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -7),       /**< Fail to support. */
+  OH_AI_STATUS_LITE_THREADPOOL_ERROR = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -8),  /**< Error occur in thread pool. */
+  OH_AI_STATUS_LITE_UNINITIALIZED_OBJ = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -9), /**< Object is not initialized. */
 
   // Executor error code, range: [-100,-200)
-  kMSStatusLiteOutOfTensorRange = kMSCompCodeLite | (0x0FFFFFFF & -100), /**< Failed to check range. */
-  kMSStatusLiteInputTensorError = kMSCompCodeLite | (0x0FFFFFFF & -101), /**< Failed to check input tensor. */
-  kMSStatusLiteReentrantError = kMSCompCodeLite | (0x0FFFFFFF & -102),   /**< Exist executor running. */
+  OH_AI_STATUS_LITE_OUT_OF_TENSOR_RANGE = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -100), /**< Failed to check range. */
+  OH_AI_STATUS_LITE_INPUT_TENSOR_ERROR =
+    OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -101),                                   /**< Failed to check input tensor. */
+  OH_AI_STATUS_LITE_REENTRANT_ERROR = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -102), /**< Exist executor running. */
 
   // Graph error code, range: [-200,-300)
-  kMSStatusLiteGraphFileError = kMSCompCodeLite | (0x0FFFFFFF & -200), /**< Failed to verify graph file. */
+  OH_AI_STATUS_LITE_GRAPH_FILE_ERROR = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -200), /**< Failed to verify graph file. */
 
   // Node error code, range: [-300,-400)
-  kMSStatusLiteNotFindOp = kMSCompCodeLite | (0x0FFFFFFF & -300),        /**< Failed to find operator. */
-  kMSStatusLiteInvalidOpName = kMSCompCodeLite | (0x0FFFFFFF & -301),    /**< Invalid operator name. */
-  kMSStatusLiteInvalidOpAttr = kMSCompCodeLite | (0x0FFFFFFF & -302),    /**< Invalid operator attr. */
-  kMSStatusLiteOpExecuteFailure = kMSCompCodeLite | (0x0FFFFFFF & -303), /**< Failed to execution operator. */
+  OH_AI_STATUS_LITE_NOT_FIND_OP = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -300),     /**< Failed to find operator. */
+  OH_AI_STATUS_LITE_INVALID_OP_NAME = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -301), /**< Invalid operator name. */
+  OH_AI_STATUS_LITE_INVALID_OP_ATTR = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -302), /**< Invalid operator attr. */
+  OH_AI_STATUS_LITE_OP_EXECUTE_FAILURE =
+    OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -303), /**< Failed to execution operator. */
 
   // Tensor error code, range: [-400,-500)
-  kMSStatusLiteFormatError = kMSCompCodeLite | (0x0FFFFFFF & -400), /**< Failed to checking tensor format. */
+  OH_AI_STATUS_LITE_FORMAT_ERROR = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -400), /**< Failed to checking tensor format. */
 
   // InferShape error code, range: [-500,-600)
-  kMSStatusLiteInferError = kMSCompCodeLite | (0x0FFFFFFF & -500),   /**< Failed to infer shape. */
-  kMSStatusLiteInferInvalid = kMSCompCodeLite | (0x0FFFFFFF & -501), /**< Invalid infer shape before runtime. */
+  OH_AI_STATUS_LITE_INFER_ERROR = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -500), /**< Failed to infer shape. */
+  OH_AI_STATUS_LITE_INFER_INVALID =
+    OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -501), /**< Invalid infer shape before runtime. */
 
   // User input param error code, range: [-600, 700)
-  kMSStatusLiteInputParamInvalid = kMSCompCodeLite | (0x0FFFFFFF & -600), /**< Invalid input param by user. */
-} MSStatus;
+  OH_AI_STATUS_LITE_INPUT_PARAM_INVALID =
+    OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -600), /**< Invalid input param by user. */
+} OH_AI_Status;
 #ifdef __cplusplus
 }
 #endif

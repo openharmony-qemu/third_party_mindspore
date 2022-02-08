@@ -22,29 +22,29 @@
 extern "C" {
 #endif
 
-typedef enum MSDataType {
-  kMSDataTypeUnknown = 0,
-  kMSDataTypeObjectTypeString = 12,
-  kMSDataTypeObjectTypeList = 13,
-  kMSDataTypeObjectTypeTuple = 14,
-  kMSDataTypeObjectTypeTensor = 17,
-  kMSDataTypeNumberTypeBegin = 29,
-  kMSDataTypeNumberTypeBool = 30,
-  kMSDataTypeNumberTypeInt8 = 32,
-  kMSDataTypeNumberTypeInt16 = 33,
-  kMSDataTypeNumberTypeInt32 = 34,
-  kMSDataTypeNumberTypeInt64 = 35,
-  kMSDataTypeNumberTypeUInt8 = 37,
-  kMSDataTypeNumberTypeUInt16 = 38,
-  kMSDataTypeNumberTypeUInt32 = 39,
-  kMSDataTypeNumberTypeUInt64 = 40,
-  kMSDataTypeNumberTypeFloat16 = 42,
-  kMSDataTypeNumberTypeFloat32 = 43,
-  kMSDataTypeNumberTypeFloat64 = 44,
-  kMSDataTypeNumberTypeEnd = 46,
+typedef enum OH_AI_DataType {
+  OH_AI_DATATYPE_UNKNOWN = 0,
+  OH_AI_DATATYPE_OBJECTTYPE_STRING = 12,
+  OH_AI_DATATYPE_OBJECTTYPE_LIST = 13,
+  OH_AI_DATATYPE_OBJECTTYPE_TUPLE = 14,
+  OH_AI_DATATYPE_OBJECTTYPE_TENSOR = 17,
+  OH_AI_DATATYPE_NUMBERTYPE_BEGIN = 29,
+  OH_AI_DATATYPE_NUMBERTYPE_BOOL = 30,
+  OH_AI_DATATYPE_NUMBERTYPE_INT8 = 32,
+  OH_AI_DATATYPE_NUMBERTYPE_INT16 = 33,
+  OH_AI_DATATYPE_NUMBERTYPE_INT32 = 34,
+  OH_AI_DATATYPE_NUMBERTYPE_INT64 = 35,
+  OH_AI_DATATYPE_NUMBERTYPE_UINT8 = 37,
+  OH_AI_DATATYPE_NUMBERTYPE_UINT16 = 38,
+  OH_AI_DATATYPE_NUMBERTYPE_UINT32 = 39,
+  OH_AI_DATATYPE_NUMBERTYPE_UINT64 = 40,
+  OH_AI_DATATYPE_NUMBERTYPE_FLOAT16 = 42,
+  OH_AI_DATATYPE_NUMBERTYPE_FLOAT32 = 43,
+  OH_AI_DATATYPE_NUMBERTYPE_FLOAT64 = 44,
+  OH_AI_DATATYPE_NUMBERTYPE_END = 46,
   // add new enum here
-  kMSDataTypeInvalid = INT32_MAX,
-} MSDataType;
+  OH_AI_DataTypeInvalid = INT32_MAX,
+} OH_AI_DataType;
 
 #ifdef __cplusplus
 }

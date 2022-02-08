@@ -18,13 +18,11 @@
 #include "include/ms_tensor.h"
 #include "src/cxx_api/tensor/tensor_impl.h"
 #include "src/runtime/inner_allocator.h"
+#include "nnacl/op_base.h"
 
-MSTensorHandle MSTensorCreate(const char *name, MSDataType type, const int64_t *shape, size_t shape_num,
-                              const void *data, size_t data_len) {
-  if (name == nullptr || shape == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+OH_AI_TensorHandle OH_AI_TensorCreate(const char *name, OH_AI_DataType type, const int64_t *shape, size_t shape_num,
+                                      const void *data, size_t data_len) {
+  MS_CHECK_TRUE_MSG(name != nullptr && shape != nullptr, nullptr, "param is nullptr.");
   std::vector<int32_t> vec_shape(shape_num);
   for (size_t i = 0; i < shape_num; i++) {
     vec_shape[i] = shape[i];
@@ -40,7 +38,7 @@ MSTensorHandle MSTensorCreate(const char *name, MSDataType type, const int64_t *
   return impl;
 }
 
-void MSTensorDestroy(MSTensorHandle *tensor) {
+void OH_AI_TensorDestroy(OH_AI_TensorHandle *tensor) {
   if (tensor != nullptr && *tensor != nullptr) {
     auto impl = static_cast<mindspore::MSTensor::Impl *>(*tensor);
     delete impl;
@@ -48,11 +46,8 @@ void MSTensorDestroy(MSTensorHandle *tensor) {
   }
 }
 
-MSTensorHandle MSTensorClone(MSTensorHandle tensor) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+OH_AI_TensorHandle OH_AI_TensorClone(OH_AI_TensorHandle tensor) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, nullptr, "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   auto lite_tensor = static_cast<mindspore::lite::Tensor *>(impl->lite_tensor());
   auto clone = mindspore::lite::Tensor::CopyTensor(*lite_tensor, true, lite_tensor->allocator());
@@ -70,48 +65,33 @@ MSTensorHandle MSTensorClone(MSTensorHandle tensor) {
   return clone_impl;
 }
 
-void MSTensorSetName(MSTensorHandle tensor, const char *name) {
-  if (tensor == nullptr || name == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_TensorSetName(OH_AI_TensorHandle tensor, const char *name) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr && name != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   impl->SetName(name);
 }
 
-const char *MSTensorGetName(const MSTensorHandle tensor) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+const char *OH_AI_TensorGetName(const OH_AI_TensorHandle tensor) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, nullptr, "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   return impl->Name().c_str();
 }
 
-void MSTensorSetDataType(MSTensorHandle tensor, MSDataType type) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_TensorSetDataType(OH_AI_TensorHandle tensor, OH_AI_DataType type) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   impl->SetDataType(static_cast<mindspore::DataType>(type));
 }
 
-MSDataType MSTensorGetDataType(const MSTensorHandle tensor) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return kMSDataTypeUnknown;
-  }
+OH_AI_DataType OH_AI_TensorGetDataType(const OH_AI_TensorHandle tensor) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, OH_AI_DATATYPE_UNKNOWN, "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   auto dtype = impl->DataType();
-  return static_cast<MSDataType>(dtype);
+  return static_cast<OH_AI_DataType>(dtype);
 }
 
-void MSTensorSetShape(MSTensorHandle tensor, const int64_t *shape, size_t shape_num) {
-  if (tensor == nullptr || shape == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_TensorSetShape(OH_AI_TensorHandle tensor, const int64_t *shape, size_t shape_num) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr && shape != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   std::vector<int64_t> vec_shape(shape_num);
   for (size_t i = 0; i < shape_num; i++) {
@@ -120,75 +100,51 @@ void MSTensorSetShape(MSTensorHandle tensor, const int64_t *shape, size_t shape_
   impl->SetShape(vec_shape);
 }
 
-const int64_t *MSTensorGetShape(const MSTensorHandle tensor, size_t *shape_num) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+const int64_t *OH_AI_TensorGetShape(const OH_AI_TensorHandle tensor, size_t *shape_num) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, nullptr, "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   *shape_num = impl->Shape().size();
   return impl->Shape().data();
 }
 
-void MSTensorSetFormat(MSTensorHandle tensor, MSFormat format) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_TensorSetFormat(OH_AI_TensorHandle tensor, OH_AI_Format format) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   return impl->SetFormat(static_cast<mindspore::Format>(format));
 }
 
-MSFormat MSTensorGetFormat(const MSTensorHandle tensor) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return kMSFormatNHWC;
-  }
+OH_AI_Format OH_AI_TensorGetFormat(const OH_AI_TensorHandle tensor) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, OH_AI_FORMAT_NHWC, "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
-  return static_cast<MSFormat>(impl->format());
+  return static_cast<OH_AI_Format>(impl->format());
 }
 
-void MSTensorSetData(MSTensorHandle tensor, void *data) {
-  if (tensor == nullptr || data == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_TensorSetData(OH_AI_TensorHandle tensor, void *data) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr && data != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   return impl->SetData(data);
 }
 
-const void *MSTensorGetData(const MSTensorHandle tensor) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+const void *OH_AI_TensorGetData(const OH_AI_TensorHandle tensor) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, nullptr, "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   return impl->Data().get();
 }
 
-void *MSTensorGetMutableData(const MSTensorHandle tensor) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+void *OH_AI_TensorGetMutableData(const OH_AI_TensorHandle tensor) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, nullptr, "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   return impl->MutableData();
 }
 
-int64_t MSTensorGetElementNum(const MSTensorHandle tensor) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return 0;
-  }
+int64_t OH_AI_TensorGetElementNum(const OH_AI_TensorHandle tensor) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, 0, "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   return impl->ElementNum();
 }
 
-size_t MSTensorGetDataSize(const MSTensorHandle tensor) {
-  if (tensor == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return 0;
-  }
+size_t OH_AI_TensorGetDataSize(const OH_AI_TensorHandle tensor) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, 0, "param is nullptr.");
   auto impl = static_cast<mindspore::MSTensor::Impl *>(tensor);
   return impl->DataSize();
 }

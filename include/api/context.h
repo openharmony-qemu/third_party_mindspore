@@ -31,6 +31,7 @@ enum DeviceType {
   kAscend,
   kAscend910,
   kAscend310,
+  kHexagonDSP = 6,
   // add new type here
   kInvalidDeviceType = 100,
 };
@@ -98,6 +99,16 @@ class MS_API Context {
   ///
   /// \return Pointer to the custom delegate.
   std::shared_ptr<Delegate> GetDelegate() const;
+
+  /// \brief
+  ///
+  /// \param[in]
+  void SetMultiModalHW(bool float_mode);
+
+  /// \brief
+  ///
+  /// \return
+  bool GetMultiModalHW() const;
 
   /// \brief Get a mutable reference of DeviceInfoContext vector in this context. Only MindSpore Lite supports
   /// heterogeneous scenarios with multiple members in the vector.
@@ -492,5 +503,10 @@ void AscendDeviceInfo::SetBufferOptimizeMode(const std::string &buffer_optimize_
   SetBufferOptimizeMode(StringToChar(buffer_optimize_mode));
 }
 std::string AscendDeviceInfo::GetBufferOptimizeMode() const { return CharToString(GetBufferOptimizeModeChar()); }
+
+class MS_API HexagonDspDeviceInfo : public DeviceInfoContext {
+ public:
+  enum DeviceType GetDeviceType() const override { return DeviceType::kHexagonDSP; };
+};
 }  // namespace mindspore
 #endif  // MINDSPORE_INCLUDE_API_CONTEXT_H

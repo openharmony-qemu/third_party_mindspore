@@ -16,18 +16,16 @@
 #include "include/c_api/context_c.h"
 #include "src/c_api/context_c.h"
 #include "src/common/log_adapter.h"
+#include "nnacl/op_base.h"
 
 // ================ Context ================
-MSContextHandle MSContextCreate() {
+OH_AI_ContextHandle OH_AI_ContextCreate() {
   auto impl = new (std::nothrow) mindspore::ContextC;
-  if (impl == nullptr) {
-    MS_LOG(ERROR) << "memory allocation failed.";
-    return nullptr;
-  }
-  return static_cast<MSContextHandle>(impl);
+  MS_CHECK_TRUE_MSG(impl != nullptr, nullptr, "memory allocation failed.");
+  return static_cast<OH_AI_ContextHandle>(impl);
 }
 
-void MSContextDestroy(MSContextHandle *context) {
+void OH_AI_ContextDestroy(OH_AI_ContextHandle *context) {
   if (context != nullptr && *context != nullptr) {
     auto impl = static_cast<mindspore::ContextC *>(*context);
     delete impl;
@@ -35,104 +33,74 @@ void MSContextDestroy(MSContextHandle *context) {
   }
 }
 
-void MSContextSetThreadNum(MSContextHandle context, int32_t thread_num) {
-  if (context == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_ContextSetThreadNum(OH_AI_ContextHandle context, int32_t thread_num) {
+  MS_CHECK_TRUE_MSG(context != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::ContextC *>(context);
   impl->thread_num = thread_num;
 }
 
-int32_t MSContextGetThreadNum(const MSContextHandle context) {
-  if (context == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return 0;
-  }
+int32_t OH_AI_ContextGetThreadNum(const OH_AI_ContextHandle context) {
+  MS_CHECK_TRUE_MSG(context != nullptr, 0, "param is nullptr.");
   auto impl = static_cast<mindspore::ContextC *>(context);
   return impl->thread_num;
 }
 
-void MSContextSetThreadAffinityMode(MSContextHandle context, int mode) {
-  if (context == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_ContextSetThreadAffinityMode(OH_AI_ContextHandle context, int mode) {
+  MS_CHECK_TRUE_MSG(context != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::ContextC *>(context);
   impl->affinity_mode = mode;
   return;
 }
 
-int MSContextGetThreadAffinityMode(const MSContextHandle context) {
-  if (context == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return 0;
-  }
+int OH_AI_ContextGetThreadAffinityMode(const OH_AI_ContextHandle context) {
+  MS_CHECK_TRUE_MSG(context != nullptr, 0, "param is nullptr.");
   auto impl = static_cast<mindspore::ContextC *>(context);
   return impl->affinity_mode;
 }
 
-void MSContextSetThreadAffinityCoreList(MSContextHandle context, const int32_t *core_list, size_t core_num) {
-  if (context == nullptr || core_list == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_ContextSetThreadAffinityCoreList(OH_AI_ContextHandle context, const int32_t *core_list, size_t core_num) {
+  MS_CHECK_TRUE_MSG(context != nullptr && core_list != nullptr, , "param is nullptr.");
   const std::vector<int32_t> vec_core_list(core_list, core_list + core_num);
   auto impl = static_cast<mindspore::ContextC *>(context);
   impl->affinity_core_list = vec_core_list;
   return;
 }
 
-const int32_t *MSContextGetThreadAffinityCoreList(const MSContextHandle context, size_t *core_num) {
-  if (context == nullptr || core_num == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+const int32_t *OH_AI_ContextGetThreadAffinityCoreList(const OH_AI_ContextHandle context, size_t *core_num) {
+  MS_CHECK_TRUE_MSG(context != nullptr && core_num != nullptr, nullptr, "param is nullptr.");
   auto impl = static_cast<mindspore::ContextC *>(context);
   *core_num = impl->affinity_core_list.size();
   return impl->affinity_core_list.data();
 }
 
-void MSContextSetEnableParallel(MSContextHandle context, bool is_parallel) {
-  if (context == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_ContextSetEnableParallel(OH_AI_ContextHandle context, bool is_parallel) {
+  MS_CHECK_TRUE_MSG(context != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::ContextC *>(context);
   impl->enable_parallel = is_parallel;
 }
 
-bool MSContextGetEnableParallel(const MSContextHandle context) {
-  if (context == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return false;
-  }
+bool OH_AI_ContextGetEnableParallel(const OH_AI_ContextHandle context) {
+  MS_CHECK_TRUE_MSG(context != nullptr, false, "param is nullptr.");
   auto impl = static_cast<mindspore::ContextC *>(context);
   return impl->enable_parallel;
 }
 
-void MSContextAddDeviceInfo(MSContextHandle context, MSDeviceInfoHandle device_info) {
-  if (context == nullptr || device_info == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_ContextAddDeviceInfo(OH_AI_ContextHandle context, OH_AI_DeviceInfoHandle device_info) {
+  MS_CHECK_TRUE_MSG(context != nullptr && device_info != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::ContextC *>(context);
   std::shared_ptr<mindspore::DeviceInfoC> device(static_cast<mindspore::DeviceInfoC *>(device_info));
   impl->device_info_list.push_back(device);
 }
 
 // ================ DeviceInfo ================
-MSDeviceInfoHandle MSDeviceInfoCreate(MSDeviceType device_type) {
+OH_AI_DeviceInfoHandle OH_AI_DeviceInfoCreate(OH_AI_DeviceType device_type) {
   mindspore::DeviceInfoC *impl = new (std::nothrow) mindspore::DeviceInfoC;
-  if (impl == nullptr) {
-    MS_LOG(ERROR) << "memory allocation failed.";
-    return nullptr;
-  }
+  MS_CHECK_TRUE_MSG(impl != nullptr, nullptr, "memory allocation failed.");
   impl->device_type = device_type;
-  return static_cast<MSDeviceInfoHandle>(impl);
+  return static_cast<OH_AI_DeviceInfoHandle>(impl);
 }
 
-void MSDeviceInfoDestroy(MSDeviceInfoHandle *device_info) {
+void OH_AI_DeviceInfoDestroy(OH_AI_DeviceInfoHandle *device_info) {
   if (device_info != nullptr && *device_info != nullptr) {
     auto impl = static_cast<mindspore::DeviceInfoC *>(*device_info);
     delete impl;
@@ -140,71 +108,50 @@ void MSDeviceInfoDestroy(MSDeviceInfoHandle *device_info) {
   }
 }
 
-void MSDeviceInfoSetProvider(MSDeviceInfoHandle device_info, const char *provider) {
-  if (device_info == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_DeviceInfoSetProvider(OH_AI_DeviceInfoHandle device_info, const char *provider) {
+  MS_CHECK_TRUE_MSG(device_info != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
   impl->provider = provider;
 }
 
-const char *MSDeviceInfoGetProvider(const MSDeviceInfoHandle device_info) {
-  if (device_info == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+const char *OH_AI_DeviceInfoGetProvider(const OH_AI_DeviceInfoHandle device_info) {
+  MS_CHECK_TRUE_MSG(device_info != nullptr, nullptr, "param is nullptr.");
   auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
   return impl->provider.c_str();
 }
 
-void MSDeviceInfoSetProviderDevice(MSDeviceInfoHandle device_info, const char *device) {
-  if (device_info == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_DeviceInfoSetProviderDevice(OH_AI_DeviceInfoHandle device_info, const char *device) {
+  MS_CHECK_TRUE_MSG(device_info != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
   impl->provider_device = device;
 }
 
-const char *MSDeviceInfoGetProviderDevice(const MSDeviceInfoHandle device_info) {
-  if (device_info == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+const char *OH_AI_DeviceInfoGetProviderDevice(const OH_AI_DeviceInfoHandle device_info) {
+  MS_CHECK_TRUE_MSG(device_info != nullptr, nullptr, "param is nullptr.");
   auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
   return impl->provider_device.c_str();
 }
 
-MSDeviceType MSDeviceInfoGetDeviceType(const MSDeviceInfoHandle device_info) {
-  if (device_info == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return kMSDeviceTypeInvalid;
-  }
+OH_AI_DeviceType OH_AI_DeviceInfoGetDeviceType(const OH_AI_DeviceInfoHandle device_info) {
+  MS_CHECK_TRUE_MSG(device_info != nullptr, OH_AI_DEVICETYPE_INVALID, "param is nullptr.");
   auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
   return impl->device_type;
 }
 
-void MSDeviceInfoSetEnableFP16(MSDeviceInfoHandle device_info, bool is_fp16) {
-  if (device_info == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_DeviceInfoSetEnableFP16(OH_AI_DeviceInfoHandle device_info, bool is_fp16) {
+  MS_CHECK_TRUE_MSG(device_info != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
-  if (impl->device_type == kMSDeviceTypeCPU || impl->device_type == kMSDeviceTypeGPU) {
+  if (impl->device_type == OH_AI_DEVICETYPE_CPU || impl->device_type == OH_AI_DEVICETYPE_GPU) {
     impl->enable_fp16 = is_fp16;
   } else {
     MS_LOG(ERROR) << "Unsupported Feature.";
   }
 }
 
-bool MSDeviceInfoGetEnableFP16(const MSDeviceInfoHandle device_info) {
-  if (device_info == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return false;
-  }
+bool OH_AI_DeviceInfoGetEnableFP16(const OH_AI_DeviceInfoHandle device_info) {
+  MS_CHECK_TRUE_MSG(device_info != nullptr, false, "param is nullptr.");
   auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
-  if (impl->device_type == kMSDeviceTypeCPU || impl->device_type == kMSDeviceTypeGPU) {
+  if (impl->device_type == OH_AI_DEVICETYPE_CPU || impl->device_type == OH_AI_DEVICETYPE_GPU) {
     return impl->enable_fp16;
   } else {
     MS_LOG(ERROR) << "Unsupported Feature. device_type: " << impl->device_type;
@@ -212,26 +159,20 @@ bool MSDeviceInfoGetEnableFP16(const MSDeviceInfoHandle device_info) {
   }
 }
 
-void MSDeviceInfoSetFrequency(MSDeviceInfoHandle device_info, int frequency) {  // only for KirinNPU
-  if (device_info == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return;
-  }
+void OH_AI_DeviceInfoSetFrequency(OH_AI_DeviceInfoHandle device_info, int frequency) {  // only for KirinNPU
+  MS_CHECK_TRUE_MSG(device_info != nullptr, , "param is nullptr.");
   auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
-  if (impl->device_type == kMSDeviceTypeKirinNPU) {
+  if (impl->device_type == OH_AI_DEVICETYPE_KIRIN_NPU) {
     impl->frequency = frequency;
   } else {
     MS_LOG(ERROR) << "Unsupported Feature.";
   }
 }
 
-int MSDeviceInfoGetFrequency(const MSDeviceInfoHandle device_info) {  // only for KirinNPU
-  if (device_info == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return -1;
-  }
+int OH_AI_DeviceInfoGetFrequency(const OH_AI_DeviceInfoHandle device_info) {  // only for KirinNPU
+  MS_CHECK_TRUE_MSG(device_info != nullptr, -1, "param is nullptr.");
   auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
-  if (impl->device_type == kMSDeviceTypeKirinNPU) {
+  if (impl->device_type == OH_AI_DEVICETYPE_KIRIN_NPU) {
     return impl->frequency;
   } else {
     MS_LOG(ERROR) << "Unsupported Feature.";

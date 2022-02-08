@@ -26,7 +26,7 @@ class Allocator;
 class Delegate;
 
 typedef struct DeviceInfoC {
-  MSDeviceType device_type;
+  OH_AI_DeviceType device_type;
   bool enable_fp16 = false;
   int frequency = 3;
   std::string provider;
