@@ -1,5 +1,5 @@
 /**
- * Copyright 2021  Huawei Technologies Co., Ltd
+ * Copyright 2021 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,9 +58,7 @@ int main(int argc, char **argv) {
   std::unordered_map<std::string, mindspore::MSTensor> row;
   iter->GetNextRow(&row);
 
-  uint64_t i = 0;
   while (row.size() != 0) {
-    i++;
     iter->GetNextRow(&row);
   }
 
