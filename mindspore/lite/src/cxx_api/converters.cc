@@ -95,13 +95,14 @@ lite::InnerContext *ContextUtils::Convert(Context *context) {
                          cpu_context->GetProvider(), cpu_context->GetProviderDevice(), inner_context.get());
     } else if (device->GetDeviceType() == kGPU) {
       auto gpu_context = device->Cast<GPUDeviceInfo>();
+#ifdef ENABLE_OPENGL_TEXTURE
+      bool enable_gl_texture = gpu_context->GetEnableGLTexture();
+      void *gl_context = gpu_context->GetGLContext();
+      void *gl_display = gpu_context->GetGLDisplay();
+#else
       bool enable_gl_texture = false;
       void *gl_context = nullptr;
       void *gl_display = nullptr;
-#ifdef ENABLE_OPENGL_TEXTURE
-      enable_gl_texture = gpu_context->GetEnableGLTexture();
-      gl_context = gpu_context->GetGLContext();
-      gl_display = gpu_context->GetGLDisplay();
 #endif
       ret =
         AddGpuDevice(gpu_context->GetEnableFP16(), gpu_context->GetDeviceID(), gpu_context->GetRankID(),
@@ -139,16 +140,16 @@ lite::InnerContext *ContextUtils::Convert(const ContextC *context_c) {
   for (auto &device_info_c : device_list) {
     MS_CHECK_TRUE_RET(device_info_c != nullptr, nullptr);
     lite::DeviceInfo device_info = {0};
-    if (device_info_c->device_type == kMSDeviceTypeCPU) {
+    if (device_info_c->device_type == OH_AI_DEVICETYPE_CPU) {
       if (device_info_c->allocator == nullptr) {
         device_info_c->allocator = Allocator::Create();
       }
       ret = AddCpuDevice(device_info_c->allocator, context_c->affinity_mode, device_info_c->enable_fp16,
                          device_info_c->provider, device_info_c->provider_device, inner_context.get());
-    } else if (device_info_c->device_type == kMSDeviceTypeGPU) {
+    } else if (device_info_c->device_type == OH_AI_DEVICETYPE_GPU) {
       ret = AddGpuDevice(device_info_c->enable_fp16, 0, 0, 0, false, nullptr, nullptr, device_info_c->provider,
                          device_info_c->provider_device, device_info_c->allocator, inner_context.get());
-    } else if (device_info_c->device_type == kMSDeviceTypeKirinNPU) {
+    } else if (device_info_c->device_type == OH_AI_DEVICETYPE_KIRIN_NPU) {
       ret = AddNpuDevice(device_info_c->frequency, inner_context.get());
     }
     if (ret != kSuccess) {

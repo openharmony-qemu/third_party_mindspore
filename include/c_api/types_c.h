@@ -20,27 +20,28 @@
 extern "C" {
 #endif
 
-#ifndef MS_API
+#ifndef OH_AI_API
 #ifdef _WIN32
-#define MS_API __declspec(dllexport)
+#define OH_AI_API __declspec(dllexport)
 #else
-#define MS_API __attribute__((visibility("default")))
+#define OH_AI_API __attribute__((visibility("default")))
 #endif
 #endif
 
-typedef enum MSModelType {
-  kMSModelTypeMindIR = 0,
+typedef enum OH_AI_ModelType {
+  OH_AI_MODELTYPE_MINDIR = 0,
   // insert new data type here
-  kMSModelTypeInvalid = 0xFFFFFFFF
-} MSModelType;
+  OH_AI_MODELTYPE_INVALID = 0xFFFFFFFF
+} OH_AI_ModelType;
 
-typedef enum MSDeviceType {
-  kMSDeviceTypeCPU = 0,
-  kMSDeviceTypeGPU,
-  kMSDeviceTypeKirinNPU,
+typedef enum OH_AI_DeviceType {
+  OH_AI_DEVICETYPE_CPU = 0,
+  OH_AI_DEVICETYPE_GPU,
+  OH_AI_DEVICETYPE_KIRIN_NPU,
+  OH_AI_DEVICETYPE_HEXAGON_DSP = 6,
   // add new type here
-  kMSDeviceTypeInvalid = 100,
-} MSDeviceType;
+  OH_AI_DEVICETYPE_INVALID = 100,
+} OH_AI_DeviceType;
 
 #ifdef __cplusplus
 }

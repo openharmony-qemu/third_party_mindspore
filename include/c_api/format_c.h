@@ -20,25 +20,25 @@
 extern "C" {
 #endif
 
-typedef enum MSFormat {
-  kMSFormatNCHW = 0,
-  kMSFormatNHWC = 1,
-  kMSFormatNHWC4 = 2,
-  kMSFormatHWKC = 3,
-  kMSFormatHWCK = 4,
-  kMSFormatKCHW = 5,
-  kMSFormatCKHW = 6,
-  kMSFormatKHWC = 7,
-  kMSFormatCHWK = 8,
-  kMSFormatHW = 9,
-  kMSFormatHW4 = 10,
-  kMSFormatNC = 11,
-  kMSFormatNC4 = 12,
-  kMSFormatNC4HW4 = 13,
-  kMSFormatNCDHW = 15,
-  kMSFormatNWC = 16,
-  kMSFormatNCW = 17
-} MSFormat;
+typedef enum OH_AI_Format {
+  OH_AI_FORMAT_NCHW = 0,
+  OH_AI_FORMAT_NHWC = 1,
+  OH_AI_FORMAT_NHWC4 = 2,
+  OH_AI_FORMAT_HWKC = 3,
+  OH_AI_FORMAT_HWCK = 4,
+  OH_AI_FORMAT_KCHW = 5,
+  OH_AI_FORMAT_CKHW = 6,
+  OH_AI_FORMAT_KHWC = 7,
+  OH_AI_FORMAT_CHWK = 8,
+  OH_AI_FORMAT_HW = 9,
+  OH_AI_FORMAT_HW4 = 10,
+  OH_AI_FORMAT_NC = 11,
+  OH_AI_FORMAT_NC4 = 12,
+  OH_AI_FORMAT_NC4HW4 = 13,
+  OH_AI_FORMAT_NCDHW = 15,
+  OH_AI_FORMAT_NWC = 16,
+  OH_AI_FORMAT_NCW = 17
+} OH_AI_Format;
 
 #ifdef __cplusplus
 }

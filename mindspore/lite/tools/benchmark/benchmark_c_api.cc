@@ -52,31 +52,31 @@ int BenchmarkCApi::RunBenchmark() {
     BENCHMARK_LOG_ERROR("InitContext failed, ret: " << ret);
     return ret;
   }
-  model_ = MSModelCreate();
-  ret = MSModelBuildFromFile(model_, flags_->model_file_.c_str(), kMSModelTypeMindIR, context_);
-  if (ret != kMSStatusSuccess) {
-    BENCHMARK_LOG_ERROR("MSModelBuildFromFile failed, ret: " << ret);
+  model_ = OH_AI_ModelCreate();
+  ret = OH_AI_ModelBuildFromFile(model_, flags_->model_file_.c_str(), OH_AI_MODELTYPE_MINDIR, context_);
+  if (ret != OH_AI_STATUS_SUCCESS) {
+    BENCHMARK_LOG_ERROR("OH_AI_ModelBuildFromFile failed, ret: " << ret);
     return ret;
   }
-  inputs_ = MSModelGetInputs(model_);
+  inputs_ = OH_AI_ModelGetInputs(model_);
   if (inputs_.handle_list == nullptr) {
-    BENCHMARK_LOG_ERROR("MSModelGetInputs failed, ret: " << ret);
+    BENCHMARK_LOG_ERROR("OH_AI_ModelGetInputs failed, ret: " << ret);
     return ret;
   }
   if (!flags_->resize_dims_.empty()) {
-    std::vector<MSShapeInfo> shape_infos;
+    std::vector<OH_AI_ShapeInfo> shape_infos;
     std::transform(flags_->resize_dims_.begin(), flags_->resize_dims_.end(), std::back_inserter(shape_infos),
                    [&](auto &shapes) {
-                     MSShapeInfo shape_info;
+                     OH_AI_ShapeInfo shape_info;
                      shape_info.shape_num = shapes.size();
                      for (size_t i = 0; i < shape_info.shape_num; i++) {
                        shape_info.shape[i] = shapes[i];
                      }
                      return shape_info;
                    });
-    ret = MSModelResize(model_, inputs_, shape_infos.data(), inputs_.handle_num);
-    if (ret != kMSStatusSuccess) {
-      BENCHMARK_LOG_ERROR("MSModelResize failed, ret: " << ret);
+    ret = OH_AI_ModelResize(model_, inputs_, shape_infos.data(), inputs_.handle_num);
+    if (ret != OH_AI_STATUS_SUCCESS) {
+      BENCHMARK_LOG_ERROR("OH_AI_ModelResize failed, ret: " << ret);
       return ret;
     }
   }
@@ -85,7 +85,7 @@ int BenchmarkCApi::RunBenchmark() {
   std::cout << "PrepareTime = " << ((end_prepare_time - start_prepare_time) / kFloatMSEC) << " ms" << std::endl;
 
   ret = LoadInput();
-  if (ret != kMSStatusSuccess) {
+  if (ret != OH_AI_STATUS_SUCCESS) {
     BENCHMARK_LOG_ERROR("LoadInput failed, ret: " << ret)
     return ret;
   }
@@ -94,7 +94,7 @@ int BenchmarkCApi::RunBenchmark() {
   } else {
     ret = MarkPerformance();
   }
-  if (ret != kMSStatusSuccess) {
+  if (ret != OH_AI_STATUS_SUCCESS) {
     BENCHMARK_LOG_ERROR("Run failed, ret: " << ret);
     return ret;
   }
@@ -105,42 +105,42 @@ int BenchmarkCApi::RunBenchmark() {
 }
 
 int BenchmarkCApi::InitContext() {
-  constexpr int kFrequencyDefault = 3;
-  context_ = MSContextCreate();
+  context_ = OH_AI_ContextCreate();
   if (context_ == nullptr) {
-    BENCHMARK_LOG_ERROR("MSContextCreate failed");
+    BENCHMARK_LOG_ERROR("OH_AI_ContextCreate failed");
     return RET_ERROR;
   }
-  MSContextSetThreadNum(context_, flags_->num_threads_);
-  MSContextSetEnableParallel(context_, flags_->enable_parallel_);
-  MSContextSetThreadAffinityMode(context_, flags_->cpu_bind_mode_);
+  OH_AI_ContextSetThreadNum(context_, flags_->num_threads_);
+  OH_AI_ContextSetEnableParallel(context_, flags_->enable_parallel_);
+  OH_AI_ContextSetThreadAffinityMode(context_, flags_->cpu_bind_mode_);
 
   if (flags_->device_ == "GPU") {
-    MSDeviceInfoHandle gpu_device_info = MSDeviceInfoCreate(kMSDeviceTypeGPU);
-    MSDeviceInfoSetEnableFP16(gpu_device_info, flags_->enable_fp16_);
-    MSContextAddDeviceInfo(context_, gpu_device_info);
+    OH_AI_DeviceInfoHandle gpu_device_info = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_GPU);
+    OH_AI_DeviceInfoSetEnableFP16(gpu_device_info, flags_->enable_fp16_);
+    OH_AI_ContextAddDeviceInfo(context_, gpu_device_info);
   }
   if (flags_->device_ == "NPU") {
-    MSDeviceInfoHandle npu_device_info = MSDeviceInfoCreate(kMSDeviceTypeKirinNPU);
-    MSDeviceInfoSetFrequency(npu_device_info, kFrequencyDefault);
-    MSContextAddDeviceInfo(context_, npu_device_info);
+    constexpr int kFrequencyDefault = 3;
+    OH_AI_DeviceInfoHandle npu_device_info = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_KIRIN_NPU);
+    OH_AI_DeviceInfoSetFrequency(npu_device_info, kFrequencyDefault);
+    OH_AI_ContextAddDeviceInfo(context_, npu_device_info);
   }
-  MSDeviceInfoHandle cpu_device_info = MSDeviceInfoCreate(kMSDeviceTypeCPU);
-  MSDeviceInfoSetEnableFP16(cpu_device_info, flags_->enable_fp16_);
-  MSContextAddDeviceInfo(context_, cpu_device_info);
+  OH_AI_DeviceInfoHandle cpu_device_info = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
+  OH_AI_DeviceInfoSetEnableFP16(cpu_device_info, flags_->enable_fp16_);
+  OH_AI_ContextAddDeviceInfo(context_, cpu_device_info);
   return RET_OK;
 }
 
 int BenchmarkCApi::GenerateInputData() {
   for (size_t i = 0; i < inputs_.handle_num; i++) {
-    MSTensorHandle tensor = inputs_.handle_list[i];
-    auto data_type = MSTensorGetDataType(tensor);
-    if (data_type == kMSDataTypeObjectTypeString) {
-      BENCHMARK_LOG_ERROR("Unsupported kMSDataTypeObjectTypeString");
+    OH_AI_TensorHandle tensor = inputs_.handle_list[i];
+    auto data_type = OH_AI_TensorGetDataType(tensor);
+    if (data_type == OH_AI_DATATYPE_OBJECTTYPE_STRING) {
+      BENCHMARK_LOG_ERROR("Unsupported OH_AI_DATATYPE_OBJECTTYPE_STRING");
       return RET_ERROR;
     } else {
-      auto data_ptr = MSTensorGetMutableData(tensor);
-      auto data_size = MSTensorGetDataSize(tensor);
+      auto data_ptr = OH_AI_TensorGetMutableData(tensor);
+      auto data_size = OH_AI_TensorGetDataSize(tensor);
       (void)GenerateRandomData(data_size, data_ptr, static_cast<int>(data_type));
     }
   }
@@ -153,26 +153,26 @@ int BenchmarkCApi::ReadInputFile() {
     return RET_ERROR;
   } else {
     for (size_t i = 0; i < flags_->input_data_list_.size(); i++) {
-      MSTensorHandle tensor = inputs_.handle_list[i];
+      OH_AI_TensorHandle tensor = inputs_.handle_list[i];
       size_t size;
       auto bin_buf = lite::ReadFile(flags_->input_data_list_[i].c_str(), &size);
       if (bin_buf == nullptr) {
         BENCHMARK_LOG_ERROR("ReadFile failed");
         return RET_ERROR;
       }
-      if (MSTensorGetDataType(tensor) == kMSDataTypeObjectTypeString) {
-        BENCHMARK_LOG_ERROR("Unsupported kMSDataTypeObjectTypeString");
+      if (OH_AI_TensorGetDataType(tensor) == OH_AI_DATATYPE_OBJECTTYPE_STRING) {
+        BENCHMARK_LOG_ERROR("Unsupported OH_AI_DataTypeObjectTypeString");
         return RET_ERROR;
       } else {
-        auto tensor_data_size = MSTensorGetDataSize(tensor);
+        auto tensor_data_size = OH_AI_TensorGetDataSize(tensor);
         if (tensor_data_size != size) {
           BENCHMARK_LOG_ERROR("Input file size error, required: " << tensor_data_size << ", in fact: " << size);
           delete[] bin_buf;
           return RET_ERROR;
         }
-        auto input_data = MSTensorGetMutableData(tensor);
+        auto input_data = OH_AI_TensorGetMutableData(tensor);
         if (input_data == nullptr) {
-          BENCHMARK_LOG_ERROR("MSTensorGetMutableData failed");
+          BENCHMARK_LOG_ERROR("OH_AI_TensorGetMutableData failed");
           return RET_ERROR;
         }
         memcpy(input_data, bin_buf, size);
@@ -191,9 +191,9 @@ int BenchmarkCApi::MarkAccuracy() {
     BENCHMARK_LOG_ERROR("PrintInputData failed, ret: " << status);
     return status;
   }
-  status = MSModelPredict(model_, inputs_, &outputs_, before_call_back_, after_call_back_);
-  if (status != kMSStatusSuccess) {
-    BENCHMARK_LOG_ERROR("MSModelPredict failed, ret: " << status);
+  status = OH_AI_ModelPredict(model_, inputs_, &outputs_, before_call_back_, after_call_back_);
+  if (status != OH_AI_STATUS_SUCCESS) {
+    BENCHMARK_LOG_ERROR("OH_AI_ModelPredict failed, ret: " << status);
     return RET_ERROR;
   }
   status = ReadCalibData();
@@ -213,9 +213,9 @@ int BenchmarkCApi::MarkPerformance() {
   MS_LOG(INFO) << "Running warm up loops...";
   std::cout << "Running warm up loops..." << std::endl;
   for (int i = 0; i < flags_->warm_up_loop_count_; i++) {
-    auto ret = MSModelPredict(model_, inputs_, &outputs_, before_call_back_, after_call_back_);
-    if (ret != kMSStatusSuccess) {
-      BENCHMARK_LOG_ERROR("MSModelPredict failed, ret: " << kMSStatusSuccess);
+    auto ret = OH_AI_ModelPredict(model_, inputs_, &outputs_, before_call_back_, after_call_back_);
+    if (ret != OH_AI_STATUS_SUCCESS) {
+      BENCHMARK_LOG_ERROR("OH_AI_ModelPredict failed, ret: " << OH_AI_STATUS_SUCCESS);
       return RET_ERROR;
     }
   }
@@ -228,9 +228,9 @@ int BenchmarkCApi::MarkPerformance() {
 
   for (int i = 0; i < flags_->loop_count_; i++) {
     auto start = GetTimeUs();
-    auto ret = MSModelPredict(model_, inputs_, &outputs_, before_call_back_, after_call_back_);
-    if (ret != kMSStatusSuccess) {
-      BENCHMARK_LOG_ERROR("MSModelPredict failed, ret: " << kMSStatusSuccess);
+    auto ret = OH_AI_ModelPredict(model_, inputs_, &outputs_, before_call_back_, after_call_back_);
+    if (ret != OH_AI_STATUS_SUCCESS) {
+      BENCHMARK_LOG_ERROR("OH_AI_ModelPredict failed, ret: " << OH_AI_STATUS_SUCCESS);
       return RET_ERROR;
     }
     auto end = GetTimeUs();
@@ -262,7 +262,7 @@ int BenchmarkCApi::MarkPerformance() {
 }
 
 int BenchmarkCApi::GetDataTypeByTensorName(const std::string &tensor_name) {
-  return MSTensorGetDataType(MSModelGetOutputByTensorName(model_, tensor_name.c_str()));
+  return OH_AI_TensorGetDataType(OH_AI_ModelGetOutputByTensorName(model_, tensor_name.c_str()));
 }
 
 int BenchmarkCApi::CompareOutput() {
@@ -272,14 +272,14 @@ int BenchmarkCApi::CompareOutput() {
   int total_size = 0;
   for (const auto &calib_tensor : benchmark_data_) {
     std::string tensor_name = calib_tensor.first;
-    MSTensorHandle tensor = MSModelGetOutputByTensorName(model_, tensor_name.c_str());
+    OH_AI_TensorHandle tensor = OH_AI_ModelGetOutputByTensorName(model_, tensor_name.c_str());
     if (tensor == nullptr) {
       BENCHMARK_LOG_ERROR("Get tensor failed, tensor name: " << tensor_name);
       return RET_ERROR;
     }
     int ret;
-    if (static_cast<int>(MSTensorGetDataType(tensor)) == kObjectTypeString) {
-      BENCHMARK_LOG_ERROR("Unsupported kMSDataTypeObjectTypeString");
+    if (static_cast<int>(OH_AI_TensorGetDataType(tensor)) == kObjectTypeString) {
+      BENCHMARK_LOG_ERROR("Unsupported kOH_AI_DataTypeObjectTypeString");
       return RET_ERROR;
     } else {
       ret = CompareDataGetTotalBiasAndSize(tensor_name, tensor, &total_bias, &total_size);
@@ -307,18 +307,18 @@ int BenchmarkCApi::CompareOutput() {
   return RET_OK;
 }
 
-int BenchmarkCApi::CompareDataGetTotalBiasAndSize(const std::string &name, MSTensorHandle tensor, float *total_bias,
+int BenchmarkCApi::CompareDataGetTotalBiasAndSize(const std::string &name, OH_AI_TensorHandle tensor, float *total_bias,
                                                   int *total_size) {
-  auto tensor_data = MSTensorGetData(tensor);
+  auto tensor_data = OH_AI_TensorGetData(tensor);
   if (tensor_data == nullptr) {
-    BENCHMARK_LOG_ERROR("MSTensorGetData failed.");
+    BENCHMARK_LOG_ERROR("OH_AI_TensorGetData failed.");
     return RET_ERROR;
   }
   size_t shape_num;
-  const int64_t *shape = MSTensorGetShape(tensor, &shape_num);
+  const int64_t *shape = OH_AI_TensorGetShape(tensor, &shape_num);
   std::vector<int64_t> vec_shape(shape, shape + shape_num);
   float bias = 0;
-  switch (static_cast<TypeId>(MSTensorGetDataType(tensor))) {
+  switch (static_cast<TypeId>(OH_AI_TensorGetDataType(tensor))) {
     case TypeId::kNumberTypeFloat:
     case TypeId::kNumberTypeFloat32: {
       bias = CompareData<float, int64_t>(name, vec_shape, tensor_data);
@@ -345,7 +345,7 @@ int BenchmarkCApi::CompareDataGetTotalBiasAndSize(const std::string &name, MSTen
       break;
     }
     default:
-      BENCHMARK_LOG_ERROR("Unsupported data type" << static_cast<int>(MSTensorGetDataType(tensor)));
+      BENCHMARK_LOG_ERROR("Unsupported data type" << static_cast<int>(OH_AI_TensorGetDataType(tensor)));
       return RET_ERROR;
   }
   if (bias < 0) {
@@ -362,13 +362,13 @@ int BenchmarkCApi::PrintInputData() {
   for (size_t i = 0; i < inputs_.handle_num; i++) {
     auto input = inputs_.handle_list[i];
     std::cout << "InData" << i << ": ";
-    auto data_type = static_cast<TypeId>(MSTensorGetDataType(input));
+    auto data_type = static_cast<TypeId>(OH_AI_TensorGetDataType(input));
     if (data_type == TypeId::kObjectTypeString) {
-      BENCHMARK_LOG_ERROR("Unsupported kMSDataTypeObjectTypeString.");
+      BENCHMARK_LOG_ERROR("Unsupported kOH_AI_DataTypeObjectTypeString.");
       return RET_ERROR;
     }
-    auto tensor_data = MSTensorGetData(input);
-    size_t print_num = std::min(MSTensorGetElementNum(input), kPrintDataNum);
+    auto tensor_data = OH_AI_TensorGetData(input);
+    size_t print_num = std::min(OH_AI_TensorGetElementNum(input), kPrintDataNum);
     for (size_t j = 0; j < print_num; j++) {
       if (data_type == TypeId::kNumberTypeFloat32 || data_type == TypeId::kNumberTypeFloat) {
         std::cout << static_cast<const float *>(tensor_data)[j] << " ";
@@ -420,8 +420,8 @@ float g_op_cost_total_ = 0.0f;
 std::map<std::string, std::pair<int, float>> g_op_times_by_type_;
 std::map<std::string, std::pair<int, float>> g_op_times_by_name_;
 
-bool TimeBeforeCallback(const MSTensorHandleArray inputs, const MSTensorHandleArray outputs,
-                        const MSCallBackParamC kernel_Info) {
+bool TimeBeforeCallback(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
+                        const OH_AI_CallBackParam kernel_Info) {
   if (g_op_times_by_type_.find(kernel_Info.node_type) == g_op_times_by_type_.end()) {
     g_op_times_by_type_.insert(std::make_pair(kernel_Info.node_type, std::make_pair(0, 0.0f)));
   }
@@ -434,8 +434,8 @@ bool TimeBeforeCallback(const MSTensorHandleArray inputs, const MSTensorHandleAr
   return true;
 }
 
-bool TimeAfterCallback(const MSTensorHandleArray inputs, const MSTensorHandleArray outputs,
-                       const MSCallBackParamC kernel_Info) {
+bool TimeAfterCallback(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
+                       const OH_AI_CallBackParam kernel_Info) {
   uint64_t opEnd = mindspore::lite::GetTimeUs();
   float cost = static_cast<float>(opEnd - g_op_begin_) / mindspore::lite::kFloatMSEC;
   g_op_cost_total_ += cost;

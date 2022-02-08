@@ -25,10 +25,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-bool TimeBeforeCallback(const MSTensorHandleArray inputs, const MSTensorHandleArray outputs,
-                        const MSCallBackParamC kernel_Info);
-bool TimeAfterCallback(const MSTensorHandleArray inputs, const MSTensorHandleArray outputs,
-                       const MSCallBackParamC kernel_Info);
+bool TimeBeforeCallback(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
+                        const OH_AI_CallBackParam kernel_Info);
+bool TimeAfterCallback(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
+                       const OH_AI_CallBackParam kernel_Info);
 #ifdef __cplusplus
 }
 #endif
@@ -37,18 +37,18 @@ using mindspore::lite::BenchmarkBase;
 using mindspore::lite::BenchmarkFlags;
 
 namespace mindspore::tools {
-class MS_API BenchmarkCApi : public BenchmarkBase {
+class OH_AI_API BenchmarkCApi : public BenchmarkBase {
  public:
   explicit BenchmarkCApi(BenchmarkFlags *flags) : BenchmarkBase(flags) {}
 
-  virtual ~BenchmarkCApi() { MSModelDestroy(&model_); }
+  virtual ~BenchmarkCApi() { OH_AI_ModelDestroy(&model_); }
 
   int RunBenchmark() override;
 
   int LoadInput() override;
 
  protected:
-  int CompareDataGetTotalBiasAndSize(const std::string &name, MSTensorHandle tensor, float *total_bias,
+  int CompareDataGetTotalBiasAndSize(const std::string &name, OH_AI_TensorHandle tensor, float *total_bias,
                                      int *total_size);
   int InitContext();
   int GenerateInputData() override;
@@ -66,13 +66,13 @@ class MS_API BenchmarkCApi : public BenchmarkBase {
   int MarkAccuracy();
 
  private:
-  MSModelHandle model_ = nullptr;
-  MSContextHandle context_ = nullptr;
-  MSTensorHandleArray inputs_;
-  MSTensorHandleArray outputs_;
+  OH_AI_ModelHandle model_ = nullptr;
+  OH_AI_ContextHandle context_ = nullptr;
+  OH_AI_TensorHandleArray inputs_;
+  OH_AI_TensorHandleArray outputs_;
 
-  MSKernelCallBackC before_call_back_ = nullptr;
-  MSKernelCallBackC after_call_back_ = nullptr;
+  OH_AI_KernelCallBack before_call_back_ = nullptr;
+  OH_AI_KernelCallBack after_call_back_ = nullptr;
 };
 }  // namespace mindspore::tools
 #endif  // MINDSPORE_LITE_TOOLS_BENCHMARK_BENCHMARK_C_API_H_

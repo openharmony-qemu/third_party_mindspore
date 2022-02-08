@@ -36,13 +36,11 @@ class ModelC {
   Status Build(const std::string &model_path, ModelType model_type, const ContextC *model_context);
   Status Resize(const std::vector<MSTensor::Impl *> &inputs, const std::vector<std::vector<int64_t>> &shapes);
 
-  Status Predict(const MSTensorHandle *inputs, size_t input_num, MSTensorHandle **outputs, size_t *output_num,
-                 const MSKernelCallBackC &before, const MSKernelCallBackC &after);
+  Status Predict(const OH_AI_TensorHandle *inputs, size_t input_num, OH_AI_TensorHandle **outputs, size_t *output_num,
+                 const OH_AI_KernelCallBack &before, const OH_AI_KernelCallBack &after);
 
   MSTensor::Impl **GetInputs(size_t *input_num);
   MSTensor::Impl **GetOutputs(size_t *output_num);
-  MSTensor::Impl *GetInputByTensorName(const std::string &name);
-  MSTensor::Impl *GetOutputByTensorName(const std::string &name);
 
  private:
   std::shared_ptr<lite::LiteSession> session_ = nullptr;
@@ -50,7 +48,7 @@ class ModelC {
   std::map<mindspore::tensor::MSTensor *, MSTensor::Impl *> tensor_map_;
   std::vector<MSTensor::Impl *> inputs_;
   std::vector<MSTensor::Impl *> outputs_;
-  Status RunGraph(const MSKernelCallBackC &before, const MSKernelCallBackC &after);
+  Status RunGraph(const OH_AI_KernelCallBack &before, const OH_AI_KernelCallBack &after);
   void ResetTensorData(std::vector<void *> old_data, std::vector<tensor::MSTensor *> tensors);
   MSTensor::Impl *TensorToTensorImpl(mindspore::tensor::MSTensor *tensor);
 };
@@ -58,10 +56,7 @@ class ModelC {
 Status ModelC::Build(const void *model_data, size_t data_size, ModelType model_type, const ContextC *model_context) {
   context_.reset(model_context);
   session_ = std::make_shared<lite::LiteSession>();
-  if (session_ == nullptr) {
-    MS_LOG(ERROR) << "create session failed";
-    return kLiteNullptr;
-  }
+  MS_CHECK_TRUE_MSG(session_ != nullptr, kLiteNullptr, "create session failed");
   auto ret = session_->Init(ContextUtils::Convert(model_context));
   if (ret != mindspore::lite::RET_OK) {
     MS_LOG(ERROR) << "init session failed";
@@ -77,10 +72,7 @@ Status ModelC::Build(const void *model_data, size_t data_size, ModelType model_t
 Status ModelC::Build(const std::string &model_path, ModelType model_type, const ContextC *model_context) {
   context_.reset(model_context);
   session_ = std::make_shared<lite::LiteSession>();
-  if (session_ == nullptr) {
-    MS_LOG(ERROR) << "create session failed";
-    return kLiteNullptr;
-  }
+  MS_CHECK_TRUE_MSG(session_ != nullptr, kLiteNullptr, "create session failed");
   auto ret = session_->Init(ContextUtils::Convert(model_context));
   if (ret != mindspore::lite::RET_OK) {
     MS_LOG(ERROR) << "init session failed";
@@ -98,10 +90,8 @@ Status ModelC::Resize(const std::vector<MSTensor::Impl *> &inputs, const std::ve
   size_t input_num = inputs.size();
   for (size_t i = 0; i < input_num; i++) {
     auto input = inputs[i];
-    if (input == nullptr || input->lite_tensor() == nullptr) {
-      MS_LOG(ERROR) << "Input tensor is null.";
-      return kLiteInputTensorError;
-    }
+    MS_CHECK_TRUE_MSG(input != nullptr && input->lite_tensor() != nullptr, kLiteInputTensorError,
+                      "Input tensor is null.");
     inner_input.push_back(input->lite_tensor());
   }
   size_t shape_num = shapes.size();
@@ -110,10 +100,7 @@ Status ModelC::Resize(const std::vector<MSTensor::Impl *> &inputs, const std::ve
     std::transform(shapes[i].begin(), shapes[i].end(), std::back_inserter(inner_shapes[i]),
                    [](int64_t value) { return static_cast<int32_t>(value); });
   }
-  if (session_ == nullptr) {
-    MS_LOG(ERROR) << "Session implement is null.";
-    return kLiteNullptr;
-  }
+  MS_CHECK_TRUE_MSG(session_ != nullptr, kLiteNullptr, "Session implement is null.");
   auto ret = session_->Resize(inner_input, inner_shapes);
   return static_cast<StatusCode>(ret);
 }
@@ -124,12 +111,9 @@ void ModelC::ResetTensorData(std::vector<void *> old_data, std::vector<tensor::M
   }
 }
 
-Status ModelC::Predict(const MSTensorHandle *inputs, size_t input_num, MSTensorHandle **outputs, size_t *output_num,
-                       const MSKernelCallBackC &before, const MSKernelCallBackC &after) {
-  if (outputs == nullptr || session_ == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return kLiteError;
-  }
+Status ModelC::Predict(const OH_AI_TensorHandle *inputs, size_t input_num, OH_AI_TensorHandle **outputs,
+                       size_t *output_num, const OH_AI_KernelCallBack &before, const OH_AI_KernelCallBack &after) {
+  MS_CHECK_TRUE_MSG(outputs != nullptr && session_ != nullptr, kLiteError, "param is nullptr.");
   auto model_inputs = session_->GetInputs();
   if (model_inputs.size() != input_num) {
     MS_LOG(ERROR) << "Wrong input size.";
@@ -175,11 +159,11 @@ Status ModelC::Predict(const MSTensorHandle *inputs, size_t input_num, MSTensorH
     return ret;
   }
 
-  *outputs = reinterpret_cast<MSTensorHandle *>(GetOutputs(output_num));
+  *outputs = reinterpret_cast<OH_AI_TensorHandle *>(GetOutputs(output_num));
   return kSuccess;
 }
 
-Status ModelC::RunGraph(const MSKernelCallBackC &before, const MSKernelCallBackC &after) {
+Status ModelC::RunGraph(const OH_AI_KernelCallBack &before, const OH_AI_KernelCallBack &after) {
   if (before == nullptr || after == nullptr) {
     auto ret = session_->RunGraph();
     return static_cast<StatusCode>(ret);
@@ -189,8 +173,8 @@ Status ModelC::RunGraph(const MSKernelCallBackC &before, const MSKernelCallBackC
                               const CallBackParam &call_param) {
     std::vector<mindspore::MSTensor::Impl> inputs_impl;
     std::vector<mindspore::MSTensor::Impl> outputs_impl;
-    std::vector<MSTensorHandle> op_inputs;
-    std::vector<MSTensorHandle> op_outputs;
+    std::vector<OH_AI_TensorHandle> op_inputs;
+    std::vector<OH_AI_TensorHandle> op_outputs;
     size_t op_input_num = before_inputs.size();
     for (size_t i = 0; i < op_input_num; i++) {
       inputs_impl.emplace_back(before_inputs[i]);
@@ -201,10 +185,10 @@ Status ModelC::RunGraph(const MSKernelCallBackC &before, const MSKernelCallBackC
       outputs_impl.emplace_back(before_outputs[i]);
       op_outputs.push_back(&(outputs_impl.back()));
     }
-    const MSCallBackParamC op_info = {const_cast<char *>(call_param.node_name.c_str()),
-                                      const_cast<char *>(call_param.node_type.c_str())};
-    MSTensorHandleArray inputs = {op_input_num, op_inputs.data()};
-    MSTensorHandleArray outputs = {op_output_num, op_outputs.data()};
+    const OH_AI_CallBackParam op_info = {const_cast<char *>(call_param.node_name.c_str()),
+                                         const_cast<char *>(call_param.node_type.c_str())};
+    OH_AI_TensorHandleArray inputs = {op_input_num, op_inputs.data()};
+    OH_AI_TensorHandleArray outputs = {op_output_num, op_outputs.data()};
     return before(inputs, outputs, op_info);
   };
 
@@ -213,8 +197,8 @@ Status ModelC::RunGraph(const MSKernelCallBackC &before, const MSKernelCallBackC
                              const CallBackParam &call_param) {
     std::vector<mindspore::MSTensor::Impl> inputs_impl;
     std::vector<mindspore::MSTensor::Impl> outputs_impl;
-    std::vector<MSTensorHandle> op_inputs;
-    std::vector<MSTensorHandle> op_outputs;
+    std::vector<OH_AI_TensorHandle> op_inputs;
+    std::vector<OH_AI_TensorHandle> op_outputs;
     size_t op_input_num = after_inputs.size();
     for (size_t i = 0; i < op_input_num; i++) {
       inputs_impl.emplace_back(after_inputs[i]);
@@ -225,10 +209,10 @@ Status ModelC::RunGraph(const MSKernelCallBackC &before, const MSKernelCallBackC
       outputs_impl.emplace_back(after_outputs[i]);
       op_outputs.push_back(&(outputs_impl.back()));
     }
-    const MSCallBackParamC op_info = {const_cast<char *>(call_param.node_name.c_str()),
-                                      const_cast<char *>(call_param.node_type.c_str())};
-    MSTensorHandleArray inputs = {op_input_num, op_inputs.data()};
-    MSTensorHandleArray outputs = {op_output_num, op_outputs.data()};
+    const OH_AI_CallBackParam op_info = {const_cast<char *>(call_param.node_name.c_str()),
+                                         const_cast<char *>(call_param.node_type.c_str())};
+    OH_AI_TensorHandleArray inputs = {op_input_num, op_inputs.data()};
+    OH_AI_TensorHandleArray outputs = {op_output_num, op_outputs.data()};
     return after(inputs, outputs, op_info);
   };
   auto ret = session_->RunGraph(before_call_back, after_call_back);
@@ -252,10 +236,7 @@ MSTensor::Impl *ModelC::TensorToTensorImpl(mindspore::tensor::MSTensor *tensor) 
 }
 
 MSTensor::Impl **ModelC::GetInputs(size_t *input_num) {
-  if (session_ == nullptr || input_num == nullptr) {
-    MS_LOG(ERROR) << "Session is null.";
-    return nullptr;
-  }
+  MS_CHECK_TRUE_MSG(session_ != nullptr && input_num != nullptr, nullptr, "param is nullptr.");
   auto inputs = session_->GetInputs();
   *input_num = inputs.size();
   if (inputs_.capacity() < *input_num) {
@@ -268,10 +249,7 @@ MSTensor::Impl **ModelC::GetInputs(size_t *input_num) {
 }
 
 MSTensor::Impl **ModelC::GetOutputs(size_t *output_num) {
-  if (session_ == nullptr || output_num == nullptr) {
-    MS_LOG(ERROR) << "Session is null.";
-    return nullptr;
-  }
+  MS_CHECK_TRUE_MSG(session_ != nullptr && output_num != nullptr, nullptr, "param is nullptr.");
   auto outputs = session_->GetOutputs();
   *output_num = outputs.size();
   if (outputs_.capacity() < *output_num) {
@@ -284,36 +262,18 @@ MSTensor::Impl **ModelC::GetOutputs(size_t *output_num) {
                  });
   return outputs_.data();
 }
-
-MSTensor::Impl *ModelC::GetInputByTensorName(const std::string &name) {
-  if (session_ == nullptr) {
-    MS_LOG(ERROR) << "Session is null.";
-    return nullptr;
-  }
-  auto tensor = session_->GetInputsByTensorName(name);
-  return TensorToTensorImpl(tensor);
-}
-
-MSTensor::Impl *ModelC::GetOutputByTensorName(const std::string &name) {
-  if (session_ == nullptr) {
-    MS_LOG(ERROR) << "Session is null.";
-    return nullptr;
-  }
-  auto tensor = session_->GetOutputByTensorName(name);
-  return TensorToTensorImpl(tensor);
-}
 }  // namespace mindspore
 
-MSModelHandle MSModelCreate() {
+OH_AI_ModelHandle OH_AI_ModelCreate() {
   auto impl = new (std::nothrow) mindspore::ModelC();
   if (impl == nullptr) {
     MS_LOG(ERROR) << "Model implement is null.";
     return nullptr;
   }
-  return static_cast<MSModelHandle>(impl);
+  return static_cast<OH_AI_ModelHandle>(impl);
 }
 
-void MSModelDestroy(MSModelHandle *model) {
+void OH_AI_ModelDestroy(OH_AI_ModelHandle *model) {
   if (model != nullptr && *model != nullptr) {
     auto impl = static_cast<mindspore::ModelC *>(*model);
     delete impl;
@@ -321,127 +281,108 @@ void MSModelDestroy(MSModelHandle *model) {
   }
 }
 
-void MSModelSetWorkspace(MSModelHandle model, void *workspace, size_t workspace_size) {
+void OH_AI_ModelSetWorkspace(OH_AI_ModelHandle model, void *workspace, size_t workspace_size) {
   MS_LOG(ERROR) << "Unsupported Feature.";
   return;
 }
 
-MSStatus MSModelBuild(MSModelHandle model, const void *model_data, size_t data_size, MSModelType model_type,
-                      const MSContextHandle model_context) {
-  if (model == nullptr || model_data == nullptr || model_context == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return kMSStatusLiteNullptr;
-  }
-  if (model_type == kMSModelTypeInvalid) {
+OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size,
+                              OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context) {
+  MS_CHECK_TRUE_MSG(model != nullptr && model_data != nullptr && model_context != nullptr, OH_AI_STATUS_LITE_NULLPTR,
+                    "param is nullptr.");
+  if (model_type == OH_AI_MODELTYPE_INVALID) {
     MS_LOG(ERROR) << "param is invalid.";
-    return kMSStatusLiteParamInvalid;
+    return OH_AI_STATUS_LITE_PARAM_INVALID;
   }
   mindspore::ContextC *context = static_cast<mindspore::ContextC *>(model_context);
   auto impl = static_cast<mindspore::ModelC *>(model);
   auto ret = impl->Build(model_data, data_size, static_cast<mindspore::ModelType>(model_type), context);
-  return static_cast<MSStatus>(ret.StatusCode());
+  return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
-MSStatus MSModelBuildFromFile(MSModelHandle model, const char *model_path, MSModelType model_type,
-                              const MSContextHandle model_context) {
-  if (model == nullptr || model_path == nullptr || model_context == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return kMSStatusLiteNullptr;
-  }
-  if (model_type == kMSModelTypeInvalid) {
+OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path, OH_AI_ModelType model_type,
+                                      const OH_AI_ContextHandle model_context) {
+  MS_CHECK_TRUE_MSG(model != nullptr && model_path != nullptr && model_context != nullptr, OH_AI_STATUS_LITE_NULLPTR,
+                    "param is nullptr.");
+  if (model_type == OH_AI_MODELTYPE_INVALID) {
     MS_LOG(ERROR) << "param is invalid.";
-    return kMSStatusLiteParamInvalid;
+    return OH_AI_STATUS_LITE_PARAM_INVALID;
   }
   mindspore::ContextC *context = static_cast<mindspore::ContextC *>(model_context);
   auto impl = static_cast<mindspore::ModelC *>(model);
   auto ret = impl->Build(model_path, static_cast<mindspore::ModelType>(model_type), context);
-  return static_cast<MSStatus>(ret.StatusCode());
+  return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
-MSStatus MSModelResize(MSModelHandle model, const MSTensorHandleArray inputs, MSShapeInfo *shape_infos,
-                       size_t shape_info_num) {
-  if (model == nullptr || shape_infos == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return kMSStatusLiteNullptr;
-  }
+OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
+                               OH_AI_ShapeInfo *shape_infos, size_t shape_info_num) {
+  MS_CHECK_TRUE_MSG(model != nullptr && shape_infos != nullptr, OH_AI_STATUS_LITE_NULLPTR, "param is nullptr.");
   std::vector<mindspore::MSTensor::Impl *> vec_inputs;
   std::transform(inputs.handle_list, inputs.handle_list + inputs.handle_num, std::back_inserter(vec_inputs),
-                 [](MSTensorHandle value) { return static_cast<mindspore::MSTensor::Impl *>(value); });
-  std::vector<std::vector<int64_t>> vec_dims;
+                 [](OH_AI_TensorHandle value) { return static_cast<mindspore::MSTensor::Impl *>(value); });
+  std::vector<std::vector<int64_t>> vec_diOH_AI_;
   for (size_t i = 0; i < shape_info_num; i++) {
     std::vector<int64_t> shape(shape_infos[i].shape, shape_infos[i].shape + shape_infos[i].shape_num);
-    vec_dims.push_back(shape);
+    vec_diOH_AI_.push_back(shape);
   }
   auto impl = static_cast<mindspore::ModelC *>(model);
-  auto ret = impl->Resize(vec_inputs, vec_dims);
-  return static_cast<MSStatus>(ret.StatusCode());
+  auto ret = impl->Resize(vec_inputs, vec_diOH_AI_);
+  return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
-MSStatus MSModelPredict(MSModelHandle model, const MSTensorHandleArray inputs, MSTensorHandleArray *outputs,
-                        const MSKernelCallBackC before, const MSKernelCallBackC after) {
-  if (model == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return kMSStatusLiteNullptr;
-  }
+OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
+                                OH_AI_TensorHandleArray *outputs, const OH_AI_KernelCallBack before,
+                                const OH_AI_KernelCallBack after) {
+  MS_CHECK_TRUE_MSG(model != nullptr, OH_AI_STATUS_LITE_NULLPTR, "param is nullptr.");
   auto impl = static_cast<mindspore::ModelC *>(model);
   auto ret = impl->Predict(inputs.handle_list, inputs.handle_num, &(outputs->handle_list), &(outputs->handle_num),
                            before, after);
   if (!ret.IsOk()) {
     MS_LOG(ERROR) << "Predict fail, ret :" << ret;
   }
-  return static_cast<MSStatus>(ret.StatusCode());
+  return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
-MSTensorHandleArray MSModelGetInputs(const MSModelHandle model) {
-  if (model == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return {0, nullptr};
-  }
+OH_AI_TensorHandleArray OH_AI_ModelGetInputs(const OH_AI_ModelHandle model) {
+  OH_AI_TensorHandleArray result = {0, nullptr};
+  MS_CHECK_TRUE_MSG(model != nullptr, result, "param is nullptr.");
   auto impl = static_cast<mindspore::ModelC *>(model);
   size_t input_num;
-  auto handles = reinterpret_cast<MSTensorHandle *>(impl->GetInputs(&input_num));
+  auto handles = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetInputs(&input_num));
   return {input_num, handles};
 }
 
-MSTensorHandleArray MSModelGetOutputs(const MSModelHandle model) {
-  if (model == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return {0, nullptr};
-  }
+OH_AI_TensorHandleArray OH_AI_ModelGetOutputs(const OH_AI_ModelHandle model) {
+  OH_AI_TensorHandleArray result = {0, nullptr};
+  MS_CHECK_TRUE_MSG(model != nullptr, result, "param is nullptr.");
   auto impl = static_cast<mindspore::ModelC *>(model);
   size_t output_num;
-  auto handles = reinterpret_cast<MSTensorHandle *>(impl->GetOutputs(&output_num));
+  auto handles = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&output_num));
   return {output_num, handles};
 }
 
-MSTensorHandle MSModelGetInputByTensorName(const MSModelHandle model, const char *tensor_name) {
-  if (model == nullptr || tensor_name == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name) {
+  MS_CHECK_TRUE_MSG(model != nullptr && tensor_name != nullptr, nullptr, "param is nullptr.");
   auto impl = static_cast<mindspore::ModelC *>(model);
   size_t input_num;
   auto inputs = impl->GetInputs(&input_num);
   for (size_t i = 0; i < input_num; i++) {
     if (inputs[i]->Name() == tensor_name) {
-      return static_cast<MSTensorHandle>(inputs[i]);
+      return static_cast<OH_AI_TensorHandle>(inputs[i]);
     }
   }
   MS_LOG(ERROR) << "tensor is not exist.";
   return nullptr;
 }
 
-MSTensorHandle MSModelGetOutputByTensorName(const MSModelHandle model, const char *tensor_name) {
-  if (model == nullptr || tensor_name == nullptr) {
-    MS_LOG(ERROR) << "param is nullptr.";
-    return nullptr;
-  }
+OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name) {
+  MS_CHECK_TRUE_MSG(model != nullptr && tensor_name != nullptr, nullptr, "param is nullptr.");
   auto impl = static_cast<mindspore::ModelC *>(model);
   size_t output_num;
   auto outputs = impl->GetOutputs(&output_num);
   for (size_t i = 0; i < output_num; i++) {
     if (outputs[i]->Name() == tensor_name) {
-      return static_cast<MSTensorHandle>(outputs[i]);
+      return static_cast<OH_AI_TensorHandle>(outputs[i]);
     }
   }
   MS_LOG(ERROR) << "tensor is not exist.";
