@@ -23,51 +23,51 @@ class ContextCTest : public mindspore::CommonTest {
 };
 
 TEST_F(ContextCTest, common_test) {
-  MSDeviceInfoHandle npu_device_info = MSDeviceInfoCreate(kMSDeviceTypeKirinNPU);
+  OH_AI_DeviceInfoHandle npu_device_info = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_KIRIN_NPU);
   ASSERT_TRUE(npu_device_info != nullptr);
-  ASSERT_EQ(MSDeviceInfoGetDeviceType(npu_device_info), kMSDeviceTypeKirinNPU);
+  ASSERT_EQ(OH_AI_DeviceInfoGetDeviceType(npu_device_info), OH_AI_DEVICETYPE_KIRIN_NPU);
 
-  MSDeviceInfoSetProvider(npu_device_info, "vendor name");
-  ASSERT_STREQ(MSDeviceInfoGetProvider(npu_device_info), "vendor name");
+  OH_AI_DeviceInfoSetProvider(npu_device_info, "vendor name");
+  ASSERT_STREQ(OH_AI_DeviceInfoGetProvider(npu_device_info), "vendor name");
 
-  MSDeviceInfoSetProviderDevice(npu_device_info, "npu_a");
-  ASSERT_STREQ(MSDeviceInfoGetProviderDevice(npu_device_info), "npu_a");
+  OH_AI_DeviceInfoSetProviderDevice(npu_device_info, "npu_a");
+  ASSERT_STREQ(OH_AI_DeviceInfoGetProviderDevice(npu_device_info), "npu_a");
 
-  MSDeviceInfoSetFrequency(npu_device_info, 3);
-  ASSERT_EQ(MSDeviceInfoGetFrequency(npu_device_info), 3);
+  OH_AI_DeviceInfoSetFrequency(npu_device_info, 3);
+  ASSERT_EQ(OH_AI_DeviceInfoGetFrequency(npu_device_info), 3);
 
-  MSContextHandle context = MSContextCreate();
+  OH_AI_ContextHandle context = OH_AI_ContextCreate();
   ASSERT_TRUE(context != nullptr);
 
-  MSContextSetThreadNum(context, 4);
-  ASSERT_EQ(MSContextGetThreadNum(context), 4);
+  OH_AI_ContextSetThreadNum(context, 4);
+  ASSERT_EQ(OH_AI_ContextGetThreadNum(context), 4);
 
-  MSContextSetThreadAffinityMode(context, 2);
-  ASSERT_EQ(MSContextGetThreadAffinityMode(context), 2);
+  OH_AI_ContextSetThreadAffinityMode(context, 2);
+  ASSERT_EQ(OH_AI_ContextGetThreadAffinityMode(context), 2);
 
   constexpr size_t core_num = 4;
   int32_t core_list[core_num] = {1, 3, 2, 0};
-  MSContextSetThreadAffinityCoreList(context, core_list, core_num);
+  OH_AI_ContextSetThreadAffinityCoreList(context, core_list, core_num);
   size_t ret_core_num;
   const int32_t *ret_core_list = nullptr;
-  ret_core_list = MSContextGetThreadAffinityCoreList(context, &ret_core_num);
+  ret_core_list = OH_AI_ContextGetThreadAffinityCoreList(context, &ret_core_num);
   ASSERT_EQ(ret_core_num, core_num);
   for (size_t i = 0; i < ret_core_num; i++) {
     ASSERT_EQ(ret_core_list[i], core_list[i]);
   }
 
-  MSContextSetEnableParallel(context, true);
-  ASSERT_EQ(MSContextGetEnableParallel(context), true);
+  OH_AI_ContextSetEnableParallel(context, true);
+  ASSERT_EQ(OH_AI_ContextGetEnableParallel(context), true);
 
-  MSDeviceInfoHandle cpu_device_info = MSDeviceInfoCreate(kMSDeviceTypeCPU);
-  MSDeviceInfoDestroy(&cpu_device_info);
-  cpu_device_info = MSDeviceInfoCreate(kMSDeviceTypeCPU);
+  OH_AI_DeviceInfoHandle cpu_device_info = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
+  OH_AI_DeviceInfoDestroy(&cpu_device_info);
+  cpu_device_info = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
 
-  MSDeviceInfoSetEnableFP16(cpu_device_info, true);
-  ASSERT_EQ(MSDeviceInfoGetEnableFP16(cpu_device_info), true);
+  OH_AI_DeviceInfoSetEnableFP16(cpu_device_info, true);
+  ASSERT_EQ(OH_AI_DeviceInfoGetEnableFP16(cpu_device_info), true);
 
-  MSContextAddDeviceInfo(context, cpu_device_info);
-  MSContextAddDeviceInfo(context, npu_device_info);
-  MSContextDestroy(&context);
+  OH_AI_ContextAddDeviceInfo(context, cpu_device_info);
+  OH_AI_ContextAddDeviceInfo(context, npu_device_info);
+  OH_AI_ContextDestroy(&context);
 }
 }  // namespace mindspore

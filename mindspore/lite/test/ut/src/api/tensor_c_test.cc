@@ -25,65 +25,66 @@ class TensorCTest : public mindspore::CommonTest {
 TEST_F(TensorCTest, common_test) {
   constexpr size_t shape_num = 2;
   int64_t shape[shape_num] = {2, 3};
-  MSTensorHandle tensor = MSTensorCreate("name001", kMSDataTypeNumberTypeInt32, shape, shape_num, nullptr, 0);
+  OH_AI_TensorHandle tensor =
+    OH_AI_TensorCreate("name001", OH_AI_DATATYPE_NUMBERTYPE_INT32, shape, shape_num, nullptr, 0);
   ASSERT_TRUE(tensor != nullptr);
-  ASSERT_STREQ(MSTensorGetName(tensor), "name001");
-  ASSERT_EQ(MSTensorGetDataType(tensor), kMSDataTypeNumberTypeInt32);
+  ASSERT_STREQ(OH_AI_TensorGetName(tensor), "name001");
+  ASSERT_EQ(OH_AI_TensorGetDataType(tensor), OH_AI_DATATYPE_NUMBERTYPE_INT32);
   size_t ret_shape_num;
-  const int64_t *ret_shape = MSTensorGetShape(tensor, &ret_shape_num);
+  const int64_t *ret_shape = OH_AI_TensorGetShape(tensor, &ret_shape_num);
   ASSERT_EQ(ret_shape_num, shape_num);
   for (size_t i = 0; i < ret_shape_num; i++) {
     ASSERT_EQ(ret_shape[i], shape[i]);
   }
-  ASSERT_EQ(MSTensorGetElementNum(tensor), 6);
-  ASSERT_EQ(MSTensorGetDataSize(tensor), 6 * sizeof(int32_t));
-  ASSERT_EQ(MSTensorGetData(tensor), nullptr);
-  ASSERT_TRUE(MSTensorGetMutableData(tensor) != nullptr);
+  ASSERT_EQ(OH_AI_TensorGetElementNum(tensor), 6);
+  ASSERT_EQ(OH_AI_TensorGetDataSize(tensor), 6 * sizeof(int32_t));
+  ASSERT_EQ(OH_AI_TensorGetData(tensor), nullptr);
+  ASSERT_TRUE(OH_AI_TensorGetMutableData(tensor) != nullptr);
 
-  MSTensorSetName(tensor, "name002");
-  ASSERT_STREQ(MSTensorGetName(tensor), "name002");
+  OH_AI_TensorSetName(tensor, "name002");
+  ASSERT_STREQ(OH_AI_TensorGetName(tensor), "name002");
 
-  MSTensorSetDataType(tensor, kMSDataTypeNumberTypeFloat32);
-  ASSERT_EQ(MSTensorGetDataType(tensor), kMSDataTypeNumberTypeFloat32);
+  OH_AI_TensorSetDataType(tensor, OH_AI_DATATYPE_NUMBERTYPE_FLOAT32);
+  ASSERT_EQ(OH_AI_TensorGetDataType(tensor), OH_AI_DATATYPE_NUMBERTYPE_FLOAT32);
   constexpr size_t new_shape_num = 4;
   int64_t new_shape[new_shape_num] = {1, 2, 3, 1};
-  MSTensorSetShape(tensor, new_shape, new_shape_num);
+  OH_AI_TensorSetShape(tensor, new_shape, new_shape_num);
   size_t new_ret_shape_num;
-  const int64_t *new_ret_shape = MSTensorGetShape(tensor, &new_ret_shape_num);
+  const int64_t *new_ret_shape = OH_AI_TensorGetShape(tensor, &new_ret_shape_num);
   ASSERT_EQ(new_ret_shape_num, new_shape_num);
   for (size_t i = 0; i < new_ret_shape_num; i++) {
     ASSERT_EQ(new_ret_shape[i], new_shape[i]);
   }
 
-  MSTensorSetFormat(tensor, kMSFormatNCHW);
-  ASSERT_EQ(MSTensorGetFormat(tensor), kMSFormatNCHW);
+  OH_AI_TensorSetFormat(tensor, OH_AI_FORMAT_NCHW);
+  ASSERT_EQ(OH_AI_TensorGetFormat(tensor), OH_AI_FORMAT_NCHW);
 
   constexpr size_t data_len = 6;
-  ASSERT_EQ(MSTensorGetElementNum(tensor), data_len);
-  ASSERT_EQ(MSTensorGetDataSize(tensor), data_len * sizeof(float));
+  ASSERT_EQ(OH_AI_TensorGetElementNum(tensor), data_len);
+  ASSERT_EQ(OH_AI_TensorGetDataSize(tensor), data_len * sizeof(float));
 
   float data[data_len] = {1, 2, 3, 4, 5, 6};
-  MSTensorSetData(tensor, data);
-  const float *ret_data = static_cast<const float *>(MSTensorGetData(tensor));
+  OH_AI_TensorSetData(tensor, data);
+  const float *ret_data = static_cast<const float *>(OH_AI_TensorGetData(tensor));
   for (size_t i = 0; i < data_len; i++) {
     ASSERT_EQ(ret_data[i], data[i]);
   }
 
-  MSTensorHandle clone = MSTensorClone(tensor);
+  OH_AI_TensorHandle clone = OH_AI_TensorClone(tensor);
   ASSERT_TRUE(clone != nullptr);
-  ASSERT_STREQ(MSTensorGetName(clone), "name002_duplicate");
-  ASSERT_EQ(MSTensorGetDataType(clone), kMSDataTypeNumberTypeFloat32);
+  ASSERT_STREQ(OH_AI_TensorGetName(clone), "name002_duplicate");
+  ASSERT_EQ(OH_AI_TensorGetDataType(clone), OH_AI_DATATYPE_NUMBERTYPE_FLOAT32);
   size_t clone_shape_num;
-  const int64_t *clone_shape = MSTensorGetShape(clone, &clone_shape_num);
+  const int64_t *clone_shape = OH_AI_TensorGetShape(clone, &clone_shape_num);
   ASSERT_EQ(clone_shape_num, new_ret_shape_num);
   for (size_t i = 0; i < clone_shape_num; i++) {
     ASSERT_EQ(clone_shape[i], new_ret_shape[i]);
   }
-  ASSERT_EQ(MSTensorGetElementNum(clone), MSTensorGetElementNum(tensor));
-  ASSERT_EQ(MSTensorGetDataSize(clone), MSTensorGetDataSize(tensor));
-  ASSERT_TRUE(MSTensorGetData(clone) != MSTensorGetData(tensor));
+  ASSERT_EQ(OH_AI_TensorGetElementNum(clone), OH_AI_TensorGetElementNum(tensor));
+  ASSERT_EQ(OH_AI_TensorGetDataSize(clone), OH_AI_TensorGetDataSize(tensor));
+  ASSERT_TRUE(OH_AI_TensorGetData(clone) != OH_AI_TensorGetData(tensor));
 
-  MSTensorDestroy(&tensor);
-  MSTensorDestroy(&clone);
+  OH_AI_TensorDestroy(&tensor);
+  OH_AI_TensorDestroy(&clone);
 }
 }  // namespace mindspore

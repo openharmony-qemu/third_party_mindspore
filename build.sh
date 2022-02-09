@@ -78,6 +78,8 @@ if [[ "X$COMPILE_LITE" = "Xon" ]]; then
   export ENABLE_VERBOSE
   export LITE_PLATFORM
   export LITE_ENABLE_AAR
+  export MSLITE_MINDDATA_IMPLEMENT=off
+  export MSLITE_ENABLE_TRAIN=off
   source mindspore/lite/build_lite.sh
 else
   mkdir -pv "${BUILD_PATH}/package/mindspore/lib"
