@@ -144,7 +144,11 @@ target_compile_options(gmock_tests PRIVATE -fno-rtti)
 target_link_libraries(lite-test gmock_tests)
 
 if(MSLITE_ENABLE_TRAIN)
-    target_link_libraries(lite-test mindspore-lite-train minddata-lite)
+    if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "off")
+        target_link_libraries(lite-test mindspore-lite-train)
+    else()
+        target_link_libraries(lite-test mindspore-lite-train minddata-lite)
+    endif()
 endif()
 
 if(PLATFORM_ARM)
