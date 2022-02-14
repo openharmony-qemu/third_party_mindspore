@@ -47,6 +47,7 @@
                 <filteritem type="filepath" name="mindspore/lite/test/.*" desc="test files"/>
                 <filteritem type="filepath" name="mindspore/lite/examples/.*" desc="test files"/>
                 <filteritem type="filepath" name="mindspore/lite/java/.*" desc="test files"/>
+                <filteritem type="filepath" name="mindspore/lite/schema/.*" desc="test files"/>
                 <filteritem type="filepath" name="scripts/.*" desc="scripts files"/>
                 <filteritem type="filepath" name="third_party/.*" desc="third party files"/>
             </filefilter>

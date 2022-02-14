@@ -1,0 +1,22 @@
+import("//build/ohos.gni")
+ohos_executable("mindspore_test") {
+  sources = [
+  ]
+  include_dirs = []
+  cflags = []
+  cflags_c = []
+  cflags_cc = []
+  ldflags = []
+  configs = []
+
+  deps = [ "../:mindspore_lib" ]  # 部件内模块依赖
+  # external_deps = []
+
+  output_name = "mindspore_test" # 可选，模块输出名
+  output_extension = "" # 可选，模块名后缀
+  module_install_dir = "" # 可选，缺省在/system/lib64或/system/lib下， 模块安装路径，模块安装路径，从system/，vendor/后开始指定
+  relative_install_dir = "" # 可选，模块安装相对路径，相对于/system/lib64或/system/lib；如果有module_install_dir配置时，该配置不生效
+
+  install_enable = true                   # 可执行程序缺省不安装，需要安装时需要指定
+  part_name = "mindspore" # 必选，所属部件名称
+}

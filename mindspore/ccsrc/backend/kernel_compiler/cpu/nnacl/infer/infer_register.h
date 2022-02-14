@@ -26,12 +26,7 @@ extern "C" {
 
 void RegInfer(int prim_type, InferShape func);
 
-#ifdef _MSC_VER
 #define REG_INFER(op, type, func)
-#else
-#define REG_INFER(op, type, func) \
-  __attribute__((constructor(102))) void Reg##op##Infer() { RegInfer(type, func); }
-#endif
 
 #ifdef __cplusplus
 }

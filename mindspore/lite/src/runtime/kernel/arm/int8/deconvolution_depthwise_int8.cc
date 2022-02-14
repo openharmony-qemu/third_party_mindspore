@@ -166,7 +166,7 @@ int DeconvolutionDepthwiseInt8CPUKernel::ReSize() {
   return RET_OK;
 }
 
-int DeconvolutionDepthwiseInt8CPUKernel::Execute(int task_id) {
+int DeconvolutionDepthwiseInt8CPUKernel::DoExecute(int task_id) {
   auto buffer = output_buffer_ + conv_param_->output_h_ * conv_param_->output_w_ * C4NUM * task_id;
   DeconvDwInt8(packed_output_, buffer, packed_input_, packed_weight_, reinterpret_cast<int32_t *>(bias_data_),
                conv_param_, sliding_, task_id);
@@ -175,7 +175,7 @@ int DeconvolutionDepthwiseInt8CPUKernel::Execute(int task_id) {
 
 int DeconvDwInt8Run(void *cdata, int task_id, float lhs_scale, float rhs_scale) {
   auto deconv_dw_int8 = reinterpret_cast<DeconvolutionDepthwiseInt8CPUKernel *>(cdata);
-  auto ret = deconv_dw_int8->Execute(task_id);
+  auto ret = deconv_dw_int8->DoExecute(task_id);
   if (ret != RET_OK) {
     MS_LOG(ERROR) << "DeconvolutionDepthwiseInt8Run error task_id[" << task_id << "] error_code[" << ret << "]";
     return RET_ERROR;
