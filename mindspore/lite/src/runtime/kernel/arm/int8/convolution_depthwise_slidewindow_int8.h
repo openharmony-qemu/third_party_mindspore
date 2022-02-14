@@ -37,7 +37,7 @@ class ConvolutionDepthwiseSWInt8CPUKernel : public ConvolutionBaseCPUKernel {
 
   int InitWeightBias();
   int InitPackedInputOutput();
-  int Execute(int task_id);
+  int DoExecute(int task_id);
 
  private:
   void FreePackedInputOutput();

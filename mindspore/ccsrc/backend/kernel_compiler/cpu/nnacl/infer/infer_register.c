@@ -15,7 +15,6 @@
  */
 #include "nnacl/infer/infer_register.h"
 
-#ifdef _MSC_VER
 #include "nnacl/infer/adam_infer.h"
 #include "nnacl/infer/add_sub_grad_infer.h"
 #include "nnacl/infer/addn_infer.h"
@@ -350,18 +349,13 @@ void RegAllInferFunc3() {
   g_infer_func[PrimType_ScatterNdUpdate] = ScatterNdUpdateInferShape;
 }
 
-#else
-__attribute__((init_priority(101))) InferShape g_infer_func[PrimType_MAX * sizeof(InferShape)] = {0};
-#endif  // _MSC_VER
 
 InferShape GetInferFunc(int prim_type) {
-#ifdef _MSC_VER
   if (g_infer_func[PrimType_Abs] == NULL) {
     RegAllInferFunc1();
     RegAllInferFunc2();
     RegAllInferFunc3();
   }
-#endif
   if (prim_type < PrimType_MAX) {
     return g_infer_func[prim_type];
   }

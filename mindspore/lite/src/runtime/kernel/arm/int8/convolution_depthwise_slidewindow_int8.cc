@@ -290,7 +290,7 @@ int ConvolutionDepthwiseSWInt8CPUKernel::ReSize() {
   return RET_OK;
 }
 
-int ConvolutionDepthwiseSWInt8CPUKernel::Execute(int task_id) {
+int ConvolutionDepthwiseSWInt8CPUKernel::DoExecute(int task_id) {
   ConvDwInt8SW(packed_output_, packed_input_, packed_weight_, reinterpret_cast<int32_t *>(bias_data_), input_zp_,
                output_zp_, conv_param_, sliding_, task_id);
   return RET_OK;
@@ -298,7 +298,7 @@ int ConvolutionDepthwiseSWInt8CPUKernel::Execute(int task_id) {
 
 int ConvDwSWInt8Run(void *cdata, int task_id, float lhs_scale, float rhs_scale) {
   auto conv_dw_int8 = reinterpret_cast<ConvolutionDepthwiseSWInt8CPUKernel *>(cdata);
-  auto ret = conv_dw_int8->Execute(task_id);
+  auto ret = conv_dw_int8->DoExecute(task_id);
   if (ret != RET_OK) {
     MS_LOG(ERROR) << "ConvolutionDepthwiseSWInt8Run error task_id[" << task_id << "] error_code[" << ret << "]";
     return RET_ERROR;
