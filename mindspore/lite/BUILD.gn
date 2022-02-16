@@ -15,11 +15,20 @@
 
 import("//build/ohos.gni")
 
+ohos_group("mindspore") {
+  deps = [
+    ":mindspore_lib",
+    #"tools/benchmark:benchmark_bin",
+  ]
+}
+
+config("mindspore_lib_config") {
+  include_dirs = [ "../../include/" ]
+}
+
 ohos_shared_library("mindspore_lib") {
   sources = [
-    "src/delegate/tensorrt/distribution/distribution_base.cc",
-    "tools/converter/quantizer/fse_decoder.cc",
-    "tools/converter/quantizer/fse_bit_stream.cc",
+    "../core/utils/status.cc",
     "src/c_api/context_c.cc",
     "src/c_api/model_c.cc",
     "src/c_api/tensor_c.cc",
@@ -42,6 +51,7 @@ ohos_shared_library("mindspore_lib") {
     "src/control_flow/entrance_subgraph_kernel.cc",
     "src/control_flow/exit_subgraph_kernel.cc",
     "src/control_flow/identity_kernel.cc",
+    "src/cpu_info.cc",
     "src/cxx_api/cell.cc",
     "src/cxx_api/context.cc",
     "src/cxx_api/converters.cc",
@@ -53,7 +63,20 @@ ohos_shared_library("mindspore_lib") {
     "src/cxx_api/tensor/tensor_impl.cc",
     "src/cxx_api/tensor_utils.cc",
     "src/cxx_api/types.cc",
-    "../core/utils/status.cc",
+    "src/delegate/tensorrt/distribution/distribution_base.cc",
+    "src/errorcode.cc",
+    "src/executor.cc",
+    "src/huffman_decode.cc",
+    "src/inner_context.cc",
+    "src/inner_kernel.cc",
+    "src/kernel_registry.cc",
+    "src/lite_kernel.cc",
+    "src/lite_kernel_util.cc",
+    "src/lite_mindrt.cc",
+    "src/lite_model.cc",
+    "src/lite_session.cc",
+    "src/mindrt_executor.cc",
+    "src/ms_tensor.cc",
     "src/ops/compat/attr_transfer_common.cc",
     "src/ops/compat/v0/broadcast_to_compat_v0.cc",
     "src/ops/compat/v0/cast_compat_v0.cc",
@@ -77,8 +100,8 @@ ohos_shared_library("mindspore_lib") {
     "src/ops/populate/activation_grad_populate.cc",
     "src/ops/populate/activation_populate.cc",
     "src/ops/populate/adam_populate.cc",
-    "src/ops/populate/adder_populate.cc",
     "src/ops/populate/add_populate.cc",
+    "src/ops/populate/adder_populate.cc",
     "src/ops/populate/affine_populate.cc",
     "src/ops/populate/all_gather.cc",
     "src/ops/populate/argmax_populate.cc",
@@ -120,8 +143,8 @@ ohos_shared_library("mindspore_lib") {
     "src/ops/populate/eltwise_populate.cc",
     "src/ops/populate/embedding_lookup_populate.cc",
     "src/ops/populate/erf_populate.cc",
-    "src/ops/populate/expand_dims_populate.cc",
     "src/ops/populate/exp_populate.cc",
+    "src/ops/populate/expand_dims_populate.cc",
     "src/ops/populate/fill_populate.cc",
     "src/ops/populate/flatten_populate.cc",
     "src/ops/populate/full_connection_populate.cc",
@@ -147,12 +170,12 @@ ohos_shared_library("mindspore_lib") {
     "src/ops/populate/nonzero_populate.cc",
     "src/ops/populate/one_hot_populate.cc",
     "src/ops/populate/oneslike_populate.cc",
+    "src/ops/populate/p_relu_populate.cc",
     "src/ops/populate/pad_populate.cc",
     "src/ops/populate/partial_populate.cc",
     "src/ops/populate/pooling_populate.cc",
     "src/ops/populate/populate_register.cc",
     "src/ops/populate/power_populate.cc",
-    "src/ops/populate/p_relu_populate.cc",
     "src/ops/populate/prior_box_populate.cc",
     "src/ops/populate/quant_dtype_cast_populate.cc",
     "src/ops/populate/ragged_range_populate.cc",
@@ -204,8 +227,8 @@ ohos_shared_library("mindspore_lib") {
     "src/ops/populate/v0/activation_grad_populate_v0.cc",
     "src/ops/populate/v0/activation_populate_v0.cc",
     "src/ops/populate/v0/adam_populate_v0.cc",
-    "src/ops/populate/v0/addn_populate_v0.cc",
     "src/ops/populate/v0/add_populate_v0.cc",
+    "src/ops/populate/v0/addn_populate_v0.cc",
     "src/ops/populate/v0/argmax_populate_v0.cc",
     "src/ops/populate/v0/argmin_populate_v0.cc",
     "src/ops/populate/v0/arithmetic_populate_v0.cc",
@@ -241,8 +264,8 @@ ohos_shared_library("mindspore_lib") {
     "src/ops/populate/v0/div_populate_v0.cc",
     "src/ops/populate/v0/eltwise_populate_v0.cc",
     "src/ops/populate/v0/embedding_lookup_populate_v0.cc",
-    "src/ops/populate/v0/expand_dims_populate_v0.cc",
     "src/ops/populate/v0/exp_populate_v0.cc",
+    "src/ops/populate/v0/expand_dims_populate_v0.cc",
     "src/ops/populate/v0/fill_populate_v0.cc",
     "src/ops/populate/v0/flatten_populate_v0.cc",
     "src/ops/populate/v0/full_connection_populate_v0.cc",
@@ -262,11 +285,11 @@ ohos_shared_library("mindspore_lib") {
     "src/ops/populate/v0/non_max_suppression_populate_v0.cc",
     "src/ops/populate/v0/one_hot_populate_v0.cc",
     "src/ops/populate/v0/oneslike_populate_v0.cc",
+    "src/ops/populate/v0/p_relu_populate_v0.cc",
     "src/ops/populate/v0/pad_populate_v0.cc",
     "src/ops/populate/v0/partial_populate_v0.cc",
     "src/ops/populate/v0/pooling_populate_v0.cc",
     "src/ops/populate/v0/power_populate_v0.cc",
-    "src/ops/populate/v0/p_relu_populate_v0.cc",
     "src/ops/populate/v0/prior_box_populate_v0.cc",
     "src/ops/populate/v0/quant_dtype_cast_populate_v0.cc",
     "src/ops/populate/v0/range_populate_v0.cc",
@@ -356,8 +379,8 @@ ohos_shared_library("mindspore_lib") {
     "src/runtime/kernel/arm/fp32/arithmetic_compare_fp32.cc",
     "src/runtime/kernel/arm/fp32/arithmetic_fp32.cc",
     "src/runtime/kernel/arm/fp32/arithmetic_self_fp32.cc",
-    "src/runtime/kernel/arm/fp32/batchnorm_fp32.cc",
     "src/runtime/kernel/arm/fp32/batch_to_space_fp32.cc",
+    "src/runtime/kernel/arm/fp32/batchnorm_fp32.cc",
     "src/runtime/kernel/arm/fp32/bias_fp32.cc",
     "src/runtime/kernel/arm/fp32/broadcast_to_fp32.cc",
     "src/runtime/kernel/arm/fp32/cast_fp32.cc",
@@ -385,8 +408,8 @@ ohos_shared_library("mindspore_lib") {
     "src/runtime/kernel/arm/fp32/fill_fp32.cc",
     "src/runtime/kernel/arm/fp32/fullconnection_fp32.cc",
     "src/runtime/kernel/arm/fp32/fused_batchnorm_fp32.cc",
-    "src/runtime/kernel/arm/fp32/gather_fp32.cc",
     "src/runtime/kernel/arm/fp32/gatherNd_fp32.cc",
+    "src/runtime/kernel/arm/fp32/gather_fp32.cc",
     "src/runtime/kernel/arm/fp32/glu_fp32.cc",
     "src/runtime/kernel/arm/fp32/group_convolution_fp32.cc",
     "src/runtime/kernel/arm/fp32/gru_fp32.cc",
@@ -397,8 +420,8 @@ ohos_shared_library("mindspore_lib") {
     "src/runtime/kernel/arm/fp32/local_response_norm_fp32.cc",
     "src/runtime/kernel/arm/fp32/log_softmax_fp32.cc",
     "src/runtime/kernel/arm/fp32/lstm_fp32.cc",
-    "src/runtime/kernel/arm/fp32/matmul_fp32_base.cc",
     "src/runtime/kernel/arm/fp32/matmul_fp32.cc",
+    "src/runtime/kernel/arm/fp32/matmul_fp32_base.cc",
     "src/runtime/kernel/arm/fp32/non_max_suppression_fp32.cc",
     "src/runtime/kernel/arm/fp32/nonzero_fp32.cc",
     "src/runtime/kernel/arm/fp32/pad_fp32.cc",
@@ -423,7 +446,6 @@ ohos_shared_library("mindspore_lib") {
     "src/runtime/kernel/arm/fp32/softmax_fp32.cc",
     "src/runtime/kernel/arm/fp32/space_to_batch_fp32.cc",
     "src/runtime/kernel/arm/fp32/space_to_depth_fp32.cc",
-    "src/runtime/kernel/arm/fp32_sparse/matmul_sparse_fp32.cc",
     "src/runtime/kernel/arm/fp32/sparse_to_dense_fp32.cc",
     "src/runtime/kernel/arm/fp32/splice_fp32.cc",
     "src/runtime/kernel/arm/fp32/topk_fp32.cc",
@@ -433,13 +455,14 @@ ohos_shared_library("mindspore_lib") {
     "src/runtime/kernel/arm/fp32/unstack_fp32.cc",
     "src/runtime/kernel/arm/fp32/where_fp32.cc",
     "src/runtime/kernel/arm/fp32/zeroslike_fp32.cc",
+    "src/runtime/kernel/arm/fp32_sparse/matmul_sparse_fp32.cc",
     "src/runtime/kernel/arm/int8/activation_int8.cc",
     "src/runtime/kernel/arm/int8/add_int8.cc",
     "src/runtime/kernel/arm/int8/argminmax_int8.cc",
     "src/runtime/kernel/arm/int8/arithmetic_int8.cc",
     "src/runtime/kernel/arm/int8/arithmetic_self_int8.cc",
-    "src/runtime/kernel/arm/int8/batchnorm_int8.cc",
     "src/runtime/kernel/arm/int8/batch_to_space_int8.cc",
+    "src/runtime/kernel/arm/int8/batchnorm_int8.cc",
     "src/runtime/kernel/arm/int8/bias_add_int8.cc",
     "src/runtime/kernel/arm/int8/concat_int8.cc",
     "src/runtime/kernel/arm/int8/convolution_1x1_int8.cc",
@@ -456,8 +479,8 @@ ohos_shared_library("mindspore_lib") {
     "src/runtime/kernel/arm/int8/detection_post_process_int8.cc",
     "src/runtime/kernel/arm/int8/div_int8.cc",
     "src/runtime/kernel/arm/int8/fullconnection_int8.cc",
-    "src/runtime/kernel/arm/int8/gather_int8.cc",
     "src/runtime/kernel/arm/int8/gatherNd_int8.cc",
+    "src/runtime/kernel/arm/int8/gather_int8.cc",
     "src/runtime/kernel/arm/int8/group_convolution_int8.cc",
     "src/runtime/kernel/arm/int8/hswish_int8.cc",
     "src/runtime/kernel/arm/int8/l2_norm_int8.cc",
@@ -495,28 +518,16 @@ ohos_shared_library("mindspore_lib") {
     "src/runtime/runtime_allocator.cc",
     "src/runtime/runtime_convert.cc",
     "src/runtime/runtime_pass.cc",
-    "src/cpu_info.cc",
-    "src/errorcode.cc",
-    "src/executor.cc",
-    "src/huffman_decode.cc",
-    "src/inner_context.cc",
-    "src/inner_kernel.cc",
-    "src/kernel_registry.cc",
-    "src/lite_kernel.cc",
-    "src/lite_kernel_util.cc",
-    "src/lite_mindrt.cc",
-    "src/lite_model.cc",
-    "src/lite_session.cc",
-    "src/mindrt_executor.cc",
-    "src/ms_tensor.cc",
     "src/scheduler.cc",
     "src/schema_tensor_wrapper.cc",
     "src/sub_graph_kernel.cc",
     "src/sub_graph_split.cc",
-    "src/tensor_category.cc",
     "src/tensor.cc",
+    "src/tensor_category.cc",
     "src/tensorlist.cc",
     "src/weight_decoder.cc",
+    "tools/converter/quantizer/fse_bit_stream.cc",
+    "tools/converter/quantizer/fse_decoder.cc",
   ]
 
   include_dirs = [
@@ -532,7 +543,23 @@ ohos_shared_library("mindspore_lib") {
     "../../mindspore/core/mindrt/include/",
   ]
 
-  defines = []
+  defines = [ "ENABLE_MINDRT" ]
+
+  if (target_cpu == "arm") {
+    defines += [
+      "ENABLE_ARM",
+      "ENABLE_ARM32",
+      "ENABLE_NEON",
+    ]
+  } else if (target_cpu == "arm64") {
+    defines += [
+      "ENABLE_ARM",
+      "ENABLE_ARM64",
+      "ENABLE_NEON",
+      "ENABLE_FP16",
+    ]
+  }
+
   cflags = []
   cflags_c = []
   cflags_cc = []
@@ -541,15 +568,93 @@ ohos_shared_library("mindspore_lib") {
   configs = []
 
   deps = [
+    ":third_party",
     "../ccsrc/backend/kernel_compiler/cpu/nnacl/:nnacl_o",
     "../core/mindrt/:mindrt_o",
-    ":third_party"
   ]
 
-  output_name = "libmindspore-lite.huawei" # 可选，模块输出名
-  output_extension = "so" # 可选，模块名后缀
+  if (target_cpu == "arm64") {
+    deps += [ ":arm_fp16_cc_o" ]
+  }
 
-  part_name = "mindspore" # 必选，所属部件名称
+  output_name = "libmindspore-lite.huawei"
+  output_extension = "so"
+
+  public_configs = [ ":mindspore_lib_config" ]
+  part_name = "mindspore"
+}
+
+ohos_source_set("arm_fp16_cc_o") {
+  sources = [
+    "src/runtime/kernel/arm/fp16/activation_fp16.cc",
+    "src/runtime/kernel/arm/fp16/addn_fp16.cc",
+    "src/runtime/kernel/arm/fp16/arithmetic_compare_fp16.cc",
+    "src/runtime/kernel/arm/fp16/arithmetic_fp16.cc",
+    "src/runtime/kernel/arm/fp16/arithmetic_self_fp16.cc",
+    "src/runtime/kernel/arm/fp16/batchnorm_fp16.cc",
+    "src/runtime/kernel/arm/fp16/biasadd_fp16.cc",
+    "src/runtime/kernel/arm/fp16/cast_fp16.cc",
+    "src/runtime/kernel/arm/fp16/common_fp16.cc",
+    "src/runtime/kernel/arm/fp16/concat_fp16.cc",
+    "src/runtime/kernel/arm/fp16/convolution_1x1_fp16.cc",
+    "src/runtime/kernel/arm/fp16/convolution_delegate_fp16.cc",
+    "src/runtime/kernel/arm/fp16/convolution_depthwise_3x3_fp16.cc",
+    "src/runtime/kernel/arm/fp16/convolution_depthwise_fp16.cc",
+    "src/runtime/kernel/arm/fp16/convolution_depthwise_slidewindow_fp16.cc",
+    "src/runtime/kernel/arm/fp16/convolution_fp16.cc",
+    "src/runtime/kernel/arm/fp16/convolution_winograd_fp16.cc",
+    "src/runtime/kernel/arm/fp16/crop_fp16.cc",
+    "src/runtime/kernel/arm/fp16/deconvolution_depthwise_fp16.cc",
+    "src/runtime/kernel/arm/fp16/deconvolution_fp16.cc",
+    "src/runtime/kernel/arm/fp16/deconvolution_winograd_fp16.cc",
+    "src/runtime/kernel/arm/fp16/depth_to_space_fp16.cc",
+    "src/runtime/kernel/arm/fp16/exp_fp16.cc",
+    "src/runtime/kernel/arm/fp16/fill_fp16.cc",
+    "src/runtime/kernel/arm/fp16/fullconnection_fp16.cc",
+    "src/runtime/kernel/arm/fp16/fused_batchnorm_fp16.cc",
+    "src/runtime/kernel/arm/fp16/gather_fp16.cc",
+    "src/runtime/kernel/arm/fp16/group_convolution_fp16.cc",
+    "src/runtime/kernel/arm/fp16/gru_fp16.cc",
+    "src/runtime/kernel/arm/fp16/instance_norm_fp16.cc",
+    "src/runtime/kernel/arm/fp16/layer_norm_fp16.cc",
+    "src/runtime/kernel/arm/fp16/layout_transform_fp16.cc",
+    "src/runtime/kernel/arm/fp16/log_softmax_fp16.cc",
+    "src/runtime/kernel/arm/fp16/lstm_fp16.cc",
+    "src/runtime/kernel/arm/fp16/matmul_base_fp16.cc",
+    "src/runtime/kernel/arm/fp16/matmul_fp16.cc",
+    "src/runtime/kernel/arm/fp16/pad_fp16.cc",
+    "src/runtime/kernel/arm/fp16/pooling_fp16.cc",
+    "src/runtime/kernel/arm/fp16/power_fp16.cc",
+    "src/runtime/kernel/arm/fp16/prelu_fp16.cc",
+    "src/runtime/kernel/arm/fp16/quant_dtype_cast_fp16.cc",
+    "src/runtime/kernel/arm/fp16/ragged_range_fp16.cc",
+    "src/runtime/kernel/arm/fp16/reduce_fp16.cc",
+    "src/runtime/kernel/arm/fp16/resize_fp16.cc",
+    "src/runtime/kernel/arm/fp16/scale_fp16.cc",
+    "src/runtime/kernel/arm/fp16/slice_fp16.cc",
+    "src/runtime/kernel/arm/fp16/softmax_fp16.cc",
+    "src/runtime/kernel/arm/fp16/stack_fp16.cc",
+    "src/runtime/kernel/arm/fp16/transpose_fp16.cc",
+    "src/runtime/kernel/arm/fp16/where_fp16.cc",
+    "src/runtime/kernel/arm/fp16_grad/activation_fp16_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/arithmetic_fp16_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/arithmetic_fp16_self_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/bias_fp16_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/bn_fp16_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/convolution_fp16_grad_filter.cc",
+    "src/runtime/kernel/arm/fp16_grad/convolution_fp16_grad_input.cc",
+    "src/runtime/kernel/arm/fp16_grad/dropout_fp16_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/layernorm_fp16_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/neg_fp16_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/pooling_fp16_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/resize_fp16_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/strided_slice_fp16_grad.cc",
+    "src/runtime/kernel/arm/fp16_grad/unsorted_segment_sum_fp16.cc",
+  ]
+
+  include_dirs = [ "../ccsrc/backend/kernel_compiler/cpu/" ]
+
+  part_name = "mindspore"
 }
 
 action("third_party") {

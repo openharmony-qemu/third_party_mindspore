@@ -22,7 +22,7 @@
       "third_party": []
     },
     "build": {
-      "sub_component": [ "//third_party/mindspore/mindspore/lite:mindspore_lib" ],
+      "sub_component": [ "//third_party/mindspore/mindspore/lite:mindspore" ],
       "inner_kits": [],
       "test": [ "//third_party/mindspore/mindspore/lite/test:mindspore_test" ]
     }
