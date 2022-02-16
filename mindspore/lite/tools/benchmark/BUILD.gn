@@ -1,0 +1,53 @@
+# Copyright 2022 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+
+import("//build/ohos.gni")
+
+ohos_executable("benchmark_bin") {
+  sources = [
+    "benchmark_base.cc",
+    "benchmark_c_api.cc",
+    "benchmark_unified_api.cc",
+    "benchmark.cc",
+    "main.cc",
+    "run_benchmark.cc",
+    "../common/flag_parser.cc",
+    "../common/string_util.cc",
+    "../../src/common/file_utils.cc",
+    "../../src/common/utils.cc",
+    "../../../ccsrc/backend/kernel_compiler/cpu/nnacl/nnacl_common.c",
+  ]
+
+  include_dirs = [
+    "../../",
+    "../../../core/",
+    "../../../../",
+    "../../../../third_party/",
+    "../../../../third_party/flatbuffers-v2.0.0/include/",
+    "../../../ccsrc/backend/kernel_compiler/cpu/"
+  ]
+
+  defines = [ "BENCHMARK_CLIP_JSON" ]
+
+  cflags = [ "-frtti" ]
+
+  deps = [
+    "../../:mindspore_lib",
+  ]
+
+  output_name = "benchmark_bin"
+  install_enable = true
+  part_name = "mindspore"
+}
