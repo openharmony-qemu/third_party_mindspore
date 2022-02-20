@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "tools/benchmark/benchmark.h"
-#define __STDC_FORMAT_MACROS
-#include <cinttypes>
-#undef __STDC_FORMAT_MACROS
 #include <utility>
 #include <functional>
 #include <algorithm>
@@ -310,7 +306,7 @@ int Benchmark::InitContext(const std::shared_ptr<Context> &context) {
   cpu_device_ctx.device_info_.cpu_device_info_.enable_float16_ = flags_->enable_fp16_;
 
   if (flags_->device_ == "GPU") {
-    DeviceContext gpu_device_ctx{DT_GPU, {false}};
+    DeviceContext gpu_device_ctx{DT_GPU, {{false}}};
     gpu_device_ctx.device_info_.gpu_device_info_.enable_float16_ = flags_->enable_fp16_;
 #ifdef ENABLE_OPENGL_TEXTURE
     if (flags_->enable_gl_texture_) {

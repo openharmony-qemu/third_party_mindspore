@@ -41,7 +41,7 @@ ohos_executable("benchmark_bin") {
 
   defines = [ "BENCHMARK_CLIP_JSON" ]
 
-  cflags = [ "-frtti" ]
+  remove_configs = [ "//build/config/compiler:no_rtti" ]
 
   deps = [
     "../../:mindspore_lib",

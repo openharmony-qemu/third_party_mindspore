@@ -26,8 +26,8 @@ mindspore/lite/tools/converter/parser/onnx/onnx.pb.h
 mindspore/lite/tools/converter/schema/*.h
 mindspore/lite/tools/converter/schema/inner
 
-mindspore/lite/src/runtime/kernel/opencl/cl/fp16/*.inc
-mindspore/lite/src/runtime/kernel/opencl/cl/fp32/*.inc
+mindspore/lite/src/runtime/kernel/opencl/cl/*.inc
+mindspore/lite/src/runtime/kernel/opencl/cl/int8/*.inc
 
 # Cmake files
 CMakeFiles/
@@ -102,6 +102,3 @@ mindspore/python/mindspore/.commit_id
 
 # lite test file
 mindspore/lite/test/do_test/
-
-# lite opencl compile file
-*.cl.inc

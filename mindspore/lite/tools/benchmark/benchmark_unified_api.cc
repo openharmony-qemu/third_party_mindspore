@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "tools/benchmark/benchmark_unified_api.h"
-#define __STDC_FORMAT_MACROS
-#include <cinttypes>
-#undef __STDC_FORMAT_MACROS
 #include <algorithm>
 #include <utility>
 #include <functional>
@@ -47,8 +43,10 @@ constexpr size_t kDataToStringMaxNum = 40;
 constexpr int kPrintDataNum = 20;
 constexpr int kFrequencyDefault = 3;
 constexpr int kPercentageDivisor = 100;
+#ifndef BENCHMARK_CLIP_JSON
 constexpr int kDumpInputsAndOutputs = 0;
 constexpr int kDumpOutputs = 2;
+#endif
 
 namespace lite {
 #ifdef ENABLE_OPENGL_TEXTURE
