@@ -16,6 +16,9 @@
 import("//build/ohos.gni")
 ohos_source_set("nnacl_o") {
   sources = [
+    "assembly/opt/MatmulDpInt8.S",
+    "assembly/opt/MatmulDpInt8Opt.S",
+    "assembly/opt/MatmulOptR4Int8.S",
     "base/arithmetic_base.c",
     "base/batch_to_space_base.c",
     "base/broadcast_to.c",
@@ -376,6 +379,25 @@ ohos_source_set("nnacl_o") {
       "assembly/arm64/TiledC4MatmulFp32.S",
       "assembly/arm64/WinogradTransLeft.S",
       "assembly/arm64/WinogradTransRight.S",
+      "assembly/fp16/ConvDwFp16Border.S",
+      "assembly/fp16/ConvDwFp16Center.S",
+      "assembly/fp16/ConvDwFp16Row.S",
+      "assembly/fp16/DeconvDwFp16Border.S",
+      "assembly/fp16/DeconvDwFp16Center.S",
+      "assembly/fp16/Float16ToFloat32.S",
+      "assembly/fp16/Float32ToFloat16.S",
+      "assembly/fp16/MatVecMulFp16.S",
+      "assembly/fp16/Matmul12X16Fp16.S",
+      "assembly/fp16/MatmulBaseFp16Neon.S",
+      "assembly/fp16/MatmulFp16.S",
+      "assembly/fp16/MatmulFp16Opt.S",
+      "assembly/fp16/MatmulWinogradFp16.S",
+      "assembly/fp16/PostFuncBiasReluC4Fp16.S",
+      "assembly/fp16/PostFuncBiasReluC8Fp16.S",
+      "assembly/fp16/TiledC4MatmulFp16.S",
+      "assembly/fp16/VecMatmulFp16.S",
+      "assembly/fp16/WinogradTransLeftFp16.S",
+      "assembly/fp16/WinogradTransRightFp16.S",
       "fp16/activation_fp16.c",
       "fp16/arg_min_max_fp16.c",
       "fp16/arithmetic_fp16.c",
@@ -451,6 +473,14 @@ ohos_source_set("nnacl_o") {
       "ENABLE_FP16",
     ]
   }
+
+  cflags_c = [
+    "-march=armv8.2-a+dotprod+fp16",
+    "-fomit-frame-pointer",
+    "-fstrict-aliasing",
+    "-ffast-math",
+  ]
+  asmflags = [ "-march=armv8.2-a+dotprod+fp16" ]
 
   part_name = "mindspore"
 }

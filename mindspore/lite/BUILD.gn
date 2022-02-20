@@ -530,6 +530,61 @@ ohos_shared_library("mindspore_lib") {
     "tools/converter/quantizer/fse_decoder.cc",
   ]
 
+  if (target_cpu == "arm64") {
+    sources += [
+      "src/runtime/kernel/arm/fp16/activation_fp16.cc",
+      "src/runtime/kernel/arm/fp16/addn_fp16.cc",
+      "src/runtime/kernel/arm/fp16/arithmetic_compare_fp16.cc",
+      "src/runtime/kernel/arm/fp16/arithmetic_fp16.cc",
+      "src/runtime/kernel/arm/fp16/arithmetic_self_fp16.cc",
+      "src/runtime/kernel/arm/fp16/batchnorm_fp16.cc",
+      "src/runtime/kernel/arm/fp16/biasadd_fp16.cc",
+      "src/runtime/kernel/arm/fp16/cast_fp16.cc",
+      "src/runtime/kernel/arm/fp16/common_fp16.cc",
+      "src/runtime/kernel/arm/fp16/concat_fp16.cc",
+      "src/runtime/kernel/arm/fp16/convolution_1x1_fp16.cc",
+      "src/runtime/kernel/arm/fp16/convolution_delegate_fp16.cc",
+      "src/runtime/kernel/arm/fp16/convolution_depthwise_3x3_fp16.cc",
+      "src/runtime/kernel/arm/fp16/convolution_depthwise_fp16.cc",
+      "src/runtime/kernel/arm/fp16/convolution_depthwise_slidewindow_fp16.cc",
+      "src/runtime/kernel/arm/fp16/convolution_fp16.cc",
+      "src/runtime/kernel/arm/fp16/convolution_winograd_fp16.cc",
+      "src/runtime/kernel/arm/fp16/crop_fp16.cc",
+      "src/runtime/kernel/arm/fp16/deconvolution_depthwise_fp16.cc",
+      "src/runtime/kernel/arm/fp16/deconvolution_fp16.cc",
+      "src/runtime/kernel/arm/fp16/deconvolution_winograd_fp16.cc",
+      "src/runtime/kernel/arm/fp16/depth_to_space_fp16.cc",
+      "src/runtime/kernel/arm/fp16/exp_fp16.cc",
+      "src/runtime/kernel/arm/fp16/fill_fp16.cc",
+      "src/runtime/kernel/arm/fp16/fullconnection_fp16.cc",
+      "src/runtime/kernel/arm/fp16/fused_batchnorm_fp16.cc",
+      "src/runtime/kernel/arm/fp16/gather_fp16.cc",
+      "src/runtime/kernel/arm/fp16/group_convolution_fp16.cc",
+      "src/runtime/kernel/arm/fp16/gru_fp16.cc",
+      "src/runtime/kernel/arm/fp16/instance_norm_fp16.cc",
+      "src/runtime/kernel/arm/fp16/layer_norm_fp16.cc",
+      "src/runtime/kernel/arm/fp16/layout_transform_fp16.cc",
+      "src/runtime/kernel/arm/fp16/log_softmax_fp16.cc",
+      "src/runtime/kernel/arm/fp16/lstm_fp16.cc",
+      "src/runtime/kernel/arm/fp16/matmul_base_fp16.cc",
+      "src/runtime/kernel/arm/fp16/matmul_fp16.cc",
+      "src/runtime/kernel/arm/fp16/pad_fp16.cc",
+      "src/runtime/kernel/arm/fp16/pooling_fp16.cc",
+      "src/runtime/kernel/arm/fp16/power_fp16.cc",
+      "src/runtime/kernel/arm/fp16/prelu_fp16.cc",
+      "src/runtime/kernel/arm/fp16/quant_dtype_cast_fp16.cc",
+      "src/runtime/kernel/arm/fp16/ragged_range_fp16.cc",
+      "src/runtime/kernel/arm/fp16/reduce_fp16.cc",
+      "src/runtime/kernel/arm/fp16/resize_fp16.cc",
+      "src/runtime/kernel/arm/fp16/scale_fp16.cc",
+      "src/runtime/kernel/arm/fp16/slice_fp16.cc",
+      "src/runtime/kernel/arm/fp16/softmax_fp16.cc",
+      "src/runtime/kernel/arm/fp16/stack_fp16.cc",
+      "src/runtime/kernel/arm/fp16/transpose_fp16.cc",
+      "src/runtime/kernel/arm/fp16/where_fp16.cc",
+    ]
+  }
+
   include_dirs = [
     "./",
     "../../",
@@ -573,87 +628,10 @@ ohos_shared_library("mindspore_lib") {
     "../core/mindrt/:mindrt_o",
   ]
 
-  if (target_cpu == "arm64") {
-    deps += [ ":arm_fp16_cc_o" ]
-  }
-
   output_name = "libmindspore-lite.huawei"
   output_extension = "so"
 
   public_configs = [ ":mindspore_lib_config" ]
-  part_name = "mindspore"
-}
-
-ohos_source_set("arm_fp16_cc_o") {
-  sources = [
-    "src/runtime/kernel/arm/fp16/activation_fp16.cc",
-    "src/runtime/kernel/arm/fp16/addn_fp16.cc",
-    "src/runtime/kernel/arm/fp16/arithmetic_compare_fp16.cc",
-    "src/runtime/kernel/arm/fp16/arithmetic_fp16.cc",
-    "src/runtime/kernel/arm/fp16/arithmetic_self_fp16.cc",
-    "src/runtime/kernel/arm/fp16/batchnorm_fp16.cc",
-    "src/runtime/kernel/arm/fp16/biasadd_fp16.cc",
-    "src/runtime/kernel/arm/fp16/cast_fp16.cc",
-    "src/runtime/kernel/arm/fp16/common_fp16.cc",
-    "src/runtime/kernel/arm/fp16/concat_fp16.cc",
-    "src/runtime/kernel/arm/fp16/convolution_1x1_fp16.cc",
-    "src/runtime/kernel/arm/fp16/convolution_delegate_fp16.cc",
-    "src/runtime/kernel/arm/fp16/convolution_depthwise_3x3_fp16.cc",
-    "src/runtime/kernel/arm/fp16/convolution_depthwise_fp16.cc",
-    "src/runtime/kernel/arm/fp16/convolution_depthwise_slidewindow_fp16.cc",
-    "src/runtime/kernel/arm/fp16/convolution_fp16.cc",
-    "src/runtime/kernel/arm/fp16/convolution_winograd_fp16.cc",
-    "src/runtime/kernel/arm/fp16/crop_fp16.cc",
-    "src/runtime/kernel/arm/fp16/deconvolution_depthwise_fp16.cc",
-    "src/runtime/kernel/arm/fp16/deconvolution_fp16.cc",
-    "src/runtime/kernel/arm/fp16/deconvolution_winograd_fp16.cc",
-    "src/runtime/kernel/arm/fp16/depth_to_space_fp16.cc",
-    "src/runtime/kernel/arm/fp16/exp_fp16.cc",
-    "src/runtime/kernel/arm/fp16/fill_fp16.cc",
-    "src/runtime/kernel/arm/fp16/fullconnection_fp16.cc",
-    "src/runtime/kernel/arm/fp16/fused_batchnorm_fp16.cc",
-    "src/runtime/kernel/arm/fp16/gather_fp16.cc",
-    "src/runtime/kernel/arm/fp16/group_convolution_fp16.cc",
-    "src/runtime/kernel/arm/fp16/gru_fp16.cc",
-    "src/runtime/kernel/arm/fp16/instance_norm_fp16.cc",
-    "src/runtime/kernel/arm/fp16/layer_norm_fp16.cc",
-    "src/runtime/kernel/arm/fp16/layout_transform_fp16.cc",
-    "src/runtime/kernel/arm/fp16/log_softmax_fp16.cc",
-    "src/runtime/kernel/arm/fp16/lstm_fp16.cc",
-    "src/runtime/kernel/arm/fp16/matmul_base_fp16.cc",
-    "src/runtime/kernel/arm/fp16/matmul_fp16.cc",
-    "src/runtime/kernel/arm/fp16/pad_fp16.cc",
-    "src/runtime/kernel/arm/fp16/pooling_fp16.cc",
-    "src/runtime/kernel/arm/fp16/power_fp16.cc",
-    "src/runtime/kernel/arm/fp16/prelu_fp16.cc",
-    "src/runtime/kernel/arm/fp16/quant_dtype_cast_fp16.cc",
-    "src/runtime/kernel/arm/fp16/ragged_range_fp16.cc",
-    "src/runtime/kernel/arm/fp16/reduce_fp16.cc",
-    "src/runtime/kernel/arm/fp16/resize_fp16.cc",
-    "src/runtime/kernel/arm/fp16/scale_fp16.cc",
-    "src/runtime/kernel/arm/fp16/slice_fp16.cc",
-    "src/runtime/kernel/arm/fp16/softmax_fp16.cc",
-    "src/runtime/kernel/arm/fp16/stack_fp16.cc",
-    "src/runtime/kernel/arm/fp16/transpose_fp16.cc",
-    "src/runtime/kernel/arm/fp16/where_fp16.cc",
-    "src/runtime/kernel/arm/fp16_grad/activation_fp16_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/arithmetic_fp16_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/arithmetic_fp16_self_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/bias_fp16_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/bn_fp16_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/convolution_fp16_grad_filter.cc",
-    "src/runtime/kernel/arm/fp16_grad/convolution_fp16_grad_input.cc",
-    "src/runtime/kernel/arm/fp16_grad/dropout_fp16_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/layernorm_fp16_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/neg_fp16_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/pooling_fp16_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/resize_fp16_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/strided_slice_fp16_grad.cc",
-    "src/runtime/kernel/arm/fp16_grad/unsorted_segment_sum_fp16.cc",
-  ]
-
-  include_dirs = [ "../ccsrc/backend/kernel_compiler/cpu/" ]
-
   part_name = "mindspore"
 }
 
