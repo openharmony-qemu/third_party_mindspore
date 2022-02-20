@@ -30,8 +30,7 @@ class ResizeGradCPUKernelFp16 : public InnerKernel {
   int Prepare() override;
   int ReSize() override;
   int Run() override;
-  int ExecuteInit(int task_id);
-  int Execute(int task_id);
+  int DoExecute(int task_id);
 };
 }  // namespace mindspore::kernel
 

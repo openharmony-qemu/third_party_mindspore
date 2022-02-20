@@ -18,12 +18,8 @@ import("//build/ohos.gni")
 ohos_group("mindspore") {
   deps = [
     ":mindspore_lib",
-    #"tools/benchmark:benchmark_bin",
+    "tools/benchmark:benchmark_bin",
   ]
-}
-
-config("mindspore_lib_config") {
-  include_dirs = [ "../../include/" ]
 }
 
 ohos_shared_library("mindspore_lib") {
@@ -582,6 +578,68 @@ ohos_shared_library("mindspore_lib") {
       "src/runtime/kernel/arm/fp16/stack_fp16.cc",
       "src/runtime/kernel/arm/fp16/transpose_fp16.cc",
       "src/runtime/kernel/arm/fp16/where_fp16.cc",
+      "src/runtime/kernel/arm/fp16_grad/activation_fp16_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/arithmetic_fp16_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/arithmetic_fp16_self_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/bias_fp16_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/bn_fp16_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/convolution_fp16_grad_filter.cc",
+      "src/runtime/kernel/arm/fp16_grad/convolution_fp16_grad_input.cc",
+      "src/runtime/kernel/arm/fp16_grad/dropout_fp16_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/layernorm_fp16_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/neg_fp16_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/pooling_fp16_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/resize_fp16_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/strided_slice_fp16_grad.cc",
+      "src/runtime/kernel/arm/fp16_grad/unsorted_segment_sum_fp16.cc",
+      "src/runtime/gpu/opencl/opencl_allocator.cc",
+      "src/runtime/gpu/opencl/opencl_executor.cc",
+      "src/runtime/gpu/opencl/opencl_runtime.cc",
+      "src/runtime/gpu/opencl/opencl_runtime_wrapper.cc",
+      "src/runtime/gpu/opencl/opencl_wrapper.cc",
+      "src/runtime/kernel/opencl/kernel/activation.cc",
+      "src/runtime/kernel/opencl/kernel/argminmax.cc",
+      "src/runtime/kernel/opencl/kernel/arithmetic.cc",
+      "src/runtime/kernel/opencl/kernel/arithmetic_self.cc",
+      "src/runtime/kernel/opencl/kernel/batchnorm.cc",
+      "src/runtime/kernel/opencl/kernel/batch_to_space_nd.cc",
+      "src/runtime/kernel/opencl/kernel/cast.cc",
+      "src/runtime/kernel/opencl/kernel/concat.cc",
+      "src/runtime/kernel/opencl/kernel/conv2d.cc",
+      "src/runtime/kernel/opencl/kernel/conv2d_transpose.cc",
+      "src/runtime/kernel/opencl/kernel/depthwise_conv2d.cc",
+      "src/runtime/kernel/opencl/kernel/fill.cc",
+      "src/runtime/kernel/opencl/kernel/fullconnection.cc",
+      "src/runtime/kernel/opencl/kernel/fusion_eltwise.cc",
+      "src/runtime/kernel/opencl/kernel/gather.cc",
+      "src/runtime/kernel/opencl/kernel/gl_to_cl.cc",
+      "src/runtime/kernel/opencl/kernel/int8/arithmetic_int8.cc",
+      "src/runtime/kernel/opencl/kernel/layer_norm.cc",
+      "src/runtime/kernel/opencl/kernel/matmul.cc",
+      "src/runtime/kernel/opencl/kernel/one_hot.cc",
+      "src/runtime/kernel/opencl/kernel/pad.cc",
+      "src/runtime/kernel/opencl/kernel/pooling2d.cc",
+      "src/runtime/kernel/opencl/kernel/power.cc",
+      "src/runtime/kernel/opencl/kernel/prelu.cc",
+      "src/runtime/kernel/opencl/kernel/reduce.cc",
+      "src/runtime/kernel/opencl/kernel/reshape.cc",
+      "src/runtime/kernel/opencl/kernel/resize.cc",
+      "src/runtime/kernel/opencl/kernel/scale.cc",
+      "src/runtime/kernel/opencl/kernel/softmax.cc",
+      "src/runtime/kernel/opencl/kernel/space_to_batch_nd.cc",
+      "src/runtime/kernel/opencl/kernel/space_to_depth.cc",
+      "src/runtime/kernel/opencl/kernel/sparse_to_dense.cc",
+      "src/runtime/kernel/opencl/kernel/split.cc",
+      "src/runtime/kernel/opencl/kernel/stack.cc",
+      "src/runtime/kernel/opencl/kernel/strassen.cc",
+      "src/runtime/kernel/opencl/kernel/strided_slice.cc",
+      "src/runtime/kernel/opencl/kernel/to_format.cc",
+      "src/runtime/kernel/opencl/kernel/transpose.cc",
+      "src/runtime/kernel/opencl/kernel/winograd.cc",
+      "src/runtime/kernel/opencl/opencl_fusion.cc",
+      "src/runtime/kernel/opencl/opencl_kernel.cc",
+      "src/runtime/kernel/opencl/opencl_subgraph.cc",
+      "src/runtime/kernel/opencl/utils.cc",
     ]
   }
 
@@ -593,9 +651,11 @@ ohos_shared_library("mindspore_lib") {
     "src/c_api/",
     "../ccsrc/backend/kernel_compiler/cpu/",
     "../../mindspore/core/mindrt/src/",
+    "../../mindspore/core/mindrt/include/",
     "../../third_party/",
     "../../third_party/flatbuffers-v2.0.0/include/",
-    "../../mindspore/core/mindrt/include/",
+    "../../third_party/OpenCL-CLHPP-v2.0.12/include/",
+    "../../third_party/OpenCL-Headers-v2020.12.18/",
   ]
 
   defines = [ "ENABLE_MINDRT" ]
@@ -612,15 +672,18 @@ ohos_shared_library("mindspore_lib") {
       "ENABLE_ARM64",
       "ENABLE_NEON",
       "ENABLE_FP16",
+      "GPU_OPENCL",
+      "USE_OPENCL_WRAPPER",
+      "MS_OPENCL_PROFILE=false",
+      "CL_TARGET_OPENCL_VERSION=200",
+      "CL_HPP_TARGET_OPENCL_VERSION=120",
+      "CL_HPP_MINIMUM_OPENCL_VERSION=120",
     ]
   }
 
-  cflags = []
-  cflags_c = []
-  cflags_cc = []
-  asmflags = []
-  ldflags = []
-  configs = []
+  configs = [
+    ":opencl_option",
+  ]
 
   deps = [
     ":third_party",
@@ -631,8 +694,16 @@ ohos_shared_library("mindspore_lib") {
   output_name = "libmindspore-lite.huawei"
   output_extension = "so"
 
-  public_configs = [ ":mindspore_lib_config" ]
+  public_configs = [ ":mindspore_api" ]
   part_name = "mindspore"
+}
+
+config("opencl_option") {
+  cflags_cc = [ "-Wno-missing-braces" ]
+}
+
+config("mindspore_api") {
+  include_dirs = [ "../../include/" ]
 }
 
 action("third_party") {

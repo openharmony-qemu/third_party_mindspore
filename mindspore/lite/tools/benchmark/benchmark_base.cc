@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "tools/benchmark/benchmark_base.h"
-#define __STDC_FORMAT_MACROS
-#include <cinttypes>
-#undef __STDC_FORMAT_MACROS
 #include <algorithm>
 #include <utility>
 #include <regex>
