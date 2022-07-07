@@ -31,6 +31,7 @@ ohos_executable("benchmark_bin") {
   ]
 
   include_dirs = [
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "../../",
     "../../../core/",
     "../../../../",

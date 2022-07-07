@@ -1,0 +1,28 @@
+
+1.修改vender中特定设备的config.json。对于rx3568就是：
+vendor/hihope/rk3568/config.json
+在"subsystems":标签中加入如下
+{
+    "subsystem": "ai",
+    "components": [
+        {
+          "component": "mindspore",
+          "features": []
+        }
+      ]
+}
+
+2.增加系统能力(SystemCapability)，需要修改头文件`developtools/syscap_codec/include/syscap_define.h`中的内容
+在如下结构提体中加入ms的标识
+typedef enum SystemCapabilityNum {
+    ...
+    ...
+    AI_MINDSPORE
+}
+然后在如下的数组中加入ms的信息
+const static SyscapWithNum arraySyscap[]{
+    ...
+    ...
+    {"SystemCapability.Ai.MindSpore", AI_MINDSPORE}
+}
+注意！！两处增加的内容的下标位置要一致，建议全部写在最后一个。

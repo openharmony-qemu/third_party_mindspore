@@ -644,6 +644,7 @@ ohos_shared_library("mindspore_lib") {
   }
 
   include_dirs = [
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "./",
     "../../",
     "../../mindspore/core/",
@@ -656,9 +657,10 @@ ohos_shared_library("mindspore_lib") {
     "../../third_party/flatbuffers-v2.0.0/include/",
     "../../third_party/OpenCL-CLHPP-v2.0.12/include/",
     "../../third_party/OpenCL-Headers-v2020.12.18/",
+    
   ]
 
-  defines = [ "ENABLE_MINDRT" ]
+  defines = [ "ENABLE_MINDRT","OHOS_HILOG"]
 
   if (target_cpu == "arm") {
     defines += [
@@ -690,7 +692,11 @@ ohos_shared_library("mindspore_lib") {
     "../ccsrc/backend/kernel_compiler/cpu/nnacl/:nnacl_o",
     "../core/mindrt/:mindrt_o",
   ]
-
+  
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+  ]
+  
   output_name = "libmindspore-lite.huawei"
   output_extension = "so"
 
@@ -703,7 +709,10 @@ config("opencl_option") {
 }
 
 config("mindspore_api") {
-  include_dirs = [ "../../include/" ]
+  include_dirs = [
+    "../../include/",
+  ]
+
 }
 
 action("third_party") {

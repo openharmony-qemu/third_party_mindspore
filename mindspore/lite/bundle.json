@@ -18,9 +18,9 @@
     "rom": "",
     "ram": "",
     "deps": {
-      "components": [],
+      "components": ["hiviewdfx_hilog_native"],
       "third_party": []
-    },
+  },
     "build": {
       "sub_component": [ "//third_party/mindspore/mindspore/lite:mindspore" ],
       "inner_kits": [],

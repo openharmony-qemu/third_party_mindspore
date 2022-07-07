@@ -30,6 +30,7 @@ ohos_source_set("mindrt_o") {
   ]
 
   include_dirs = [
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "./",
     "include/",
     "src/",
