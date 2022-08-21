@@ -103,3 +103,4 @@ echo 'Runtime config file test'
 echo 'run c api ut test'
 ./lite-test --gtest_filter="TensorCTest.*"
 ./lite-test --gtest_filter="ContextCTest.*"
+./lite-test --gtest_filter="ModelCTest.*"
