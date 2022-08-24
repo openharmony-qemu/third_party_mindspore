@@ -248,7 +248,7 @@ void ArithmeticCPUKernel::InitRunFunction(int primitive_type) {
   }
 }
 
-int ArithmeticCPUKernel::Execute(const void *input0, const void *input1, void *output, int size, bool is_opt) {
+int ArithmeticCPUKernel::DoExecute(const void *input0, const void *input1, void *output, int size, bool is_opt) {
   int ret = RET_OK;
   if (in_tensors_[0]->data_type() == kNumberTypeFloat32) {
     if (is_opt) {
@@ -282,7 +282,7 @@ int ArithmeticCPUKernel::BroadcastRun(void *input0, void *input1, void *output, 
                                       int out_thread_stride) {
   if (dim > break_pos_) {
     int offset = out_thread_stride * data_type_len_;
-    return Execute(static_cast<uint8_t *>(input0) + offset, static_cast<uint8_t *>(input1) + offset,
+    return DoExecute(static_cast<uint8_t *>(input0) + offset, static_cast<uint8_t *>(input1) + offset,
                    static_cast<uint8_t *>(output) + offset, out_count, false);
   }
   int offset_size[] = {param_->in_strides0_[dim] * data_type_len_, param_->in_strides1_[dim] * data_type_len_,
@@ -325,7 +325,7 @@ int ArithmeticCPUKernel::BatchScalarCalc(int task_id) {
 
   int ret = RET_OK;
   for (int i = 0; i < batch_size; i++) {
-    ret = Execute(static_cast<uint8_t *>(input0_ptr_) + offset0, static_cast<uint8_t *>(input1_ptr_) + offset1,
+    ret = DoExecute(static_cast<uint8_t *>(input0_ptr_) + offset0, static_cast<uint8_t *>(input1_ptr_) + offset1,
                   static_cast<uint8_t *>(output_ptr_) + out_offset, param_->out_strides_[break_pos_ - 1], true);
     offset0 += stride0;
     offset1 += stride1;
@@ -352,7 +352,7 @@ int ArithmeticCPUKernel::BiasCalc(int task_id) {
   int ret = RET_OK;
   if (param_->in_elements_num0_ > param_->in_elements_num1_) {
     for (int i = 0; i < batch_size; i++) {
-      ret = Execute(static_cast<uint8_t *>(input0_ptr_) + offset, static_cast<uint8_t *>(input1_ptr_),
+      ret = DoExecute(static_cast<uint8_t *>(input0_ptr_) + offset, static_cast<uint8_t *>(input1_ptr_),
                     static_cast<uint8_t *>(output_ptr_) + offset, last_shape, false);
       if (ret != RET_OK) {
         return ret;
@@ -361,7 +361,7 @@ int ArithmeticCPUKernel::BiasCalc(int task_id) {
     }
   } else {
     for (int i = 0; i < batch_size; i++) {
-      ret = Execute(static_cast<uint8_t *>(input0_ptr_), static_cast<uint8_t *>(input1_ptr_) + offset,
+      ret = DoExecute(static_cast<uint8_t *>(input0_ptr_), static_cast<uint8_t *>(input1_ptr_) + offset,
                     static_cast<uint8_t *>(output_ptr_) + offset, last_shape, false);
       if (ret != RET_OK) {
         return ret;
@@ -384,10 +384,10 @@ int ArithmeticCPUKernel::DoArithmetic(int task_id) {
   /* run opt function, one of input is scalar */
   if (IsScalarClac()) {  // 2 32 240 240, 1 1 1 1
     if (param_->in_elements_num0_ == 1) {
-      return Execute(input0_ptr_, static_cast<uint8_t *>(input1_ptr_) + offset,
+      return DoExecute(input0_ptr_, static_cast<uint8_t *>(input1_ptr_) + offset,
                      static_cast<uint8_t *>(output_ptr_) + offset, count, true);
     } else if (param_->in_elements_num1_ == 1) {
-      return Execute(static_cast<uint8_t *>(input0_ptr_) + offset, input1_ptr_,
+      return DoExecute(static_cast<uint8_t *>(input0_ptr_) + offset, input1_ptr_,
                      static_cast<uint8_t *>(output_ptr_) + offset, count, true);
     }
   }
@@ -409,7 +409,7 @@ int ArithmeticCPUKernel::DoArithmetic(int task_id) {
     return BroadcastRun(input0_ptr_, input1_ptr_, output_ptr_, 0, out_count, stride * task_id);
   }
   /* all elements eltwise calculation */
-  return Execute(static_cast<uint8_t *>(input0_ptr_) + offset, static_cast<uint8_t *>(input1_ptr_) + offset,
+  return DoExecute(static_cast<uint8_t *>(input0_ptr_) + offset, static_cast<uint8_t *>(input1_ptr_) + offset,
                  static_cast<uint8_t *>(output_ptr_) + offset, count, false);
 }
 

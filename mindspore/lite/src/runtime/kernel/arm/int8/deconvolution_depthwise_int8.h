@@ -37,7 +37,7 @@ class DeconvolutionDepthwiseInt8CPUKernel : public ConvolutionBaseCPUKernel {
   int InitSlideParam();
   int InitWeightBias();
   int InitBuffer();
-  int Execute(int task_id);
+  int DoExecute(int task_id);
 
  private:
   SlidingWindowParam *sliding_ = nullptr;

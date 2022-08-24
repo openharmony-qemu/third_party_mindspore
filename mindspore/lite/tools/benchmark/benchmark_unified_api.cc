@@ -15,9 +15,6 @@
  */
 
 #include "tools/benchmark/benchmark_unified_api.h"
-#define __STDC_FORMAT_MACROS
-#include <cinttypes>
-#undef __STDC_FORMAT_MACROS
 #include <algorithm>
 #include <utility>
 #include <functional>
@@ -39,8 +36,10 @@ constexpr size_t kDataToStringMaxNum = 40;
 constexpr int kPrintDataNum = 20;
 constexpr int kFrequencyDefault = 3;
 constexpr int kPercentageDivisor = 100;
+#ifndef BENCHMARK_CLIP_JSON
 constexpr int kDumpInputsAndOutputs = 0;
 constexpr int kDumpOutputs = 2;
+#endif
 
 namespace lite {
 int BenchmarkUnifiedApi::GenerateInputData() {
@@ -687,7 +686,7 @@ std::string DumpMSTensor(mindspore::MSTensor *tensor) {
   }
   return oss.str();
 }
-
+#ifndef BENCHMARK_CLIP_JSON
 std::string GenerateOutputFileName(mindspore::MSTensor *tensor, const std::string &op_name,
                                    const std::string &file_type, const size_t &idx) {
   std::string file_name = op_name;
@@ -712,6 +711,7 @@ std::string GenerateOutputFileName(mindspore::MSTensor *tensor, const std::strin
   file_name += +".bin";
   return file_name;
 }
+#endif
 }  // namespace
 
 int BenchmarkUnifiedApi::InitPrintTensorDataCallbackParameter() {
@@ -739,6 +739,7 @@ int BenchmarkUnifiedApi::InitPrintTensorDataCallbackParameter() {
   return RET_OK;
 }
 int BenchmarkUnifiedApi::InitDumpTensorDataCallbackParameter() {
+#ifndef BENCHMARK_CLIP_JSON
   // before callback
   ms_before_call_back_ = [&](const std::vector<mindspore::MSTensor> &before_inputs,
                              const std::vector<mindspore::MSTensor> &before_outputs,
@@ -784,6 +785,7 @@ int BenchmarkUnifiedApi::InitDumpTensorDataCallbackParameter() {
     }
     return true;
   };
+#endif
   return RET_OK;
 }
 

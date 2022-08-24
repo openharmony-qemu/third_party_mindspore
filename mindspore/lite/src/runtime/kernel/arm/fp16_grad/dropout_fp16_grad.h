@@ -31,7 +31,7 @@ class DropoutGradCPUKernelFp16 : public InnerKernel {
   int Init() override;
   int ReSize() override;
   int Run() override;
-  int Execute(int task_id);
+  int DoExecute(int task_id);
 
  private:
   float scale_;

@@ -15,9 +15,6 @@
  */
 
 #include "tools/benchmark/benchmark_base.h"
-#define __STDC_FORMAT_MACROS
-#include <cinttypes>
-#undef __STDC_FORMAT_MACROS
 #include <algorithm>
 #include <utility>
 #include <regex>
@@ -284,6 +281,7 @@ int BenchmarkBase::CheckDeviceTypeValid() {
 }
 
 int BenchmarkBase::InitDumpConfigFromJson(char *path) {
+#ifndef BENCHMARK_CLIP_JSON
   auto real_path = RealPath(path);
   std::ifstream ifs(real_path);
   if (!ifs.good()) {
@@ -344,7 +342,7 @@ int BenchmarkBase::InitDumpConfigFromJson(char *path) {
     MS_LOG(ERROR) << "create data output directory failed.";
     return RET_ERROR;
   }
-
+#endif
   return RET_OK;
 }
 
