@@ -141,7 +141,7 @@ int ConvolutionDepthwise3x3Int8CPUKernel::ReSize() {
   return RET_OK;
 }
 
-int ConvolutionDepthwise3x3Int8CPUKernel::Execute(int task_id) {
+int ConvolutionDepthwise3x3Int8CPUKernel::DoExecute(int task_id) {
   auto buffer = buffer_ + kConvDepthwise3x3BufferSize * task_id;
   ConvDw3x3Int8(output_ptr_, buffer, input_ptr_, packed_weight_, reinterpret_cast<int32_t *>(bias_data_), conv_param_,
                 sliding_, task_id);
@@ -150,7 +150,7 @@ int ConvolutionDepthwise3x3Int8CPUKernel::Execute(int task_id) {
 
 int ConvDw3x3Int8Run(void *cdata, int task_id, float lhs_scale, float rhs_scale) {
   auto conv_dw_int8 = reinterpret_cast<ConvolutionDepthwise3x3Int8CPUKernel *>(cdata);
-  auto ret = conv_dw_int8->Execute(task_id);
+  auto ret = conv_dw_int8->DoExecute(task_id);
   if (ret != RET_OK) {
     MS_LOG(ERROR) << "ConvolutionDepthwise3x3Int8Run error task_id[" << task_id << "] error_code[" << ret << "]";
     return RET_ERROR;

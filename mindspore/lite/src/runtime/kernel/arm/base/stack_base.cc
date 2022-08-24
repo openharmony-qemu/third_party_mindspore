@@ -81,7 +81,7 @@ int StackBaseCPUKernel::Init() {
   return ReSize();
 }
 
-int StackBaseCPUKernel::Execute(int task_id) {
+int StackBaseCPUKernel::StackExecute(int task_id) {
   auto output_data = reinterpret_cast<void *>(out_tensors_.at(0)->data());
   if (output_data == nullptr) {
     return RET_NULL_PTR;
@@ -101,7 +101,7 @@ int StackBaseCPUKernel::Execute(int task_id) {
 static int StackRun(void *cdata, int task_id, float lhs_scale, float rhs_scale) {
   CHECK_NULL_RETURN(cdata);
   auto stack = reinterpret_cast<StackBaseCPUKernel *>(cdata);
-  if (stack->Execute(task_id) != RET_OK) {
+  if (stack->StackExecute(task_id) != RET_OK) {
     return RET_ERROR;
   }
   return RET_OK;

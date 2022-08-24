@@ -15,9 +15,6 @@
  */
 
 #include "tools/benchmark/benchmark.h"
-#define __STDC_FORMAT_MACROS
-#include <cinttypes>
-#undef __STDC_FORMAT_MACROS
 #include <utility>
 #include <functional>
 #include <algorithm>
@@ -132,7 +129,7 @@ void Benchmark::InitContext(const std::shared_ptr<Context> &context) {
   cpu_device_ctx.device_info_.cpu_device_info_.enable_float16_ = flags_->enable_fp16_;
 
   if (flags_->device_ == "GPU") {
-    DeviceContext gpu_device_ctx{DT_GPU, {false}};
+    DeviceContext gpu_device_ctx{DT_GPU, {{false}}};
     gpu_device_ctx.device_info_.gpu_device_info_.enable_float16_ = flags_->enable_fp16_;
     context->device_list_.push_back(gpu_device_ctx);
   }
@@ -689,7 +686,7 @@ std::string DumpMSTensor(tensor::MSTensor *tensor) {
   }
   return oss.str();
 }
-
+#ifndef BENCHMARK_CLIP_JSON
 std::string GenerateOutputFileName(tensor::MSTensor *tensor, const std::string &op_name, const std::string &file_type,
                                    const size_t &idx) {
   std::string file_name = op_name;
@@ -711,6 +708,7 @@ std::string GenerateOutputFileName(tensor::MSTensor *tensor, const std::string &
   }
   return file_name;
 }
+#endif
 }  // namespace
 
 int Benchmark::InitPrintTensorDataCallbackParameter() {
@@ -739,6 +737,7 @@ int Benchmark::InitPrintTensorDataCallbackParameter() {
   return RET_OK;
 }
 int Benchmark::InitDumpTensorDataCallbackParameter() {
+#ifndef BENCHMARK_CLIP_JSON
   // before callback
   before_call_back_ = [&](const std::vector<mindspore::tensor::MSTensor *> &before_inputs,
                           const std::vector<mindspore::tensor::MSTensor *> &before_outputs,
@@ -784,6 +783,7 @@ int Benchmark::InitDumpTensorDataCallbackParameter() {
     }
     return true;
   };
+#endif
   return RET_OK;
 }
 
