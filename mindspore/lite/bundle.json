@@ -23,8 +23,7 @@
   },
     "build": {
       "sub_component": [ "//third_party/mindspore/mindspore/lite:mindspore" ],
-      "inner_kits": [],
-      "test": [ "//third_party/mindspore/mindspore/lite/test:mindspore_test" ]
-    }
+      "inner_kits": []
+  }
   }
 }
