@@ -40,7 +40,22 @@ ohos_executable("benchmark_bin") {
     "../../../ccsrc/backend/kernel_compiler/cpu/",
   ]
 
-  defines = [ "BENCHMARK_CLIP_JSON" ]
+  defines = [
+    "BENCHMARK_CLIP_JSON",
+    "OHOS_HILOG",
+  ]
+
+  if (target_cpu == "arm") {
+    defines += [
+      "ENABLE_ARM",
+      "ENABLE_ARM32",
+    ]
+  } else if (target_cpu == "arm64") {
+    defines += [
+      "ENABLE_ARM",
+      "ENABLE_ARM64",
+    ]
+  }
 
   remove_configs = [ "//build/config/compiler:no_rtti" ]
 
