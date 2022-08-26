@@ -75,6 +75,20 @@ static int GetAndroidLogLevel(LiteLogLevel level) {
 #endif
 #endif
 
+#ifdef OHOS_HILOG
+void PrintHiLog(LiteLogLevel level, const char *file, int line, const char *func, const char *msg) {
+  if (level == LiteLogLevel::DEBUG) {
+    OHOS::HiviewDFX::HiLog::Debug(MSLite_LABEL, FORMAT, file, line, func, msg);
+  } else if (level == LiteLogLevel::INFO) {
+    OHOS::HiviewDFX::HiLog::Info(MSLite_LABEL, FORMAT, file, line, func, msg);
+  } else if (level == LiteLogLevel::WARNING) {
+    OHOS::HiviewDFX::HiLog::Warn(MSLite_LABEL, FORMAT, file, line, func, msg);
+  } else if (level == LiteLogLevel::ERROR) {
+    OHOS::HiviewDFX::HiLog::Error(MSLite_LABEL, FORMAT, file, line, func, msg);
+  }
+}
+#endif
+
 const char *EnumStrForMsLogLevel(LiteLogLevel level) {
   if (level == LiteLogLevel::DEBUG) {
     return "DEBUG";
@@ -94,6 +108,8 @@ void LiteLogWriter::OutputLog(const std::ostringstream &msg) const {
 #if defined(ENABLE_ARM) && (defined(__ANDROID__) || defined(ANDROID))
     __android_log_print(GetAndroidLogLevel(log_level_), ANDROID_LOG_TAG, "[%s:%d] %s] %s", location_.file_,
                         location_.line_, location_.func_, msg.str().c_str());
+#elif defined(OHOS_HILOG)
+    PrintHiLog(log_level_, location_.file_, location_.line_, location_.func_, msg.str().c_str());
 #else
     printf("%s [%s:%d] %s] %s\n", EnumStrForMsLogLevel(log_level_), location_.file_, location_.line_, location_.func_,
            msg.str().c_str());

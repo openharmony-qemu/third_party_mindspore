@@ -20,6 +20,9 @@
 #include <sstream>
 #include "utils/overload.h"
 
+#ifdef OHOS_HILOG
+#include "hilog/log.h"
+#endif
 // NOTICE: when relative path of 'log.h' changed, macro 'LITE_LOG_HEAR_FILE_REL_PATH' must be changed
 #define LITE_LOG_HEAR_FILE_REL_PATH "mindspore/lite/src/common/log.h"
 
@@ -88,16 +91,53 @@ class LiteLogWriter {
   LiteLogLevel log_level_;
 };
 
-#define MSLOG_IF(level)                                                                                  \
-  mindspore::LiteLogWriter(mindspore::LiteLocationInfo(LITE_FILE_NAME, __LINE__, __FUNCTION__), level) < \
-    mindspore::LiteLogStream()
-
 #define MS_LOG(level) MS_LOG_##level
 
 #define MS_LOG_DEBUG MSLOG_IF(mindspore::LiteLogLevel::DEBUG)
 #define MS_LOG_INFO MSLOG_IF(mindspore::LiteLogLevel::INFO)
 #define MS_LOG_WARNING MSLOG_IF(mindspore::LiteLogLevel::WARNING)
 #define MS_LOG_ERROR MSLOG_IF(mindspore::LiteLogLevel::ERROR)
+
+#ifdef OHOS_HILOG
+namespace {
+constexpr unsigned int MSLITE_DOMAIN_ID_START = 0xD0029A0;
+constexpr unsigned int MSLITE_DOMAIN_ID_END = MSLITE_DOMAIN_ID_START + 32;
+constexpr unsigned int TEST_DOMAIN_ID = 0xD000F00;
+}  // namespace
+
+#define FILE_NAME (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
+#define FORMAT "[%{public}s:%{public}d] %{public}s# %{public}s"
+
+#define MSLOG_IF(level)                                                                             \
+  mindspore::LiteLogWriter(mindspore::LiteLocationInfo(FILE_NAME, __LINE__, __FUNCTION__), level) < \
+    mindspore::LiteLogStream()
+
+enum MSLiteManagerLogLabel {
+  // Component labels, you can add if needed
+  COMP_FWK = 0,
+  // Test label
+  LABEL_TEST,
+  // The end of labels, max to the domain id range length 32
+  LABEL_END,
+};
+
+enum MSLiteManagerLogDomain {
+  DOMAIN_FRAMEWORK = MSLITE_DOMAIN_ID_START + COMP_FWK,  // 0xD0029A0
+  DOMAIN_TEST = TEST_DOMAIN_ID,                          // 0xD000F00
+  DOMAIN_END = MSLITE_DOMAIN_ID_END,  // Max to 0xD002940, keep the sequence and length same as MSLiteManagerLogLabel
+};
+
+// Keep the sequence and length same as MSLiteManagerLogDomain
+static constexpr OHOS::HiviewDFX::HiLogLabel MSLite_LABEL = {LOG_CORE, DOMAIN_FRAMEWORK, "MSLiteFwk"};
+
+#else
+
+#define MSLOG_IF(level)                                                                                  \
+  mindspore::LiteLogWriter(mindspore::LiteLocationInfo(LITE_FILE_NAME, __LINE__, __FUNCTION__), level) < \
+    mindspore::LiteLogStream()
+
+#endif
+
 }  // namespace mindspore
 
 #ifdef Debug
