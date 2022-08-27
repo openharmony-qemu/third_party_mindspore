@@ -18,13 +18,13 @@ import("//build/ohos.gni")
 ohos_ndk_headers("mindspore_header") {
   dest_dir = "$ndk_headers_out_dir/mindspore"
   sources = [
-    "../../../../../include/c_api/context_c.h",
-    "../../../../../include/c_api/data_type_c.h",
-    "../../../../../include/c_api/format_c.h",
-    "../../../../../include/c_api/model_c.h",
-    "../../../../../include/c_api/status_c.h",
-    "../../../../../include/c_api/tensor_c.h",
-    "../../../../../include/c_api/types_c.h",
+    "../../../../../include/sdk_api/context.h",
+    "../../../../../include/sdk_api/data_type.h",
+    "../../../../../include/sdk_api/format.h",
+    "../../../../../include/sdk_api/model.h",
+    "../../../../../include/sdk_api/status.h",
+    "../../../../../include/sdk_api/tensor.h",
+    "../../../../../include/sdk_api/types.h",
   ]
 }
 
