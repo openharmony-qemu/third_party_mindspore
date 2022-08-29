@@ -85,7 +85,7 @@ Status TensorRTDelegate::Init() {
     {schema::PrimitiveType_MulFusion, GetTensorRTOp<ElementWiseTensorRT>},
     {schema::PrimitiveType_Eltwise, GetTensorRTOp<ElementWiseTensorRT>},
     {schema::PrimitiveType_Gather, GetTensorRTOp<GatherTensorRT>},
-    {schema::PrimitiveType_MatMul, GetTensorRTOp<MatMulTensorRT>},
+    {schema::PrimitiveType_MatMulFusion, GetTensorRTOp<MatMulTensorRT>},
     {schema::PrimitiveType_FullConnection, GetTensorRTOp<MatMulTensorRT>},
     {schema::PrimitiveType_AvgPoolFusion, GetTensorRTOp<PoolTensorRT>},
     {schema::PrimitiveType_MaxPoolFusion, GetTensorRTOp<PoolTensorRT>},

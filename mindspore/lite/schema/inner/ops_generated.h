@@ -367,9 +367,9 @@ struct L2NormalizeFusion;
 struct L2NormalizeFusionBuilder;
 struct L2NormalizeFusionT;
 
-struct MatMul;
-struct MatMulBuilder;
-struct MatMulT;
+struct MatMulFusion;
+struct MatMulFusionBuilder;
+struct MatMulFusionT;
 
 struct Maximum;
 struct MaximumBuilder;
@@ -989,7 +989,7 @@ inline const flatbuffers::TypeTable *LSTMGradTypeTable();
 
 inline const flatbuffers::TypeTable *L2NormalizeFusionTypeTable();
 
-inline const flatbuffers::TypeTable *MatMulTypeTable();
+inline const flatbuffers::TypeTable *MatMulFusionTypeTable();
 
 inline const flatbuffers::TypeTable *MaximumTypeTable();
 
@@ -1301,7 +1301,7 @@ enum PrimitiveType : uint8_t {
   PrimitiveType_LshProjection = 86,
   PrimitiveType_LSTM = 87,
   PrimitiveType_L2NormalizeFusion = 88,
-  PrimitiveType_MatMul = 89,
+  PrimitiveType_MatMulFusion = 89,
   PrimitiveType_Maximum = 90,
   PrimitiveType_MaximumGrad = 91,
   PrimitiveType_MaxPoolFusion = 92,
@@ -1508,7 +1508,7 @@ inline const PrimitiveType (&EnumValuesPrimitiveType())[201] {
     PrimitiveType_LshProjection,
     PrimitiveType_LSTM,
     PrimitiveType_L2NormalizeFusion,
-    PrimitiveType_MatMul,
+    PrimitiveType_MatMulFusion,
     PrimitiveType_Maximum,
     PrimitiveType_MaximumGrad,
     PrimitiveType_MaxPoolFusion,
@@ -1715,7 +1715,7 @@ inline const char * const *EnumNamesPrimitiveType() {
     "LshProjection",
     "LSTM",
     "L2NormalizeFusion",
-    "MatMul",
+    "MatMulFusion",
     "Maximum",
     "MaximumGrad",
     "MaxPoolFusion",
@@ -2194,8 +2194,8 @@ template<> struct PrimitiveTypeTraits<mindspore::schema::L2NormalizeFusion> {
   static const PrimitiveType enum_value = PrimitiveType_L2NormalizeFusion;
 };
 
-template<> struct PrimitiveTypeTraits<mindspore::schema::MatMul> {
-  static const PrimitiveType enum_value = PrimitiveType_MatMul;
+template<> struct PrimitiveTypeTraits<mindspore::schema::MatMulFusion> {
+  static const PrimitiveType enum_value = PrimitiveType_MatMulFusion;
 };
 
 template<> struct PrimitiveTypeTraits<mindspore::schema::Maximum> {
@@ -3378,13 +3378,13 @@ struct PrimitiveTypeUnion {
     return type == PrimitiveType_L2NormalizeFusion ?
       reinterpret_cast<const mindspore::schema::L2NormalizeFusionT *>(value) : nullptr;
   }
-  mindspore::schema::MatMulT *AsMatMul() {
-    return type == PrimitiveType_MatMul ?
-      reinterpret_cast<mindspore::schema::MatMulT *>(value) : nullptr;
+  mindspore::schema::MatMulFusionT *AsMatMulFusion() {
+    return type == PrimitiveType_MatMulFusion ?
+      reinterpret_cast<mindspore::schema::MatMulFusionT *>(value) : nullptr;
   }
-  const mindspore::schema::MatMulT *AsMatMul() const {
-    return type == PrimitiveType_MatMul ?
-      reinterpret_cast<const mindspore::schema::MatMulT *>(value) : nullptr;
+  const mindspore::schema::MatMulFusionT *AsMatMulFusion() const {
+    return type == PrimitiveType_MatMulFusion ?
+      reinterpret_cast<const mindspore::schema::MatMulFusionT *>(value) : nullptr;
   }
   mindspore::schema::MaximumT *AsMaximum() {
     return type == PrimitiveType_Maximum ?
@@ -11231,21 +11231,23 @@ inline flatbuffers::Offset<L2NormalizeFusion> CreateL2NormalizeFusionDirect(
 
 flatbuffers::Offset<L2NormalizeFusion> CreateL2NormalizeFusion(flatbuffers::FlatBufferBuilder &_fbb, const L2NormalizeFusionT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct MatMulT : public flatbuffers::NativeTable {
-  typedef MatMul TableType;
+struct MatMulFusionT : public flatbuffers::NativeTable {
+  typedef MatMulFusion TableType;
   bool transpose_a = false;
   bool transpose_b = false;
+  mindspore::schema::ActivationType activation_type = mindspore::schema::ActivationType_NO_ACTIVATION;
 };
 
-struct MatMul FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef MatMulT NativeTableType;
-  typedef MatMulBuilder Builder;
+struct MatMulFusion FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef MatMulFusionT NativeTableType;
+  typedef MatMulFusionBuilder Builder;
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
-    return MatMulTypeTable();
+    return MatMulFusionTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_TRANSPOSE_A = 4,
-    VT_TRANSPOSE_B = 6
+    VT_TRANSPOSE_B = 6,
+    VT_ACTIVATION_TYPE = 8
   };
   bool transpose_a() const {
     return GetField<uint8_t>(VT_TRANSPOSE_A, 0) != 0;
@@ -11259,49 +11261,61 @@ struct MatMul FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool mutate_transpose_b(bool _transpose_b) {
     return SetField<uint8_t>(VT_TRANSPOSE_B, static_cast<uint8_t>(_transpose_b), 0);
   }
+  mindspore::schema::ActivationType activation_type() const {
+    return static_cast<mindspore::schema::ActivationType>(GetField<int8_t>(VT_ACTIVATION_TYPE, 0));
+  }
+  bool mutate_activation_type(mindspore::schema::ActivationType _activation_type) {
+    return SetField<int8_t>(VT_ACTIVATION_TYPE, static_cast<int8_t>(_activation_type), 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_TRANSPOSE_A) &&
            VerifyField<uint8_t>(verifier, VT_TRANSPOSE_B) &&
+           VerifyField<int8_t>(verifier, VT_ACTIVATION_TYPE) &&
            verifier.EndTable();
   }
-  MatMulT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(MatMulT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<MatMul> Pack(flatbuffers::FlatBufferBuilder &_fbb, const MatMulT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  MatMulFusionT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(MatMulFusionT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static flatbuffers::Offset<MatMulFusion> Pack(flatbuffers::FlatBufferBuilder &_fbb, const MatMulFusionT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
-struct MatMulBuilder {
-  typedef MatMul Table;
+struct MatMulFusionBuilder {
+  typedef MatMulFusion Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_transpose_a(bool transpose_a) {
-    fbb_.AddElement<uint8_t>(MatMul::VT_TRANSPOSE_A, static_cast<uint8_t>(transpose_a), 0);
+    fbb_.AddElement<uint8_t>(MatMulFusion::VT_TRANSPOSE_A, static_cast<uint8_t>(transpose_a), 0);
   }
   void add_transpose_b(bool transpose_b) {
-    fbb_.AddElement<uint8_t>(MatMul::VT_TRANSPOSE_B, static_cast<uint8_t>(transpose_b), 0);
+    fbb_.AddElement<uint8_t>(MatMulFusion::VT_TRANSPOSE_B, static_cast<uint8_t>(transpose_b), 0);
   }
-  explicit MatMulBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  void add_activation_type(mindspore::schema::ActivationType activation_type) {
+    fbb_.AddElement<int8_t>(MatMulFusion::VT_ACTIVATION_TYPE, static_cast<int8_t>(activation_type), 0);
+  }
+  explicit MatMulFusionBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<MatMul> Finish() {
+  flatbuffers::Offset<MatMulFusion> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<MatMul>(end);
+    auto o = flatbuffers::Offset<MatMulFusion>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<MatMul> CreateMatMul(
+inline flatbuffers::Offset<MatMulFusion> CreateMatMulFusion(
     flatbuffers::FlatBufferBuilder &_fbb,
     bool transpose_a = false,
-    bool transpose_b = false) {
-  MatMulBuilder builder_(_fbb);
+    bool transpose_b = false,
+    mindspore::schema::ActivationType activation_type = mindspore::schema::ActivationType_NO_ACTIVATION) {
+  MatMulFusionBuilder builder_(_fbb);
+  builder_.add_activation_type(activation_type);
   builder_.add_transpose_b(transpose_b);
   builder_.add_transpose_a(transpose_a);
   return builder_.Finish();
 }
 
-flatbuffers::Offset<MatMul> CreateMatMul(flatbuffers::FlatBufferBuilder &_fbb, const MatMulT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+flatbuffers::Offset<MatMulFusion> CreateMatMulFusion(flatbuffers::FlatBufferBuilder &_fbb, const MatMulFusionT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
 struct MaximumT : public flatbuffers::NativeTable {
   typedef Maximum TableType;
@@ -21634,33 +21648,36 @@ inline flatbuffers::Offset<L2NormalizeFusion> CreateL2NormalizeFusion(flatbuffer
       _activation_type);
 }
 
-inline MatMulT *MatMul::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
-  auto _o = std::unique_ptr<MatMulT>(new MatMulT());
+inline MatMulFusionT *MatMulFusion::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::unique_ptr<MatMulFusionT>(new MatMulFusionT());
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void MatMul::UnPackTo(MatMulT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void MatMulFusion::UnPackTo(MatMulFusionT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = transpose_a(); _o->transpose_a = _e; }
   { auto _e = transpose_b(); _o->transpose_b = _e; }
+  { auto _e = activation_type(); _o->activation_type = _e; }
 }
 
-inline flatbuffers::Offset<MatMul> MatMul::Pack(flatbuffers::FlatBufferBuilder &_fbb, const MatMulT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
-  return CreateMatMul(_fbb, _o, _rehasher);
+inline flatbuffers::Offset<MatMulFusion> MatMulFusion::Pack(flatbuffers::FlatBufferBuilder &_fbb, const MatMulFusionT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateMatMulFusion(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<MatMul> CreateMatMul(flatbuffers::FlatBufferBuilder &_fbb, const MatMulT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline flatbuffers::Offset<MatMulFusion> CreateMatMulFusion(flatbuffers::FlatBufferBuilder &_fbb, const MatMulFusionT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const MatMulT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const MatMulFusionT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _transpose_a = _o->transpose_a;
   auto _transpose_b = _o->transpose_b;
-  return mindspore::schema::CreateMatMul(
+  auto _activation_type = _o->activation_type;
+  return mindspore::schema::CreateMatMulFusion(
       _fbb,
       _transpose_a,
-      _transpose_b);
+      _transpose_b,
+      _activation_type);
 }
 
 inline MaximumT *Maximum::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
@@ -25108,8 +25125,8 @@ inline bool VerifyPrimitiveType(flatbuffers::Verifier &verifier, const void *obj
       auto ptr = reinterpret_cast<const mindspore::schema::L2NormalizeFusion *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case PrimitiveType_MatMul: {
-      auto ptr = reinterpret_cast<const mindspore::schema::MatMul *>(obj);
+    case PrimitiveType_MatMulFusion: {
+      auto ptr = reinterpret_cast<const mindspore::schema::MatMulFusion *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case PrimitiveType_Maximum: {
@@ -25926,8 +25943,8 @@ inline void *PrimitiveTypeUnion::UnPack(const void *obj, PrimitiveType type, con
       auto ptr = reinterpret_cast<const mindspore::schema::L2NormalizeFusion *>(obj);
       return ptr->UnPack(resolver);
     }
-    case PrimitiveType_MatMul: {
-      auto ptr = reinterpret_cast<const mindspore::schema::MatMul *>(obj);
+    case PrimitiveType_MatMulFusion: {
+      auto ptr = reinterpret_cast<const mindspore::schema::MatMulFusion *>(obj);
       return ptr->UnPack(resolver);
     }
     case PrimitiveType_Maximum: {
@@ -26732,9 +26749,9 @@ inline flatbuffers::Offset<void> PrimitiveTypeUnion::Pack(flatbuffers::FlatBuffe
       auto ptr = reinterpret_cast<const mindspore::schema::L2NormalizeFusionT *>(value);
       return CreateL2NormalizeFusion(_fbb, ptr, _rehasher).Union();
     }
-    case PrimitiveType_MatMul: {
-      auto ptr = reinterpret_cast<const mindspore::schema::MatMulT *>(value);
-      return CreateMatMul(_fbb, ptr, _rehasher).Union();
+    case PrimitiveType_MatMulFusion: {
+      auto ptr = reinterpret_cast<const mindspore::schema::MatMulFusionT *>(value);
+      return CreateMatMulFusion(_fbb, ptr, _rehasher).Union();
     }
     case PrimitiveType_Maximum: {
       auto ptr = reinterpret_cast<const mindspore::schema::MaximumT *>(value);
@@ -27538,8 +27555,8 @@ inline PrimitiveTypeUnion::PrimitiveTypeUnion(const PrimitiveTypeUnion &u) : typ
       value = new mindspore::schema::L2NormalizeFusionT(*reinterpret_cast<mindspore::schema::L2NormalizeFusionT *>(u.value));
       break;
     }
-    case PrimitiveType_MatMul: {
-      value = new mindspore::schema::MatMulT(*reinterpret_cast<mindspore::schema::MatMulT *>(u.value));
+    case PrimitiveType_MatMulFusion: {
+      value = new mindspore::schema::MatMulFusionT(*reinterpret_cast<mindspore::schema::MatMulFusionT *>(u.value));
       break;
     }
     case PrimitiveType_Maximum: {
@@ -28433,8 +28450,8 @@ inline void PrimitiveTypeUnion::Reset() {
       delete ptr;
       break;
     }
-    case PrimitiveType_MatMul: {
-      auto ptr = reinterpret_cast<mindspore::schema::MatMulT *>(value);
+    case PrimitiveType_MatMulFusion: {
+      auto ptr = reinterpret_cast<mindspore::schema::MatMulFusionT *>(value);
       delete ptr;
       break;
     }
@@ -29292,7 +29309,7 @@ inline const flatbuffers::TypeTable *PrimitiveTypeTypeTable() {
     mindspore::schema::LshProjectionTypeTable,
     mindspore::schema::LSTMTypeTable,
     mindspore::schema::L2NormalizeFusionTypeTable,
-    mindspore::schema::MatMulTypeTable,
+    mindspore::schema::MatMulFusionTypeTable,
     mindspore::schema::MaximumTypeTable,
     mindspore::schema::MaximumGradTypeTable,
     mindspore::schema::MaxPoolFusionTypeTable,
@@ -30422,13 +30439,17 @@ inline const flatbuffers::TypeTable *L2NormalizeFusionTypeTable() {
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *MatMulTypeTable() {
+inline const flatbuffers::TypeTable *MatMulFusionTypeTable() {
   static const flatbuffers::TypeCode type_codes[] = {
     { flatbuffers::ET_BOOL, 0, -1 },
-    { flatbuffers::ET_BOOL, 0, -1 }
+    { flatbuffers::ET_BOOL, 0, -1 },
+    { flatbuffers::ET_CHAR, 0, 0 }
+  };
+  static const flatbuffers::TypeFunction type_refs[] = {
+    mindspore::schema::ActivationTypeTypeTable
   };
   static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, nullptr
+    flatbuffers::ST_TABLE, 3, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }

@@ -216,7 +216,7 @@ class WeightDecoder {
 
   inline static bool IsChannelFirst(int index, const OpParameter *op_parameter) {
     MS_ASSERT(op_parameter != nullptr);
-    if (op_parameter->type_ == schema::PrimitiveType_MatMul) {
+    if (op_parameter->type_ == schema::PrimitiveType_MatMulFusion) {
       const auto *param = reinterpret_cast<const MatMulParameter *>(op_parameter);
       if (index == 0) {
         return !(param->a_transpose_);
