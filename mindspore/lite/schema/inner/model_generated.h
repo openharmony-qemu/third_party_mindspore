@@ -877,8 +877,8 @@ struct Primitive FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const mindspore::schema::L2NormalizeFusion *value_as_L2NormalizeFusion() const {
     return value_type() == mindspore::schema::PrimitiveType_L2NormalizeFusion ? static_cast<const mindspore::schema::L2NormalizeFusion *>(value()) : nullptr;
   }
-  const mindspore::schema::MatMul *value_as_MatMul() const {
-    return value_type() == mindspore::schema::PrimitiveType_MatMul ? static_cast<const mindspore::schema::MatMul *>(value()) : nullptr;
+  const mindspore::schema::MatMulFusion *value_as_MatMulFusion() const {
+    return value_type() == mindspore::schema::PrimitiveType_MatMulFusion ? static_cast<const mindspore::schema::MatMulFusion *>(value()) : nullptr;
   }
   const mindspore::schema::Maximum *value_as_Maximum() const {
     return value_type() == mindspore::schema::PrimitiveType_Maximum ? static_cast<const mindspore::schema::Maximum *>(value()) : nullptr;
@@ -1580,8 +1580,8 @@ template<> inline const mindspore::schema::L2NormalizeFusion *Primitive::value_a
   return value_as_L2NormalizeFusion();
 }
 
-template<> inline const mindspore::schema::MatMul *Primitive::value_as<mindspore::schema::MatMul>() const {
-  return value_as_MatMul();
+template<> inline const mindspore::schema::MatMulFusion *Primitive::value_as<mindspore::schema::MatMulFusion>() const {
+  return value_as_MatMulFusion();
 }
 
 template<> inline const mindspore::schema::Maximum *Primitive::value_as<mindspore::schema::Maximum>() const {
