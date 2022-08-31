@@ -57,6 +57,9 @@
 #ifndef CONTROLFLOW_TENSORLIST_CLIP
 #include "src/runtime/kernel/arm/base/partial_fusion.h"
 #endif
+#ifdef SUPPORT_NNRT
+#include "src/runtime/delegate/nnrt/nnrt_delegate.h"
+#endif
 
 namespace mindspore::lite {
 namespace {
@@ -396,6 +399,10 @@ int Scheduler::ReplaceDelegateKernels(std::vector<kernel::LiteKernel *> *dst_ker
     MS_LOG(ERROR) << "New delegate model failed.";
     return RET_NULL_PTR;
   }
+#ifdef SUPPORT_NNRT
+  auto delegate = dynamic_cast<NNRDelegate *>(delegate_.get());
+  delegate->setLiteGraph(this->src_model_->graph_);
+#endif
   auto ret = delegate_->Build(model);
   if (ret != mindspore::kSuccess) {
     delete model;

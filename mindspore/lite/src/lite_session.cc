@@ -44,6 +44,9 @@
 #if GPU_TENSORRT
 #include "src/delegate/tensorrt/tensorrt_delegate.h"
 #endif
+#if SUPPORT_NNRT
+#include "src/runtime/delegate/nnr/nnr_delegate.h"
+#endif
 #ifndef WEIGHT_DECODE_CLIP
 #include "tools/converter/quantizer/fse_decoder.h"
 #endif
@@ -756,7 +759,16 @@ int LiteSession::Init(InnerContext *context) {
     this->context_->delegate = delegate_;
   }
 #endif
-
+#ifdef SUPPORT_NNRT
+  delegate_ = std::make_shared<NNRDelegate>();
+  //    delegate_.reset(dynamic_cast<Delegate*>(new NNRDelegate()));
+  if (delegate_ == nullptr) {
+    MS_LOG(ERROR) << "New delegate_ failed";
+    return RET_ERROR;
+  }
+  delegate_device_type_ = DT_NPU;
+  this->context_->delegate = delegate_;
+#endif
   if (delegate_ != nullptr) {
     auto delegate_ret = delegate_->Init();
     if (delegate_ret == mindspore::kLiteNotSupport) {
