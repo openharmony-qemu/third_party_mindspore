@@ -30,11 +30,11 @@ ohos_shared_library("mindir") {
     "src/utils.cc",
   ]
   external_deps = [
+    "c_utils:utils",
     "drivers_interface_nnrt:libnnrt_proxy_1.0",
     "hdf_core:libhdi",
     "hilog_native:libhilog",
     "ipc:ipc_core",
-    "utils_base:utils",
   ]
   deps = [ "//drivers/interface/nnrt/v1_0:nnrt_idl_headers" ]
   subsystem_name = "mindspore"
