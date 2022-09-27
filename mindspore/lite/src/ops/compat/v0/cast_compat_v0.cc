@@ -19,7 +19,7 @@
 
 namespace mindspore {
 namespace lite {
-int TransferCastAttr(Model::Node *node, std::vector<schema::Tensor *> *dst_tensors,
+int TransferCastAttr(LiteGraph::Node *node, std::vector<schema::Tensor *> *dst_tensors,
                      std::vector<char *> *const tensor_bufs) {
   if (node == nullptr || node->primitive_ == nullptr || dst_tensors == nullptr || tensor_bufs == nullptr) {
     MS_LOG(ERROR) << "the parameter of this function is nullptr.";

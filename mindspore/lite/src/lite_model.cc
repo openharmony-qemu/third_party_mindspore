@@ -102,9 +102,9 @@ void LiteModel::Free() {
     delete[](this->buf);
     this->buf = nullptr;
   }
-  auto nodes_size = this->all_nodes_.size();
+  auto nodes_size = this->graph_.all_nodes_.size();
   for (size_t i = 0; i < nodes_size; ++i) {
-    auto node = this->all_nodes_[i];
+    auto node = this->graph_.all_nodes_[i];
     node->primitive_ = nullptr;
   }
   for (auto &tensor_buf : attr_tensor_bufs_) {
@@ -128,17 +128,17 @@ void LiteModel::Free() {
 
 void LiteModel::Destroy() {
   Free();
-  auto nodes_size = this->all_nodes_.size();
+  auto nodes_size = this->graph_.all_nodes_.size();
   for (size_t i = 0; i < nodes_size; ++i) {
-    auto node = this->all_nodes_[i];
+    auto node = this->graph_.all_nodes_[i];
     MS_ASSERT(node != nullptr);
     delete node;
   }
-  this->all_nodes_.clear();
+  this->graph_.all_nodes_.clear();
 
-  auto sub_graph_size = this->sub_graphs_.size();
+  auto sub_graph_size = this->graph_.sub_graphs_.size();
   for (size_t i = 0; i < sub_graph_size; ++i) {
-    auto sub_graph = this->sub_graphs_[i];
+    auto sub_graph = this->graph_.sub_graphs_[i];
     delete sub_graph;
   }
 }
@@ -150,7 +150,7 @@ int LiteModel::ConvertSubGraph(const schema::SubGraph &sub_graph) {
     return RET_ERROR;
   }
 
-  auto *subgraph = new (std::nothrow) Model::SubGraph();
+  auto *subgraph = new (std::nothrow) LiteGraph::SubGraph();
   if (subgraph == nullptr) {
     MS_LOG(ERROR) << "new subGraph fail!";
     return RET_ERROR;
@@ -175,7 +175,7 @@ int LiteModel::ConvertSubGraph(const schema::SubGraph &sub_graph) {
   for (uint32_t i = 0; i < tensor_count; ++i) {
     subgraph->tensor_indices_.push_back(sub_graph.tensorIndices()->Get(i));
   }
-  this->sub_graphs_.push_back(subgraph);
+  this->graph_.sub_graphs_.push_back(subgraph);
   return RET_OK;
 }
 
@@ -196,10 +196,10 @@ int LiteModel::VersionVerify(flatbuffers::Verifier *verify) const {
 }
 
 int LiteModel::NodeVerify() const {
-  auto tensor_size = this->all_tensors_.size();
-  uint32_t subgraph_size = this->sub_graphs_.size();
+  auto tensor_size = this->graph_.all_tensors_.size();
+  uint32_t subgraph_size = this->graph_.sub_graphs_.size();
 
-  for (auto &node : this->all_nodes_) {
+  for (auto &node : this->graph_.all_nodes_) {
     if (node == nullptr || node->primitive_ == nullptr) {
       MS_LOG(ERROR) << "node or its primitive_ is null.";
       return RET_ERROR;
@@ -227,15 +227,15 @@ int LiteModel::NodeVerify() const {
 }
 
 int LiteModel::SubGraphVerify() const {
-  auto tensor_size = this->all_tensors_.size();
-  auto node_size = this->all_nodes_.size();
+  auto tensor_size = this->graph_.all_tensors_.size();
+  auto node_size = this->graph_.all_nodes_.size();
 
-  if (sub_graphs_[0]->input_indices_.size() == 0 || sub_graphs_[0]->output_indices_.size() == 0) {
+  if (graph_.sub_graphs_[0]->input_indices_.size() == 0 || graph_.sub_graphs_[0]->output_indices_.size() == 0) {
     MS_LOG(ERROR) << "The model has invalid input and output, please check";
     return RET_ERROR;
   }
 
-  for (auto &graph : this->sub_graphs_) {
+  for (auto &graph : this->graph_.sub_graphs_) {
     if (graph == nullptr) {
       MS_LOG(ERROR) << "graph is null.";
       return RET_ERROR;
@@ -265,25 +265,25 @@ int LiteModel::SubGraphVerify() const {
 }
 
 bool LiteModel::ModelVerify() const {
-  if (this->sub_graphs_.empty()) {
+  if (this->graph_.sub_graphs_.empty()) {
     MS_LOG(ERROR) << "Model does not have a main graph.";
     return false;
   }
 
-  auto all_tensors_size = this->all_tensors_.size();
-  for (auto input_index : this->input_indices_) {
+  auto all_tensors_size = this->graph_.all_tensors_.size();
+  for (auto input_index : this->graph_.input_indices_) {
     if (input_index >= all_tensors_size) {
       MS_LOG(ERROR) << "Graph input indices is beyond tensor_size.";
       return false;
     }
-    auto *tensor = this->all_tensors_.at(input_index);
+    auto *tensor = static_cast<schema::Tensor *>(this->graph_.all_tensors_.at(input_index));
     if (tensor == nullptr) {
       MS_LOG(ERROR) << "Tensor in all tensors is nullptr.";
       return false;
     }
   }
 
-  if (std::any_of(this->output_indices_.begin(), this->output_indices_.end(),
+  if (std::any_of(this->graph_.output_indices_.begin(), this->graph_.output_indices_.end(),
                   [&all_tensors_size](const uint32_t &idx) { return idx >= all_tensors_size; })) {
     MS_LOG(ERROR) << "Graph output indices is beyond tensor_size.";
     return false;
@@ -370,10 +370,11 @@ int LiteModel::ConstructModel() {
     return status;
   }
 
-  if (this->version_ != Version()) {
-    MS_LOG(WARNING) << "model version is " << this->version_ << ", inference version is " << Version() << " not equal";
+  if (this->graph_.version_ != Version()) {
+    MS_LOG(WARNING) << "model version is " << this->graph_.version_ << ", inference version is " << Version()
+                    << " not equal";
   }
-  if (this->sub_graphs_.empty()) {
+  if (this->graph_.sub_graphs_.empty()) {
     return RET_ERROR;
   }
 

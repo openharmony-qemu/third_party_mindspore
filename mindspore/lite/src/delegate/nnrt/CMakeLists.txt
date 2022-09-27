@@ -2,7 +2,8 @@ include_directories(${DDK_PATH})
 include_directories($(CCSRC_DIR)/plugin/device/cpu/kernel)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
+#include_directories(/home/tony/wty/workspace/ohos/third_party/mindspore/mindspore/lite/mindir/include/inner)
+#include_directories(/home/tony/wty/workspace/ohos/third_party/mindspore/mindspore/lite/mindir/include)
 file(GLOB_RECURSE NNRT_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/*.cc
 )
@@ -24,4 +25,6 @@ file(GLOB_RECURSE NNRT_SRC
 #        hiai_ir
 #        hiai_ir_build
 #)
-add_library(nnr_mid OBJECT ${NNRT_SRC})
+
+file(GLOB convert_source checker/*.cc)
+add_library(nnr_mid OBJECT ${NNRT_SRC} ${convert_source} )

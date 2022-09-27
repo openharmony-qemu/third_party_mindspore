@@ -16,6 +16,7 @@
 #include "src/common/log.h"
 #include "mindir.h"
 #include "utils.h"
+#include "mindir_memory_manager.h"
 #include "nnrt/v1_0/nnrt_types.h"
 
 using namespace OHOS::HDI::Nnrt::V1_0;
@@ -34,7 +35,9 @@ TensorPtr MindIR_Tensor_Create() {
                          schema::Format::Format_NCHW, 0, 0, fbb.CreateVector(data.data(), data.size()),
                          ConvertQuantParams(fbb, quant_params), 0, fbb.CreateString(name.c_str(), name.size()));
   fbb.Finish(ops_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Tensor>(new_addr);
+  return ret_value;
 }
 
 TensorPtr MindIR_Tensor_Create(const std::string &name, DataType data_type, const std::vector<int32_t> &dims,
@@ -47,13 +50,14 @@ TensorPtr MindIR_Tensor_Create(const std::string &name, DataType data_type, cons
                          static_cast<schema::Format>(format), 0, 0, fbb.CreateVector(data.data(), data.size()),
                          ConvertQuantParams(fbb, quant_params), 0, fbb.CreateString(name.c_str(), name.size()));
   fbb.Finish(ops_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Tensor>(new_addr);
+  return ret_value;
 }
 
 std::string MindIR_Tensor_GetName(ConstTensorPtr tensor) {
   if (tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(tensor);
-
+    auto value = static_cast<const schema::Tensor *>(tensor);
     if (value != nullptr) {
       return value->name()->str();
     } else {
@@ -66,8 +70,7 @@ std::string MindIR_Tensor_GetName(ConstTensorPtr tensor) {
 
 void MindIR_Tensor_SetName(TensorPtr *tensor, const std::string &name) {
   if (tensor != nullptr && *tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(*tensor);
-
+    auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
       auto ops_offset = schema::CreateTensor(
@@ -76,16 +79,15 @@ void MindIR_Tensor_SetName(TensorPtr *tensor, const std::string &name) {
         fbb.CreateVector(value->data()->data(), value->data()->size()), ConvertQuantParams(fbb, value->quantParams()),
         0, fbb.CreateString(name.c_str(), name.size()));
       fbb.Finish(ops_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*tensor);
-      *tensor = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *tensor = ret_value;
     }
   }
 }
 DataType MindIR_Tensor_GetDataType(ConstTensorPtr tensor) {
   if (tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(tensor);
-
+    auto value = static_cast<const schema::Tensor *>(tensor);
     if (value != nullptr) {
       return static_cast<DataType>(value->dataType());
     } else {
@@ -100,8 +102,7 @@ DataType MindIR_Tensor_GetDataType(ConstTensorPtr tensor) {
 
 void MindIR_Tensor_SetDataType(TensorPtr *tensor, DataType data_type) {
   if (tensor != nullptr && *tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(*tensor);
-
+    auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
       auto ops_offset = schema::CreateTensor(
@@ -110,16 +111,34 @@ void MindIR_Tensor_SetDataType(TensorPtr *tensor, DataType data_type) {
         fbb.CreateVector(value->data()->data(), value->data()->size()), ConvertQuantParams(fbb, value->quantParams()),
         0, fbb.CreateString(value->name()->c_str(), value->name()->size()));
       fbb.Finish(ops_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*tensor);
-      *tensor = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *tensor = ret_value;
     }
   }
 }
+
+void MindIR_Tensor_SetDataType(schema::Tensor **tensor, DataType data_type) {
+  if (tensor != nullptr && *tensor != nullptr) {
+    auto value = *tensor;
+    if (value != nullptr) {
+      flatbuffers::FlatBufferBuilder fbb;
+      auto ops_offset = schema::CreateTensor(
+        fbb, 0, data_type, fbb.CreateVector(value->dims()->data(), value->dims()->size()),
+        static_cast<schema::Format>(value->format()), 0, 0,
+        fbb.CreateVector(value->data()->data(), value->data()->size()), ConvertQuantParams(fbb, value->quantParams()),
+        0, fbb.CreateString(value->name()->c_str(), value->name()->size()));
+      fbb.Finish(ops_offset);
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Tensor>(new_addr);
+      *tensor = ret_value;
+    }
+  }
+}
+
 std::vector<int32_t> MindIR_Tensor_GetDims(ConstTensorPtr tensor) {
   if (tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(tensor);
-
+    auto value = static_cast<const schema::Tensor *>(tensor);
     if (value != nullptr) {
       std::vector<int32_t> result;
       auto src = value->dims();
@@ -136,8 +155,7 @@ std::vector<int32_t> MindIR_Tensor_GetDims(ConstTensorPtr tensor) {
 
 void MindIR_Tensor_SetDims(TensorPtr *tensor, const std::vector<int32_t> &dims) {
   if (tensor != nullptr && *tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(*tensor);
-
+    auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
       auto ops_offset = schema::CreateTensor(fbb, 0, value->dataType(), fbb.CreateVector(dims.data(), dims.size()),
@@ -146,16 +164,15 @@ void MindIR_Tensor_SetDims(TensorPtr *tensor, const std::vector<int32_t> &dims) 
                                              ConvertQuantParams(fbb, value->quantParams()), 0,
                                              fbb.CreateString(value->name()->c_str(), value->name()->size()));
       fbb.Finish(ops_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*tensor);
-      *tensor = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *tensor = ret_value;
     }
   }
 }
 Format MindIR_Tensor_GetFormat(ConstTensorPtr tensor) {
   if (tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(tensor);
-
+    auto value = static_cast<const schema::Tensor *>(tensor);
     if (value != nullptr) {
       return static_cast<Format>(value->format());
     } else {
@@ -170,8 +187,7 @@ Format MindIR_Tensor_GetFormat(ConstTensorPtr tensor) {
 
 void MindIR_Tensor_SetFormat(TensorPtr *tensor, Format format) {
   if (tensor != nullptr && *tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(*tensor);
-
+    auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
       auto ops_offset = schema::CreateTensor(
@@ -180,23 +196,25 @@ void MindIR_Tensor_SetFormat(TensorPtr *tensor, Format format) {
         ConvertQuantParams(fbb, value->quantParams()), 0,
         fbb.CreateString(value->name()->c_str(), value->name()->size()));
       fbb.Finish(ops_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*tensor);
-      *tensor = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *tensor = ret_value;
     }
   }
 }
+
 SharedBuffer MindIR_Tensor_GetData(ConstTensorPtr tensor, const SharedBuffer &buffer_templete, uint8_t *mmap_ptr,
                                    unsigned int offset) {
   if (tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(tensor);
+    auto value = static_cast<const schema::Tensor *>(tensor);
     if (value != nullptr) {
       SharedBuffer result{};
-      if (value->data()->size() == 0) {
+
+      if (value->data() == nullptr || value->data()->size() == 0) {
         result.fd = -1;
         result.bufferSize = buffer_templete.bufferSize;
         result.offset = offset;
-        result.dataSize = value->data()->size();
+        result.dataSize = 0;
         return result;
       }
       if (mmap_ptr == nullptr) {
@@ -204,11 +222,11 @@ SharedBuffer MindIR_Tensor_GetData(ConstTensorPtr tensor, const SharedBuffer &bu
         return {-1, 0, offset, 0};
       }
       result.fd = buffer_templete.fd;
-      auto src = value->data();
       result.bufferSize = buffer_templete.bufferSize;
-      memcpy(mmap_ptr + offset, src->data(), src->size());
+      //      MS_LOG(ERROR) << "offset:" << offset << ",src->size():" << value->data()->size();
+      memcpy(mmap_ptr + offset, value->data()->data(), value->data()->size());
       result.offset = offset;
-      result.dataSize = src->size();
+      result.dataSize = value->data()->size();
       return result;
     } else {
       MS_LOG(WARNING) << "Tensor GetData failed, mmap pointer should not be nullptr";
@@ -219,10 +237,29 @@ SharedBuffer MindIR_Tensor_GetData(ConstTensorPtr tensor, const SharedBuffer &bu
   }
 }
 
+std::vector<uint8_t> MindIR_Tensor_GetData(ConstTensorPtr tensor) {
+  if (tensor != nullptr) {
+    auto value = static_cast<const schema::Tensor *>(tensor);
+    if (value != nullptr) {
+      std::vector<uint8_t> result;
+      auto src = value->data();
+      if (src == nullptr) {
+        return {};
+      }
+      result.resize(src->size());
+      std::transform(src->begin(), src->end(), result.begin(), [](uint8_t item) { return item; });
+      return result;
+    } else {
+      return {};
+    }
+  } else {
+    return {};
+  }
+}
+
 void MindIR_Tensor_SetData(TensorPtr *tensor, const std::vector<uint8_t> &data) {
   if (tensor != nullptr && *tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(*tensor);
-
+    auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
       auto ops_offset =
@@ -231,22 +268,24 @@ void MindIR_Tensor_SetData(TensorPtr *tensor, const std::vector<uint8_t> &data) 
                              fbb.CreateVector(data.data(), data.size()), ConvertQuantParams(fbb, value->quantParams()),
                              0, fbb.CreateString(value->name()->c_str(), value->name()->size()));
       fbb.Finish(ops_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*tensor);
-      *tensor = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *tensor = ret_value;
     }
   }
 }
 std::vector<QuantParam> MindIR_Tensor_GetQuantParams(ConstTensorPtr tensor) {
   if (tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(tensor);
-
+    auto value = static_cast<const schema::Tensor *>(tensor);
     if (value != nullptr) {
       std::vector<QuantParam> result;
       auto src = value->quantParams();
+      if (src == nullptr) {
+        return {};
+      }
       size_t size = src->size();
       result.reserve(src->size());
-      for (int i = 0; i < size; i++) {
+      for (size_t i = 0; i < size; i++) {
         auto tmp = src->Get(i);
         QuantParam q{tmp->zeroPoint(), tmp->scale()};
         result.emplace_back(q);
@@ -262,8 +301,7 @@ std::vector<QuantParam> MindIR_Tensor_GetQuantParams(ConstTensorPtr tensor) {
 
 void MindIR_Tensor_SetQuantParams(TensorPtr *tensor, const std::vector<QuantParam> &quant_params) {
   if (tensor != nullptr && *tensor != nullptr) {
-    auto value = flatbuffers::GetRoot<schema::Tensor>(*tensor);
-
+    auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
       auto ops_offset = schema::CreateTensor(
@@ -272,12 +310,13 @@ void MindIR_Tensor_SetQuantParams(TensorPtr *tensor, const std::vector<QuantPara
         fbb.CreateVector(value->data()->data(), value->data()->size()), ConvertQuantParams(fbb, quant_params), 0,
         fbb.CreateString(value->name()->c_str(), value->name()->size()));
       fbb.Finish(ops_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*tensor);
-      *tensor = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *tensor = ret_value;
     }
   }
 }
+
 void MindIR_Tensor_Destroy(TensorPtr *tensor) {
   MindIR_Primitive_Destroy(tensor);
   *tensor = nullptr;

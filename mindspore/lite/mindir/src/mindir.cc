@@ -16,6 +16,8 @@
 #include "mindir.h"
 #include "utils.h"
 #include "schema/model_generated.h"
+#include "mindir_memory_manager.h"
+//----TODO---write an example to run MindIRMemoryManager
 namespace mindspore {
 namespace lite {
 
@@ -28,11 +30,13 @@ PrimitivePtr MindIR_Activation_CreatePrimitive(ActivationType activation_type, f
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 ActivationType MindIR_Activation_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Activation();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -48,7 +52,7 @@ ActivationType MindIR_Activation_GetActivationType(ConstPrimitivePtr primitive) 
 
 void MindIR_Activation_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Activation();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -58,15 +62,15 @@ void MindIR_Activation_SetActivationType(PrimitivePtr *primitive, ActivationType
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 float MindIR_Activation_GetAlpha(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Activation();
     if (prim != nullptr && value != nullptr) {
       return value->alpha();
@@ -80,7 +84,7 @@ float MindIR_Activation_GetAlpha(ConstPrimitivePtr primitive) {
 
 void MindIR_Activation_SetAlpha(PrimitivePtr *primitive, float alpha) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Activation();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -89,15 +93,15 @@ void MindIR_Activation_SetAlpha(PrimitivePtr *primitive, float alpha) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 float MindIR_Activation_GetMinVal(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Activation();
     if (prim != nullptr && value != nullptr) {
       return value->min_val();
@@ -111,7 +115,7 @@ float MindIR_Activation_GetMinVal(ConstPrimitivePtr primitive) {
 
 void MindIR_Activation_SetMinVal(PrimitivePtr *primitive, float min_val) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Activation();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -120,15 +124,15 @@ void MindIR_Activation_SetMinVal(PrimitivePtr *primitive, float min_val) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 float MindIR_Activation_GetMaxVal(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Activation();
     if (prim != nullptr && value != nullptr) {
       return value->max_val();
@@ -142,7 +146,7 @@ float MindIR_Activation_GetMaxVal(ConstPrimitivePtr primitive) {
 
 void MindIR_Activation_SetMaxVal(PrimitivePtr *primitive, float max_val) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Activation();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -151,15 +155,15 @@ void MindIR_Activation_SetMaxVal(PrimitivePtr *primitive, float max_val) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 bool MindIR_Activation_GetApproximate(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Activation();
     if (prim != nullptr && value != nullptr) {
       return value->approximate();
@@ -173,7 +177,7 @@ bool MindIR_Activation_GetApproximate(ConstPrimitivePtr primitive) {
 
 void MindIR_Activation_SetApproximate(PrimitivePtr *primitive, bool approximate) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Activation();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -182,9 +186,9 @@ void MindIR_Activation_SetApproximate(PrimitivePtr *primitive, bool approximate)
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -196,11 +200,13 @@ PrimitivePtr MindIR_AddFusion_CreatePrimitive(ActivationType activation_type) {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ADD_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 ActivationType MindIR_AddFusion_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_AddFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -216,7 +222,7 @@ ActivationType MindIR_AddFusion_GetActivationType(ConstPrimitivePtr primitive) {
 
 void MindIR_AddFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_AddFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -224,9 +230,9 @@ void MindIR_AddFusion_SetActivationType(PrimitivePtr *primitive, ActivationType 
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ADD_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -238,11 +244,13 @@ PrimitivePtr MindIR_ArgMaxFusion_CreatePrimitive(int64_t axis, int64_t top_k, bo
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ARGMAX_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 int64_t MindIR_ArgMaxFusion_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_ArgMaxFusion();
     if (prim != nullptr && value != nullptr) {
       return value->axis();
@@ -256,7 +264,7 @@ int64_t MindIR_ArgMaxFusion_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_ArgMaxFusion_SetAxis(PrimitivePtr *primitive, int64_t axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_ArgMaxFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -265,15 +273,15 @@ void MindIR_ArgMaxFusion_SetAxis(PrimitivePtr *primitive, int64_t axis) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ARGMAX_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_ArgMaxFusion_GetTopK(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_ArgMaxFusion();
     if (prim != nullptr && value != nullptr) {
       return value->top_k();
@@ -287,7 +295,7 @@ int64_t MindIR_ArgMaxFusion_GetTopK(ConstPrimitivePtr primitive) {
 
 void MindIR_ArgMaxFusion_SetTopK(PrimitivePtr *primitive, int64_t top_k) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_ArgMaxFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -296,15 +304,15 @@ void MindIR_ArgMaxFusion_SetTopK(PrimitivePtr *primitive, int64_t top_k) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ARGMAX_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 bool MindIR_ArgMaxFusion_GetKeepDims(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_ArgMaxFusion();
     if (prim != nullptr && value != nullptr) {
       return value->keep_dims();
@@ -318,7 +326,7 @@ bool MindIR_ArgMaxFusion_GetKeepDims(ConstPrimitivePtr primitive) {
 
 void MindIR_ArgMaxFusion_SetKeepDims(PrimitivePtr *primitive, bool keep_dims) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_ArgMaxFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -327,15 +335,15 @@ void MindIR_ArgMaxFusion_SetKeepDims(PrimitivePtr *primitive, bool keep_dims) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ARGMAX_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 bool MindIR_ArgMaxFusion_GetOutMaxValue(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_ArgMaxFusion();
     if (prim != nullptr && value != nullptr) {
       return value->out_max_value();
@@ -349,7 +357,7 @@ bool MindIR_ArgMaxFusion_GetOutMaxValue(ConstPrimitivePtr primitive) {
 
 void MindIR_ArgMaxFusion_SetOutMaxValue(PrimitivePtr *primitive, bool out_max_value) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_ArgMaxFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -358,9 +366,9 @@ void MindIR_ArgMaxFusion_SetOutMaxValue(PrimitivePtr *primitive, bool out_max_va
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ARGMAX_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -379,11 +387,13 @@ PrimitivePtr MindIR_AvgPoolFusion_CreatePrimitive(const std::vector<int64_t> &ke
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_AVG_POOL_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_AvgPoolFusion_GetKernelSize(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -401,7 +411,7 @@ std::vector<int64_t> MindIR_AvgPoolFusion_GetKernelSize(ConstPrimitivePtr primit
 
 void MindIR_AvgPoolFusion_SetKernelSize(PrimitivePtr *primitive, const std::vector<int64_t> &kernel_size) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -414,15 +424,15 @@ void MindIR_AvgPoolFusion_SetKernelSize(PrimitivePtr *primitive, const std::vect
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_AVG_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_AvgPoolFusion_GetStrides(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -440,7 +450,7 @@ std::vector<int64_t> MindIR_AvgPoolFusion_GetStrides(ConstPrimitivePtr primitive
 
 void MindIR_AvgPoolFusion_SetStrides(PrimitivePtr *primitive, const std::vector<int64_t> &strides) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -453,15 +463,15 @@ void MindIR_AvgPoolFusion_SetStrides(PrimitivePtr *primitive, const std::vector<
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_AVG_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_AvgPoolFusion_GetPad(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -479,7 +489,7 @@ std::vector<int64_t> MindIR_AvgPoolFusion_GetPad(ConstPrimitivePtr primitive) {
 
 void MindIR_AvgPoolFusion_SetPad(PrimitivePtr *primitive, const std::vector<int64_t> &pad) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -492,15 +502,15 @@ void MindIR_AvgPoolFusion_SetPad(PrimitivePtr *primitive, const std::vector<int6
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_AVG_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 PadMode MindIR_AvgPoolFusion_GetPadMode(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<PadMode>(value->pad_mode());
@@ -516,7 +526,7 @@ PadMode MindIR_AvgPoolFusion_GetPadMode(ConstPrimitivePtr primitive) {
 
 void MindIR_AvgPoolFusion_SetPadMode(PrimitivePtr *primitive, PadMode pad_mode) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -529,15 +539,15 @@ void MindIR_AvgPoolFusion_SetPadMode(PrimitivePtr *primitive, PadMode pad_mode) 
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_AVG_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 RoundMode MindIR_AvgPoolFusion_GetRoundMode(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<RoundMode>(value->round_mode());
@@ -553,7 +563,7 @@ RoundMode MindIR_AvgPoolFusion_GetRoundMode(ConstPrimitivePtr primitive) {
 
 void MindIR_AvgPoolFusion_SetRoundMode(PrimitivePtr *primitive, RoundMode round_mode) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -566,15 +576,15 @@ void MindIR_AvgPoolFusion_SetRoundMode(PrimitivePtr *primitive, RoundMode round_
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_AVG_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 Format MindIR_AvgPoolFusion_GetFormat(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<Format>(value->format());
@@ -590,7 +600,7 @@ Format MindIR_AvgPoolFusion_GetFormat(ConstPrimitivePtr primitive) {
 
 void MindIR_AvgPoolFusion_SetFormat(PrimitivePtr *primitive, Format format) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -603,15 +613,15 @@ void MindIR_AvgPoolFusion_SetFormat(PrimitivePtr *primitive, Format format) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_AVG_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 bool MindIR_AvgPoolFusion_GetGlobal(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       return value->global();
@@ -625,7 +635,7 @@ bool MindIR_AvgPoolFusion_GetGlobal(ConstPrimitivePtr primitive) {
 
 void MindIR_AvgPoolFusion_SetGlobal(PrimitivePtr *primitive, bool global) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -638,15 +648,15 @@ void MindIR_AvgPoolFusion_SetGlobal(PrimitivePtr *primitive, bool global) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_AVG_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 ActivationType MindIR_AvgPoolFusion_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -662,7 +672,7 @@ ActivationType MindIR_AvgPoolFusion_GetActivationType(ConstPrimitivePtr primitiv
 
 void MindIR_AvgPoolFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -675,9 +685,9 @@ void MindIR_AvgPoolFusion_SetActivationType(PrimitivePtr *primitive, ActivationT
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_AVG_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -691,11 +701,13 @@ PrimitivePtr MindIR_BatchToSpaceND_CreatePrimitive(const std::vector<int64_t> &b
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_BATCH_TO_SPACE_ND), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_BatchToSpaceND_GetBlockShape(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_BatchToSpaceND();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -713,7 +725,7 @@ std::vector<int64_t> MindIR_BatchToSpaceND_GetBlockShape(ConstPrimitivePtr primi
 
 void MindIR_BatchToSpaceND_SetBlockShape(PrimitivePtr *primitive, const std::vector<int64_t> &block_shape) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_BatchToSpaceND();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -722,15 +734,15 @@ void MindIR_BatchToSpaceND_SetBlockShape(PrimitivePtr *primitive, const std::vec
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_BATCH_TO_SPACE_ND), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<std::vector<int64_t>> MindIR_BatchToSpaceND_GetCrops(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_BatchToSpaceND();
     if (prim != nullptr && value != nullptr) {
       std::vector<std::vector<int64_t>> out;
@@ -753,7 +765,7 @@ std::vector<std::vector<int64_t>> MindIR_BatchToSpaceND_GetCrops(ConstPrimitiveP
 
 void MindIR_BatchToSpaceND_SetCrops(PrimitivePtr *primitive, const std::vector<std::vector<int64_t>> &crops) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_BatchToSpaceND();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -762,9 +774,9 @@ void MindIR_BatchToSpaceND_SetCrops(PrimitivePtr *primitive, const std::vector<s
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_BATCH_TO_SPACE_ND), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -775,7 +787,9 @@ PrimitivePtr MindIR_BiasAdd_CreatePrimitive() {
   auto ops_offset = schema::CreateBiasAdd(fbb);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_BIAS_ADD), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** Cast **********
@@ -784,7 +798,9 @@ PrimitivePtr MindIR_Cast_CreatePrimitive() {
   auto ops_offset = schema::CreateCast(fbb);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CAST), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** Concat **********
@@ -793,11 +809,13 @@ PrimitivePtr MindIR_Concat_CreatePrimitive(int64_t axis) {
   auto ops_offset = schema::CreateConcat(fbb, axis);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONCAT), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 int64_t MindIR_Concat_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Concat();
     if (prim != nullptr && value != nullptr) {
       return value->axis();
@@ -811,7 +829,7 @@ int64_t MindIR_Concat_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_Concat_SetAxis(PrimitivePtr *primitive, int64_t axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Concat();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -819,9 +837,9 @@ void MindIR_Concat_SetAxis(PrimitivePtr *primitive, int64_t axis) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONCAT), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -842,11 +860,13 @@ PrimitivePtr MindIR_Conv2DFusion_CreatePrimitive(const std::vector<int64_t> &ker
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_Conv2DFusion_GetKernelSize(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -864,7 +884,7 @@ std::vector<int64_t> MindIR_Conv2DFusion_GetKernelSize(ConstPrimitivePtr primiti
 
 void MindIR_Conv2DFusion_SetKernelSize(PrimitivePtr *primitive, const std::vector<int64_t> &kernel_size) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -878,15 +898,15 @@ void MindIR_Conv2DFusion_SetKernelSize(PrimitivePtr *primitive, const std::vecto
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_Conv2DFusion_GetStride(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -904,7 +924,7 @@ std::vector<int64_t> MindIR_Conv2DFusion_GetStride(ConstPrimitivePtr primitive) 
 
 void MindIR_Conv2DFusion_SetStride(PrimitivePtr *primitive, const std::vector<int64_t> &stride) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -919,15 +939,15 @@ void MindIR_Conv2DFusion_SetStride(PrimitivePtr *primitive, const std::vector<in
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_Conv2DFusion_GetDilation(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -945,7 +965,7 @@ std::vector<int64_t> MindIR_Conv2DFusion_GetDilation(ConstPrimitivePtr primitive
 
 void MindIR_Conv2DFusion_SetDilation(PrimitivePtr *primitive, const std::vector<int64_t> &dilation) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -959,15 +979,15 @@ void MindIR_Conv2DFusion_SetDilation(PrimitivePtr *primitive, const std::vector<
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 PadMode MindIR_Conv2DFusion_GetPadMode(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<PadMode>(value->pad_mode());
@@ -983,7 +1003,7 @@ PadMode MindIR_Conv2DFusion_GetPadMode(ConstPrimitivePtr primitive) {
 
 void MindIR_Conv2DFusion_SetPadMode(PrimitivePtr *primitive, PadMode pad_mode) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -997,15 +1017,15 @@ void MindIR_Conv2DFusion_SetPadMode(PrimitivePtr *primitive, PadMode pad_mode) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_Conv2DFusion_GetPadList(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -1023,7 +1043,7 @@ std::vector<int64_t> MindIR_Conv2DFusion_GetPadList(ConstPrimitivePtr primitive)
 
 void MindIR_Conv2DFusion_SetPadList(PrimitivePtr *primitive, const std::vector<int64_t> &pad_list) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1038,15 +1058,15 @@ void MindIR_Conv2DFusion_SetPadList(PrimitivePtr *primitive, const std::vector<i
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_Conv2DFusion_GetGroup(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       return value->group();
@@ -1060,7 +1080,7 @@ int64_t MindIR_Conv2DFusion_GetGroup(ConstPrimitivePtr primitive) {
 
 void MindIR_Conv2DFusion_SetGroup(PrimitivePtr *primitive, int64_t group) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1075,15 +1095,15 @@ void MindIR_Conv2DFusion_SetGroup(PrimitivePtr *primitive, int64_t group) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_Conv2DFusion_GetInChannel(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       return value->in_channel();
@@ -1097,7 +1117,7 @@ int64_t MindIR_Conv2DFusion_GetInChannel(ConstPrimitivePtr primitive) {
 
 void MindIR_Conv2DFusion_SetInChannel(PrimitivePtr *primitive, int64_t in_channel) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1112,16 +1132,15 @@ void MindIR_Conv2DFusion_SetInChannel(PrimitivePtr *primitive, int64_t in_channe
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
-
 int64_t MindIR_Conv2DFusion_GetOutChannel(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       return value->out_channel();
@@ -1135,7 +1154,7 @@ int64_t MindIR_Conv2DFusion_GetOutChannel(ConstPrimitivePtr primitive) {
 
 void MindIR_Conv2DFusion_SetOutChannel(PrimitivePtr *primitive, int64_t out_channel) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1146,20 +1165,19 @@ void MindIR_Conv2DFusion_SetOutChannel(PrimitivePtr *primitive, int64_t out_chan
         fbb.CreateVector(value->dilation()->data(), value->dilation()->size()),
         static_cast<schema::PadMode>(value->pad_mode()),
         fbb.CreateVector(value->pad_list()->data(), value->pad_list()->size()), 0, value->group(), value->in_channel(),
-        value->out_channel(), static_cast<schema::ActivationType>(value->activation_type()));
+        out_channel, static_cast<schema::ActivationType>(value->activation_type()));
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
-
 ActivationType MindIR_Conv2DFusion_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -1175,7 +1193,7 @@ ActivationType MindIR_Conv2DFusion_GetActivationType(ConstPrimitivePtr primitive
 
 void MindIR_Conv2DFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1190,9 +1208,9 @@ void MindIR_Conv2DFusion_SetActivationType(PrimitivePtr *primitive, ActivationTy
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -1212,11 +1230,13 @@ PrimitivePtr MindIR_Conv2dTransposeFusion_CreatePrimitive(
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetKernelSize(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -1234,7 +1254,7 @@ std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetKernelSize(ConstPrimitivePt
 
 void MindIR_Conv2dTransposeFusion_SetKernelSize(PrimitivePtr *primitive, const std::vector<int64_t> &kernel_size) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1249,15 +1269,15 @@ void MindIR_Conv2dTransposeFusion_SetKernelSize(PrimitivePtr *primitive, const s
       auto prim_offset = schema::CreatePrimitive(
         fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetStride(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -1275,7 +1295,7 @@ std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetStride(ConstPrimitivePtr pr
 
 void MindIR_Conv2dTransposeFusion_SetStride(PrimitivePtr *primitive, const std::vector<int64_t> &stride) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1291,15 +1311,15 @@ void MindIR_Conv2dTransposeFusion_SetStride(PrimitivePtr *primitive, const std::
       auto prim_offset = schema::CreatePrimitive(
         fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetDilation(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -1317,7 +1337,7 @@ std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetDilation(ConstPrimitivePtr 
 
 void MindIR_Conv2dTransposeFusion_SetDilation(PrimitivePtr *primitive, const std::vector<int64_t> &dilation) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1332,15 +1352,15 @@ void MindIR_Conv2dTransposeFusion_SetDilation(PrimitivePtr *primitive, const std
       auto prim_offset = schema::CreatePrimitive(
         fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 PadMode MindIR_Conv2dTransposeFusion_GetPadMode(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<PadMode>(value->pad_mode());
@@ -1356,7 +1376,7 @@ PadMode MindIR_Conv2dTransposeFusion_GetPadMode(ConstPrimitivePtr primitive) {
 
 void MindIR_Conv2dTransposeFusion_SetPadMode(PrimitivePtr *primitive, PadMode pad_mode) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1371,15 +1391,15 @@ void MindIR_Conv2dTransposeFusion_SetPadMode(PrimitivePtr *primitive, PadMode pa
       auto prim_offset = schema::CreatePrimitive(
         fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetPadList(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -1397,7 +1417,7 @@ std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetPadList(ConstPrimitivePtr p
 
 void MindIR_Conv2dTransposeFusion_SetPadList(PrimitivePtr *primitive, const std::vector<int64_t> &pad_list) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1413,15 +1433,15 @@ void MindIR_Conv2dTransposeFusion_SetPadList(PrimitivePtr *primitive, const std:
       auto prim_offset = schema::CreatePrimitive(
         fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_Conv2dTransposeFusion_GetGroup(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       return value->group();
@@ -1435,7 +1455,7 @@ int64_t MindIR_Conv2dTransposeFusion_GetGroup(ConstPrimitivePtr primitive) {
 
 void MindIR_Conv2dTransposeFusion_SetGroup(PrimitivePtr *primitive, int64_t group) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1451,15 +1471,15 @@ void MindIR_Conv2dTransposeFusion_SetGroup(PrimitivePtr *primitive, int64_t grou
       auto prim_offset = schema::CreatePrimitive(
         fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_Conv2dTransposeFusion_GetInChannel(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       return value->in_channel();
@@ -1473,7 +1493,7 @@ int64_t MindIR_Conv2dTransposeFusion_GetInChannel(ConstPrimitivePtr primitive) {
 
 void MindIR_Conv2dTransposeFusion_SetInChannel(PrimitivePtr *primitive, int64_t in_channel) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1489,15 +1509,15 @@ void MindIR_Conv2dTransposeFusion_SetInChannel(PrimitivePtr *primitive, int64_t 
       auto prim_offset = schema::CreatePrimitive(
         fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_Conv2dTransposeFusion_GetOutChannel(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       return value->out_channel();
@@ -1511,7 +1531,7 @@ int64_t MindIR_Conv2dTransposeFusion_GetOutChannel(ConstPrimitivePtr primitive) 
 
 void MindIR_Conv2dTransposeFusion_SetOutChannel(PrimitivePtr *primitive, int64_t out_channel) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1527,15 +1547,15 @@ void MindIR_Conv2dTransposeFusion_SetOutChannel(PrimitivePtr *primitive, int64_t
       auto prim_offset = schema::CreatePrimitive(
         fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 ActivationType MindIR_Conv2dTransposeFusion_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -1551,7 +1571,7 @@ ActivationType MindIR_Conv2dTransposeFusion_GetActivationType(ConstPrimitivePtr 
 
 void MindIR_Conv2dTransposeFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1567,15 +1587,15 @@ void MindIR_Conv2dTransposeFusion_SetActivationType(PrimitivePtr *primitive, Act
       auto prim_offset = schema::CreatePrimitive(
         fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetOutputPaddings(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -1594,7 +1614,7 @@ std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetOutputPaddings(ConstPrimiti
 void MindIR_Conv2dTransposeFusion_SetOutputPaddings(PrimitivePtr *primitive,
                                                     const std::vector<int64_t> &output_paddings) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1610,9 +1630,9 @@ void MindIR_Conv2dTransposeFusion_SetOutputPaddings(PrimitivePtr *primitive,
       auto prim_offset = schema::CreatePrimitive(
         fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_TRANSPOSE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -1624,11 +1644,13 @@ PrimitivePtr MindIR_DivFusion_CreatePrimitive(ActivationType activation_type) {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DIV_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 ActivationType MindIR_DivFusion_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_DivFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -1644,7 +1666,7 @@ ActivationType MindIR_DivFusion_GetActivationType(ConstPrimitivePtr primitive) {
 
 void MindIR_DivFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_DivFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1652,9 +1674,9 @@ void MindIR_DivFusion_SetActivationType(PrimitivePtr *primitive, ActivationType 
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DIV_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -1665,11 +1687,13 @@ PrimitivePtr MindIR_Eltwise_CreatePrimitive(EltwiseMode mode) {
   auto ops_offset = schema::CreateEltwise(fbb, static_cast<schema::EltwiseMode>(mode));
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ELTWISE), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 EltwiseMode MindIR_Eltwise_GetMode(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Eltwise();
     if (prim != nullptr && value != nullptr) {
       return static_cast<EltwiseMode>(value->mode());
@@ -1685,7 +1709,7 @@ EltwiseMode MindIR_Eltwise_GetMode(ConstPrimitivePtr primitive) {
 
 void MindIR_Eltwise_SetMode(PrimitivePtr *primitive, EltwiseMode mode) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Eltwise();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1693,9 +1717,9 @@ void MindIR_Eltwise_SetMode(PrimitivePtr *primitive, EltwiseMode mode) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ELTWISE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -1707,7 +1731,9 @@ PrimitivePtr MindIR_ExpandDims_CreatePrimitive() {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_EXPAND_DIMS), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** Fill **********
@@ -1716,7 +1742,9 @@ PrimitivePtr MindIR_Fill_CreatePrimitive() {
   auto ops_offset = schema::CreateFill(fbb);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_FILL), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** FullConnection **********
@@ -1728,11 +1756,13 @@ PrimitivePtr MindIR_FullConnection_CreatePrimitive(bool has_bias, bool use_axis,
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_FULL_CONNECTION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 bool MindIR_FullConnection_GetHasBias(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_FullConnection();
     if (prim != nullptr && value != nullptr) {
       return value->has_bias();
@@ -1746,7 +1776,7 @@ bool MindIR_FullConnection_GetHasBias(ConstPrimitivePtr primitive) {
 
 void MindIR_FullConnection_SetHasBias(PrimitivePtr *primitive, bool has_bias) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_FullConnection();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1755,15 +1785,15 @@ void MindIR_FullConnection_SetHasBias(PrimitivePtr *primitive, bool has_bias) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_FULL_CONNECTION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 bool MindIR_FullConnection_GetUseAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_FullConnection();
     if (prim != nullptr && value != nullptr) {
       return value->use_axis();
@@ -1777,7 +1807,7 @@ bool MindIR_FullConnection_GetUseAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_FullConnection_SetUseAxis(PrimitivePtr *primitive, bool use_axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_FullConnection();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1786,15 +1816,15 @@ void MindIR_FullConnection_SetUseAxis(PrimitivePtr *primitive, bool use_axis) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_FULL_CONNECTION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_FullConnection_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_FullConnection();
     if (prim != nullptr && value != nullptr) {
       return value->axis();
@@ -1808,7 +1838,7 @@ int64_t MindIR_FullConnection_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_FullConnection_SetAxis(PrimitivePtr *primitive, int64_t axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_FullConnection();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1817,15 +1847,15 @@ void MindIR_FullConnection_SetAxis(PrimitivePtr *primitive, int64_t axis) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_FULL_CONNECTION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 ActivationType MindIR_FullConnection_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_FullConnection();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -1841,7 +1871,7 @@ ActivationType MindIR_FullConnection_GetActivationType(ConstPrimitivePtr primiti
 
 void MindIR_FullConnection_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_FullConnection();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1850,9 +1880,9 @@ void MindIR_FullConnection_SetActivationType(PrimitivePtr *primitive, Activation
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_FULL_CONNECTION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -1864,11 +1894,13 @@ PrimitivePtr MindIR_FusedBatchNorm_CreatePrimitive(float epsilon) {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_FUSED_BATCH_NORM), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 float MindIR_FusedBatchNorm_GetEpsilon(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_FusedBatchNorm();
     if (prim != nullptr && value != nullptr) {
       return value->epsilon();
@@ -1882,17 +1914,17 @@ float MindIR_FusedBatchNorm_GetEpsilon(ConstPrimitivePtr primitive) {
 
 void MindIR_FusedBatchNorm_SetEpsilon(PrimitivePtr *primitive, float epsilon) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_FusedBatchNorm();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
-      auto ops_offset = schema::CreateFusedBatchNorm(fbb, 0.9, 0);
+      auto ops_offset = schema::CreateFusedBatchNorm(fbb, epsilon, 0.9, 0);
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_FUSED_BATCH_NORM), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -1903,7 +1935,9 @@ PrimitivePtr MindIR_Gather_CreatePrimitive() {
   auto ops_offset = schema::CreateGather(fbb);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_GATHER), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** LayerNormFusion **********
@@ -1914,11 +1948,13 @@ PrimitivePtr MindIR_LayerNormFusion_CreatePrimitive(int64_t begin_norm_axis, flo
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LAYER_NORM_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 int64_t MindIR_LayerNormFusion_GetBeginNormAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_LayerNormFusion();
     if (prim != nullptr && value != nullptr) {
       return value->begin_norm_axis();
@@ -1932,7 +1968,7 @@ int64_t MindIR_LayerNormFusion_GetBeginNormAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_LayerNormFusion_SetBeginNormAxis(PrimitivePtr *primitive, int64_t begin_norm_axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_LayerNormFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1941,15 +1977,15 @@ void MindIR_LayerNormFusion_SetBeginNormAxis(PrimitivePtr *primitive, int64_t be
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LAYER_NORM_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 float MindIR_LayerNormFusion_GetEpsilon(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_LayerNormFusion();
     if (prim != nullptr && value != nullptr) {
       return value->epsilon();
@@ -1963,7 +1999,7 @@ float MindIR_LayerNormFusion_GetEpsilon(ConstPrimitivePtr primitive) {
 
 void MindIR_LayerNormFusion_SetEpsilon(PrimitivePtr *primitive, float epsilon) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_LayerNormFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -1972,15 +2008,15 @@ void MindIR_LayerNormFusion_SetEpsilon(PrimitivePtr *primitive, float epsilon) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LAYER_NORM_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 bool MindIR_LayerNormFusion_GetElementwiseAffine(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_LayerNormFusion();
     if (prim != nullptr && value != nullptr) {
       return value->elementwise_affine();
@@ -1994,7 +2030,7 @@ bool MindIR_LayerNormFusion_GetElementwiseAffine(ConstPrimitivePtr primitive) {
 
 void MindIR_LayerNormFusion_SetElementwiseAffine(PrimitivePtr *primitive, bool elementwise_affine) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_LayerNormFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2003,15 +2039,15 @@ void MindIR_LayerNormFusion_SetElementwiseAffine(PrimitivePtr *primitive, bool e
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LAYER_NORM_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_LayerNormFusion_GetBeginParamsAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_LayerNormFusion();
     if (prim != nullptr && value != nullptr) {
       return value->begin_params_axis();
@@ -2025,7 +2061,7 @@ int64_t MindIR_LayerNormFusion_GetBeginParamsAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_LayerNormFusion_SetBeginParamsAxis(PrimitivePtr *primitive, int64_t begin_params_axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_LayerNormFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2034,9 +2070,9 @@ void MindIR_LayerNormFusion_SetBeginParamsAxis(PrimitivePtr *primitive, int64_t 
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LAYER_NORM_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -2048,7 +2084,9 @@ PrimitivePtr MindIR_LessEqual_CreatePrimitive() {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LESS_EQUAL), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** MatMulFusion **********
@@ -2059,11 +2097,13 @@ PrimitivePtr MindIR_MatMulFusion_CreatePrimitive(bool transpose_a, bool transpos
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MATMUL_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 bool MindIR_MatMulFusion_GetTransposeA(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MatMulFusion();
     if (prim != nullptr && value != nullptr) {
       return value->transpose_a();
@@ -2077,7 +2117,7 @@ bool MindIR_MatMulFusion_GetTransposeA(ConstPrimitivePtr primitive) {
 
 void MindIR_MatMulFusion_SetTransposeA(PrimitivePtr *primitive, bool transpose_a) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MatMulFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2086,15 +2126,15 @@ void MindIR_MatMulFusion_SetTransposeA(PrimitivePtr *primitive, bool transpose_a
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MATMUL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 bool MindIR_MatMulFusion_GetTransposeB(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MatMulFusion();
     if (prim != nullptr && value != nullptr) {
       return value->transpose_b();
@@ -2108,7 +2148,7 @@ bool MindIR_MatMulFusion_GetTransposeB(ConstPrimitivePtr primitive) {
 
 void MindIR_MatMulFusion_SetTransposeB(PrimitivePtr *primitive, bool transpose_b) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MatMulFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2117,15 +2157,15 @@ void MindIR_MatMulFusion_SetTransposeB(PrimitivePtr *primitive, bool transpose_b
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MATMUL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 ActivationType MindIR_MatMulFusion_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MatMulFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -2141,7 +2181,7 @@ ActivationType MindIR_MatMulFusion_GetActivationType(ConstPrimitivePtr primitive
 
 void MindIR_MatMulFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MatMulFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2150,9 +2190,9 @@ void MindIR_MatMulFusion_SetActivationType(PrimitivePtr *primitive, ActivationTy
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MATMUL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -2163,7 +2203,9 @@ PrimitivePtr MindIR_Maximum_CreatePrimitive() {
   auto ops_offset = schema::CreateMaximum(fbb);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MAXIMUM), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** MaxPoolFusion **********
@@ -2180,11 +2222,13 @@ PrimitivePtr MindIR_MaxPoolFusion_CreatePrimitive(const std::vector<int64_t> &ke
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MAX_POOL_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_MaxPoolFusion_GetKernelSize(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -2202,7 +2246,7 @@ std::vector<int64_t> MindIR_MaxPoolFusion_GetKernelSize(ConstPrimitivePtr primit
 
 void MindIR_MaxPoolFusion_SetKernelSize(PrimitivePtr *primitive, const std::vector<int64_t> &kernel_size) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2215,15 +2259,15 @@ void MindIR_MaxPoolFusion_SetKernelSize(PrimitivePtr *primitive, const std::vect
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MAX_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_MaxPoolFusion_GetStrides(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -2241,7 +2285,7 @@ std::vector<int64_t> MindIR_MaxPoolFusion_GetStrides(ConstPrimitivePtr primitive
 
 void MindIR_MaxPoolFusion_SetStrides(PrimitivePtr *primitive, const std::vector<int64_t> &strides) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2254,15 +2298,15 @@ void MindIR_MaxPoolFusion_SetStrides(PrimitivePtr *primitive, const std::vector<
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MAX_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_MaxPoolFusion_GetPad(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -2280,7 +2324,7 @@ std::vector<int64_t> MindIR_MaxPoolFusion_GetPad(ConstPrimitivePtr primitive) {
 
 void MindIR_MaxPoolFusion_SetPad(PrimitivePtr *primitive, const std::vector<int64_t> &pad) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2293,15 +2337,15 @@ void MindIR_MaxPoolFusion_SetPad(PrimitivePtr *primitive, const std::vector<int6
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MAX_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 PadMode MindIR_MaxPoolFusion_GetPadMode(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<PadMode>(value->pad_mode());
@@ -2317,7 +2361,7 @@ PadMode MindIR_MaxPoolFusion_GetPadMode(ConstPrimitivePtr primitive) {
 
 void MindIR_MaxPoolFusion_SetPadMode(PrimitivePtr *primitive, PadMode pad_mode) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2330,15 +2374,15 @@ void MindIR_MaxPoolFusion_SetPadMode(PrimitivePtr *primitive, PadMode pad_mode) 
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MAX_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 Format MindIR_MaxPoolFusion_GetFormat(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<Format>(value->format());
@@ -2354,7 +2398,7 @@ Format MindIR_MaxPoolFusion_GetFormat(ConstPrimitivePtr primitive) {
 
 void MindIR_MaxPoolFusion_SetFormat(PrimitivePtr *primitive, Format format) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2367,15 +2411,15 @@ void MindIR_MaxPoolFusion_SetFormat(PrimitivePtr *primitive, Format format) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MAX_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 bool MindIR_MaxPoolFusion_GetGlobal(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       return value->global();
@@ -2389,7 +2433,7 @@ bool MindIR_MaxPoolFusion_GetGlobal(ConstPrimitivePtr primitive) {
 
 void MindIR_MaxPoolFusion_SetGlobal(PrimitivePtr *primitive, bool global) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2402,15 +2446,15 @@ void MindIR_MaxPoolFusion_SetGlobal(PrimitivePtr *primitive, bool global) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MAX_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 ActivationType MindIR_MaxPoolFusion_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -2426,7 +2470,7 @@ ActivationType MindIR_MaxPoolFusion_GetActivationType(ConstPrimitivePtr primitiv
 
 void MindIR_MaxPoolFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2439,9 +2483,9 @@ void MindIR_MaxPoolFusion_SetActivationType(PrimitivePtr *primitive, ActivationT
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MAX_POOL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -2453,11 +2497,13 @@ PrimitivePtr MindIR_MulFusion_CreatePrimitive(ActivationType activation_type) {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MUL_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 ActivationType MindIR_MulFusion_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_MulFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -2473,7 +2519,7 @@ ActivationType MindIR_MulFusion_GetActivationType(ConstPrimitivePtr primitive) {
 
 void MindIR_MulFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_MulFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2481,9 +2527,9 @@ void MindIR_MulFusion_SetActivationType(PrimitivePtr *primitive, ActivationType 
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MUL_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -2494,11 +2540,13 @@ PrimitivePtr MindIR_OneHot_CreatePrimitive(int64_t axis) {
   auto ops_offset = schema::CreateOneHot(fbb, axis);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ONE_HOT), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 int64_t MindIR_OneHot_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_OneHot();
     if (prim != nullptr && value != nullptr) {
       return value->axis();
@@ -2512,7 +2560,7 @@ int64_t MindIR_OneHot_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_OneHot_SetAxis(PrimitivePtr *primitive, int64_t axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_OneHot();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2520,9 +2568,9 @@ void MindIR_OneHot_SetAxis(PrimitivePtr *primitive, int64_t axis) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ONE_HOT), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -2536,11 +2584,13 @@ PrimitivePtr MindIR_PadFusion_CreatePrimitive(const std::vector<std::vector<int6
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_PAD_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<std::vector<int64_t>> MindIR_PadFusion_GetPaddings(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_PadFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<std::vector<int64_t>> out;
@@ -2563,7 +2613,7 @@ std::vector<std::vector<int64_t>> MindIR_PadFusion_GetPaddings(ConstPrimitivePtr
 
 void MindIR_PadFusion_SetPaddings(PrimitivePtr *primitive, const std::vector<std::vector<int64_t>> &paddings) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_PadFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2573,15 +2623,15 @@ void MindIR_PadFusion_SetPaddings(PrimitivePtr *primitive, const std::vector<std
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_PAD_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 PaddingMode MindIR_PadFusion_GetPaddingMode(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_PadFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<PaddingMode>(value->padding_mode());
@@ -2597,7 +2647,7 @@ PaddingMode MindIR_PadFusion_GetPaddingMode(ConstPrimitivePtr primitive) {
 
 void MindIR_PadFusion_SetPaddingMode(PrimitivePtr *primitive, PaddingMode padding_mode) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_PadFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2607,15 +2657,15 @@ void MindIR_PadFusion_SetPaddingMode(PrimitivePtr *primitive, PaddingMode paddin
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_PAD_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 float MindIR_PadFusion_GetConstantValue(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_PadFusion();
     if (prim != nullptr && value != nullptr) {
       return value->constant_value();
@@ -2629,7 +2679,7 @@ float MindIR_PadFusion_GetConstantValue(ConstPrimitivePtr primitive) {
 
 void MindIR_PadFusion_SetConstantValue(PrimitivePtr *primitive, float constant_value) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_PadFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2639,9 +2689,9 @@ void MindIR_PadFusion_SetConstantValue(PrimitivePtr *primitive, float constant_v
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_PAD_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -2653,11 +2703,13 @@ PrimitivePtr MindIR_PowFusion_CreatePrimitive(float scale, float shift) {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_POW_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 float MindIR_PowFusion_GetScale(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_PowFusion();
     if (prim != nullptr && value != nullptr) {
       return value->scale();
@@ -2671,7 +2723,7 @@ float MindIR_PowFusion_GetScale(ConstPrimitivePtr primitive) {
 
 void MindIR_PowFusion_SetScale(PrimitivePtr *primitive, float scale) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_PowFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2679,15 +2731,15 @@ void MindIR_PowFusion_SetScale(PrimitivePtr *primitive, float scale) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_POW_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 float MindIR_PowFusion_GetShift(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_PowFusion();
     if (prim != nullptr && value != nullptr) {
       return value->shift();
@@ -2701,7 +2753,7 @@ float MindIR_PowFusion_GetShift(ConstPrimitivePtr primitive) {
 
 void MindIR_PowFusion_SetShift(PrimitivePtr *primitive, float shift) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_PowFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2709,9 +2761,9 @@ void MindIR_PowFusion_SetShift(PrimitivePtr *primitive, float shift) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_POW_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -2723,11 +2775,13 @@ PrimitivePtr MindIR_PReLUFusion_CreatePrimitive(bool channel_shared) {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_PRELU_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 bool MindIR_PReLUFusion_GetChannelShared(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_PReLUFusion();
     if (prim != nullptr && value != nullptr) {
       return value->channel_shared();
@@ -2741,7 +2795,7 @@ bool MindIR_PReLUFusion_GetChannelShared(ConstPrimitivePtr primitive) {
 
 void MindIR_PReLUFusion_SetChannelShared(PrimitivePtr *primitive, bool channel_shared) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_PReLUFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2749,9 +2803,9 @@ void MindIR_PReLUFusion_SetChannelShared(PrimitivePtr *primitive, bool channel_s
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_PRELU_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -2763,11 +2817,13 @@ PrimitivePtr MindIR_QuantDTypeCast_CreatePrimitive(int64_t src_t, int64_t dst_t)
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_QUANT_DTYPE_CAST), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 int64_t MindIR_QuantDTypeCast_GetSrcT(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_QuantDTypeCast();
     if (prim != nullptr && value != nullptr) {
       return value->src_t();
@@ -2781,7 +2837,7 @@ int64_t MindIR_QuantDTypeCast_GetSrcT(ConstPrimitivePtr primitive) {
 
 void MindIR_QuantDTypeCast_SetSrcT(PrimitivePtr *primitive, int64_t src_t) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_QuantDTypeCast();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2789,15 +2845,15 @@ void MindIR_QuantDTypeCast_SetSrcT(PrimitivePtr *primitive, int64_t src_t) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_QUANT_DTYPE_CAST), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_QuantDTypeCast_GetDstT(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_QuantDTypeCast();
     if (prim != nullptr && value != nullptr) {
       return value->dst_t();
@@ -2811,7 +2867,7 @@ int64_t MindIR_QuantDTypeCast_GetDstT(ConstPrimitivePtr primitive) {
 
 void MindIR_QuantDTypeCast_SetDstT(PrimitivePtr *primitive, int64_t dst_t) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_QuantDTypeCast();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2819,9 +2875,9 @@ void MindIR_QuantDTypeCast_SetDstT(PrimitivePtr *primitive, int64_t dst_t) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_QUANT_DTYPE_CAST), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -2834,11 +2890,13 @@ PrimitivePtr MindIR_ReduceFusion_CreatePrimitive(bool keep_dims, ReduceMode mode
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_REDUCE_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 bool MindIR_ReduceFusion_GetKeepDims(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_ReduceFusion();
     if (prim != nullptr && value != nullptr) {
       return value->keep_dims();
@@ -2852,7 +2910,7 @@ bool MindIR_ReduceFusion_GetKeepDims(ConstPrimitivePtr primitive) {
 
 void MindIR_ReduceFusion_SetKeepDims(PrimitivePtr *primitive, bool keep_dims) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_ReduceFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2861,15 +2919,15 @@ void MindIR_ReduceFusion_SetKeepDims(PrimitivePtr *primitive, bool keep_dims) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_REDUCE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 ReduceMode MindIR_ReduceFusion_GetMode(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_ReduceFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ReduceMode>(value->mode());
@@ -2885,7 +2943,7 @@ ReduceMode MindIR_ReduceFusion_GetMode(ConstPrimitivePtr primitive) {
 
 void MindIR_ReduceFusion_SetMode(PrimitivePtr *primitive, ReduceMode mode) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_ReduceFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2894,15 +2952,15 @@ void MindIR_ReduceFusion_SetMode(PrimitivePtr *primitive, ReduceMode mode) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_REDUCE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 bool MindIR_ReduceFusion_GetReduceToEnd(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_ReduceFusion();
     if (prim != nullptr && value != nullptr) {
       return value->reduce_to_end();
@@ -2916,7 +2974,7 @@ bool MindIR_ReduceFusion_GetReduceToEnd(ConstPrimitivePtr primitive) {
 
 void MindIR_ReduceFusion_SetReduceToEnd(PrimitivePtr *primitive, bool reduce_to_end) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_ReduceFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2925,15 +2983,15 @@ void MindIR_ReduceFusion_SetReduceToEnd(PrimitivePtr *primitive, bool reduce_to_
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_REDUCE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 float MindIR_ReduceFusion_GetCoeff(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_ReduceFusion();
     if (prim != nullptr && value != nullptr) {
       return value->coeff();
@@ -2947,7 +3005,7 @@ float MindIR_ReduceFusion_GetCoeff(ConstPrimitivePtr primitive) {
 
 void MindIR_ReduceFusion_SetCoeff(PrimitivePtr *primitive, float coeff) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_ReduceFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -2956,9 +3014,9 @@ void MindIR_ReduceFusion_SetCoeff(PrimitivePtr *primitive, float coeff) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_REDUCE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -2969,7 +3027,9 @@ PrimitivePtr MindIR_Reshape_CreatePrimitive() {
   auto ops_offset = schema::CreateReshape(fbb);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESHAPE), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** Resize **********
@@ -2985,11 +3045,13 @@ PrimitivePtr MindIR_Resize_CreatePrimitive(ResizeMethod method, int64_t new_heig
     exclude_outside, extrapolation_value, static_cast<schema::NearestMode>(nearest_mode));
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESIZE), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 ResizeMethod MindIR_Resize_GetMethod(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ResizeMethod>(value->method());
@@ -3005,7 +3067,7 @@ ResizeMethod MindIR_Resize_GetMethod(ConstPrimitivePtr primitive) {
 
 void MindIR_Resize_SetMethod(PrimitivePtr *primitive, ResizeMethod method) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3018,15 +3080,15 @@ void MindIR_Resize_SetMethod(PrimitivePtr *primitive, ResizeMethod method) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESIZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_Resize_GetNewHeight(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       return value->new_height();
@@ -3040,7 +3102,7 @@ int64_t MindIR_Resize_GetNewHeight(ConstPrimitivePtr primitive) {
 
 void MindIR_Resize_SetNewHeight(PrimitivePtr *primitive, int64_t new_height) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3053,15 +3115,15 @@ void MindIR_Resize_SetNewHeight(PrimitivePtr *primitive, int64_t new_height) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESIZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_Resize_GetNewWidth(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       return value->new_width();
@@ -3075,7 +3137,7 @@ int64_t MindIR_Resize_GetNewWidth(ConstPrimitivePtr primitive) {
 
 void MindIR_Resize_SetNewWidth(PrimitivePtr *primitive, int64_t new_width) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3088,15 +3150,15 @@ void MindIR_Resize_SetNewWidth(PrimitivePtr *primitive, int64_t new_width) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESIZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 bool MindIR_Resize_GetPreserveAspectRatio(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       return value->preserve_aspect_ratio();
@@ -3110,7 +3172,7 @@ bool MindIR_Resize_GetPreserveAspectRatio(ConstPrimitivePtr primitive) {
 
 void MindIR_Resize_SetPreserveAspectRatio(PrimitivePtr *primitive, bool preserve_aspect_ratio) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3123,15 +3185,15 @@ void MindIR_Resize_SetPreserveAspectRatio(PrimitivePtr *primitive, bool preserve
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESIZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 CoordinateTransformMode MindIR_Resize_GetCoordinateTransformMode(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       return static_cast<CoordinateTransformMode>(value->coordinate_transform_mode());
@@ -3148,7 +3210,7 @@ CoordinateTransformMode MindIR_Resize_GetCoordinateTransformMode(ConstPrimitiveP
 void MindIR_Resize_SetCoordinateTransformMode(PrimitivePtr *primitive,
                                               CoordinateTransformMode coordinate_transform_mode) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3161,15 +3223,15 @@ void MindIR_Resize_SetCoordinateTransformMode(PrimitivePtr *primitive,
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESIZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 float MindIR_Resize_GetCubicCoeff(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       return value->cubic_coeff();
@@ -3183,7 +3245,7 @@ float MindIR_Resize_GetCubicCoeff(ConstPrimitivePtr primitive) {
 
 void MindIR_Resize_SetCubicCoeff(PrimitivePtr *primitive, float cubic_coeff) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3196,15 +3258,15 @@ void MindIR_Resize_SetCubicCoeff(PrimitivePtr *primitive, float cubic_coeff) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESIZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_Resize_GetExcludeOutside(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       return value->exclude_outside();
@@ -3218,7 +3280,7 @@ int64_t MindIR_Resize_GetExcludeOutside(ConstPrimitivePtr primitive) {
 
 void MindIR_Resize_SetExcludeOutside(PrimitivePtr *primitive, int64_t exclude_outside) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3230,15 +3292,15 @@ void MindIR_Resize_SetExcludeOutside(PrimitivePtr *primitive, int64_t exclude_ou
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESIZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 float MindIR_Resize_GetExtrapolationValue(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       return value->extrapolation_value();
@@ -3252,7 +3314,7 @@ float MindIR_Resize_GetExtrapolationValue(ConstPrimitivePtr primitive) {
 
 void MindIR_Resize_SetExtrapolationValue(PrimitivePtr *primitive, float extrapolation_value) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3264,15 +3326,15 @@ void MindIR_Resize_SetExtrapolationValue(PrimitivePtr *primitive, float extrapol
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESIZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 NearestMode MindIR_Resize_GetNearestMode(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       return static_cast<NearestMode>(value->nearest_mode());
@@ -3288,7 +3350,7 @@ NearestMode MindIR_Resize_GetNearestMode(ConstPrimitivePtr primitive) {
 
 void MindIR_Resize_SetNearestMode(PrimitivePtr *primitive, NearestMode nearest_mode) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Resize();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3300,9 +3362,9 @@ void MindIR_Resize_SetNearestMode(PrimitivePtr *primitive, NearestMode nearest_m
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RESIZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -3313,7 +3375,9 @@ PrimitivePtr MindIR_Rsqrt_CreatePrimitive() {
   auto ops_offset = schema::CreateRsqrt(fbb);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RSQRT), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** ScaleFusion **********
@@ -3323,11 +3387,13 @@ PrimitivePtr MindIR_ScaleFusion_CreatePrimitive(int64_t axis, ActivationType act
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SCALE_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 int64_t MindIR_ScaleFusion_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_ScaleFusion();
     if (prim != nullptr && value != nullptr) {
       return value->axis();
@@ -3341,7 +3407,7 @@ int64_t MindIR_ScaleFusion_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_ScaleFusion_SetAxis(PrimitivePtr *primitive, int64_t axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_ScaleFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3350,15 +3416,15 @@ void MindIR_ScaleFusion_SetAxis(PrimitivePtr *primitive, int64_t axis) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SCALE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 ActivationType MindIR_ScaleFusion_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_ScaleFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -3374,7 +3440,7 @@ ActivationType MindIR_ScaleFusion_GetActivationType(ConstPrimitivePtr primitive)
 
 void MindIR_ScaleFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_ScaleFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3383,9 +3449,9 @@ void MindIR_ScaleFusion_SetActivationType(PrimitivePtr *primitive, ActivationTyp
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SCALE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -3396,7 +3462,9 @@ PrimitivePtr MindIR_Shape_CreatePrimitive() {
   auto ops_offset = schema::CreateShape(fbb);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SHAPE), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** SliceFusion **********
@@ -3406,11 +3474,13 @@ PrimitivePtr MindIR_SliceFusion_CreatePrimitive(const std::vector<int64_t> &axes
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SLICE_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_SliceFusion_GetAxes(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_SliceFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -3428,7 +3498,7 @@ std::vector<int64_t> MindIR_SliceFusion_GetAxes(ConstPrimitivePtr primitive) {
 
 void MindIR_SliceFusion_SetAxes(PrimitivePtr *primitive, const std::vector<int64_t> &axes) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_SliceFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3436,9 +3506,9 @@ void MindIR_SliceFusion_SetAxes(PrimitivePtr *primitive, const std::vector<int64
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SLICE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -3449,11 +3519,13 @@ PrimitivePtr MindIR_Softmax_CreatePrimitive(const std::vector<int64_t> &axis) {
   auto ops_offset = schema::CreateSoftmax(fbb, fbb.CreateVector(axis.data(), axis.size()));
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SOFTMAX), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_Softmax_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Softmax();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -3471,7 +3543,7 @@ std::vector<int64_t> MindIR_Softmax_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_Softmax_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t> &axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Softmax();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3479,9 +3551,9 @@ void MindIR_Softmax_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t> 
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SOFTMAX), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -3495,11 +3567,13 @@ PrimitivePtr MindIR_SpaceToBatchND_CreatePrimitive(const std::vector<int64_t> &b
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPACE_TO_BATCH_ND), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_SpaceToBatchND_GetBlockShape(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_SpaceToBatchND();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -3517,7 +3591,7 @@ std::vector<int64_t> MindIR_SpaceToBatchND_GetBlockShape(ConstPrimitivePtr primi
 
 void MindIR_SpaceToBatchND_SetBlockShape(PrimitivePtr *primitive, const std::vector<int64_t> &block_shape) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_SpaceToBatchND();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3526,15 +3600,15 @@ void MindIR_SpaceToBatchND_SetBlockShape(PrimitivePtr *primitive, const std::vec
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPACE_TO_BATCH_ND), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<std::vector<int64_t>> MindIR_SpaceToBatchND_GetPaddings(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_SpaceToBatchND();
     if (prim != nullptr && value != nullptr) {
       std::vector<std::vector<int64_t>> out;
@@ -3557,7 +3631,7 @@ std::vector<std::vector<int64_t>> MindIR_SpaceToBatchND_GetPaddings(ConstPrimiti
 
 void MindIR_SpaceToBatchND_SetPaddings(PrimitivePtr *primitive, const std::vector<std::vector<int64_t>> &paddings) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_SpaceToBatchND();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3566,9 +3640,9 @@ void MindIR_SpaceToBatchND_SetPaddings(PrimitivePtr *primitive, const std::vecto
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPACE_TO_BATCH_ND), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -3580,11 +3654,13 @@ PrimitivePtr MindIR_Split_CreatePrimitive(int64_t output_num, const std::vector<
     schema::CreateSplit(fbb, output_num, fbb.CreateVector(size_splits.data(), size_splits.size()), axis);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPLIT), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 int64_t MindIR_Split_GetOutputNum(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Split();
     if (prim != nullptr && value != nullptr) {
       return value->output_num();
@@ -3598,7 +3674,7 @@ int64_t MindIR_Split_GetOutputNum(ConstPrimitivePtr primitive) {
 
 void MindIR_Split_SetOutputNum(PrimitivePtr *primitive, int64_t output_num) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Split();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3607,15 +3683,15 @@ void MindIR_Split_SetOutputNum(PrimitivePtr *primitive, int64_t output_num) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPLIT), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 std::vector<int64_t> MindIR_Split_GetSizeSplits(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Split();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -3633,7 +3709,7 @@ std::vector<int64_t> MindIR_Split_GetSizeSplits(ConstPrimitivePtr primitive) {
 
 void MindIR_Split_SetSizeSplits(PrimitivePtr *primitive, const std::vector<int64_t> &size_splits) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Split();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3642,15 +3718,15 @@ void MindIR_Split_SetSizeSplits(PrimitivePtr *primitive, const std::vector<int64
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPLIT), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_Split_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Split();
     if (prim != nullptr && value != nullptr) {
       return value->axis();
@@ -3664,7 +3740,7 @@ int64_t MindIR_Split_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_Split_SetAxis(PrimitivePtr *primitive, int64_t axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Split();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3673,9 +3749,9 @@ void MindIR_Split_SetAxis(PrimitivePtr *primitive, int64_t axis) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPLIT), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -3686,7 +3762,9 @@ PrimitivePtr MindIR_Sqrt_CreatePrimitive() {
   auto ops_offset = schema::CreateSqrt(fbb);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SQRT), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** SquaredDifference **********
@@ -3696,7 +3774,9 @@ PrimitivePtr MindIR_SquaredDifference_CreatePrimitive() {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SQUARED_DIFFERENCE), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** Squeeze **********
@@ -3705,11 +3785,13 @@ PrimitivePtr MindIR_Squeeze_CreatePrimitive(const std::vector<int64_t> &axis) {
   auto ops_offset = schema::CreateSqueeze(fbb, fbb.CreateVector(axis.data(), axis.size()));
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SQUEEZE), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_Squeeze_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Squeeze();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -3727,7 +3809,7 @@ std::vector<int64_t> MindIR_Squeeze_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_Squeeze_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t> &axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Squeeze();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3735,9 +3817,9 @@ void MindIR_Squeeze_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t> 
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SQUEEZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -3748,11 +3830,13 @@ PrimitivePtr MindIR_Stack_CreatePrimitive(int64_t axis) {
   auto ops_offset = schema::CreateStack(fbb, axis);
   auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_STACK), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 int64_t MindIR_Stack_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Stack();
     if (prim != nullptr && value != nullptr) {
       return value->axis();
@@ -3766,7 +3850,7 @@ int64_t MindIR_Stack_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_Stack_SetAxis(PrimitivePtr *primitive, int64_t axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Stack();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3774,9 +3858,9 @@ void MindIR_Stack_SetAxis(PrimitivePtr *primitive, int64_t axis) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_STACK), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -3790,11 +3874,13 @@ PrimitivePtr MindIR_StridedSlice_CreatePrimitive(int64_t begin_mask, int64_t end
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_STRIDED_SLICE), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 int64_t MindIR_StridedSlice_GetBeginMask(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_StridedSlice();
     if (prim != nullptr && value != nullptr) {
       return value->begin_mask();
@@ -3808,7 +3894,7 @@ int64_t MindIR_StridedSlice_GetBeginMask(ConstPrimitivePtr primitive) {
 
 void MindIR_StridedSlice_SetBeginMask(PrimitivePtr *primitive, int64_t begin_mask) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_StridedSlice();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3817,15 +3903,15 @@ void MindIR_StridedSlice_SetBeginMask(PrimitivePtr *primitive, int64_t begin_mas
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_STRIDED_SLICE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_StridedSlice_GetEndMask(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_StridedSlice();
     if (prim != nullptr && value != nullptr) {
       return value->end_mask();
@@ -3839,7 +3925,7 @@ int64_t MindIR_StridedSlice_GetEndMask(ConstPrimitivePtr primitive) {
 
 void MindIR_StridedSlice_SetEndMask(PrimitivePtr *primitive, int64_t end_mask) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_StridedSlice();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3848,15 +3934,15 @@ void MindIR_StridedSlice_SetEndMask(PrimitivePtr *primitive, int64_t end_mask) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_STRIDED_SLICE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_StridedSlice_GetEllipsisMask(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_StridedSlice();
     if (prim != nullptr && value != nullptr) {
       return value->ellipsis_mask();
@@ -3870,7 +3956,7 @@ int64_t MindIR_StridedSlice_GetEllipsisMask(ConstPrimitivePtr primitive) {
 
 void MindIR_StridedSlice_SetEllipsisMask(PrimitivePtr *primitive, int64_t ellipsis_mask) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_StridedSlice();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3879,15 +3965,15 @@ void MindIR_StridedSlice_SetEllipsisMask(PrimitivePtr *primitive, int64_t ellips
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_STRIDED_SLICE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_StridedSlice_GetNewAxisMask(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_StridedSlice();
     if (prim != nullptr && value != nullptr) {
       return value->new_axis_mask();
@@ -3901,7 +3987,7 @@ int64_t MindIR_StridedSlice_GetNewAxisMask(ConstPrimitivePtr primitive) {
 
 void MindIR_StridedSlice_SetNewAxisMask(PrimitivePtr *primitive, int64_t new_axis_mask) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_StridedSlice();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3910,15 +3996,15 @@ void MindIR_StridedSlice_SetNewAxisMask(PrimitivePtr *primitive, int64_t new_axi
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_STRIDED_SLICE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_StridedSlice_GetShrinkAxisMask(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_StridedSlice();
     if (prim != nullptr && value != nullptr) {
       return value->shrink_axis_mask();
@@ -3932,7 +4018,7 @@ int64_t MindIR_StridedSlice_GetShrinkAxisMask(ConstPrimitivePtr primitive) {
 
 void MindIR_StridedSlice_SetShrinkAxisMask(PrimitivePtr *primitive, int64_t shrink_axis_mask) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_StridedSlice();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3941,9 +4027,9 @@ void MindIR_StridedSlice_SetShrinkAxisMask(PrimitivePtr *primitive, int64_t shri
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_STRIDED_SLICE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -3955,11 +4041,13 @@ PrimitivePtr MindIR_SubFusion_CreatePrimitive(ActivationType activation_type) {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SUB_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 ActivationType MindIR_SubFusion_GetActivationType(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_SubFusion();
     if (prim != nullptr && value != nullptr) {
       return static_cast<ActivationType>(value->activation_type());
@@ -3975,7 +4063,7 @@ ActivationType MindIR_SubFusion_GetActivationType(ConstPrimitivePtr primitive) {
 
 void MindIR_SubFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_SubFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -3983,9 +4071,9 @@ void MindIR_SubFusion_SetActivationType(PrimitivePtr *primitive, ActivationType 
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SUB_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -3997,11 +4085,13 @@ PrimitivePtr MindIR_TileFusion_CreatePrimitive(const std::vector<int64_t> &dims)
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_TILE_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_TileFusion_GetDims(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_TileFusion();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -4019,7 +4109,7 @@ std::vector<int64_t> MindIR_TileFusion_GetDims(ConstPrimitivePtr primitive) {
 
 void MindIR_TileFusion_SetDims(PrimitivePtr *primitive, const std::vector<int64_t> &dims) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_TileFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -4027,9 +4117,9 @@ void MindIR_TileFusion_SetDims(PrimitivePtr *primitive, const std::vector<int64_
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_TILE_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -4041,11 +4131,13 @@ PrimitivePtr MindIR_TopKFusion_CreatePrimitive(bool sorted, int64_t axis) {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_TOPK_FUSION), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 bool MindIR_TopKFusion_GetSorted(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_TopKFusion();
     if (prim != nullptr && value != nullptr) {
       return value->sorted();
@@ -4059,7 +4151,7 @@ bool MindIR_TopKFusion_GetSorted(ConstPrimitivePtr primitive) {
 
 void MindIR_TopKFusion_SetSorted(PrimitivePtr *primitive, bool sorted) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_TopKFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -4067,15 +4159,15 @@ void MindIR_TopKFusion_SetSorted(PrimitivePtr *primitive, bool sorted) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_TOPK_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
 int64_t MindIR_TopKFusion_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_TopKFusion();
     if (prim != nullptr && value != nullptr) {
       return value->axis();
@@ -4089,7 +4181,7 @@ int64_t MindIR_TopKFusion_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_TopKFusion_SetAxis(PrimitivePtr *primitive, int64_t axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_TopKFusion();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -4097,9 +4189,9 @@ void MindIR_TopKFusion_SetAxis(PrimitivePtr *primitive, int64_t axis) {
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_TOPK_FUSION), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
@@ -4111,7 +4203,9 @@ PrimitivePtr MindIR_Transpose_CreatePrimitive() {
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_TRANSPOSE), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 
 // ********** Unsqueeze **********
@@ -4121,11 +4215,13 @@ PrimitivePtr MindIR_Unsqueeze_CreatePrimitive(const std::vector<int64_t> &axis) 
   auto prim_offset =
     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_UNSQUEEZE), ops_offset.o);
   fbb.Finish(prim_offset);
-  return MindIR_CreatePrimitiveFromBuilder(fbb);
+  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
+  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+  return ret_value;
 }
 std::vector<int64_t> MindIR_Unsqueeze_GetAxis(ConstPrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<const schema::Primitive *>(primitive);
     auto value = prim->value_as_Unsqueeze();
     if (prim != nullptr && value != nullptr) {
       std::vector<int64_t> result;
@@ -4143,7 +4239,7 @@ std::vector<int64_t> MindIR_Unsqueeze_GetAxis(ConstPrimitivePtr primitive) {
 
 void MindIR_Unsqueeze_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t> &axis) {
   if (primitive != nullptr && *primitive != nullptr) {
-    auto prim = flatbuffers::GetRoot<schema::Primitive>(*primitive);
+    auto prim = static_cast<schema::Primitive *>(*primitive);
     auto value = prim->value_as_Unsqueeze();
     if (prim != nullptr && value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
@@ -4151,11 +4247,12 @@ void MindIR_Unsqueeze_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t
       auto prim_offset =
         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_UNSQUEEZE), ops_offset.o);
       fbb.Finish(prim_offset);
-      auto tmp = MindIR_CreatePrimitiveFromBuilder(fbb);
-      free(*primitive);
-      *primitive = tmp;
+      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+      *primitive = ret_value;
     }
   }
 }
+
 }  // namespace lite
 }  // namespace mindspore

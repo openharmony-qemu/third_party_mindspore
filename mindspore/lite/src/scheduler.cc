@@ -58,7 +58,7 @@
 #include "src/runtime/kernel/arm/base/partial_fusion.h"
 #endif
 #ifdef SUPPORT_NNRT
-#include "src/runtime/delegate/nnrt/nnrt_delegate.h"
+#include "src/delegate/nnrt/nnrt_delegate.h"
 #endif
 
 namespace mindspore::lite {
@@ -376,7 +376,7 @@ int Scheduler::CheckInputParam(std::vector<kernel::LiteKernel *> *dst_kernels) {
     MS_LOG(ERROR) << "Input model is nullptr";
     return RET_PARAM_INVALID;
   }
-  if (src_model_->sub_graphs_.empty()) {
+  if (src_model_->graph_.sub_graphs_.empty()) {
     MS_LOG(ERROR) << "Model should have a subgraph at least";
     return RET_PARAM_INVALID;
   }
@@ -399,17 +399,19 @@ int Scheduler::ReplaceDelegateKernels(std::vector<kernel::LiteKernel *> *dst_ker
     MS_LOG(ERROR) << "New delegate model failed.";
     return RET_NULL_PTR;
   }
+  MS_LOG(INFO) << "set lite graph.";
 #ifdef SUPPORT_NNRT
-  auto delegate = dynamic_cast<NNRDelegate *>(delegate_.get());
-  delegate->setLiteGraph(this->src_model_->graph_);
+  auto delegate = static_cast<NNRTDelegate *>(delegate_.get());
+  delegate->ShallowCopyLiteGraph(this->src_model_->graph_);
 #endif
+  MS_LOG(INFO) << "Delegate build start.";
   auto ret = delegate_->Build(model);
   if (ret != mindspore::kSuccess) {
     delete model;
     MS_LOG(ERROR) << "Delegate prepare kernels failed.";
     return RET_ERROR;
   }
-
+  MS_LOG(INFO) << "Delegate build end.";
   auto src_kernels = *dst_kernels;
   dst_kernels->clear();
   std::map<const kernel::LiteKernel *, bool> delegate_support;
@@ -462,7 +464,6 @@ int Scheduler::InitDelegateKernels(std::vector<kernel::LiteKernel *> *dst_kernel
   if (delegate_ == nullptr) {
     return RET_OK;
   }
-
   /* external delegate */
   if (delegate_device_type_ == -1) {
     auto ret = ReplaceDelegateKernels(dst_kernels);
@@ -520,7 +521,7 @@ int Scheduler::InitDelegateKernels(std::vector<kernel::LiteKernel *> *dst_kernel
 }
 #endif
 
-void Scheduler::FindNodeInoutTensors(const lite::Model::Node &node, std::vector<Tensor *> *inputs,
+void Scheduler::FindNodeInoutTensors(const lite::LiteGraph::Node &node, std::vector<Tensor *> *inputs,
                                      std::vector<Tensor *> *outputs) {
   MS_ASSERT(inputs != nullptr);
   MS_ASSERT(outputs != nullptr);
@@ -536,7 +537,7 @@ void Scheduler::FindNodeInoutTensors(const lite::Model::Node &node, std::vector<
   }
 }
 
-int Scheduler::InferNodeShape(const lite::Model::Node *node) {
+int Scheduler::InferNodeShape(const lite::LiteGraph::Node *node) {
   MS_ASSERT(node != nullptr);
   auto primitive = node->primitive_;
   MS_ASSERT(primitive != nullptr);
@@ -621,9 +622,9 @@ void Scheduler::FreeOpParameters() {
   }
 }
 
-int Scheduler::RestoreSubGraphInput(const lite::Model::Node *partial_node) {
+int Scheduler::RestoreSubGraphInput(const lite::LiteGraph::Node *partial_node) {
   auto subgraph_index = GetPartialGraphIndex(partial_node->primitive_, schema_version_);
-  auto subgraph = src_model_->sub_graphs_.at(subgraph_index);
+  auto subgraph = src_model_->graph_.sub_graphs_.at(subgraph_index);
   for (size_t i = 0; i < subgraph->input_indices_.size(); ++i) {
     auto &subgraph_input = src_tensors_->at(subgraph->input_indices_[i]);
     subgraph_input->set_data(nullptr);
@@ -638,9 +639,9 @@ void CopyCommonTensor(Tensor *dst_tensor, Tensor *src_tensor) {
   dst_tensor->set_data(src_tensor->data());
 }
 
-int Scheduler::CopyPartialShapeToSubGraph(const lite::Model::Node *partial_node) {
+int Scheduler::CopyPartialShapeToSubGraph(const lite::LiteGraph::Node *partial_node) {
   auto subgraph_index = GetPartialGraphIndex(partial_node->primitive_, schema_version_);
-  auto subgraph = src_model_->sub_graphs_.at(subgraph_index);
+  auto subgraph = src_model_->graph_.sub_graphs_.at(subgraph_index);
   if (subgraph->input_indices_.size() != partial_node->input_indices_.size()) {
     MS_LOG(ERROR) << "partial node " << partial_node->name_ << " inputs size: " << partial_node->input_indices_.size()
                   << " vs "
@@ -665,7 +666,7 @@ int Scheduler::CopyPartialShapeToSubGraph(const lite::Model::Node *partial_node)
   return RET_OK;
 }
 
-int Scheduler::InferPartialShape(const lite::Model::Node *node) {
+int Scheduler::InferPartialShape(const lite::LiteGraph::Node *node) {
   MS_ASSERT(src_model_ != nullptr);
   MS_ASSERT(node != nullptr);
   if (!IsPartialNode(node->primitive_, schema_version_)) {
@@ -682,10 +683,10 @@ int Scheduler::InferPartialShape(const lite::Model::Node *node) {
   return ret;
 }
 
-Model::Node *Scheduler::NodeInputIsPartial(const lite::Model::Node *node) {
+LiteGraph::Node *Scheduler::NodeInputIsPartial(const lite::LiteGraph::Node *node) {
   MS_ASSERT(src_model_ != nullptr);
   MS_ASSERT(node != nullptr);
-  for (auto &iter : src_model_->all_nodes_) {
+  for (auto &iter : src_model_->graph_.all_nodes_) {
     if (iter->output_indices_ == node->input_indices_) {
       if (IsPartialNode(iter->primitive_, schema_version_)) {
         return iter;
@@ -697,7 +698,7 @@ Model::Node *Scheduler::NodeInputIsPartial(const lite::Model::Node *node) {
   return nullptr;
 }
 
-int Scheduler::InferCallShape(const lite::Model::Node *node) {
+int Scheduler::InferCallShape(const lite::LiteGraph::Node *node) {
   MS_ASSERT(src_model_ != nullptr);
   MS_ASSERT(node != nullptr);
   if (!IsCallNode(node->primitive_, schema_version_)) {
@@ -722,12 +723,12 @@ int Scheduler::InferCallShape(const lite::Model::Node *node) {
 
 int Scheduler::InferSubGraphShape(size_t subgraph_index) {
   MS_ASSERT(src_model_ != nullptr);
-  MS_ASSERT(!src_model_->sub_graphs_.empty());
-  MS_ASSERT(src_model_->sub_graphs_.size() > subgraph_index);
-  auto subgraph = src_model_->sub_graphs_.at(subgraph_index);
+  MS_ASSERT(!src_model_->graph_.sub_graphs_.empty());
+  MS_ASSERT(src_model_->graph_.sub_graphs_.size() > subgraph_index);
+  auto subgraph = src_model_->graph_.sub_graphs_.at(subgraph_index);
   int subgraph_infershape_ret = RET_OK;
   for (auto node_index : subgraph->node_indices_) {
-    auto node = src_model_->all_nodes_[node_index];
+    auto node = src_model_->graph_.all_nodes_[node_index];
     MS_ASSERT(node != nullptr);
     auto *primitive = node->primitive_;
     if (primitive == nullptr) {
@@ -953,7 +954,7 @@ int Scheduler::FindGpuKernel(const std::vector<Tensor *> &in_tensors, const std:
 
 #ifndef CUSTOM_KERNEL_REGISTRY_CLIP
 int Scheduler::FindProviderKernel(const std::vector<Tensor *> &in_tensors, const std::vector<Tensor *> &out_tensors,
-                                  const Model::Node *node, TypeId data_type, kernel::LiteKernel **kernel) {
+                                  const LiteGraph::Node *node, TypeId data_type, kernel::LiteKernel **kernel) {
   MS_ASSERT(kernel != nullptr);
   int ret = RET_NOT_SUPPORT;
   auto prim_type = GetPrimitiveType(node->primitive_, schema_version_);
@@ -1001,7 +1002,7 @@ int Scheduler::FindProviderKernel(const std::vector<Tensor *> &in_tensors, const
 #endif
 
 kernel::LiteKernel *Scheduler::FindBackendKernel(const std::vector<Tensor *> &in_tensors,
-                                                 const std::vector<Tensor *> &out_tensors, const Model::Node *node,
+                                                 const std::vector<Tensor *> &out_tensors, const LiteGraph::Node *node,
                                                  TypeId prefer_data_type) {
   MS_ASSERT(node != nullptr);
   // why we need this
@@ -1233,7 +1234,7 @@ kernel::SubGraphType GetKernelSubGraphType(const kernel::LiteKernel *kernel, con
 }
 }  // namespace
 
-kernel::LiteKernel *Scheduler::SchedulePartialToKernel(const lite::Model::Node *src_node) {
+kernel::LiteKernel *Scheduler::SchedulePartialToKernel(const lite::LiteGraph::Node *src_node) {
   MS_ASSERT(src_model_ != nullptr);
   MS_ASSERT(src_node != nullptr);
   auto *primitive = src_node->primitive_;
@@ -1258,9 +1259,9 @@ int Scheduler::SubGraphPreferDataType(const int &subgraph_index, TypeId *prefer_
     return RET_OK;
   }
 
-  auto subgraph = src_model_->sub_graphs_.at(subgraph_index);
+  auto subgraph = src_model_->graph_.sub_graphs_.at(subgraph_index);
   for (auto node_index : subgraph->node_indices_) {
-    auto node = src_model_->all_nodes_[node_index];
+    auto node = src_model_->graph_.all_nodes_[node_index];
     MS_ASSERT(node != nullptr);
     MS_ASSERT(!node->output_indices_.empty());
     OpParameter *op_parameter = op_parameters_[node->output_indices_.at(0)];
@@ -1352,7 +1353,7 @@ std::vector<kernel::LiteKernel *> Scheduler::ScheduleSubGraphToSubGraphKernels(c
   return {subgraph_kernel};
 }
 
-kernel::LiteKernel *Scheduler::ScheduleNodeToKernel(const lite::Model::Node *src_node, TypeId prefer_data_type) {
+kernel::LiteKernel *Scheduler::ScheduleNodeToKernel(const lite::LiteGraph::Node *src_node, TypeId prefer_data_type) {
   std::vector<Tensor *> inputs;
   std::vector<Tensor *> outputs;
   MS_ASSERT(src_node != nullptr);
@@ -1373,10 +1374,10 @@ kernel::LiteKernel *Scheduler::ScheduleNodeToKernel(const lite::Model::Node *src
   return kernel;
 }
 
-bool Scheduler::IsControlFlowPattern(const lite::Model::Node &partial_node) {
-  lite::Model::Node *partial_node_output = nullptr;
+bool Scheduler::IsControlFlowPattern(const lite::LiteGraph::Node &partial_node) {
+  lite::LiteGraph::Node *partial_node_output = nullptr;
   for (auto output_index : partial_node.output_indices_) {
-    for (auto &node : src_model_->all_nodes_) {
+    for (auto &node : src_model_->graph_.all_nodes_) {
       if (IsContain(node->input_indices_, output_index)) {
         partial_node_output = node;
         break;
@@ -1408,14 +1409,14 @@ int Scheduler::ScheduleSubGraphToKernels(size_t subgraph_index, std::vector<kern
                                          std::vector<lite::Tensor *> *in_tensors,
                                          std::vector<lite::Tensor *> *out_tensors, TypeId prefer_data_type) {
   MS_ASSERT(src_model_ != nullptr);
-  MS_ASSERT(!src_model_->sub_graphs_.empty());
-  MS_ASSERT(src_model_->sub_graphs_.size() > subgraph_index);
+  MS_ASSERT(!src_model_->graph_.sub_graphs_.empty());
+  MS_ASSERT(src_model_->graph_.sub_graphs_.size() > subgraph_index);
   MS_ASSERT(dst_kernels != nullptr);
   MS_ASSERT(dst_kernels->empty());
-  auto subgraph = src_model_->sub_graphs_.at(subgraph_index);
+  auto subgraph = src_model_->graph_.sub_graphs_.at(subgraph_index);
   auto ret = RET_OK;
   for (auto node_index : subgraph->node_indices_) {
-    auto node = src_model_->all_nodes_[node_index];
+    auto node = src_model_->graph_.all_nodes_[node_index];
     MS_ASSERT(node != nullptr);
     auto *primitive = node->primitive_;
     MS_ASSERT(primitive != nullptr);
@@ -1641,17 +1642,17 @@ kernel::SubGraphType Scheduler::PartialSubGraphType(const std::vector<kernel::Li
 }
 
 #ifndef CONTROLFLOW_TENSORLIST_CLIP
-int Scheduler::InferSwitchShape(const lite::Model::Node *switch_node) {
+int Scheduler::InferSwitchShape(const lite::LiteGraph::Node *switch_node) {
   MS_ASSERT(src_model_ != nullptr);
   MS_ASSERT(switch_node != nullptr);
   if (!IsSwitchNode(switch_node->primitive_, schema_version_)) {
     MS_LOG(ERROR) << "Node is not a switch";
     return RET_PARAM_INVALID;
   }
-  std::deque<lite::Model::Node *> partial_cnode_to_infer{};
+  std::deque<lite::LiteGraph::Node *> partial_cnode_to_infer{};
   auto true_branch_output_index = switch_node->input_indices_.at(kSwitchTrueBranch);
   auto false_branch_output_index = switch_node->input_indices_.at(kSwitchFalseBranch);
-  for (auto &node : src_model_->all_nodes_) {
+  for (auto &node : src_model_->graph_.all_nodes_) {
     if ((IsContain(node->output_indices_, true_branch_output_index) ||
          IsContain(node->output_indices_, false_branch_output_index)) &&
         IsPartialNode(node->primitive_, schema_version_) &&
@@ -1672,10 +1673,10 @@ int Scheduler::InferSwitchShape(const lite::Model::Node *switch_node) {
   return RET_OK;
 }
 
-Model::Node *Scheduler::NodeInputIsSwitch(const lite::Model::Node *node) {
+LiteGraph::Node *Scheduler::NodeInputIsSwitch(const lite::LiteGraph::Node *node) {
   MS_ASSERT(src_model_ != nullptr);
   MS_ASSERT(node != nullptr);
-  for (auto &iter : src_model_->all_nodes_) {
+  for (auto &iter : src_model_->graph_.all_nodes_) {
     if (iter->output_indices_ == node->input_indices_) {
       if (IsSwitchNode(iter->primitive_, schema_version_)) {
         return iter;

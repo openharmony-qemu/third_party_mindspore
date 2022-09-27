@@ -16,14 +16,24 @@
 #ifndef MINDSPORE_LITE_INCLUDE_MODEL_H_
 #define MINDSPORE_LITE_INCLUDE_MODEL_H_
 
-#include "include/lite_utils.h"
+#ifdef ENABLE_CLOUD_FUSION_INFERENCE
+#include <any>
+#endif
 
+#include "include/lite_utils.h"
+#include <map>
 namespace mindspore::lite {
-struct MS_API Model {
+typedef enum { ModelType_MSLite, ModelType_MindIR } LiteModelType;
+
+// LiteGraph can be considered as a light weight and subset of FuncGraph, it can not support the advanced expression of
+// FuncGraph, e.g., non-tail recursive.
+struct MS_API LiteGraph {
   struct Node {
     String name_;
+    String op_type_;
     int node_type_;
     const void *primitive_ = nullptr;
+    std::shared_ptr<void> base_operator_ = nullptr;
     Uint32Vector input_indices_;
     Uint32Vector output_indices_;
     int quant_type_;
@@ -44,7 +54,6 @@ struct MS_API Model {
   Uint32Vector output_indices_;
   TensorPtrVector all_tensors_;
   NodePtrVector all_nodes_;
-  char *buf = nullptr;
   SubGraphPtrVector sub_graphs_;
 #ifdef ENABLE_MODEL_OBF
   using NodeStatVector = Vector<uint32_t>;
@@ -55,6 +64,12 @@ struct MS_API Model {
   bool model_obfuscated_ = false;
   PrimVector deobf_prims_;
 #endif
+};
+struct MS_API Model {
+  LiteGraph graph_;
+  char *buf = nullptr;
+  size_t buf_size_ = 0;
+  LiteModelType model_type_ = mindspore::lite::ModelType_MSLite;
 
   /// \brief Static method to create a Model pointer.
   static Model *Import(const char *model_buf, size_t size);

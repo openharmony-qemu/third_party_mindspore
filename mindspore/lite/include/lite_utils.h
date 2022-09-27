@@ -619,7 +619,7 @@ using AllocatorPtr = std::shared_ptr<Allocator>;
 class Delegate;
 using DelegatePtr = std::shared_ptr<Delegate>;
 
-using TensorPtrVector = std::vector<mindspore::schema::Tensor *>;
+using TensorPtrVector = std::vector<void *>;
 using Uint32Vector = std::vector<uint32_t>;
 template <typename T>
 using Vector = std::vector<T>;

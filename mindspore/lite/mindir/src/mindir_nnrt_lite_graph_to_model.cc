@@ -31,14 +31,17 @@ namespace lite {
 
 inline std::vector<OHOS::HDI::Nnrt::V1_0::QuantParam> MindIR_Tensor_GetQuantParams_OHOS(TensorPtr tensor) {
   if (tensor != nullptr) {
-    auto value = flatbuffers::GetMutableRoot<schema::Tensor>(tensor);
+    auto value = static_cast<schema::Tensor *>(tensor);
 
     if (value != nullptr) {
       std::vector<OHOS::HDI::Nnrt::V1_0::QuantParam> result;
       auto src = value->quantParams();
+      if (src == nullptr) {
+        return {};
+      }
       size_t size = src->size();
       result.reserve(src->size());
-      for (auto i = 0; i < size; i++) {
+      for (size_t i = 0; i < size; i++) {
         auto tmp = src->Get(i);
         OHOS::HDI::Nnrt::V1_0::QuantParam quantParam{tmp->numBits(), tmp->zeroPoint(), tmp->scale()};
         result.emplace_back(quantParam);
@@ -66,7 +69,7 @@ void MindIR_Model_Destroy(OHOS::HDI::Nnrt::V1_0::Model **model) {
 
 OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_graph, const SharedBuffer &buffer) {
   if (lite_graph != nullptr) {
-    MS_LOG(INFO) << "Start converting lite graph.";
+    MS_LOG(INFO) << "Start converting lite graph,name=" << lite_graph->name_;
     auto *ret_model = new (std::nothrow) Model();
     std::vector<uint32_t> inputIndex;
     std::vector<uint32_t> outputIndex;
@@ -75,16 +78,17 @@ OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_gr
     std::vector<OHOS::HDI::Nnrt::V1_0::SubGraph> subGraph;
     ret_model->name = lite_graph->name_;
     // nodes
+    MS_LOG(INFO) << "Start converting nodes, vector size = " << lite_graph->all_nodes_.size();
     nodes.reserve(lite_graph->all_nodes_.size());
     for (auto node : lite_graph->all_nodes_) {
       OHOS::HDI::Nnrt::V1_0::Node tmp;
       tmp.name = node->name_;
-      auto prim = flatbuffers::GetRoot<schema::Primitive>(node->primitive_);
+      auto prim = static_cast<schema::Primitive *>(node->primitive_);
       auto value = prim->value_type();
       tmp.nodeType = static_cast<HDI::Nnrt::V1_0::NodeType>(value);
-      tmp.nodeAttr = Convert(static_cast<NodeType>(tmp.nodeType), node->primitive_);
-      tmp.inputIndex = std::vector<uint32_t>(node->input_indices_);
-      tmp.outputIndex = std::vector<uint32_t>(node->output_indices_);
+      tmp.nodeAttr = Convert(static_cast<NodeType>(value), node->primitive_);
+      tmp.inputIndex = node->input_indices_;
+      tmp.outputIndex = node->output_indices_;
       tmp.quantType = static_cast<HDI::Nnrt::V1_0::QuantType>(node->quant_type_);
       nodes.emplace_back(tmp);
     }
@@ -92,7 +96,6 @@ OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_gr
     // Tensor
     allTensors.reserve(lite_graph->all_tensors_.size());
     unsigned int tensor_buffer_offset = 0;
-
     uint8_t *mmap_ptr = nullptr;
     if (buffer.fd != -1) {
       mmap_ptr =
@@ -102,11 +105,10 @@ OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_gr
         return nullptr;
       }
     }
-    MS_LOG(INFO) << "Start parsing tensor";
+    MS_LOG(INFO) << "Start parsing tensor, mmap buffer size = " << buffer.bufferSize;
     for (auto tensor : lite_graph->all_tensors_) {
       OHOS::HDI::Nnrt::V1_0::Tensor tmp;
       tmp.name = MindIR_Tensor_GetName(tensor);
-      tmp.dataType = static_cast<HDI::Nnrt::V1_0::HDI::Nnrt::V1_0::DataType>(MindIR_Tensor_GetDataType(tensor));
       tmp.dataType = static_cast<HDI::Nnrt::V1_0::HDI::Nnrt::V1_0::DataType>(MindIR_Tensor_GetDataType(tensor));
       tmp.dims = MindIR_Tensor_GetDims(tensor);
       tmp.format = static_cast<HDI::Nnrt::V1_0::HDI::Nnrt::V1_0::Format>(MindIR_Tensor_GetFormat(tensor));
@@ -147,27 +149,9 @@ OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_gr
   }
 }
 
-size_t MindIR_LiteGraph_GetConstTensorSize(const LiteGraph *lite_graph) {
-  if (lite_graph != nullptr) {
-    size_t size = 0;
-    for (auto tensor : lite_graph->all_tensors_) {
-      if (tensor != nullptr) {
-        auto value = flatbuffers::GetRoot<schema::Tensor>(tensor);
-        if (value != nullptr) {
-          auto src = value->data();
-          size += src->size();
-        }
-      }
-    }
-    return size;
-  } else {
-    return 0;
-  }
-}
-
 std::vector<int8_t> ConvertActivation(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Activation();
     if (value != nullptr) {
       Activation activation{};
@@ -191,7 +175,7 @@ std::vector<int8_t> ConvertActivation(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertAddFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_AddFusion();
     if (value != nullptr) {
       AddFusion add_fusion{};
@@ -210,7 +194,7 @@ std::vector<int8_t> ConvertAddFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertArgMaxFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_ArgMaxFusion();
     if (value != nullptr) {
       ArgMaxFusion arg_max_fusion{};
@@ -232,7 +216,7 @@ std::vector<int8_t> ConvertArgMaxFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertAvgPoolFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_AvgPoolFusion();
     if (value != nullptr) {
       AvgPoolFusion avg_pool_fusion{};
@@ -258,7 +242,7 @@ std::vector<int8_t> ConvertAvgPoolFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertBatchToSpaceND(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_BatchToSpaceND();
     if (value != nullptr) {
       BatchToSpaceND batch_to_space_n_d{};
@@ -266,7 +250,7 @@ std::vector<int8_t> ConvertBatchToSpaceND(PrimitivePtr primitive) {
       auto crops = value->crops();
       std::vector<std::vector<int64_t>> crops_vec2d;
       crops_vec2d.reserve(crops->data()->size());
-      for (auto i = 0; i < crops->data()->size(); i++) {
+      for (size_t i = 0; i < crops->data()->size(); i++) {
         auto vet = crops->data()->Get(i);
         crops_vec2d.emplace_back(std::vector<int64_t>(vet->data()->begin(), vet->data()->end()));
       }
@@ -285,7 +269,7 @@ std::vector<int8_t> ConvertBatchToSpaceND(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertBiasAdd(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_BiasAdd();
     if (value != nullptr) {
       BiasAdd bias_add{};
@@ -303,7 +287,7 @@ std::vector<int8_t> ConvertBiasAdd(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertCast(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Cast();
     if (value != nullptr) {
       Cast cast{};
@@ -321,7 +305,7 @@ std::vector<int8_t> ConvertCast(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertConcat(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Concat();
     if (value != nullptr) {
       Concat concat{};
@@ -340,15 +324,19 @@ std::vector<int8_t> ConvertConcat(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertConv2DFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2DFusion();
     if (value != nullptr) {
       Conv2DFusion conv2_d_fusion{};
-      conv2_d_fusion.kernelSize = std::vector<int64_t>(value->kernel_size()->begin(), value->kernel_size()->end());
-      conv2_d_fusion.stride = std::vector<int64_t>(value->stride()->begin(), value->stride()->end());
-      conv2_d_fusion.dilation = std::vector<int64_t>(value->dilation()->begin(), value->dilation()->end());
+      auto kernel_size = value->kernel_size();
+      conv2_d_fusion.kernelSize = std::vector<int64_t>(kernel_size->begin(), kernel_size->end());
+      auto stride = value->stride();
+      conv2_d_fusion.stride = std::vector<int64_t>(stride->begin(), stride->end());
+      auto dilation = value->dilation();
+      conv2_d_fusion.dilation = std::vector<int64_t>(dilation->begin(), dilation->end());
       conv2_d_fusion.padMode = static_cast<HDI::Nnrt::V1_0::PadMode>(value->pad_mode());
-      conv2_d_fusion.padList = std::vector<int64_t>(value->pad_list()->begin(), value->pad_list()->end());
+      auto padList = value->pad_list();
+      conv2_d_fusion.padList = std::vector<int64_t>(padList->begin(), padList->end());
       conv2_d_fusion.group = value->group();
       conv2_d_fusion.inChannel = value->in_channel();
       conv2_d_fusion.outChannel = value->out_channel();
@@ -367,7 +355,7 @@ std::vector<int8_t> ConvertConv2DFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertConv2dTransposeFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (value != nullptr) {
       Conv2dTransposeFusion conv2d_transpose_fusion{};
@@ -397,7 +385,7 @@ std::vector<int8_t> ConvertConv2dTransposeFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertDivFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_DivFusion();
     if (value != nullptr) {
       DivFusion div_fusion{};
@@ -416,7 +404,7 @@ std::vector<int8_t> ConvertDivFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertEltwise(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Eltwise();
     if (value != nullptr) {
       Eltwise eltwise{};
@@ -435,7 +423,7 @@ std::vector<int8_t> ConvertEltwise(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertExpandDims(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_ExpandDims();
     if (value != nullptr) {
       ExpandDims expand_dims{};
@@ -453,7 +441,7 @@ std::vector<int8_t> ConvertExpandDims(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertFill(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Fill();
     if (value != nullptr) {
       Fill fill{};
@@ -471,7 +459,7 @@ std::vector<int8_t> ConvertFill(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertFullConnection(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_FullConnection();
     if (value != nullptr) {
       FullConnection full_connection{};
@@ -493,7 +481,7 @@ std::vector<int8_t> ConvertFullConnection(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertFusedBatchNorm(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_FusedBatchNorm();
     if (value != nullptr) {
       FusedBatchNorm fused_batch_norm{};
@@ -512,7 +500,7 @@ std::vector<int8_t> ConvertFusedBatchNorm(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertGather(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Gather();
     if (value != nullptr) {
       Gather gather{};
@@ -530,7 +518,7 @@ std::vector<int8_t> ConvertGather(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertLayerNormFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_LayerNormFusion();
     if (value != nullptr) {
       LayerNormFusion layer_norm_fusion{};
@@ -552,7 +540,7 @@ std::vector<int8_t> ConvertLayerNormFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertLessEqual(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_LessEqual();
     if (value != nullptr) {
       LessEqual less_equal{};
@@ -570,7 +558,7 @@ std::vector<int8_t> ConvertLessEqual(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertMatMulFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_MatMulFusion();
     if (value != nullptr) {
       MatMulFusion mat_mul_fusion{};
@@ -591,7 +579,7 @@ std::vector<int8_t> ConvertMatMulFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertMaximum(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Maximum();
     if (value != nullptr) {
       Maximum maximum{};
@@ -609,7 +597,7 @@ std::vector<int8_t> ConvertMaximum(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertMaxPoolFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_MaxPoolFusion();
     if (value != nullptr) {
       MaxPoolFusion max_pool_fusion{};
@@ -634,7 +622,7 @@ std::vector<int8_t> ConvertMaxPoolFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertMulFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_MulFusion();
     if (value != nullptr) {
       MulFusion mul_fusion{};
@@ -653,7 +641,7 @@ std::vector<int8_t> ConvertMulFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertOneHot(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_OneHot();
     if (value != nullptr) {
       OneHot one_hot{};
@@ -672,14 +660,14 @@ std::vector<int8_t> ConvertOneHot(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertPadFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_PadFusion();
     if (value != nullptr) {
       PadFusion pad_fusion{};
       auto paddings = value->paddings();
       std::vector<std::vector<int64_t>> paddings_vec2d;
       paddings_vec2d.reserve(paddings->data()->size());
-      for (auto i = 0; i < paddings->data()->size(); i++) {
+      for (size_t i = 0; i < paddings->data()->size(); i++) {
         auto vet = paddings->data()->Get(i);
         paddings_vec2d.emplace_back(std::vector<int64_t>(vet->data()->begin(), vet->data()->end()));
       }
@@ -700,7 +688,7 @@ std::vector<int8_t> ConvertPadFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertPowFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_PowFusion();
     if (value != nullptr) {
       PowFusion pow_fusion{};
@@ -720,7 +708,7 @@ std::vector<int8_t> ConvertPowFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertPReLUFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_PReLUFusion();
     if (value != nullptr) {
       PReLUFusion p_re_l_u_fusion{};
@@ -739,7 +727,7 @@ std::vector<int8_t> ConvertPReLUFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertQuantDTypeCast(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_QuantDTypeCast();
     if (value != nullptr) {
       QuantDTypeCast quant_d_type_cast{};
@@ -759,7 +747,7 @@ std::vector<int8_t> ConvertQuantDTypeCast(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertReduceFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_ReduceFusion();
     if (value != nullptr) {
       ReduceFusion reduce_fusion{};
@@ -781,7 +769,7 @@ std::vector<int8_t> ConvertReduceFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertReshape(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Reshape();
     if (value != nullptr) {
       Reshape reshape{};
@@ -799,7 +787,7 @@ std::vector<int8_t> ConvertReshape(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertResize(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Resize();
     if (value != nullptr) {
       Resize resize{};
@@ -827,7 +815,7 @@ std::vector<int8_t> ConvertResize(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertRsqrt(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Rsqrt();
     if (value != nullptr) {
       Rsqrt rsqrt{};
@@ -845,7 +833,7 @@ std::vector<int8_t> ConvertRsqrt(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertScaleFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_ScaleFusion();
     if (value != nullptr) {
       ScaleFusion scale_fusion{};
@@ -865,7 +853,7 @@ std::vector<int8_t> ConvertScaleFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertShape(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Shape();
     if (value != nullptr) {
       Shape shape{};
@@ -883,7 +871,7 @@ std::vector<int8_t> ConvertShape(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertSliceFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_SliceFusion();
     if (value != nullptr) {
       SliceFusion slice_fusion{};
@@ -902,7 +890,7 @@ std::vector<int8_t> ConvertSliceFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertSoftmax(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Softmax();
     if (value != nullptr) {
       Softmax softmax{};
@@ -921,7 +909,7 @@ std::vector<int8_t> ConvertSoftmax(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertSpaceToBatchND(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_SpaceToBatchND();
     if (value != nullptr) {
       SpaceToBatchND space_to_batch_n_d{};
@@ -929,7 +917,7 @@ std::vector<int8_t> ConvertSpaceToBatchND(PrimitivePtr primitive) {
       auto paddings = value->paddings();
       std::vector<std::vector<int64_t>> paddings_vec2d;
       paddings_vec2d.reserve(paddings->data()->size());
-      for (auto i = 0; i < paddings->data()->size(); i++) {
+      for (size_t i = 0; i < paddings->data()->size(); i++) {
         auto vet = paddings->data()->Get(i);
         paddings_vec2d.emplace_back(std::vector<int64_t>(vet->data()->begin(), vet->data()->end()));
       }
@@ -948,7 +936,7 @@ std::vector<int8_t> ConvertSpaceToBatchND(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertSplit(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Split();
     if (value != nullptr) {
       Split split{};
@@ -969,7 +957,7 @@ std::vector<int8_t> ConvertSplit(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertSqrt(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Sqrt();
     if (value != nullptr) {
       Sqrt sqrt{};
@@ -987,7 +975,7 @@ std::vector<int8_t> ConvertSqrt(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertSquaredDifference(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_SquaredDifference();
     if (value != nullptr) {
       SquaredDifference squared_difference{};
@@ -1005,7 +993,7 @@ std::vector<int8_t> ConvertSquaredDifference(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertSqueeze(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Squeeze();
     if (value != nullptr) {
       Squeeze squeeze{};
@@ -1024,7 +1012,7 @@ std::vector<int8_t> ConvertSqueeze(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertStack(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Stack();
     if (value != nullptr) {
       Stack stack{};
@@ -1043,7 +1031,7 @@ std::vector<int8_t> ConvertStack(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertStridedSlice(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_StridedSlice();
     if (value != nullptr) {
       StridedSlice strided_slice{};
@@ -1066,7 +1054,7 @@ std::vector<int8_t> ConvertStridedSlice(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertSubFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_SubFusion();
     if (value != nullptr) {
       SubFusion sub_fusion{};
@@ -1085,7 +1073,7 @@ std::vector<int8_t> ConvertSubFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertTileFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_TileFusion();
     if (value != nullptr) {
       TileFusion tile_fusion{};
@@ -1104,7 +1092,7 @@ std::vector<int8_t> ConvertTileFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertTopKFusion(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_TopKFusion();
     if (value != nullptr) {
       TopKFusion top_k_fusion{};
@@ -1124,7 +1112,7 @@ std::vector<int8_t> ConvertTopKFusion(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertTranspose(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Transpose();
     if (value != nullptr) {
       Transpose transpose{};
@@ -1142,7 +1130,7 @@ std::vector<int8_t> ConvertTranspose(PrimitivePtr primitive) {
 }
 std::vector<int8_t> ConvertUnsqueeze(PrimitivePtr primitive) {
   if (primitive != nullptr) {
-    auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
+    auto prim = static_cast<schema::Primitive *>(primitive);
     auto value = prim->value_as_Unsqueeze();
     if (value != nullptr) {
       Unsqueeze unsqueeze{};
