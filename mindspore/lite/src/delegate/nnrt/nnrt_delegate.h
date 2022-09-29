@@ -22,6 +22,9 @@
 #include "include/model.h"
 #include "kits/c/neural_network_runtime_type.h"
 namespace mindspore {
+
+using namespace lite;
+
 class NNRTDelegate : public Delegate {
  public:
   NNRTDelegate() : Delegate(){};
@@ -32,14 +35,16 @@ class NNRTDelegate : public Delegate {
 
   Status Build(DelegateModel<schema::Primitive> *model) override;
 
-  const lite::LiteGraph &getLiteGraph() const;
-  void setLiteGraph(const lite::LiteGraph &liteGraph);
+  void ShallowCopyLiteGraph(const lite::LiteGraph &liteGraph);
 
  protected:
-  lite::LiteGraph lite_graph_ = {};
+  LiteGraph *nnrt_lite_graph = nullptr;
 
-  OH_NNCompilation *oh_nncompilation{};
-  OH_NNExecutor *oh_nnexecutor{};
+ private:
+  //  static LiteGraph* CreateLiteGraph(const LiteGraph &liteGraph);
+  Status PrepareInputs(DelegateModel<schema::Primitive> *model, OH_NNExecutor *oh_nn_executor);
+  Status PrepareOutputs(DelegateModel<schema::Primitive> *model, OH_NNExecutor *oh_nn_executor);
+  OH_NN_DataType ConvertDataType(mindspore::DataType data_type);
 };
 
 }  // namespace mindspore

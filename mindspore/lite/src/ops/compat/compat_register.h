@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace lite {
 // compatibility, transfer attr to input tensor.
-typedef int (*TransferAttrFunc)(Model::Node *node, std::vector<schema::Tensor *> *tensor,
+typedef int (*TransferAttrFunc)(LiteGraph::Node *node, std::vector<schema::Tensor *> *tensor,
                                 std::vector<char *> *const tensor_bufs);
 class CompatRegistry {
  public:

@@ -44,8 +44,8 @@
 #if GPU_TENSORRT
 #include "src/delegate/tensorrt/tensorrt_delegate.h"
 #endif
-#if SUPPORT_NNRT
-#include "src/runtime/delegate/nnr/nnr_delegate.h"
+#ifdef SUPPORT_NNRT
+#include "src/delegate/nnrt/nnrt_delegate.h"
 #endif
 #ifndef WEIGHT_DECODE_CLIP
 #include "tools/converter/quantizer/fse_decoder.h"
@@ -217,11 +217,11 @@ lite::Tensor *LiteSession::ConvertTensor(const schema::Tensor &src_tensor) {
 
 int LiteSession::ConvertTensors(const lite::Model *model) {
   MS_ASSERT(model != nullptr);
-  uint32_t tensor_count = model->all_tensors_.size();
-  auto model_input_indices = model->input_indices_;
-  auto model_output_indices = model->output_indices_;
+  uint32_t tensor_count = model->graph_.all_tensors_.size();
+  auto model_input_indices = model->graph_.input_indices_;
+  auto model_output_indices = model->graph_.output_indices_;
   for (uint32_t i = 0; i < tensor_count; ++i) {
-    auto *src_tensor = model->all_tensors_[i];
+    auto *src_tensor = static_cast<schema::Tensor *>(model->graph_.all_tensors_[i]);
     if (src_tensor == nullptr) {
       MS_LOG(ERROR) << i << "th tensor in model is nullptr";
       return RET_NULL_PTR;
@@ -267,9 +267,9 @@ int LiteSession::ConvertTensors(const lite::Model *model) {
 
 void LiteSession::InitGraphInputTensors(const lite::Model *model) {
   MS_ASSERT(model != nullptr);
-  auto graph_in_size = model->input_indices_.size();
+  auto graph_in_size = model->graph_.input_indices_.size();
   for (size_t i = 0; i < graph_in_size; ++i) {
-    auto in_tensor_idx = model->input_indices_[i];
+    auto in_tensor_idx = model->graph_.input_indices_[i];
     MS_ASSERT(in_tensor_idx < this->tensors_.size());
     auto *in_tensor = this->tensors_.at(in_tensor_idx);
     MS_ASSERT(in_tensor != nullptr);
@@ -288,9 +288,9 @@ void LiteSession::InitGraphInputMSTensors() {
 void LiteSession::InitGraphOutputTensors(const lite::Model *model) {
   MS_ASSERT(model != nullptr);
   MS_ASSERT(this->outputs_.empty());
-  auto graph_out_size = model->output_indices_.size();
+  auto graph_out_size = model->graph_.output_indices_.size();
   for (size_t i = 0; i < graph_out_size; ++i) {
-    auto out_tensor_idx = model->output_indices_[i];
+    auto out_tensor_idx = model->graph_.output_indices_[i];
     MS_ASSERT(out_tensor_idx < this->tensors_.size());
     auto *out_tensor = this->tensors_.at(out_tensor_idx);
     MS_ASSERT(out_tensor != nullptr);
@@ -302,9 +302,9 @@ void LiteSession::InitGraphInputMap(const lite::Model *model) {
   MS_ASSERT(model != nullptr);
   MS_ASSERT(this->input_map_.empty());
   auto graph_input_node_indexes = GetGraphInputNodes(model);
-  auto graph_in_size = model->input_indices_.size();
+  auto graph_in_size = model->graph_.input_indices_.size();
   for (auto in_node_index : graph_input_node_indexes) {
-    auto in_node = model->all_nodes_[in_node_index];
+    auto in_node = model->graph_.all_nodes_[in_node_index];
     MS_ASSERT(in_node != nullptr);
     auto in_size = in_node->input_indices_.size();
     for (size_t i = 0; i < in_size; ++i) {
@@ -312,7 +312,7 @@ void LiteSession::InitGraphInputMap(const lite::Model *model) {
       auto in_tensor_index = size_t(in_node->input_indices_[i]);
       bool is_graph_input = false;
       for (size_t j = 0; j < graph_in_size; ++j) {
-        if (in_tensor_index == model->input_indices_[j]) {
+        if (in_tensor_index == model->graph_.input_indices_[j]) {
           is_graph_input = true;
           break;
         }
@@ -338,16 +338,16 @@ void LiteSession::InitGraphInputMap(const lite::Model *model) {
 void LiteSession::InitGraphOutputNodeMap(const lite::Model *model) {
   MS_ASSERT(model != nullptr);
   auto graph_output_node_indexes = GetGraphOutputNodes(model);
-  auto graph_out_size = model->output_indices_.size();
+  auto graph_out_size = model->graph_.output_indices_.size();
   for (auto out_node_index : graph_output_node_indexes) {
-    auto out_node = model->all_nodes_[out_node_index];
+    auto out_node = model->graph_.all_nodes_[out_node_index];
     MS_ASSERT(out_node != nullptr);
     auto out_size = out_node->output_indices_.size();
     for (size_t i = 0; i < out_size; ++i) {
       auto out_tensor_index = out_node->output_indices_[i];
       bool is_graph_output = false;
       for (size_t j = 0; j < graph_out_size; ++j) {
-        if (out_tensor_index == model->output_indices_[j]) {
+        if (out_tensor_index == model->graph_.output_indices_[j]) {
           is_graph_output = true;
           break;
         }
@@ -369,9 +369,9 @@ void LiteSession::InitGraphOutputNodeMap(const lite::Model *model) {
 void LiteSession::InitGraphOutputTensorMap(const lite::Model *model) {
   MS_ASSERT(model != nullptr);
   MS_ASSERT(this->output_tensor_map_.empty());
-  auto graph_out_size = model->output_indices_.size();
+  auto graph_out_size = model->graph_.output_indices_.size();
   for (size_t i = 0; i < graph_out_size; ++i) {
-    size_t graph_out_index = model->output_indices_[i];
+    size_t graph_out_index = model->graph_.output_indices_[i];
     MS_ASSERT(graph_out_index < this->tensors_.size());
     auto *out_tensor = this->tensors_.at(graph_out_index);
     if (out_tensor == nullptr) {
@@ -390,9 +390,9 @@ void LiteSession::InitGraphOutputTensorMap(const lite::Model *model) {
 
 void LiteSession::AdjustModelOutputTensorInitRefCount(const lite::Model *model) {
   MS_ASSERT(model != nullptr);
-  auto graph_out_size = model->output_indices_.size();
+  auto graph_out_size = model->graph_.output_indices_.size();
   for (size_t i = 0; i < graph_out_size; ++i) {
-    size_t graph_out_index = model->output_indices_[i];
+    size_t graph_out_index = model->graph_.output_indices_[i];
     MS_ASSERT(graph_out_index < this->tensors_.size());
     auto *out_tensor = this->tensors_.at(graph_out_index);
     if (out_tensor == nullptr) {
@@ -760,14 +760,15 @@ int LiteSession::Init(InnerContext *context) {
   }
 #endif
 #ifdef SUPPORT_NNRT
-  delegate_ = std::make_shared<NNRDelegate>();
-  //    delegate_.reset(dynamic_cast<Delegate*>(new NNRDelegate()));
-  if (delegate_ == nullptr) {
-    MS_LOG(ERROR) << "New delegate_ failed";
-    return RET_ERROR;
+  if (delegate_ == nullptr && context_->IsNpuEnabled()) {
+    delegate_ = std::make_shared<NNRTDelegate>();
+    if (delegate_ == nullptr) {
+      MS_LOG(ERROR) << "New NNRt delegate failed";
+      return RET_ERROR;
+    }
+    delegate_device_type_ = DT_NPU;
+    this->context_->delegate = delegate_;
   }
-  delegate_device_type_ = DT_NPU;
-  this->context_->delegate = delegate_;
 #endif
   if (delegate_ != nullptr) {
     auto delegate_ret = delegate_->Init();

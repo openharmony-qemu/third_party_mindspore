@@ -40,8 +40,8 @@ schema::Tensor *AttrToTensor(const void *data, int data_size, bool is_array, Typ
   memcpy(uint8_data.data(), data, dst_tensor->Size());
   auto shape = dst_tensor->shape();
   flatbuffers::FlatBufferBuilder fbb(1024);
-  auto tensor_offset =
-    schema::CreateTensorDirect(fbb, NodeType_ValueNode, type_id, &shape, schema::Format_NHWC, 0, 0, &uint8_data);
+  auto tensor_offset = schema::CreateTensorDirect(fbb, (int)MSNodeType::NodeType_ValueNode, type_id, &shape,
+                                                  schema::Format_NHWC, 0, 0, &uint8_data);
   fbb.Finish(tensor_offset);
   delete dst_tensor;
   auto buf = fbb.GetBufferPointer();

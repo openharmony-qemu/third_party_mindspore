@@ -61,17 +61,17 @@ class Scheduler {
  private:
   int SchedulePreProcess();
   int CheckInputParam(std::vector<kernel::LiteKernel *> *dst_kernels);
-  void FindNodeInoutTensors(const Model::Node &node, std::vector<Tensor *> *inputs, std::vector<Tensor *> *outputs);
-  Model::Node *NodeInputIsPartial(const Model::Node *node);
-  int InferPartialShape(const Model::Node *node);
-  int InferCallShape(const Model::Node *node);
-  int InferNodeShape(const Model::Node *node);
+  void FindNodeInoutTensors(const LiteGraph::Node &node, std::vector<Tensor *> *inputs, std::vector<Tensor *> *outputs);
+  LiteGraph::Node *NodeInputIsPartial(const LiteGraph::Node *node);
+  int InferPartialShape(const LiteGraph::Node *node);
+  int InferCallShape(const LiteGraph::Node *node);
+  int InferNodeShape(const LiteGraph::Node *node);
   void FreeOpParameters();
   int InferSubGraphShape(size_t subgraph_index);
   // schedule a node to kernel according to context and kernels registered
   int HandleBuildinCpuKernelWeight(kernel::SubGraphType belong_subgraph_type, kernel::LiteKernel *kernel);
   kernel::LiteKernel *FindBackendKernel(const std::vector<Tensor *> &in_tensors,
-                                        const std::vector<Tensor *> &out_tensors, const Model::Node *node,
+                                        const std::vector<Tensor *> &out_tensors, const LiteGraph::Node *node,
                                         TypeId prefer_data_type = kTypeUnknown);
   int FindCpuKernel(const std::vector<Tensor *> &in_tensors, const std::vector<Tensor *> &out_tensors,
                     OpParameter *op_parameter, const kernel::KernelKey &desc, TypeId kernel_data_type,
@@ -85,17 +85,17 @@ class Scheduler {
                     TypeId prefer_data_type);
 #endif
   int FindProviderKernel(const std::vector<Tensor *> &in_tensors, const std::vector<Tensor *> &out_tensors,
-                         const Model::Node *node, TypeId data_type, kernel::LiteKernel **kernel);
+                         const LiteGraph::Node *node, TypeId data_type, kernel::LiteKernel **kernel);
 
   int InitKernels(std::vector<kernel::LiteKernel *> dst_kernels);
-  kernel::LiteKernel *SchedulePartialToKernel(const lite::Model::Node *src_node);
+  kernel::LiteKernel *SchedulePartialToKernel(const lite::LiteGraph::Node *src_node);
   // schedule a partial node to a subgraph_kernel
   std::vector<kernel::LiteKernel *> ScheduleSubGraphToSubGraphKernels(const int &subgraph_index);
   // schedule a node to a kernel
-  kernel::LiteKernel *ScheduleNodeToKernel(const Model::Node *src_node, TypeId prefer_data_type = kTypeUnknown);
-  // schedule a Model::Graph into a vector of subgraph_kernel
+  kernel::LiteKernel *ScheduleNodeToKernel(const LiteGraph::Node *src_node, TypeId prefer_data_type = kTypeUnknown);
+  // schedule a LiteGraph::Graph into a vector of subgraph_kernel
   int ScheduleGraphToKernels(std::vector<kernel::LiteKernel *> *dst_kernels, TypeId prefer_data_type = kTypeUnknown);
-  // schedule a Model::SubGraph into a vector of kernel and subgraph_kernel
+  // schedule a LiteGraph::SubGraph into a vector of kernel and subgraph_kernel
   int ScheduleSubGraphToKernels(size_t subgraph_index, std::vector<kernel::LiteKernel *> *dst_kernels,
                                 std::vector<lite::Tensor *> *in_tensors, std::vector<lite::Tensor *> *out_tensors,
                                 TypeId prefer_data_type = kTypeUnknown);
@@ -110,16 +110,16 @@ class Scheduler {
   // other methods
   static TypeId GetFirstFp32Fp16OrInt8Type(const std::vector<Tensor *> &in_tensors);
   static void SetKernelTensorDataType(kernel::LiteKernel *kernel);
-  int CopyPartialShapeToSubGraph(const lite::Model::Node *partial_node);
-  int RestoreSubGraphInput(const lite::Model::Node *partial_node);
+  int CopyPartialShapeToSubGraph(const lite::LiteGraph::Node *partial_node);
+  int RestoreSubGraphInput(const lite::LiteGraph::Node *partial_node);
 
-  bool IsControlFlowPattern(const lite::Model::Node &partial_node);
+  bool IsControlFlowPattern(const lite::LiteGraph::Node &partial_node);
 #ifdef ENABLE_FP16
   int SubGraphPreferDataType(const int &subgraph_index, TypeId *prefer_data_type);
 #endif
 #ifndef CONTROLFLOW_TENSORLIST_CLIP
-  int InferSwitchShape(const Model::Node *node);
-  Model::Node *NodeInputIsSwitch(const Model::Node *node);
+  int InferSwitchShape(const LiteGraph::Node *node);
+  LiteGraph::Node *NodeInputIsSwitch(const LiteGraph::Node *node);
   bool SubGraphHasScheduled(const int &index);
   void SubGraphMarkScheduled(const int &index);
   void SetSubgraphForPartialNode();
@@ -154,7 +154,7 @@ class Scheduler {
 #ifndef CONTROLFLOW_TENSORLIST_CLIP
   std::set<int> scheduled_subgraph_index_{};
   std::unordered_map<kernel::LiteKernel *, size_t> partial_kernel_subgraph_index_map_{};
-  std::set<lite::Model::Node *> partial_cnode_inferred_{};
+  std::set<lite::LiteGraph::Node *> partial_cnode_inferred_{};
 #endif
   int schema_version_ = SCHEMA_VERSION::SCHEMA_CUR;
   std::map<std::string, TypeId> *execution_plan_ = nullptr;

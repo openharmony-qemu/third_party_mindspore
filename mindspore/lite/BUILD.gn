@@ -18,12 +18,13 @@ import("//build/ohos.gni")
 ohos_group("mindspore") {
   deps = [
     ":mindspore_lib",
-    "tools/benchmark:benchmark_bin",
+    # "mindir:mindir",
+    #"tools/benchmark:benchmark_bin",
   ]
 }
 
 ohos_shared_library("mindspore_lib") {
-  sources = [
+  common_sources = [
     "../core/utils/status.cc",
     "src/c_api/context_c.cc",
     "src/c_api/model_c.cc",
@@ -509,8 +510,9 @@ ohos_shared_library("mindspore_lib") {
     "tools/converter/quantizer/fse_decoder.cc",
   ]
 
+  sources = []
   if (target_cpu == "arm64") {
-    sources += [
+    arm64_sources = [
       "src/runtime/kernel/arm/fp16/activation_fp16.cc",
       "src/runtime/kernel/arm/fp16/addn_fp16.cc",
       "src/runtime/kernel/arm/fp16/arithmetic_compare_fp16.cc",
@@ -559,8 +561,9 @@ ohos_shared_library("mindspore_lib") {
       "src/runtime/kernel/arm/fp16/stack_fp16.cc",
       "src/runtime/kernel/arm/fp16/transpose_fp16.cc",
     ]
+    sources += arm64_sources
   }
-
+  sources += common_sources
   include_dirs = [
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//third_party/flatbuffers/include",
@@ -606,13 +609,31 @@ ohos_shared_library("mindspore_lib") {
     "../ccsrc/backend/kernel_compiler/cpu/nnacl/:nnacl_o",
     "../core/mindrt/:mindrt_o",
   ]
-
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [ "hilog_native:libhilog" ]
 
   output_name = "libmindspore-lite.huawei"
   output_extension = "so"
 
   public_configs = [ ":mindspore_api" ]
+  SUPPORT_NNRT = false
+  if (SUPPORT_NNRT) {
+    sources += [
+      "mindir/src/mindir_nnrt_lite_graph.cc",
+      "src/delegate/nnrt/checker/primitive_check.cc",
+      "src/delegate/nnrt/nnrt_delegate.cc",
+      "src/delegate/nnrt/nnrt_model_kernel.cc",
+    ]
+    include_dirs += [
+      "src/delegate/nnrt/include",
+      "../../mindspore/core/ir",
+      "mindir/include",
+      "mindir/include/inner",
+    ]
+    lib_dirs = [ "build" ]
+    libs = [ "neural_network_runtime.z" ]
+    deps += [ "mindir:mindir" ]
+    defines += [ "SUPPORT_NNRT" ]
+  }
   part_name = "mindspore"
 }
 

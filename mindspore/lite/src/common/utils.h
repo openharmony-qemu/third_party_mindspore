@@ -29,7 +29,7 @@
 
 namespace mindspore {
 namespace lite {
-enum NodeType {
+enum class MSNodeType {
   NodeType_ValueNode,  // const
   NodeType_Parameter,  // var
   NodeType_CNode       // op

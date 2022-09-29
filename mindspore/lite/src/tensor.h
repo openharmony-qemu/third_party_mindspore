@@ -281,7 +281,7 @@ inline size_t DataTypeSize(const TypeId type) {
 
 inline Tensor::Category TensorCategory(const int node_type, const size_t shape_num, const TypeId data_type,
                                        const size_t data_size) {
-  return (node_type == NodeType_ValueNode)
+  return ((MSNodeType)node_type == MSNodeType::NodeType_ValueNode)
            ? (shape_num == 0 && data_size == DataTypeSize(data_type) ? Tensor::Category::CONST_SCALAR
                                                                      : Tensor::Category::CONST_TENSOR)
            : Tensor::Category::VAR;

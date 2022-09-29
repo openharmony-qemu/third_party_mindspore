@@ -392,7 +392,9 @@ endif()
 
 if(MSLITE_ENABLE_NNRT)
 set(SUPPORT_NNRT on)
-    add_compile_definitions(SUPPORT_NNRT on)
+    add_compile_definitions(SUPPORT_NNRT)
+    add_compile_definitions(OHOS_HILOG)
+    include_directories(../../../base/hiviewdfx/hilog/interfaces/native/innerkits/include)
 endif()
 
 if(WIN32)

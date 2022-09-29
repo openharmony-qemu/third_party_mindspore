@@ -18,13 +18,15 @@
 namespace mindspore {
 namespace lite {
 // ********** PrimitiveBase **********
+
 NodeType MindIR_Primitive_GetType(PrimitivePtr primitive) {
   auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
   auto type = prim->value_type();
   return static_cast<NodeType>(type);
 }
+
 void MindIR_Primitive_Destroy(PrimitivePtr *primitive) {
-  if (primitive != nullptr) {
+  if (primitive != nullptr && *primitive != nullptr) {
     free(*primitive);
     *primitive = nullptr;
   }
@@ -61,6 +63,7 @@ flatbuffers::Offset<schema::Vec2D> CreateVec2D(flatbuffers::FlatBufferBuilder &f
   flatbuffers::Offset<schema::Vec2D> v2d = schema::CreateVec2D(fbb, fbb.CreateVector(vet2d));
   return v2d;
 }
+
 flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<schema::QuantParam>>> ConvertQuantParams(
   flatbuffers::FlatBufferBuilder &fbb, const std::vector<QuantParam> &quant_params) {
   std::vector<flatbuffers::Offset<mindspore::schema::QuantParam>> tmp_vec;

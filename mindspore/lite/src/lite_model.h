@@ -55,7 +55,7 @@ class LiteModel : public Model {
 
  private:
 #ifdef ENABLE_V0
-  int ConvertAttrs(Model::Node *node, std::vector<schema::Tensor *> *dst_tensor);
+  int ConvertAttrs(LiteGraph::Node *node, std::vector<schema::Tensor *> *dst_tensor);
 
   int ConvertAttrToTensors();
 #endif
@@ -67,7 +67,7 @@ class LiteModel : public Model {
       return false;
     }
     for (size_t i = 0; i < meta_graph.nodes()->size(); ++i) {
-      auto *node = new (std::nothrow) Model::Node();
+      auto *node = new (std::nothrow) LiteGraph::Node();
       if (node == nullptr) {
         MS_LOG(ERROR) << "new node fail!";
         return false;
@@ -132,7 +132,7 @@ class LiteModel : public Model {
           node->output_indices_.push_back(size_t(c_node->outputIndex()->template GetAs<uint32_t>(j)));
         }
       }
-      this->all_nodes_.push_back(node);
+      this->graph_.all_nodes_.push_back(node);
     }
     return true;
   }
@@ -150,7 +150,7 @@ class LiteModel : public Model {
         MS_LOG(ERROR) << i << "the tensor in metagraph is nullptr";
         return false;
       }
-      this->all_tensors_.push_back(const_cast<mindspore::schema::Tensor *>(tensor));
+      this->graph_.all_tensors_.push_back(const_cast<mindspore::schema::Tensor *>(tensor));
     }
     return true;
   }
@@ -162,7 +162,7 @@ class LiteModel : public Model {
       MS_LOG(ERROR) << "meta_graph is invalid, please check your model file.";
       return RET_ERROR;
     }
-    auto *subgraph = new (std::nothrow) Model::SubGraph();
+    auto *subgraph = new (std::nothrow) LiteGraph::SubGraph();
     if (subgraph == nullptr) {
       MS_LOG(ERROR) << "new subGraph fail!";
       return RET_ERROR;
@@ -186,17 +186,17 @@ class LiteModel : public Model {
     for (uint32_t i = 0; i < tensor_count; ++i) {
       subgraph->tensor_indices_.push_back(i);
     }
-    this->sub_graphs_.push_back(subgraph);
+    this->graph_.sub_graphs_.push_back(subgraph);
     return RET_OK;
   }
 
   template <typename T = schema::MetaGraph, typename U = schema::CNode>
   int GenerateModel(const T &meta_graph) {
     if (meta_graph.name() != nullptr) {
-      this->name_ = meta_graph.name()->c_str();
+      this->graph_.name_ = meta_graph.name()->c_str();
     }
     if (meta_graph.version() != nullptr) {
-      this->version_ = meta_graph.version()->c_str();
+      this->graph_.version_ = meta_graph.version()->c_str();
     }
     if (!ConvertNodes<T, U>(meta_graph)) {
       MS_LOG(ERROR) << "convert node failed";
@@ -216,11 +216,11 @@ class LiteModel : public Model {
     // converterInputOutput
     auto in_count = meta_graph.inputIndex()->size();
     for (uint32_t i = 0; i < in_count; ++i) {
-      this->input_indices_.push_back(meta_graph.inputIndex()->Get(i));
+      this->graph_.input_indices_.push_back(meta_graph.inputIndex()->Get(i));
     }
     auto out_count = meta_graph.outputIndex()->size();
     for (uint32_t i = 0; i < out_count; ++i) {
-      this->output_indices_.push_back(meta_graph.outputIndex()->Get(i));
+      this->graph_.output_indices_.push_back(meta_graph.outputIndex()->Get(i));
     }
 
     if (meta_graph.subGraph() == nullptr) {
@@ -251,7 +251,9 @@ class LiteModel : public Model {
     return RET_OK;
   }
 
-  void SetNodeDeviceType(Node *node, const schema::CNode &c_node) { node->device_type_ = c_node.deviceType(); }
+  void SetNodeDeviceType(LiteGraph::Node *node, const schema::CNode &c_node) {
+    node->device_type_ = c_node.deviceType();
+  }
 
 #ifdef ENABLE_V0
   void SetNodeDeviceType(Node *node, const schema::v0::CNode &c_node) { node->device_type_ = -1; }

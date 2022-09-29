@@ -33,7 +33,7 @@ class NNRTModelKernel : public kernel::Kernel {
  public:
   NNRTModelKernel(OH_NNExecutor *oh_nn_executor, const std::vector<mindspore::MSTensor> &inputs,
                   const std::vector<mindspore::MSTensor> &outputs)
-      : kernel::Kernel(inputs, outputs, nullptr, nullptr) {}
+      : kernel::Kernel(inputs, outputs, nullptr, nullptr), oh_nn_executor(oh_nn_executor) {}
   int Prepare() override;
   int Execute() override;
   int ReSize() override {
@@ -43,7 +43,11 @@ class NNRTModelKernel : public kernel::Kernel {
   OH_NN_DataType ConvertDataType(mindspore::DataType data_type);
   int PrepareInputs();
   int TransferOutputs();
-  ~NNRTModelKernel() override { OH_NNExecutor_Destroy(&oh_nn_executor); }
+  ~NNRTModelKernel() override {
+    MS_LOG(INFO) << "start NNExecutor Destroy.";
+    OH_NNExecutor_Destroy(&oh_nn_executor);
+    MS_LOG(INFO) << "start NNExecutor Finish.";
+  }
 
  protected:
   OH_NNExecutor *oh_nn_executor = nullptr;

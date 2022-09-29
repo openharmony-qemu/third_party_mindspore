@@ -15,7 +15,7 @@
  */
 #include <include/errorcode.h>
 #include "nnrt_model_kernel.h"
-#include "src/runtime/delegate/delegate_utils.h"
+//#include "src/delegate/delegate_utils.h"
 #include "kits/c/neural_network_runtime.h"
 int mindspore::NNRTModelKernel::Prepare() { return 0; }
 int mindspore::NNRTModelKernel::Execute() {
@@ -24,6 +24,12 @@ int mindspore::NNRTModelKernel::Execute() {
     MS_LOG(ERROR) << "NNRTModelKernel PrepareInputs failed, STATUS is " << ret_val;
     return ret_val;
   }
+  ret_val = TransferOutputs();
+  if (ret_val != lite::RET_OK) {
+    MS_LOG(ERROR) << "NNRTModelKernel TransferOutputs failed, STATUS is " << ret_val;
+    return ret_val;
+  }
+  MS_LOG(INFO) << "Running NNRtModel Kernel...";
   OH_NN_ReturnCode ret_code;
   ret_code = OH_NNExecutor_Run(this->oh_nn_executor);
 
@@ -31,12 +37,8 @@ int mindspore::NNRTModelKernel::Execute() {
     MS_LOG(ERROR) << "NNExecutor Run failed, OH_NN_ReturnCode = " << ret_code;
     return lite::RET_ERROR;
   }
+  MS_LOG(INFO) << "Run NNRtModel Kernel success.";
 
-  ret_val = TransferOutputs();
-  if (ret_val != lite::RET_OK) {
-    MS_LOG(ERROR) << "NNRTModelKernel TransferOutputs failed, STATUS is " << ret_val;
-    return ret_val;
-  }
   return lite::RET_OK;
 }
 
@@ -106,7 +108,11 @@ int mindspore::NNRTModelKernel::PrepareInputs() {
     std::vector<double> scale;
     std::vector<int32_t> zero_point;
     if (!tmp_quant_param.empty()) {
-      quant_param = (OH_NN_QuantParam *)malloc(sizeof(OH_NN_QuantParam));
+      quant_param = (new (std::nothrow) OH_NN_QuantParam);
+      if (quant_param == nullptr) {
+        MS_LOG(ERROR) << "new OH_NN_QuantParam failed.";
+        return lite::RET_NULL_PTR;
+      }
       for (auto qparam : tmp_quant_param) {
         bit_num.emplace_back(qparam.bit_num);
         scale.emplace_back(qparam.scale);
@@ -154,12 +160,11 @@ int mindspore::NNRTModelKernel::PrepareInputs() {
 }
 int mindspore::NNRTModelKernel::TransferOutputs() {
   auto output_tensors = this->outputs();
-  for (int i = 0; i < output_tensors.size(); i++) {
+  for (size_t i = 0; i < output_tensors.size(); i++) {
     auto tensor = output_tensors[i];
-    OH_NN_ReturnCode ret_code =
-      OH_NNExecutor_GetOutput(this->oh_nn_executor, i, tensor.MutableData(), tensor.DataSize());
+    OH_NN_ReturnCode ret_code = OH_NNExecutor_SetOutput(oh_nn_executor, i, tensor.MutableData(), tensor.DataSize());
     if (ret_code != OH_NN_SUCCESS) {
-      MS_LOG(ERROR) << "NNExecutor GetOutput failed, current out tensor is" << tensor.Name()
+      MS_LOG(ERROR) << "NNExecutor SetOutput failed, current out tensor is" << tensor.Name()
                     << ", OH_NN_ReturnCode = " << ret_code;
       return lite::RET_ERROR;
     }

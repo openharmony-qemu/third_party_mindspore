@@ -207,7 +207,8 @@ int InnerContext::IsValid() const {
     return RET_NOT_SUPPORT;
   }
 #endif
-#ifndef SUPPORT_NPU
+
+#ifndef SUPPORT_NNRT
   if (IsUserSetNpu()) {
     MS_LOG(ERROR) << "NPU is not supported.";
     return RET_NOT_SUPPORT;
@@ -270,6 +271,8 @@ bool InnerContext::IsGpuEnabled() const {
 
 bool InnerContext::IsNpuEnabled() const {
 #ifdef SUPPORT_NPU
+  return IsUserSetNpu();
+#elif defined(SUPPORT_NNRT)
   return IsUserSetNpu();
 #else
   return false;
