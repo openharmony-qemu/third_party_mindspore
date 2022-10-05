@@ -28,17 +28,27 @@ void MindIR_LiteGraph_Destroy(LiteGraph **lite_graph) {
     graph->name_.clear();
     graph->input_indices_.clear();
     graph->output_indices_.clear();
-    MindIRMemoryManager::GetInstance()->ClearAllMemory();
+    // node
     for (size_t idx = 0; idx < graph->all_nodes_.size(); idx++) {
       if (graph->all_nodes_[idx] != nullptr) {
+        MindIRMemoryManager::GetInstance()->DeletePrimitive(
+          static_cast<schema::Primitive *>(graph->all_nodes_[idx]->primitive_));
         delete graph->all_nodes_[idx];
       }
     }
+    // subgraph
     for (size_t idx = 0; idx < graph->sub_graphs_.size(); idx++) {
       if (graph->sub_graphs_[idx] != nullptr) {
         delete graph->sub_graphs_[idx];
       }
     }
+    // tensor
+    for (size_t idx = 0; idx < graph->all_tensors_.size(); idx++) {
+      if (graph->all_tensors_[idx] != nullptr) {
+        MindIRMemoryManager::GetInstance()->DeleteTensor(static_cast<schema::Tensor *>(graph->all_tensors_[idx]));
+      }
+    }
+    // graph
     delete graph;
     *lite_graph = nullptr;
   } else {
