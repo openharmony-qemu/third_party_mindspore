@@ -87,9 +87,9 @@ class TensorCache {
     index++;
     if (Category == CONSTANT || Category == TF_CONST || Category == GRAPH_INPUT) {
       tensor->refCount = 1;
-      tensor->nodeType = NodeType_ValueNode;
+      tensor->nodeType = static_cast<int32_t>(MSNodeType::NodeType_ValueNode);
     } else {
-      tensor->nodeType = NodeType_Parameter;
+      tensor->nodeType = static_cast<int32_t>(MSNodeType::NodeType_Parameter);
     }
     tensor->name = name;
     tensors.push_back(tensor);

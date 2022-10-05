@@ -149,7 +149,7 @@ OH_AI_Format OH_AI_TensorGetFormat(const OH_AI_TensorHandle tensor) {
 }
 
 void OH_AI_TensorSetData(OH_AI_TensorHandle tensor, void *data) {
-  if (tensor == nullptr || data == nullptr) {
+  if (tensor == nullptr) {
     MS_LOG(ERROR) << "param is nullptr.";
     return;
   }

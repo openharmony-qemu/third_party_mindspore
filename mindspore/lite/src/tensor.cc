@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace lite {
 namespace {
-constexpr int kMaxMallocSize = 1024 * 1024 * 300;
+static const size_t max_malloc_size_ = GetMaxMallocSize();
 }  // namespace
 Tensor::Tensor(const TypeId data_type, std::vector<int> shape, const mindspore::Format &format, Category category)
     : data_type_(data_type), shape_(std::move(shape)), format_(format), category_(category) {}
@@ -64,6 +64,7 @@ Tensor *Tensor::CopyTensor(const Tensor &src_tensor, bool copy_data, AllocatorPt
   result->category_ = src_tensor.category_;
   result->format_ = src_tensor.format_;
   result->set_allocator(allocator);
+  result->set_tensor_name(src_tensor.tensor_name() + "_duplicate");
   if (copy_data) {
     auto ret = CopyTensorData(src_tensor, result);
     if (ret != RET_OK) {
@@ -73,6 +74,11 @@ Tensor *Tensor::CopyTensor(const Tensor &src_tensor, bool copy_data, AllocatorPt
     }
     result->own_data_ = src_tensor.own_data_;
   }
+
+  for (LiteQuantParam quant : src_tensor.quant_params()) {
+    result->AddQuantParam(quant);
+  }
+
   return result;
 }
 
@@ -278,9 +284,17 @@ int Tensor::MallocData(const AllocatorPtr allocator) {
   if (allocator != nullptr) {
     allocator_ = allocator;
   }
+  size_t element_size = DataTypeSize(this->data_type_);
+  if (element_size == 0) {
+    MS_LOG(ERROR) << "Unexpected data type: " << data_type_;
+    return RET_ERROR;
+  }
   auto data_size = this->Size();
-
-  if (data_size > kMaxMallocSize) {
+  if (data_size <= 0) {
+    MS_LOG(INFO) << "Data size=" << data_size << " bytes";
+    // expect return, currently not return for case (0,xx) shape tensor (where_fp32)
+  }
+  if (data_size > max_malloc_size_) {
     MS_LOG(ERROR) << "Malloc size is too big while coping data, " << data_size << " bytes";
     return RET_ERROR;
   }
@@ -288,6 +302,7 @@ int Tensor::MallocData(const AllocatorPtr allocator) {
     this->data_ = malloc(data_size);
   } else {
     this->data_ = allocator_->Malloc(data_size);
+    allocator_->SetRefCount(this->data_, 1);
   }
   if (this->data_ == nullptr) {
     MS_LOG(ERROR) << "Malloc tensor data failed, size=" << data_size;
@@ -298,10 +313,16 @@ int Tensor::MallocData(const AllocatorPtr allocator) {
 }
 
 void Tensor::FreeData() {
+  if (IS_RUNTIME_ALLOCATOR(allocator_)) {
+    return;
+  }
   if (this->data_ != nullptr && this->own_data_) {
     if (this->allocator_ != nullptr) {
-      this->allocator_->Free(this->data_);
-      if (!IS_STATIC_ALLOCATOR(allocator_) || (allocator_->RefCount(this->data_) != 0)) {
+      MS_LOG(ERROR) <<"tensor name = "<<this->tensor_name_ <<"tensor type"<< ",this->allocator_" <<(void*)this->allocator_.get() <<",Tensor data addr = " << this->data_;
+      if (allocator_->DecRefCount(this->data_, 1) <= 0) {
+        allocator_->Free(this->data_);  // Due to existing various allocator, here do not set data to nullptr.
+      }
+      if (!IS_STATIC_ALLOCATOR(allocator_) || allocator_->RefCount(this->data_) != 0) {
         this->data_ = nullptr;
       }
     } else {
@@ -331,27 +352,15 @@ void *Tensor::MutableData() {
 
 void Tensor::IncRefCount() {
   ref_count_++;
-  if (allocator_ != nullptr) {
-    allocator_->IncRefCount(this->data_, 1);
-  }
 }
 
 void Tensor::DecRefCount() {
-  if (this->IsConst() || this->IsGraphInput()) {
-    return;
+ if (this->IsConst() || this->IsGraphInput()) {
+    return; 
   }
   int tensor_ref_count = --ref_count_;
-  int data_ref_count = tensor_ref_count;
-
-  if (allocator_ != nullptr) {
-    data_ref_count = allocator_->DecRefCount(this->data_, 1);
-  }
   if (tensor_ref_count <= 0) {
-    if (data_ref_count <= 0) {
-      FreeData();
-    } else {
-      data_ = nullptr;
-    }
+    FreeData();
   }
 }
 

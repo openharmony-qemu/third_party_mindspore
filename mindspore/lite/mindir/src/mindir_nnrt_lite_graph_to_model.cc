@@ -69,20 +69,31 @@ void MindIR_Model_Destroy(OHOS::HDI::Nnrt::V1_0::Model **model) {
 
 OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_graph, const SharedBuffer &buffer) {
   if (lite_graph != nullptr) {
-    MS_LOG(INFO) << "Start converting lite graph,name=" << lite_graph->name_;
-    auto *ret_model = new (std::nothrow) Model();
+    MS_LOG(INFO) << "MindIR_LiteGraph_To_Model begin";
+    if (!lite_graph->name_.empty()) {
+      MS_LOG(INFO) << "Start converting lite graph,name=" << lite_graph->name_;
+    } else {
+      MS_LOG(INFO) << "Start converting lite graph, but lite graph has no name.";
+    }
     std::vector<uint32_t> inputIndex;
     std::vector<uint32_t> outputIndex;
     std::vector<OHOS::HDI::Nnrt::V1_0::Node> nodes;
     std::vector<OHOS::HDI::Nnrt::V1_0::Tensor> allTensors;
     std::vector<OHOS::HDI::Nnrt::V1_0::SubGraph> subGraph;
-    ret_model->name = lite_graph->name_;
     // nodes
     MS_LOG(INFO) << "Start converting nodes, vector size = " << lite_graph->all_nodes_.size();
     nodes.reserve(lite_graph->all_nodes_.size());
     for (auto node : lite_graph->all_nodes_) {
+      if (node == nullptr) {
+        MS_LOG(ERROR) << "node is nullptr, convert fail.";
+        return nullptr;
+      }
       OHOS::HDI::Nnrt::V1_0::Node tmp;
       tmp.name = node->name_;
+      if (node->primitive_ == nullptr) {
+        MS_LOG(ERROR) << "node primitive is nullptr, convert fail.";
+        return nullptr;
+      }
       auto prim = static_cast<schema::Primitive *>(node->primitive_);
       auto value = prim->value_type();
       tmp.nodeType = static_cast<HDI::Nnrt::V1_0::NodeType>(value);
@@ -93,6 +104,7 @@ OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_gr
       nodes.emplace_back(tmp);
     }
 
+    MS_LOG(INFO) << "Start converting Tensor,Tensor size=" << lite_graph->all_tensors_.size();
     // Tensor
     allTensors.reserve(lite_graph->all_tensors_.size());
     unsigned int tensor_buffer_offset = 0;
@@ -125,6 +137,8 @@ OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_gr
         return nullptr;
       }
     }
+
+    MS_LOG(INFO) << "Start converting SubGraph,SubGraph size=" << lite_graph->sub_graphs_.size();
     // SubGraph
     subGraph.reserve(lite_graph->sub_graphs_.size());
     for (auto graph : lite_graph->sub_graphs_) {
@@ -135,16 +149,23 @@ OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_gr
       tmp.nodeIndices = std::vector<uint32_t>(graph->node_indices_);
       subGraph.emplace_back(tmp);
     }
+
+    MS_LOG(INFO) << "Start copying model";
+    auto *ret_model = new (std::nothrow) Model();
+    if (ret_model == nullptr) {
+      MS_LOG(ERROR) << "new Model failed.";
+      return nullptr;
+    }
     ret_model->name = lite_graph->name_;
     ret_model->inputIndex = lite_graph->input_indices_;
     ret_model->outputIndex = lite_graph->output_indices_;
     ret_model->nodes = nodes;
     ret_model->allTensors = allTensors;
     ret_model->subGraph = subGraph;
-    MS_LOG(INFO) << "Convert lite graph success";
+    MS_LOG(INFO) << "MindIR_LiteGraph_To_Model success";
     return ret_model;
   } else {
-    MS_LOG(ERROR) << "lite graph is null";
+    MS_LOG(ERROR) << "lite graph is nullptr";
     return nullptr;
   }
 }

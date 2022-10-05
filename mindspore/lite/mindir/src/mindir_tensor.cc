@@ -318,7 +318,11 @@ void MindIR_Tensor_SetQuantParams(TensorPtr *tensor, const std::vector<QuantPara
 }
 
 void MindIR_Tensor_Destroy(TensorPtr *tensor) {
-  MindIR_Primitive_Destroy(tensor);
+  if (tensor != nullptr && *tensor != nullptr) {
+    auto schema = static_cast<schema::Tensor *>(*tensor);
+    MindIRMemoryManager::GetInstance()->DeleteTensor(schema);
+    *tensor = nullptr;
+  }
   *tensor = nullptr;
 }
 }  // namespace lite
