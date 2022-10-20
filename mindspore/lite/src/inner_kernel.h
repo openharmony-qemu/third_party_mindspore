@@ -181,6 +181,8 @@ class InnerKernel : public Kernel {
   size_t workspace_size_ = 0;
   void *workspace_ = nullptr;
   const lite::Context *ms_context_ = nullptr;
+  
+  int thread_num_ = 1;
 };
 }  // namespace mindspore::kernel
 

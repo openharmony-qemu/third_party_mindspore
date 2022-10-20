@@ -343,6 +343,7 @@ mindspore::Format MSTensor::format() const {
 }
 
 void MSTensor::SetData(void *data) {
+   MS_LOG(ERROR) << "called SetData ,data=."<<data;
   if (impl_ == nullptr) {
     MS_LOG(ERROR) << "Invalid tensor implement.";
     return;
