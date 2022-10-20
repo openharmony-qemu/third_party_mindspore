@@ -16,7 +16,9 @@ class MindIRMemoryManager {
   static MindIRMemoryManager *GetInstance();
   ~MindIRMemoryManager() = default;
   void *CreateTensorFromBuilder(flatbuffers::FlatBufferBuilder &fbb_new, schema::Tensor *tensor);
+  void DeleteTensor(schema::Tensor *tensor);
   void *CreatePrimitiveFromBuilder(flatbuffers::FlatBufferBuilder &fbb_new, schema::Primitive *primitive);
+  void DeletePrimitive(schema::Primitive *primitive);
   void ClearAllMemory();
 
  private:
@@ -24,7 +26,7 @@ class MindIRMemoryManager {
   static void *CopyFbbToNewMemory(flatbuffers::FlatBufferBuilder &fbb_new);
   std::map<schema::Primitive *, PrimitivePtr> primitive_map;
   std::map<schema::Tensor *, TensorPtr> tensor_map;
-
+  std::mutex mutex;
   //  std::map<schema::Tensor,PrimitivePtr> tensor_map;
 };
 }  // namespace lite

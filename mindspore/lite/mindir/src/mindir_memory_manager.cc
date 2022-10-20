@@ -34,6 +34,7 @@ void *MindIRMemoryManager::CopyFbbToNewMemory(flatbuffers::FlatBufferBuilder &fb
   return buff;
 }
 void *MindIRMemoryManager::CreateTensorFromBuilder(flatbuffers::FlatBufferBuilder &fbb_new, schema::Tensor *tensor) {
+  std::lock_guard<std::mutex> lock(mutex);
   if (tensor != nullptr) {
     // find primitive exist
     if (tensor_map.find(tensor) != tensor_map.end()) {
@@ -52,8 +53,27 @@ void *MindIRMemoryManager::CreateTensorFromBuilder(flatbuffers::FlatBufferBuilde
   tensor_map[tensor_root] = new_memory_ptr;
   return new_memory_ptr;
 }
+void MindIRMemoryManager::DeleteTensor(schema::Tensor *tensor) {
+  std::lock_guard<std::mutex> lock(mutex);
+  if (tensor != nullptr) {
+    // find primitive exist
+    if (tensor_map.find(tensor) != tensor_map.end()) {
+      // if find, then delete
+      void *flatbuffer_ptr = tensor_map[tensor];
+      if (flatbuffer_ptr != nullptr) {
+        free(flatbuffer_ptr);
+        tensor_map[tensor] = nullptr;
+        tensor_map.erase(tensor_map.find(tensor));
+      }
+    }
+    return;
+  }
+  MS_LOG(INFO) << "Tensor is nullptr.";
+  return;
+}
 void *MindIRMemoryManager::CreatePrimitiveFromBuilder(flatbuffers::FlatBufferBuilder &fbb_new,
                                                       schema::Primitive *primitive) {
+  std::lock_guard<std::mutex> lock(mutex);
   if (primitive != nullptr) {
     // find primitive exist
     if (primitive_map.find(primitive) != primitive_map.end()) {
@@ -68,11 +88,30 @@ void *MindIRMemoryManager::CreatePrimitiveFromBuilder(flatbuffers::FlatBufferBui
   }
   // then copy fbb
   auto new_memory_ptr = CopyFbbToNewMemory(fbb_new);
-  auto tensor_root = flatbuffers::GetMutableRoot<schema::Primitive>(new_memory_ptr);
-  primitive_map[tensor_root] = new_memory_ptr;
+  auto primitive_root = flatbuffers::GetMutableRoot<schema::Primitive>(new_memory_ptr);
+  primitive_map[primitive_root] = new_memory_ptr;
   return new_memory_ptr;
 }
+void MindIRMemoryManager::DeletePrimitive(schema::Primitive *primitive) {
+  std::lock_guard<std::mutex> lock(mutex);
+  if (primitive != nullptr) {
+    // find primitive exist
+    if (primitive_map.find(primitive) != primitive_map.end()) {
+      // if find, then delete
+      void *flatbuffer_ptr = primitive_map[primitive];
+      if (flatbuffer_ptr != nullptr) {
+        free(flatbuffer_ptr);
+        primitive_map[primitive] = nullptr;
+        primitive_map.erase(primitive_map.find(primitive));
+      }
+    }
+    return;
+  }
+  MS_LOG(INFO) << "Primitive is nullptr.";
+  return;
+}
 void MindIRMemoryManager::ClearAllMemory() {
+  std::lock_guard<std::mutex> lock(mutex);
   ClearMap(primitive_map);
   ClearMap(tensor_map);
 }

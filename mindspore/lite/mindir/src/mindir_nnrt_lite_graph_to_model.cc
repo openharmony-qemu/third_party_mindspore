@@ -69,7 +69,11 @@ void MindIR_Model_Destroy(OHOS::HDI::Nnrt::V1_0::Model **model) {
 
 OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_graph, const SharedBuffer &buffer) {
   if (lite_graph != nullptr) {
-    MS_LOG(INFO) << "Start converting lite graph,name=" << lite_graph->name_;
+    if (!lite_graph->name_.empty()) {
+      MS_LOG(INFO) << "Start converting lite graph,name=" << lite_graph->name_;
+    } else {
+      MS_LOG(INFO) << "Start converting lite graph,but it has not name.";
+    }
     auto *ret_model = new (std::nothrow) Model();
     std::vector<uint32_t> inputIndex;
     std::vector<uint32_t> outputIndex;
