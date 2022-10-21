@@ -352,14 +352,11 @@ void *Tensor::MutableData() {
 
 void Tensor::IncRefCount() {
   ref_count_++;
-  // if (allocator_ != nullptr) {
-  //   allocator_->IncRefCount(this->data_, 1);
-  // }
 }
 
 void Tensor::DecRefCount() {
  if (this->IsConst() || this->IsGraphInput()) {
-    return;
+    return; 
   }
   int tensor_ref_count = --ref_count_;
   if (tensor_ref_count <= 0) {

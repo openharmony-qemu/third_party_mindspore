@@ -13,6 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @addtogroup MindSpore
+ * @{
+ *
+ * @brief Provides APIs related to MindSpore Lite model inference.
+ *
+ * @Syscap SystemCapability.Ai.MindSpore
+ * @since 9
+ */
+
+/**
+ * @file types.h
+ *
+ * @brief Provides the model file types and device types supported by MindSpore Lite.
+ *
+ * @since 9
+ */
+
 #ifndef MINDSPORE_INCLUDE_C_API_TYPES_C_H
 #define MINDSPORE_INCLUDE_C_API_TYPES_C_H
 
@@ -27,22 +46,50 @@ extern "C" {
 #define OH_AI_API __attribute__((visibility("default")))
 #endif
 #endif
-
+/**
+ * @brief Defines model file types.
+ *
+ * @since 9
+ */
 typedef enum OH_AI_ModelType {
+  /** Model type: MindIR
+   *
+   * @since 9
+   */
   OH_AI_MODELTYPE_MINDIR = 0,
-  // insert new data type here
+  /** Invalid model type
+   *
+   * @since 9
+   */
   OH_AI_MODELTYPE_INVALID = 0xFFFFFFFF
 } OH_AI_ModelType;
 
+/**
+ * @brief Defines the supported device types.
+ *
+ * @since 9
+ */
 typedef enum OH_AI_DeviceType {
+  /** Device type: CPU
+   *
+   * @since 9
+   */
   OH_AI_DEVICETYPE_CPU = 0,
-  OH_AI_DEVICETYPE_GPU,
+  /** Device type: Kirin NPU
+   *
+   * @since 9
+   */
   OH_AI_DEVICETYPE_KIRIN_NPU,
-  // add new type here
+  /** Invalid device type
+   *
+   * @since 9
+   */
   OH_AI_DEVICETYPE_INVALID = 100,
 } OH_AI_DeviceType;
 
 #ifdef __cplusplus
 }
 #endif
-#endif  // MINDSPORE_INCLUDE_C_API_TYPES_C_H
+
+/** @} */
+#endif // MINDSPORE_INCLUDE_C_API_TYPES_C_H

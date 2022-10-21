@@ -27,7 +27,6 @@ class MindIRMemoryManager {
   std::map<schema::Primitive *, PrimitivePtr> primitive_map;
   std::map<schema::Tensor *, TensorPtr> tensor_map;
   std::mutex mutex;
-  //  std::map<schema::Tensor,PrimitivePtr> tensor_map;
 };
 }  // namespace lite
 }  // namespace mindspore
