@@ -153,11 +153,6 @@ class Tensor : public mindspore::tensor::MSTensor {
 
   virtual void set_ref_count(int ref_count) {
     ref_count_ = ref_count;
-    // if (allocator_ == nullptr) {
-    //   return;
-    // }
-    // allocator_->SetRefCount(data_, ref_count);
-    // return;
   }
 
   void set_init_ref_count(int ref_count) { this->init_ref_count_ = ref_count; }

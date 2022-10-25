@@ -15,7 +15,6 @@
  */
 #include <include/errorcode.h>
 #include "nnrt_model_kernel.h"
-//#include "src/delegate/delegate_utils.h"
 #include "kits/c/neural_network_runtime.h"
 int mindspore::NNRTModelKernel::Prepare() { return 0; }
 int mindspore::NNRTModelKernel::Execute() {
@@ -123,7 +122,11 @@ int mindspore::NNRTModelKernel::PrepareInputs() {
       quant_param->scale = scale.data();
       quant_param->zeroPoint = zero_point.data();
     }
-    auto oprend = (OH_NN_Operand *)malloc(sizeof(OH_NN_Operand));
+    auto oprend = new (std::nothrow) OH_NN_Tensor;
+    if (oprend == nullptr) {
+      MS_LOG(ERROR) << "new OH_NN_Tensor Failed";
+      return lite::RET_ERROR;
+    }
     oprend->dataType = ConvertDataType(tensor.DataType());
     oprend->dimensionCount = tensor_shape.size();
 
@@ -142,7 +145,7 @@ int mindspore::NNRTModelKernel::PrepareInputs() {
     oprend->type = OH_NN_TENSOR;
     OH_NN_ReturnCode ret_code =
       OH_NNExecutor_SetInput(oh_nn_executor, i, oprend, tensor.MutableData(), tensor.DataSize());
-    free(oprend);
+    delete (oprend);
 
     if (!tmp_quant_param.empty()) {
       free(quant_param);

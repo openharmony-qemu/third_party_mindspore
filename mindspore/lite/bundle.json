@@ -23,7 +23,21 @@
   },
     "build": {
       "sub_component": [ "//third_party/mindspore/mindspore/lite:mindspore" ],
-      "inner_kits": []
+      "inner_kits": [        
+        {
+        "name": "//third_party/mindspore/mindspore/lite/mindir:mindir",
+        "header": {
+          "header_files": [
+            "mindir_lite_graph.h",
+            "mindir_primitive.h",
+            "mindir_tensor.h",
+            "mindir_types.h",
+            "mindir.h"
+          ],
+          "header_base": "//third_party/mindspore/mindspore/lite/mindir/include"
+        }
+      }
+    ]
   }
   }
 }

@@ -18,7 +18,8 @@ import("//build/ohos.gni")
 ohos_group("mindspore") {
   deps = [
     ":mindspore_lib",
-    # "mindir:mindir",
+    "mindir:mindir",
+
     #"tools/benchmark:benchmark_bin",
   ]
 }

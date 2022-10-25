@@ -32,9 +32,9 @@ mindspore::Status mindspore::NNRTDelegate::Build(DelegateModel<schema::Primitive
     return mindspore::kLiteError;
   }
   OH_NN_ReturnCode ret_code;
-  OH_NNModel *oh_nnmodel = OH_NNModel_Create();
+  OH_NNModel *oh_nnmodel = OH_NNModel_Construct();
   if (oh_nnmodel == nullptr) {
-    MS_LOG(ERROR) << "Create NNModel failed, oh_nnmodel is nullptr.";
+    MS_LOG(ERROR) << "Construct NNModel failed, oh_nnmodel is nullptr.";
     return mindspore::kLiteError;
   }
 
@@ -44,18 +44,17 @@ mindspore::Status mindspore::NNRTDelegate::Build(DelegateModel<schema::Primitive
     OH_NNModel_Destroy(&oh_nnmodel);
     return mindspore::kLiteError;
   }
-
-  MS_LOG(DEBUG) << "NNRTDelegate creates NNModel success.";
+  MS_LOG(INFO) << "NNRTDelegate creates NNModel success.";
 
   OH_NNCompilation *oh_nn_compilation = nullptr;
-  oh_nn_compilation = OH_NNCompilation_Create(oh_nnmodel);
+  oh_nn_compilation = OH_NNCompilation_Construct(oh_nnmodel);
 
   if (oh_nn_compilation == nullptr) {
-    MS_LOG(ERROR) << "Create NNCompilation failed";
+    MS_LOG(ERROR) << "Construct NNCompilation failed";
     OH_NNModel_Destroy(&oh_nnmodel);
     return mindspore::kLiteError;
   }
-  MS_LOG(DEBUG) << "NNRTDelegate creates NNCompilation success.";
+  MS_LOG(INFO) << "NNRTDelegate creates NNCompilation success.";
 
   const size_t *allDevicesID = nullptr;
   uint32_t device_count = 0;
@@ -73,14 +72,14 @@ mindspore::Status mindspore::NNRTDelegate::Build(DelegateModel<schema::Primitive
     // OH_NNModel_Destroy(&oh_nnmodel);
     return mindspore::kSuccess;
   }
-  MS_LOG(DEBUG) << "NNRTDelegate GetAllDevicesID success.";
+  MS_LOG(INFO) << "NNRTDelegate GetAllDevicesID success.";
 
   // check if model ops are supported
   const bool *issupported = nullptr;
   uint32_t op_count = 0;
-  ret_code = OH_NNModel_GetSupportedOperation(oh_nnmodel, allDevicesID[0], &issupported, &op_count);
+  ret_code = OH_NNModel_GetAvailableOperations(oh_nnmodel, allDevicesID[0], &issupported, &op_count);
   if (ret_code != OH_NN_SUCCESS) {
-    MS_LOG(ERROR) << "NNModel GetSupportedOperation failed, OH_NN_ReturnCode = " << ret_code;
+    MS_LOG(ERROR) << "NNModel GetAvailableOperations failed, OH_NN_ReturnCode = " << ret_code;
     OH_NNCompilation_Destroy(&oh_nn_compilation);
     OH_NNModel_Destroy(&oh_nnmodel);
     return mindspore::kLiteError;
@@ -99,7 +98,7 @@ mindspore::Status mindspore::NNRTDelegate::Build(DelegateModel<schema::Primitive
     OH_NNModel_Destroy(&oh_nnmodel);
     return mindspore::kSuccess;
   }
-  MS_LOG(DEBUG) << "NNRtDelegate supports all op in this model.";
+  MS_LOG(INFO) << "NNRtDelegate supports all op in this model.";
 
   ret_code = OH_NNCompilation_SetDevice(oh_nn_compilation, allDevicesID[0]);
 
@@ -122,9 +121,9 @@ mindspore::Status mindspore::NNRTDelegate::Build(DelegateModel<schema::Primitive
   MS_LOG(DEBUG) << "NNRTDelegate SetDevice success.";
 
   OH_NNExecutor *oh_nn_executor = nullptr;
-  oh_nn_executor = OH_NNExecutor_Create(oh_nn_compilation);
+  oh_nn_executor = OH_NNExecutor_Construct(oh_nn_compilation);
   if (oh_nn_executor == nullptr) {
-    MS_LOG(ERROR) << "NNCompilation SetDevice failed, OH_NN_ReturnCode = " << ret_code;
+    MS_LOG(ERROR) << "Construct NNCompilation SetDevice failed, OH_NN_ReturnCode = " << ret_code;
     OH_NNCompilation_Destroy(&oh_nn_compilation);
     OH_NNModel_Destroy(&oh_nnmodel);
     return mindspore::kLiteError;
@@ -177,7 +176,11 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
       quant_param->scale = scale.data();
       quant_param->zeroPoint = zero_point.data();
     }
-    auto oprend = new (std::nothrow) OH_NN_Operand;
+    auto oprend = new (std::nothrow) OH_NN_Tensor;
+    if (oprend == nullptr) {
+      MS_LOG(ERROR) << "new OH_NN_Tensor Failed";
+      return mindspore::kLiteError;
+    }
     oprend->dataType = ConvertDataType(tensor.DataType());
     oprend->dimensionCount = tensor_shape.size();
 
@@ -286,12 +289,31 @@ mindspore::Status mindspore::NNRTDelegate::PrepareOutputs(DelegateModel<schema::
 void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGraph &lite_graph) {
   Status ret;
   for (auto node : lite_graph.all_nodes_) {
-    //    MS_LOG(ERROR) << "node idx = "<<idx<<"input_indices.size = "<<node->input_indices_.size();
     ret = lite::CheckPrimitiveSupported(static_cast<const schema::Primitive *>(node->primitive_));
     if (ret == mindspore::kLiteError) {
       MS_LOG(ERROR) << " primitive supported check failed.";
       return;
     }
+  }
+  std::vector<LiteGraph::Node *> node_list;
+  node_list.reserve(lite_graph.all_nodes_.size());
+  // copy node
+  for (auto node : lite_graph.all_nodes_) {
+    auto new_node = new (std::nothrow) LiteGraph::Node;
+    if (new_node == nullptr) {
+      MS_LOG(ERROR) << " new LiteGraph::Node Failed.";
+      return;
+    }
+    new_node->name_ = node->name_;
+    new_node->op_type_ = node->op_type_;
+    new_node->node_type_ = node->node_type_;
+    new_node->primitive_ = node->primitive_;
+    new_node->base_operator_ = node->base_operator_;
+    new_node->input_indices_ = node->input_indices_;
+    new_node->output_indices_ = node->output_indices_;
+    new_node->quant_type_ = node->quant_type_;
+    new_node->device_type_ = node->device_type_;
+    node_list.emplace_back(new_node);
   }
 
   for (auto tensor : lite_graph.all_tensors_) {
@@ -313,7 +335,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
   nnrt_lite_graph->input_indices_ = lite_graph.input_indices_;
   nnrt_lite_graph->output_indices_ = lite_graph.output_indices_;
   nnrt_lite_graph->all_tensors_ = lite_graph.all_tensors_;
-  nnrt_lite_graph->all_nodes_ = lite_graph.all_nodes_;
+  nnrt_lite_graph->all_nodes_ = node_list;
   nnrt_lite_graph->sub_graphs_ = lite_graph.sub_graphs_;
   MS_LOG(INFO) << "ShallowCopyLiteGraph success.";
 }
