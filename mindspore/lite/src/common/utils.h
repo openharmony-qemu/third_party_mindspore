@@ -35,6 +35,8 @@ enum class MSNodeType {
   NodeType_CNode       // op
 };
 
+size_t GetMaxMallocSize();
+
 const int USEC = 1000000;
 const int MSEC = 1000;
 uint64_t GetTimeUs();

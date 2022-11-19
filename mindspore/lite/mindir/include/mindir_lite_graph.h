@@ -18,7 +18,6 @@ struct LiteGraph {
     std::string op_type_;  // hnn no use
     int node_type_;        // hnn no use
     PrimitivePtr primitive_ = nullptr;
-    //    FlatPrimitivePtr primitive_ = nullptr;
     std::shared_ptr<void> base_operator_ = nullptr;  // hnn no use
     std::vector<uint32_t> input_indices_;
     std::vector<uint32_t> output_indices_;

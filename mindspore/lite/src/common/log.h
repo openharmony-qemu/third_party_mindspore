@@ -108,8 +108,8 @@ constexpr unsigned int TEST_DOMAIN_ID = 0xD000F00;
 #define FILE_NAME (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 #define FORMAT "[%{public}s:%{public}d] %{public}s# %{public}s"
 
-#define MSLOG_IF(level)                                                                             \
-  mindspore::LiteLogWriter(mindspore::LiteLocationInfo(FILE_NAME, __LINE__, __FUNCTION__), level) < \
+#define MSLOG_IF(level)                                                                                  \
+  mindspore::LiteLogWriter(mindspore::LiteLocationInfo(LITE_FILE_NAME, __LINE__, __FUNCTION__), level) < \
     mindspore::LiteLogStream()
 
 enum MSLiteManagerLogLabel {

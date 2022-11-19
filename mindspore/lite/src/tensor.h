@@ -35,7 +35,10 @@ namespace mindspore {
 namespace lite {
 
 #define STATIC_ALLOCATION -271964
+#define RUNTIME_REFCOUNT 0x9999
 #define IS_STATIC_ALLOCATOR(allocator) ((allocator != nullptr) && (allocator->RefCount(nullptr) == STATIC_ALLOCATION))
+#define IS_RUNTIME_ALLOCATOR(allocator) ((allocator != nullptr) && (allocator->RefCount(nullptr) == RUNTIME_REFCOUNT))
+
 struct LiteQuantParam {
   double scale;
   int32_t zeroPoint;
@@ -123,7 +126,16 @@ class Tensor : public mindspore::tensor::MSTensor {
 
   virtual void *data() const { return data_; }
 
+  // note: in the case of that old_data is valid, set_data just releases the ownership of it but not frees it. Of
+  //       course, you can call FreeData before calling set_data to ensure the data can be freed by current tensor.
   void set_data(void *data) override {
+    if (this->data_ == data) {
+      return;
+    }
+    if (allocator_ != nullptr) {
+      allocator_->IncRefCount(data, 1);
+      allocator_->DecRefCount(this->data_, 1);
+    }
     this->data_ = data;
     this->own_data_ = true;
   }
@@ -141,16 +153,11 @@ class Tensor : public mindspore::tensor::MSTensor {
 
   virtual void set_ref_count(int ref_count) {
     ref_count_ = ref_count;
-    if (allocator_ == nullptr) {
-      return;
-    }
-    allocator_->SetRefCount(data_, ref_count);
-    return;
   }
 
   void set_init_ref_count(int ref_count) { this->init_ref_count_ = ref_count; }
 
-  virtual void ResetRefCount() { set_ref_count(this->init_ref_count_); }
+  virtual void ResetRefCount() { set_ref_count(static_cast<int>(this->init_ref_count_)); }
 
   virtual void IncRefCount();
 

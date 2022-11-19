@@ -15,10 +15,11 @@
  */
 #include "utils.h"
 #include "src/common/log.h"
+#include "mindir_memory_manager.h"
 namespace mindspore {
 namespace lite {
-// ********** PrimitiveBase **********
 
+// ********** PrimitiveBase **********
 NodeType MindIR_Primitive_GetType(PrimitivePtr primitive) {
   auto prim = flatbuffers::GetMutableRoot<schema::Primitive>(primitive);
   auto type = prim->value_type();
@@ -27,7 +28,9 @@ NodeType MindIR_Primitive_GetType(PrimitivePtr primitive) {
 
 void MindIR_Primitive_Destroy(PrimitivePtr *primitive) {
   if (primitive != nullptr && *primitive != nullptr) {
-    free(*primitive);
+    auto schema = static_cast<schema::Primitive *>(*primitive);
+    MS_LOG(ERROR) << "schema=" << schema->value_type();
+    MindIRMemoryManager::GetInstance()->DeletePrimitive(schema);
     *primitive = nullptr;
   }
 }

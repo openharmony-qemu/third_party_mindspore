@@ -32,5 +32,6 @@ ohos_ndk_library("mindspore_lib") {
   output_name = "mindspore-lite.huawei"
   output_extension = "so"
   ndk_description_file = "./mindspore_lib.ndk.json"
+  system_capability = "SystemCapability.Ai.MindSpore"
   min_compact_version = "9"
 }
