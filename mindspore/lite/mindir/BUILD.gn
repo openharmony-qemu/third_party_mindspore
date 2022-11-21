@@ -24,7 +24,7 @@ ohos_shared_library("mindir") {
     "../",
     "../../core",
     "include",
-    "include/inner",
+    "inner_headers",
     "//third_party/flatbuffers/include",
   ]
   sources = [

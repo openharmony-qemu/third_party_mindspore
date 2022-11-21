@@ -13,22 +13,27 @@
 <!-- TOC -->
 
 - [MindSpore介绍](#mindspore介绍)
-    - [自动微分](#自动微分)
-    - [自动并行](#自动并行)
+  - [自动微分](#自动微分)
+  - [自动并行](#自动并行)
 - [安装](#安装)
-    - [pip方式安装](#pip方式安装)
-    - [源码编译方式安装](#源码编译方式安装)
-    - [Docker镜像](#docker镜像)
+  - [pip方式安装](#pip方式安装)
+  - [源码编译方式安装](#源码编译方式安装)
+  - [Docker镜像](#docker镜像)
 - [快速入门](#快速入门)
 - [文档](#文档)
 - [社区](#社区)
-    - [治理](#治理)
-    - [交流](#交流)
+  - [治理](#治理)
+  - [交流](#交流)
 - [贡献](#贡献)
 - [分支维护策略](#分支维护策略)
 - [现有分支维护状态](#现有分支维护状态)
 - [版本说明](#版本说明)
 - [许可证](#许可证)
+- [OpenHarmony系统部件](#openharmony系统部件)
+  - [MindSpore Lite](#mindspore-lite)
+    - [使用方法](#使用方法)
+  - [MindIR 构图接口](#mindir-构图接口)
+    - [使用方法](#使用方法-1)
 
 <!-- /TOC -->
 
@@ -295,3 +300,52 @@ MindSpore的版本分支有以下几种维护阶段：
 ## 许可证
 
 [Apache License 2.0](https://gitee.com/mindspore/mindspore#/mindspore/mindspore/blob/master/LICENSE)
+
+## OpenHarmony系统部件
+目前OpenHarmony的标准系统内置了Mindspore Lite，和MindIR构图接口。
+### MindSpore Lite
+关于MindSpore Lite的介绍详见(MindSpore Lite介绍)[mindspore/lite/README_CN.md]。
+#### 使用方法
+在BUILD.gn中加入如下依赖即可使用MindSpore Lite:
+```gn
+include_dirs = [
+    "//third_party/mindspore/"
+]
+external_deps = ["mindspore:mindspore_lib"]
+```
+
+C++ 的头文件存放在`include/api`目录中，使用方法：
+```C++
+#include "include/api/xxx"
+```
+
+C 的头文件存放在`include/c_api`目录中，使用方法：
+```C++
+#include "include/c_api/xxx"
+```
+### MindIR 构图接口
+MindIR是MindSpore 用于描述图结构的中间表达方式。
+Primitive 是一套基于flatbuffers的对模型进行序列化的工具，MindSpore Lite使用它存储图结构、算子、张量等信息。
+Lite Graph是MindSpore Lite用于描述模型中节点、张量、子图等信息的结构，并且可以通过MindIR接口构建Lite Graph。
+
+#### 使用方法
+在BUILD.gn中加入如下依赖即可使用MindIR 构图接口:
+```gn
+include_dirs = [
+    "//third_party/mindspore/mindspore/lite/mindir/include"
+]
+external_deps = ["mindspore:mindir"]
+```
+
+C++ 接口存放目录为`mindspore/mindspore/lite/mindir/include`直接使用
+```
+├── include                     # 对外的所有头文件
+│   ├── mindir.h                # MindIR所有功能的头文件
+│   ├── mindir_lite_graph.h     # Lite Graph相关的头文件
+│   ├── mindir_primitive.h      # Primitive相关头文件
+│   ├── mindir_tensor.h         # Tensor相关头文件
+│   └── mindir_types.h          # 类型相关的头文件
+├── inner_headers               # 内部使用的头文件
+├── src                         # MindIR构图接口的源代码
+└── tests                       # 测试代码
+```
