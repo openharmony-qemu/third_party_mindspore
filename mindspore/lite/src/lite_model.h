@@ -256,7 +256,7 @@ class LiteModel : public Model {
   }
 
 #ifdef ENABLE_V0
-  void SetNodeDeviceType(Node *node, const schema::v0::CNode &c_node) { node->device_type_ = -1; }
+  void SetNodeDeviceType(LiteGraph::Node *node, const schema::v0::CNode &c_node) { node->device_type_ = -1; }
 #endif
 
   int VersionVerify(flatbuffers::Verifier *verify) const;

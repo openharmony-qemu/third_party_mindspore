@@ -594,6 +594,7 @@ int Scheduler::InferNodeShape(const lite::LiteGraph::Node *node) {
     for (auto &output : outputs) {
       output->set_shape({-1});
     }
+    MS_LOG(ERROR) << "RET_INFER_INVALID";
     return RET_INFER_INVALID;
   }
 #endif
@@ -608,6 +609,7 @@ int Scheduler::InferNodeShape(const lite::LiteGraph::Node *node) {
     }
   } else if (ret != RET_INFER_INVALID) {
     FreeOpParameters();
+    MS_LOG(ERROR) << "RET_INFER_INVALID";
     return RET_ERROR;
   }
   return ret;

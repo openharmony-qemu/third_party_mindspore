@@ -318,7 +318,6 @@ void Tensor::FreeData() {
   }
   if (this->data_ != nullptr && this->own_data_) {
     if (this->allocator_ != nullptr) {
-      MS_LOG(ERROR) <<"tensor name = "<<this->tensor_name_ <<"tensor type"<< ",this->allocator_" <<(void*)this->allocator_.get() <<",Tensor data addr = " << this->data_;
       if (allocator_->DecRefCount(this->data_, 1) <= 0) {
         allocator_->Free(this->data_);  // Due to existing various allocator, here do not set data to nullptr.
       }
