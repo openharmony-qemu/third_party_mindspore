@@ -43,6 +43,19 @@ ohos_shared_library("mindir") {
     "hilog_native:libhilog",
     "ipc:ipc_core",
   ]
+  disable_android = true
+  if (disable_android) {
+    cflags = [
+      "-UANDROID",
+      "-U__ANDROID__",
+      "-U__ANDROID_API__",
+    ]
+    cflags_cc = [
+      "-UANDROID",
+      "-U__ANDROID__",
+      "-U__ANDROID_API__",
+    ]
+  }
   defines = [ "MS_COMPILE_OHOS" ]
   deps = [ "//drivers/interface/nnrt/v1_0:nnrt_idl_headers" ]
   part_name = "mindspore"
