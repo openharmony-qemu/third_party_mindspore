@@ -31,7 +31,7 @@
 
 namespace mindspore::lite {
 #ifdef ENABLE_V0
-int LiteModel::ConvertAttrs(Model::Node *node, std::vector<schema::Tensor *> *dst_tensor) {
+int LiteModel::ConvertAttrs(LiteGraph::Node *node, std::vector<schema::Tensor *> *dst_tensor) {
   if (node == nullptr || dst_tensor == nullptr) {
     MS_LOG(ERROR) << "node or tensor_vec is nullptr.";
     return RET_ERROR;
@@ -62,15 +62,16 @@ int LiteModel::ConvertAttrToTensors() {
     return RET_OK;
   }
   std::unordered_map<int, std::set<int>> subgraph_node_indexes;
-  for (size_t subgraph_index = 0; subgraph_index < this->sub_graphs_.size(); ++subgraph_index) {
-    for (size_t node_index = 0; node_index < this->sub_graphs_[subgraph_index]->node_indices_.size(); ++node_index) {
-      subgraph_node_indexes[subgraph_index].insert(this->sub_graphs_[subgraph_index]->node_indices_[node_index]);
+  for (size_t subgraph_index = 0; subgraph_index < this->graph_.sub_graphs_.size(); ++subgraph_index) {
+    for (size_t node_index = 0; node_index < this->graph_.sub_graphs_[subgraph_index]->node_indices_.size();
+         ++node_index) {
+      subgraph_node_indexes[subgraph_index].insert(this->graph_.sub_graphs_[subgraph_index]->node_indices_[node_index]);
     }
   }
-  int cur_all_tensors_size = this->all_tensors_.size();
-  for (size_t index = 0; index < this->all_nodes_.size(); ++index) {
+  int cur_all_tensors_size = this->graph_.all_tensors_.size();
+  for (size_t index = 0; index < this->graph_.all_nodes_.size(); ++index) {
     std::vector<schema::Tensor *> dst_tensors;
-    int status = ConvertAttrs(this->all_nodes_[index], &dst_tensors);
+    int status = ConvertAttrs(this->graph_.all_nodes_[index], &dst_tensors);
     if (status != RET_OK) {
       MS_LOG(ERROR) << "fail to convert attr to tensor.";
       return RET_ERROR;
@@ -79,7 +80,7 @@ int LiteModel::ConvertAttrToTensors() {
       continue;
     }
     std::vector<int> subgraphs_with_node;
-    for (size_t subgraph_index = 0; subgraph_index < this->sub_graphs_.size(); ++subgraph_index) {
+    for (size_t subgraph_index = 0; subgraph_index < this->graph_.sub_graphs_.size(); ++subgraph_index) {
       if (subgraph_node_indexes[subgraph_index].find(index) == subgraph_node_indexes[subgraph_index].end()) {
         continue;
       }
@@ -87,10 +88,10 @@ int LiteModel::ConvertAttrToTensors() {
     }
     for (auto tensor : dst_tensors) {
       for (auto subgraph_index : subgraphs_with_node) {
-        this->sub_graphs_[subgraph_index]->tensor_indices_.push_back(cur_all_tensors_size);
+        this->graph_.sub_graphs_[subgraph_index]->tensor_indices_.push_back(cur_all_tensors_size);
       }
-      this->all_nodes_[index]->input_indices_.push_back(cur_all_tensors_size++);
-      this->all_tensors_.push_back(tensor);
+      this->graph_.all_nodes_[index]->input_indices_.push_back(cur_all_tensors_size++);
+      this->graph_.all_tensors_.push_back(tensor);
     }
   }
   return RET_OK;

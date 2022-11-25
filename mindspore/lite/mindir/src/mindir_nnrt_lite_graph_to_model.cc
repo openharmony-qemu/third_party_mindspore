@@ -29,6 +29,10 @@ using namespace OHOS::HDI::Nnrt::V1_0;
 namespace mindspore {
 namespace lite {
 
+constexpr size_t kNumTwo = 2;
+constexpr size_t kNumFour = 4;
+constexpr size_t kNumEight = 8;
+
 inline std::vector<OHOS::HDI::Nnrt::V1_0::QuantParam> MindIR_Tensor_GetQuantParams_OHOS(TensorPtr tensor) {
   if (tensor != nullptr) {
     auto value = static_cast<schema::Tensor *>(tensor);
@@ -71,7 +75,7 @@ OHOS::HDI::Nnrt::V1_0::Model *MindIR_LiteGraph_To_Model(const LiteGraph *lite_gr
   if (lite_graph != nullptr) {
     MS_LOG(INFO) << "MindIR_LiteGraph_To_Model begin";
     if (!lite_graph->name_.empty()) {
-      MS_LOG(INFO) << "Start converting lite graph,name=" << lite_graph->name_;
+      MS_LOG(INFO) << "Start converting lite graph,name =" << lite_graph->name_;
     } else {
       MS_LOG(INFO) << "Start converting lite graph, but lite graph has no name.";
     }
@@ -241,9 +245,30 @@ std::vector<int8_t> ConvertAvgPoolFusion(PrimitivePtr primitive) {
     auto value = prim->value_as_AvgPoolFusion();
     if (value != nullptr) {
       AvgPoolFusion avg_pool_fusion{};
-      avg_pool_fusion.kernelSize = std::vector<int64_t>(value->kernel_size()->begin(), value->kernel_size()->end());
-      avg_pool_fusion.strides = std::vector<int64_t>(value->strides()->begin(), value->strides()->end());
-      avg_pool_fusion.pad = std::vector<int64_t>(value->pad()->begin(), value->pad()->end());
+      std::vector<int64_t> kernel_size;
+      kernel_size.reserve(kNumTwo);
+      if (value->kernel_size() == nullptr || value->kernel_size()->size() < kNumTwo) {
+        kernel_size = {};
+      } else {
+        kernel_size = std::vector<int64_t>(value->kernel_size()->begin(), value->kernel_size()->end());
+      }
+      std::vector<int64_t> strides;
+      strides.reserve(kNumTwo);
+      if (value->strides() == nullptr || value->strides()->size() < kNumTwo) {
+        strides = {};
+      } else {
+        strides = std::vector<int64_t>(value->strides()->begin(), value->strides()->end());
+      }
+      std::vector<int64_t> padList;
+      strides.reserve(kNumTwo);
+      if (value->pad() == nullptr || value->pad()->size() < kNumFour) {
+        padList = {};
+      } else {
+        padList = std::vector<int64_t>(value->pad()->begin(), value->pad()->end());
+      }
+      avg_pool_fusion.kernelSize = kernel_size;
+      avg_pool_fusion.strides = strides;
+      avg_pool_fusion.pad = padList;
       avg_pool_fusion.padMode = static_cast<HDI::Nnrt::V1_0::PadMode>(value->pad_mode());
       avg_pool_fusion.roundMode = static_cast<HDI::Nnrt::V1_0::RoundMode>(value->round_mode());
       avg_pool_fusion.format = static_cast<HDI::Nnrt::V1_0::Format>(value->format());
@@ -267,13 +292,25 @@ std::vector<int8_t> ConvertBatchToSpaceND(PrimitivePtr primitive) {
     auto value = prim->value_as_BatchToSpaceND();
     if (value != nullptr) {
       BatchToSpaceND batch_to_space_n_d{};
-      batch_to_space_n_d.blockShape = std::vector<int64_t>(value->block_shape()->begin(), value->block_shape()->end());
+      std::vector<int64_t> blockShape;
+      blockShape.reserve(kNumTwo);
+      if (value->block_shape() == nullptr || value->block_shape()->size() < kNumTwo) {
+        blockShape = {0, 0};
+      } else {
+        blockShape = std::vector<int64_t>(value->block_shape()->begin(), value->block_shape()->end());
+      }
+      batch_to_space_n_d.blockShape = blockShape;
       auto crops = value->crops();
       std::vector<std::vector<int64_t>> crops_vec2d;
-      crops_vec2d.reserve(crops->data()->size());
-      for (size_t i = 0; i < crops->data()->size(); i++) {
-        auto vet = crops->data()->Get(i);
-        crops_vec2d.emplace_back(std::vector<int64_t>(vet->data()->begin(), vet->data()->end()));
+      if (crops->data() == nullptr) {
+        MS_LOG(ERROR) << "crops_data is nullptr";
+        crops_vec2d = {{}};
+      } else {
+        crops_vec2d.reserve(crops->data()->size());
+        for (size_t i = 0; i < crops->data()->size(); i++) {
+          auto vet = crops->data()->Get(i);
+          crops_vec2d.emplace_back(std::vector<int64_t>(vet->data()->begin(), vet->data()->end()));
+        }
       }
       batch_to_space_n_d.crops = crops_vec2d;
       OHOS::MessageParcel data;
@@ -349,15 +386,39 @@ std::vector<int8_t> ConvertConv2DFusion(PrimitivePtr primitive) {
     auto value = prim->value_as_Conv2DFusion();
     if (value != nullptr) {
       Conv2DFusion conv2_d_fusion{};
-      auto kernel_size = value->kernel_size();
-      conv2_d_fusion.kernelSize = std::vector<int64_t>(kernel_size->begin(), kernel_size->end());
-      auto stride = value->stride();
-      conv2_d_fusion.stride = std::vector<int64_t>(stride->begin(), stride->end());
-      auto dilation = value->dilation();
-      conv2_d_fusion.dilation = std::vector<int64_t>(dilation->begin(), dilation->end());
+      std::vector<int64_t> kernel_size;
+      kernel_size.reserve(kNumTwo);
+      if (value->kernel_size() == nullptr || value->kernel_size()->size() < kNumTwo) {
+        kernel_size = {};
+      } else {
+        kernel_size = std::vector<int64_t>(value->kernel_size()->begin(), value->kernel_size()->end());
+      }
+      std::vector<int64_t> strides;
+      strides.reserve(kNumTwo);
+      if (value->stride() == nullptr || value->stride()->size() < kNumTwo) {
+        strides = {};
+      } else {
+        strides = std::vector<int64_t>(value->stride()->begin(), value->stride()->end());
+      }
+      std::vector<int64_t> dilation;
+      dilation.reserve(kNumTwo);
+      if (value->dilation() == nullptr || value->dilation()->size() < kNumTwo) {
+        dilation = {};
+      } else {
+        dilation = std::vector<int64_t>(value->dilation()->begin(), value->dilation()->end());
+      }
+      std::vector<int64_t> padList;
+      strides.reserve(kNumTwo);
+      if (value->pad_list() == nullptr || value->pad_list()->size() < kNumFour) {
+        padList = {};
+      } else {
+        padList = std::vector<int64_t>(value->pad_list()->begin(), value->pad_list()->end());
+      }
+      conv2_d_fusion.kernelSize = kernel_size;
+      conv2_d_fusion.stride = strides;
+      conv2_d_fusion.dilation = dilation;
       conv2_d_fusion.padMode = static_cast<HDI::Nnrt::V1_0::PadMode>(value->pad_mode());
-      auto padList = value->pad_list();
-      conv2_d_fusion.padList = std::vector<int64_t>(padList->begin(), padList->end());
+      conv2_d_fusion.padList = padList;
       conv2_d_fusion.group = value->group();
       conv2_d_fusion.inChannel = value->in_channel();
       conv2_d_fusion.outChannel = value->out_channel();
@@ -380,18 +441,51 @@ std::vector<int8_t> ConvertConv2dTransposeFusion(PrimitivePtr primitive) {
     auto value = prim->value_as_Conv2dTransposeFusion();
     if (value != nullptr) {
       Conv2dTransposeFusion conv2d_transpose_fusion{};
-      conv2d_transpose_fusion.kernelSize =
-        std::vector<int64_t>(value->kernel_size()->begin(), value->kernel_size()->end());
-      conv2d_transpose_fusion.stride = std::vector<int64_t>(value->stride()->begin(), value->stride()->end());
-      conv2d_transpose_fusion.dilation = std::vector<int64_t>(value->dilation()->begin(), value->dilation()->end());
+      std::vector<int64_t> kernel_size;
+      kernel_size.reserve(kNumTwo);
+      if (value->kernel_size() == nullptr || value->kernel_size()->size() < kNumTwo) {
+        kernel_size = {};
+      } else {
+        kernel_size = std::vector<int64_t>(value->kernel_size()->begin(), value->kernel_size()->end());
+      }
+      std::vector<int64_t> strides;
+      strides.reserve(kNumTwo);
+      if (value->stride() == nullptr || value->stride()->size() < kNumTwo) {
+        strides = {};
+      } else {
+        strides = std::vector<int64_t>(value->stride()->begin(), value->stride()->end());
+      }
+      std::vector<int64_t> dilation;
+      dilation.reserve(kNumTwo);
+      if (value->dilation() == nullptr || value->dilation()->size() < kNumTwo) {
+        dilation = {};
+      } else {
+        dilation = std::vector<int64_t>(value->dilation()->begin(), value->dilation()->end());
+      }
+      std::vector<int64_t> padList;
+      strides.reserve(kNumTwo);
+      if (value->pad_list() == nullptr || value->pad_list()->size() < kNumFour) {
+        padList = {};
+      } else {
+        padList = std::vector<int64_t>(value->pad_list()->begin(), value->pad_list()->end());
+      }
+      std::vector<int64_t> output_paddings;
+      output_paddings.reserve(kNumTwo);
+      if (value->output_paddings() == nullptr || value->output_paddings()->size() < kNumTwo) {
+        output_paddings = {};
+      } else {
+        output_paddings = std::vector<int64_t>(value->output_paddings()->begin(), value->output_paddings()->end());
+      }
+      conv2d_transpose_fusion.kernelSize = kernel_size;
+      conv2d_transpose_fusion.stride = strides;
+      conv2d_transpose_fusion.dilation = dilation;
       conv2d_transpose_fusion.padMode = static_cast<HDI::Nnrt::V1_0::PadMode>(value->pad_mode());
-      conv2d_transpose_fusion.padList = std::vector<int64_t>(value->pad_list()->begin(), value->pad_list()->end());
+      conv2d_transpose_fusion.padList = padList;
       conv2d_transpose_fusion.group = value->group();
       conv2d_transpose_fusion.inChannel = value->in_channel();
       conv2d_transpose_fusion.outChannel = value->out_channel();
       conv2d_transpose_fusion.activationType = static_cast<HDI::Nnrt::V1_0::ActivationType>(value->activation_type());
-      conv2d_transpose_fusion.outputPaddings =
-        std::vector<int64_t>(value->output_paddings()->begin(), value->output_paddings()->end());
+      conv2d_transpose_fusion.outputPaddings = output_paddings;
       OHOS::MessageParcel data;
       (void)Conv2dTransposeFusionBlockMarshalling(data, conv2d_transpose_fusion);
       std::vector<int8_t> ret(reinterpret_cast<const int8_t *>(data.GetData()),
@@ -622,9 +716,30 @@ std::vector<int8_t> ConvertMaxPoolFusion(PrimitivePtr primitive) {
     auto value = prim->value_as_MaxPoolFusion();
     if (value != nullptr) {
       MaxPoolFusion max_pool_fusion{};
-      max_pool_fusion.kernelSize = std::vector<int64_t>(value->kernel_size()->begin(), value->kernel_size()->end());
-      max_pool_fusion.strides = std::vector<int64_t>(value->strides()->begin(), value->strides()->end());
-      max_pool_fusion.pad = std::vector<int64_t>(value->pad()->begin(), value->pad()->end());
+      std::vector<int64_t> kernel_size;
+      kernel_size.reserve(kNumTwo);
+      if (value->kernel_size() == nullptr || value->kernel_size()->size() < kNumTwo) {
+        kernel_size = {};
+      } else {
+        kernel_size = std::vector<int64_t>(value->kernel_size()->begin(), value->kernel_size()->end());
+      }
+      std::vector<int64_t> strides;
+      strides.reserve(kNumTwo);
+      if (value->strides() == nullptr || value->strides()->size() < kNumTwo) {
+        strides = {};
+      } else {
+        strides = std::vector<int64_t>(value->strides()->begin(), value->strides()->end());
+      }
+      std::vector<int64_t> padList;
+      padList.reserve(kNumFour);
+      if (value->pad() == nullptr || value->pad()->size() < kNumFour) {
+        padList = {};
+      } else {
+        padList = std::vector<int64_t>(value->pad()->begin(), value->pad()->end());
+      }
+      max_pool_fusion.kernelSize = kernel_size;
+      max_pool_fusion.strides = strides;
+      max_pool_fusion.pad = padList;
       max_pool_fusion.padMode = static_cast<HDI::Nnrt::V1_0::PadMode>(value->pad_mode());
       max_pool_fusion.format = static_cast<HDI::Nnrt::V1_0::Format>(value->format());
       max_pool_fusion.global = value->global();
@@ -687,10 +802,14 @@ std::vector<int8_t> ConvertPadFusion(PrimitivePtr primitive) {
       PadFusion pad_fusion{};
       auto paddings = value->paddings();
       std::vector<std::vector<int64_t>> paddings_vec2d;
-      paddings_vec2d.reserve(paddings->data()->size());
-      for (size_t i = 0; i < paddings->data()->size(); i++) {
-        auto vet = paddings->data()->Get(i);
-        paddings_vec2d.emplace_back(std::vector<int64_t>(vet->data()->begin(), vet->data()->end()));
+      if (paddings == nullptr || paddings->data()->size() < kNumTwo) {
+        paddings_vec2d = {{0}, {0}, {0}, {0}};
+      } else {
+        paddings_vec2d.reserve(paddings->data()->size());
+        for (size_t i = 0; i < paddings->data()->size(); i++) {
+          auto vet = paddings->data()->Get(i);
+          paddings_vec2d.emplace_back(std::vector<int64_t>(vet->data()->begin(), vet->data()->end()));
+        }
       }
       pad_fusion.paddings = paddings_vec2d;
       pad_fusion.paddingMode = static_cast<HDI::Nnrt::V1_0::PaddingMode>(value->padding_mode());
@@ -806,6 +925,7 @@ std::vector<int8_t> ConvertReshape(PrimitivePtr primitive) {
     return {};
   }
 }
+
 std::vector<int8_t> ConvertResize(PrimitivePtr primitive) {
   if (primitive != nullptr) {
     auto prim = static_cast<schema::Primitive *>(primitive);
@@ -896,7 +1016,13 @@ std::vector<int8_t> ConvertSliceFusion(PrimitivePtr primitive) {
     auto value = prim->value_as_SliceFusion();
     if (value != nullptr) {
       SliceFusion slice_fusion{};
-      slice_fusion.axes = std::vector<int64_t>(value->axes()->begin(), value->axes()->end());
+      std::vector<int64_t> axes;
+      if (value->axes() == nullptr) {
+        axes = {1, 2, 3, 4, 5, 6, 7};
+      } else {
+        axes = std::vector<int64_t>(value->axes()->begin(), value->axes()->end());
+      }
+      slice_fusion.axes = axes;
       OHOS::MessageParcel data;
       (void)SliceFusionBlockMarshalling(data, slice_fusion);
       std::vector<int8_t> ret(reinterpret_cast<const int8_t *>(data.GetData()),
@@ -915,7 +1041,13 @@ std::vector<int8_t> ConvertSoftmax(PrimitivePtr primitive) {
     auto value = prim->value_as_Softmax();
     if (value != nullptr) {
       Softmax softmax{};
-      softmax.axis = std::vector<int64_t>(value->axis()->begin(), value->axis()->end());
+      std::vector<int64_t> axis;
+      if (value->axis() == nullptr) {
+        axis = {};
+      } else {
+        axis = std::vector<int64_t>(value->axis()->begin(), value->axis()->end());
+      }
+      softmax.axis = axis;
       OHOS::MessageParcel data;
       (void)SoftmaxBlockMarshalling(data, softmax);
       std::vector<int8_t> ret(reinterpret_cast<const int8_t *>(data.GetData()),
@@ -934,13 +1066,25 @@ std::vector<int8_t> ConvertSpaceToBatchND(PrimitivePtr primitive) {
     auto value = prim->value_as_SpaceToBatchND();
     if (value != nullptr) {
       SpaceToBatchND space_to_batch_n_d{};
-      space_to_batch_n_d.blockShape = std::vector<int64_t>(value->block_shape()->begin(), value->block_shape()->end());
+      std::vector<int64_t> blockShape;
+      blockShape.reserve(kNumTwo);
+      if (value->block_shape() == nullptr || value->block_shape()->size() < kNumTwo) {
+        blockShape = {0, 0};
+      } else {
+        blockShape = std::vector<int64_t>(value->block_shape()->begin(), value->block_shape()->end());
+      }
+      space_to_batch_n_d.blockShape = blockShape;
       auto paddings = value->paddings();
       std::vector<std::vector<int64_t>> paddings_vec2d;
-      paddings_vec2d.reserve(paddings->data()->size());
-      for (size_t i = 0; i < paddings->data()->size(); i++) {
-        auto vet = paddings->data()->Get(i);
-        paddings_vec2d.emplace_back(std::vector<int64_t>(vet->data()->begin(), vet->data()->end()));
+      if (paddings == nullptr || paddings->data()->size() == 0 || *(paddings->data()->begin()) == nullptr ||
+          (*(paddings->data()->begin()))->data() == nullptr) {
+        paddings_vec2d = {};
+      } else {
+        paddings_vec2d.reserve(paddings->data()->size());
+        for (size_t i = 0; i < paddings->data()->size(); i++) {
+          auto vet = paddings->data()->Get(i);
+          paddings_vec2d.emplace_back(std::vector<int64_t>(vet->data()->begin(), vet->data()->end()));
+        }
       }
       space_to_batch_n_d.paddings = paddings_vec2d;
       OHOS::MessageParcel data;
@@ -962,7 +1106,14 @@ std::vector<int8_t> ConvertSplit(PrimitivePtr primitive) {
     if (value != nullptr) {
       Split split{};
       split.outputNum = value->output_num();
-      split.sizeSplits = std::vector<int64_t>(value->size_splits()->begin(), value->size_splits()->end());
+      std::vector<int64_t> sizeSplits;
+      sizeSplits.reserve(split.outputNum);
+      if (value->size_splits() == nullptr || value->size_splits()->size() <= static_cast<uint32_t>(split.outputNum)) {
+        sizeSplits = {};
+      } else {
+        sizeSplits = std::vector<int64_t>(value->size_splits()->begin(), value->size_splits()->end());
+      }
+      split.sizeSplits = sizeSplits;
       split.axis = value->axis();
       OHOS::MessageParcel data;
       (void)SplitBlockMarshalling(data, split);
@@ -1018,7 +1169,13 @@ std::vector<int8_t> ConvertSqueeze(PrimitivePtr primitive) {
     auto value = prim->value_as_Squeeze();
     if (value != nullptr) {
       Squeeze squeeze{};
-      squeeze.axis = std::vector<int64_t>(value->axis()->begin(), value->axis()->end());
+      std::vector<int64_t> axis;
+      if (value->axis() == nullptr) {
+        axis = {};
+      } else {
+        axis = std::vector<int64_t>(value->axis()->begin(), value->axis()->end());
+      }
+      squeeze.axis = axis;
       OHOS::MessageParcel data;
       (void)SqueezeBlockMarshalling(data, squeeze);
       std::vector<int8_t> ret(reinterpret_cast<const int8_t *>(data.GetData()),
@@ -1098,7 +1255,14 @@ std::vector<int8_t> ConvertTileFusion(PrimitivePtr primitive) {
     auto value = prim->value_as_TileFusion();
     if (value != nullptr) {
       TileFusion tile_fusion{};
-      tile_fusion.dims = std::vector<int64_t>(value->dims()->begin(), value->dims()->end());
+      std::vector<int64_t> dims;
+      dims.reserve(kNumEight);
+      if (value->dims() == nullptr) {
+        dims = {0, 0, 0, 0, 0, 0, 0, 0};
+      } else {
+        dims = std::vector<int64_t>(value->dims()->begin(), value->dims()->end());
+      }
+      tile_fusion.dims = dims;
       OHOS::MessageParcel data;
       (void)TileFusionBlockMarshalling(data, tile_fusion);
       std::vector<int8_t> ret(reinterpret_cast<const int8_t *>(data.GetData()),
@@ -1155,7 +1319,14 @@ std::vector<int8_t> ConvertUnsqueeze(PrimitivePtr primitive) {
     auto value = prim->value_as_Unsqueeze();
     if (value != nullptr) {
       Unsqueeze unsqueeze{};
-      unsqueeze.axis = std::vector<int64_t>(value->axis()->begin(), value->axis()->end());
+      std::vector<int64_t> axis;
+      axis.reserve(kNumEight);
+      if (value->axis() == nullptr) {
+        axis = {0, 0, 0, 0};
+      } else {
+        axis = std::vector<int64_t>(value->axis()->begin(), value->axis()->end());
+      }
+      unsqueeze.axis = axis;
       OHOS::MessageParcel data;
       (void)UnsqueezeBlockMarshalling(data, unsqueeze);
       std::vector<int8_t> ret(reinterpret_cast<const int8_t *>(data.GetData()),

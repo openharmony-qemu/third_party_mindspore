@@ -43,7 +43,7 @@ ohos_shared_library("mindir") {
     "hilog_native:libhilog",
     "ipc:ipc_core",
   ]
-  defines = [ "OHOS_HILOG" ]
+  defines = [ "MS_COMPILE_OHOS" ]
   deps = [ "//drivers/interface/nnrt/v1_0:nnrt_idl_headers" ]
   part_name = "mindspore"
 }
