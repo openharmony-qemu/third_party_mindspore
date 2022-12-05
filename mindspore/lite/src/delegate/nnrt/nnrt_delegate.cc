@@ -16,9 +16,8 @@
 #include "nnrt_delegate.h"
 #include "checker/primitive_check.h"
 #include "src/common/log_adapter.h"
-#include "kits/c/neural_network_runtime_type.h"
-#include "kits/c/neural_network_runtime.h"
-#include "innerkits/c/neural_network_runtime_inner.h"
+#include "interfaces/kits/c/neural_network_runtime.h"
+#include "interfaces/innerkits/c/neural_network_runtime_inner.h"
 #include "nnrt_model_kernel.h"
 
 mindspore::Status mindspore::NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
@@ -67,7 +66,7 @@ mindspore::Status mindspore::NNRTDelegate::Build(DelegateModel<schema::Primitive
   }
 
   if (device_count <= 0) {
-    MS_LOG(WARNING) << "No NNRt Device found, fall back to CPU";
+    MS_LOG(WARNING) << "No NNRt Device found, fall back to CPU. ";
     // OH_NNCompilation_Destroy(&oh_nn_compilation);
     // OH_NNModel_Destroy(&oh_nnmodel);
     return mindspore::kSuccess;
@@ -79,10 +78,11 @@ mindspore::Status mindspore::NNRTDelegate::Build(DelegateModel<schema::Primitive
   uint32_t op_count = 0;
   ret_code = OH_NNModel_GetAvailableOperations(oh_nnmodel, allDevicesID[0], &issupported, &op_count);
   if (ret_code != OH_NN_SUCCESS) {
-    MS_LOG(ERROR) << "NNModel GetAvailableOperations failed, OH_NN_ReturnCode = " << ret_code;
+    MS_LOG(ERROR) << "NNModel GetAvailableOperations failed, OH_NN_ReturnCode = " << ret_code
+                  << ", maybe due to dataParcel data length limitaion. Fall back to CPU.";
     OH_NNCompilation_Destroy(&oh_nn_compilation);
     OH_NNModel_Destroy(&oh_nnmodel);
-    return mindspore::kLiteError;
+    return mindspore::kSuccess;
   }
   uint32_t supported_op_count = 0;
   for (uint32_t i = 0; i < op_count; i++) {
@@ -92,7 +92,7 @@ mindspore::Status mindspore::NNRTDelegate::Build(DelegateModel<schema::Primitive
   }
   if (op_count != supported_op_count) {
     MS_LOG(WARNING) << "this model has " << op_count << "ops, but NNRT only support " << supported_op_count
-                    << "ops, fall back to CPU.";
+                    << " ops, fall back to CPU.";
     // must support all op, else fall back to CPU
     OH_NNCompilation_Destroy(&oh_nn_compilation);
     OH_NNModel_Destroy(&oh_nnmodel);
@@ -301,7 +301,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
   for (auto node : lite_graph.all_nodes_) {
     auto new_node = new (std::nothrow) LiteGraph::Node;
     if (new_node == nullptr) {
-      MS_LOG(ERROR) << " new LiteGraph::Node Failed.";
+      MS_LOG(ERROR) << " new LiteGraph::Node failed.";
       return;
     }
     new_node->name_ = node->name_;
@@ -315,7 +315,20 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
     new_node->device_type_ = node->device_type_;
     node_list.emplace_back(new_node);
   }
-
+  // copy subgraph
+  std::vector<LiteGraph::SubGraph *> subgraph_list;
+  for (auto subgraph : lite_graph.sub_graphs_) {
+    auto new_subgraph = new (std::nothrow) LiteGraph::SubGraph;
+    if (new_subgraph == nullptr) {
+      MS_LOG(ERROR) << "new LiteGraph::Subgraph failed.";
+      return;
+    }
+    new_subgraph->name_ = subgraph->name_;
+    new_subgraph->input_indices_ = subgraph->input_indices_;
+    new_subgraph->output_indices_ = subgraph->output_indices_;
+    new_subgraph->node_indices_ = subgraph->node_indices_;
+    subgraph_list.emplace_back(new_subgraph);
+  }
   for (auto tensor : lite_graph.all_tensors_) {
     ret = lite::CheckTensorSupported(static_cast<const schema::Tensor *>(tensor));
     if (ret == mindspore::kLiteError) {
@@ -336,7 +349,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
   nnrt_lite_graph->output_indices_ = lite_graph.output_indices_;
   nnrt_lite_graph->all_tensors_ = lite_graph.all_tensors_;
   nnrt_lite_graph->all_nodes_ = node_list;
-  nnrt_lite_graph->sub_graphs_ = lite_graph.sub_graphs_;
+  nnrt_lite_graph->sub_graphs_ = subgraph_list;
   MS_LOG(INFO) << "ShallowCopyLiteGraph success.";
 }
 

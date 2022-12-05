@@ -28,7 +28,19 @@ ohos_source_set("mindrt_o") {
     "src/thread/core_affinity.cc",
     "src/thread/threadpool.cc",
   ]
-
+  disable_android = true
+  if (disable_android) {
+    cflags = [
+      "-UANDROID",
+      "-U__ANDROID__",
+      "-U__ANDROID_API__",
+    ]
+    cflags_cc = [
+      "-UANDROID",
+      "-U__ANDROID__",
+      "-U__ANDROID_API__",
+    ]
+  }
   include_dirs = [
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "./",

@@ -581,7 +581,8 @@ ohos_shared_library("mindspore_lib") {
 
   defines = [
     "ENABLE_MINDRT",
-    "OHOS_HILOG",
+    "MS_COMPILE_OHOS",
+    "ENABLE_V0",
   ]
 
   if (target_cpu == "arm") {
@@ -603,9 +604,20 @@ ohos_shared_library("mindspore_lib") {
       "CL_HPP_MINIMUM_OPENCL_VERSION=120",
     ]
   }
-
+  disable_android = true
+  if (disable_android) {
+    cflags = [
+      "-UANDROID",
+      "-U__ANDROID__",
+      "-U__ANDROID_API__",
+    ]
+    cflags_cc = [
+      "-UANDROID",
+      "-U__ANDROID__",
+      "-U__ANDROID_API__",
+    ]
+  }
   configs = [ ":opencl_option" ]
-
   deps = [
     "../ccsrc/backend/kernel_compiler/cpu/nnacl/:nnacl_o",
     "../core/mindrt/:mindrt_o",
@@ -616,7 +628,7 @@ ohos_shared_library("mindspore_lib") {
   output_extension = "so"
 
   public_configs = [ ":mindspore_api" ]
-  SUPPORT_NNRT = false
+  SUPPORT_NNRT = true
   if (SUPPORT_NNRT) {
     sources += [
       "mindir/src/mindir_nnrt_lite_graph.cc",
@@ -625,13 +637,13 @@ ohos_shared_library("mindspore_lib") {
       "src/delegate/nnrt/nnrt_model_kernel.cc",
     ]
     include_dirs += [
+      "//foundation/ai/neural_network_runtime",
       "src/delegate/nnrt/include",
       "../../mindspore/core/ir",
       "mindir/include",
-      "mindir/include/inner",
+      "mindir/inner_headers",
     ]
-    lib_dirs = [ "build" ]
-    libs = [ "neural_network_runtime.z" ]
+    external_deps += [ "neural_network_runtime:nnrt_target" ]
     deps += [ "mindir:mindir" ]
     defines += [ "SUPPORT_NNRT" ]
   }

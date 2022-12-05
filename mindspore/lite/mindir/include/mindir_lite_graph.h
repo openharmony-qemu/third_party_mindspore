@@ -38,7 +38,6 @@ struct LiteGraph {
   std::vector<uint32_t> input_indices_;
   std::vector<uint32_t> output_indices_;
   std::vector<TensorPtr> all_tensors_;
-  //  std::vector<FlatTensorPtr> all_tensors_;
   std::vector<Node *> all_nodes_;
   std::vector<SubGraph *> sub_graphs_;
 #ifdef ENABLE_MODEL_OBF

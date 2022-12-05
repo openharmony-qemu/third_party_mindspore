@@ -54,14 +54,14 @@ OH_AI_API int32_t OH_AI_ContextGetThreadNum(const OH_AI_ContextHandle context);
 /// \brief Set the thread affinity to CPU cores.
 ///
 /// \param[in] context Context object handle.
-/// \param[in] mode: 0: no affinities, 1: big cores first, 2: little cores first
+/// \param[in] mode: 0: no affinities, 1: big cores first, 2: middle cores first
 OH_AI_API void OH_AI_ContextSetThreadAffinityMode(OH_AI_ContextHandle context, int mode);
 
 /// \brief Obtain the thread affinity of CPU cores.
 ///
 /// \param[in] context Context object handle.
 ///
-/// \return Thread affinity to CPU cores. 0: no affinities, 1: big cores first, 2: little cores first
+/// \return Thread affinity to CPU cores. 0: no affinities, 1: big cores first, 2: middle cores first
 OH_AI_API int OH_AI_ContextGetThreadAffinityMode(const OH_AI_ContextHandle context);
 
 /// \brief Set the thread lists to CPU cores.

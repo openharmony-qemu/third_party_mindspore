@@ -161,7 +161,7 @@ Status CheckTensorSupported(const schema::Tensor *primitive) {
   }
 
   if (primitive->dims() == nullptr) {
-    MS_LOG(ERROR) << "Dims of src_tensor is nullptr";
+    MS_LOG(DEBUG) << "Dims of tensor is nullptr";
   }
 
   if (data_type == kObjectTypeTensorType) {
