@@ -206,7 +206,6 @@ HWTEST(ModelTest, TestCase_0002_predict, Function | MediumTest | Level1) {
   for (size_t i = 0; i < inputs.handle_num; ++i) {
     OH_AI_TensorHandle tensor = inputs.handle_list[i];
     int64_t element_num = OH_AI_TensorGetElementNum(tensor);
-    printf("Tensor name: %s, elements num: %lld.\n", OH_AI_TensorGetName(tensor), element_num);
     const float *data =
       (const float *)OH_AI_TensorGetData(OH_AI_ModelGetInputByTensorName(model, OH_AI_TensorGetName(tensor)));
     printf("input data is:\n");
@@ -219,7 +218,6 @@ HWTEST(ModelTest, TestCase_0002_predict, Function | MediumTest | Level1) {
   for (size_t i = 0; i < outputs.handle_num; ++i) {
     OH_AI_TensorHandle tensor = outputs.handle_list[i];
     int64_t element_num = OH_AI_TensorGetElementNum(tensor);
-    printf("Tensor name: %s, elements num: %lld.\n", OH_AI_TensorGetName(tensor), element_num);
     const float *data =
       (const float *)OH_AI_TensorGetData(OH_AI_ModelGetOutputByTensorName(model, OH_AI_TensorGetName(tensor)));
     printf("output data is:\n");
