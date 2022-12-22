@@ -42,7 +42,7 @@ ohos_executable("benchmark_bin") {
 
   defines = [
     "BENCHMARK_CLIP_JSON",
-    "OHOS_HILOG",
+    "MS_COMPILE_OHOS",
   ]
 
   if (target_cpu == "arm") {
@@ -56,7 +56,19 @@ ohos_executable("benchmark_bin") {
       "ENABLE_ARM64",
     ]
   }
-
+  disable_android = true
+  if (disable_android) {
+    cflags = [
+      "-UANDROID",
+      "-U__ANDROID__",
+      "-U__ANDROID_API__",
+    ]
+    cflags_cc = [
+      "-UANDROID",
+      "-U__ANDROID__",
+      "-U__ANDROID_API__",
+    ]
+  }
   remove_configs = [ "//build/config/compiler:no_rtti" ]
 
   deps = [ "../../:mindspore_lib" ]

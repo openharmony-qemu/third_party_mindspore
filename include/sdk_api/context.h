@@ -92,10 +92,10 @@ OH_AI_API void OH_AI_ContextSetThreadNum(OH_AI_ContextHandle context, int32_t th
 OH_AI_API int32_t OH_AI_ContextGetThreadNum(const OH_AI_ContextHandle context);
 
 /**
- * \brief Sets the affinity mode for binding runtime threads to CPU cores, which are categorized into little cores and big cores depending on the CPU frequency.
+ * \brief Sets the affinity mode for binding runtime threads to CPU cores, which are categorized into middle cores and big cores depending on the CPU frequency.
  *
  * \param context {@link OH_AI_ContextHandle} that points to the context instance.
- * \param mode Affinity mode. **0**: no affinities; **1**: big cores first; **2**: little cores first
+ * \param mode Affinity mode. **0**: no affinities; **1**: big cores first; **2**: middle cores first
  * @since 9
  */
 OH_AI_API void OH_AI_ContextSetThreadAffinityMode(OH_AI_ContextHandle context, int mode);
@@ -104,7 +104,7 @@ OH_AI_API void OH_AI_ContextSetThreadAffinityMode(OH_AI_ContextHandle context, i
  * \brief Obtains the affinity mode for binding runtime threads to CPU cores.
  *
  * \param context {@link OH_AI_ContextHandle} that points to the context instance.
- * \return Affinity mode. **0**: no affinities; **1**: big cores first; **2**: little cores first
+ * \return Affinity mode. **0**: no affinities; **1**: big cores first; **2**: middle cores first
  * @since 9
  */
 OH_AI_API int OH_AI_ContextGetThreadAffinityMode(const OH_AI_ContextHandle context);

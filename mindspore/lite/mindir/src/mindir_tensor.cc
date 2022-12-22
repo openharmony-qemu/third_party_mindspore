@@ -30,10 +30,8 @@ TensorPtr MindIR_Tensor_Create() {
   std::vector<uint8_t> data(1, 0);
   std::vector<QuantParam> quant_params(1, {0, 0, 8});
   std::string name = " ";
-  auto ops_offset =
-    schema::CreateTensor(fbb, 0, DataType::DATA_TYPE_INT32, fbb.CreateVector(dims.data(), dims.size()),
-                         schema::Format::Format_NCHW, 0, 0, fbb.CreateVector(data.data(), data.size()),
-                         ConvertQuantParams(fbb, quant_params), 0, fbb.CreateString(name.c_str(), name.size()));
+  auto ops_offset = schema::CreateTensor(fbb, 0, DataType::DATA_TYPE_INT32, 0, schema::Format::Format_NCHW, 0, 0, 0, 0,
+                                         0, fbb.CreateString(name.c_str(), name.size()));
   fbb.Finish(ops_offset);
   auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, nullptr);
   auto ret_value = flatbuffers::GetMutableRoot<schema::Tensor>(new_addr);
@@ -73,11 +71,21 @@ void MindIR_Tensor_SetName(TensorPtr *tensor, const std::string &name) {
     auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
+      flatbuffers::Offset<flatbuffers::Vector<int32_t>> dims;
+      if (value->dims() == nullptr || value->dims()->size() <= 0) {
+        dims = 0;
+      } else {
+        dims = fbb.CreateVector(value->dims()->data(), value->dims()->size());
+      }
+      flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data;
+      if (value->data() == nullptr || value->data()->size() <= 0) {
+        data = 0;
+      } else {
+        data = fbb.CreateVector(value->data()->data(), value->data()->size());
+      }
       auto ops_offset = schema::CreateTensor(
-        fbb, 0, value->dataType(), fbb.CreateVector(value->dims()->data(), value->dims()->size()),
-        static_cast<schema::Format>(value->format()), 0, 0,
-        fbb.CreateVector(value->data()->data(), value->data()->size()), ConvertQuantParams(fbb, value->quantParams()),
-        0, fbb.CreateString(name.c_str(), name.size()));
+        fbb, 0, value->dataType(), dims, static_cast<schema::Format>(value->format()), 0, 0, data,
+        ConvertQuantParams(fbb, value->quantParams()), 0, fbb.CreateString(name.c_str(), name.size()));
       fbb.Finish(ops_offset);
       auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
       auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
@@ -105,32 +113,30 @@ void MindIR_Tensor_SetDataType(TensorPtr *tensor, DataType data_type) {
     auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
-      auto ops_offset = schema::CreateTensor(
-        fbb, 0, value->dataType(), fbb.CreateVector(value->dims()->data(), value->dims()->size()),
-        static_cast<schema::Format>(value->format()), 0, 0,
-        fbb.CreateVector(value->data()->data(), value->data()->size()), ConvertQuantParams(fbb, value->quantParams()),
-        0, fbb.CreateString(value->name()->c_str(), value->name()->size()));
+      flatbuffers::Offset<flatbuffers::Vector<int32_t>> dims;
+      if (value->dims() == nullptr || value->dims()->size() <= 0) {
+        dims = 0;
+      } else {
+        dims = fbb.CreateVector(value->dims()->data(), value->dims()->size());
+      }
+      flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data;
+      if (value->data() == nullptr || value->data()->size() <= 0) {
+        data = 0;
+      } else {
+        data = fbb.CreateVector(value->data()->data(), value->data()->size());
+      }
+      flatbuffers::Offset<flatbuffers::String> name;
+      if (value->name() == nullptr || value->name()->size() <= 0) {
+        name = 0;
+      } else {
+        name = fbb.CreateString(value->name()->c_str(), value->name()->size());
+      }
+      auto ops_offset =
+        schema::CreateTensor(fbb, 0, value->dataType(), dims, static_cast<schema::Format>(value->format()), 0, 0, data,
+                             ConvertQuantParams(fbb, value->quantParams()), 0, name);
       fbb.Finish(ops_offset);
       auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
       auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
-      *tensor = ret_value;
-    }
-  }
-}
-
-void MindIR_Tensor_SetDataType(schema::Tensor **tensor, DataType data_type) {
-  if (tensor != nullptr && *tensor != nullptr) {
-    auto value = *tensor;
-    if (value != nullptr) {
-      flatbuffers::FlatBufferBuilder fbb;
-      auto ops_offset = schema::CreateTensor(
-        fbb, 0, data_type, fbb.CreateVector(value->dims()->data(), value->dims()->size()),
-        static_cast<schema::Format>(value->format()), 0, 0,
-        fbb.CreateVector(value->data()->data(), value->data()->size()), ConvertQuantParams(fbb, value->quantParams()),
-        0, fbb.CreateString(value->name()->c_str(), value->name()->size()));
-      fbb.Finish(ops_offset);
-      auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
-      auto ret_value = flatbuffers::GetMutableRoot<schema::Tensor>(new_addr);
       *tensor = ret_value;
     }
   }
@@ -142,6 +148,9 @@ std::vector<int32_t> MindIR_Tensor_GetDims(ConstTensorPtr tensor) {
     if (value != nullptr) {
       std::vector<int32_t> result;
       auto src = value->dims();
+      if (src == nullptr) {
+        return {};
+      }
       result.resize(src->size());
       std::transform(src->begin(), src->end(), result.begin(), [](int32_t item) { return item; });
       return result;
@@ -158,11 +167,21 @@ void MindIR_Tensor_SetDims(TensorPtr *tensor, const std::vector<int32_t> &dims) 
     auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
+      flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data;
+      if (value->data() == nullptr || value->data()->size() <= 0) {
+        data = 0;
+      } else {
+        data = fbb.CreateVector(value->data()->data(), value->data()->size());
+      }
+      flatbuffers::Offset<flatbuffers::String> name;
+      if (value->name() == nullptr || value->name()->size() <= 0) {
+        name = 0;
+      } else {
+        name = fbb.CreateString(value->name()->c_str(), value->name()->size());
+      }
       auto ops_offset = schema::CreateTensor(fbb, 0, value->dataType(), fbb.CreateVector(dims.data(), dims.size()),
-                                             static_cast<schema::Format>(value->format()), 0, 0,
-                                             fbb.CreateVector(value->data()->data(), value->data()->size()),
-                                             ConvertQuantParams(fbb, value->quantParams()), 0,
-                                             fbb.CreateString(value->name()->c_str(), value->name()->size()));
+                                             static_cast<schema::Format>(value->format()), 0, 0, data,
+                                             ConvertQuantParams(fbb, value->quantParams()), 0, name);
       fbb.Finish(ops_offset);
       auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
       auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
@@ -190,11 +209,26 @@ void MindIR_Tensor_SetFormat(TensorPtr *tensor, Format format) {
     auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
-      auto ops_offset = schema::CreateTensor(
-        fbb, 0, value->dataType(), fbb.CreateVector(value->dims()->data(), value->dims()->size()),
-        static_cast<schema::Format>(format), 0, 0, fbb.CreateVector(value->data()->data(), value->data()->size()),
-        ConvertQuantParams(fbb, value->quantParams()), 0,
-        fbb.CreateString(value->name()->c_str(), value->name()->size()));
+      flatbuffers::Offset<flatbuffers::Vector<int32_t>> dims;
+      if (value->dims() == nullptr || value->dims()->size() <= 0) {
+        dims = 0;
+      } else {
+        dims = fbb.CreateVector(value->dims()->data(), value->dims()->size());
+      }
+      flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data;
+      if (value->data() == nullptr || value->data()->size() <= 0) {
+        data = 0;
+      } else {
+        data = fbb.CreateVector(value->data()->data(), value->data()->size());
+      }
+      flatbuffers::Offset<flatbuffers::String> name;
+      if (value->name() == nullptr || value->name()->size() <= 0) {
+        name = 0;
+      } else {
+        name = fbb.CreateString(value->name()->c_str(), value->name()->size());
+      }
+      auto ops_offset = schema::CreateTensor(fbb, 0, value->dataType(), dims, static_cast<schema::Format>(format), 0, 0,
+                                             data, ConvertQuantParams(fbb, value->quantParams()), 0, name);
       fbb.Finish(ops_offset);
       auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
       auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
@@ -262,11 +296,21 @@ void MindIR_Tensor_SetData(TensorPtr *tensor, const std::vector<uint8_t> &data) 
     auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
-      auto ops_offset =
-        schema::CreateTensor(fbb, 0, value->dataType(), fbb.CreateVector(value->dims()->data(), value->dims()->size()),
-                             static_cast<schema::Format>(value->format()), 0, 0,
-                             fbb.CreateVector(data.data(), data.size()), ConvertQuantParams(fbb, value->quantParams()),
-                             0, fbb.CreateString(value->name()->c_str(), value->name()->size()));
+      flatbuffers::Offset<flatbuffers::Vector<int32_t>> dims;
+      if (value->dims() == nullptr || value->dims()->size() <= 0) {
+        dims = 0;
+      } else {
+        dims = fbb.CreateVector(value->dims()->data(), value->dims()->size());
+      }
+      flatbuffers::Offset<flatbuffers::String> name;
+      if (value->name() == nullptr || value->name()->size() <= 0) {
+        name = 0;
+      } else {
+        name = fbb.CreateString(value->name()->c_str(), value->name()->size());
+      }
+      auto ops_offset = schema::CreateTensor(
+        fbb, 0, value->dataType(), dims, static_cast<schema::Format>(value->format()), 0, 0,
+        fbb.CreateVector(data.data(), data.size()), ConvertQuantParams(fbb, value->quantParams()), 0, name);
       fbb.Finish(ops_offset);
       auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
       auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
@@ -287,7 +331,7 @@ std::vector<QuantParam> MindIR_Tensor_GetQuantParams(ConstTensorPtr tensor) {
       result.reserve(src->size());
       for (size_t i = 0; i < size; i++) {
         auto tmp = src->Get(i);
-        QuantParam q{tmp->zeroPoint(), tmp->scale()};
+        QuantParam q{tmp->zeroPoint(), tmp->scale(), tmp->numBits()};
         result.emplace_back(q);
       }
       return result;
@@ -304,11 +348,27 @@ void MindIR_Tensor_SetQuantParams(TensorPtr *tensor, const std::vector<QuantPara
     auto value = static_cast<schema::Tensor *>(*tensor);
     if (value != nullptr) {
       flatbuffers::FlatBufferBuilder fbb;
-      auto ops_offset = schema::CreateTensor(
-        fbb, 0, value->dataType(), fbb.CreateVector(value->dims()->data(), value->dims()->size()),
-        static_cast<schema::Format>(value->format()), 0, 0,
-        fbb.CreateVector(value->data()->data(), value->data()->size()), ConvertQuantParams(fbb, quant_params), 0,
-        fbb.CreateString(value->name()->c_str(), value->name()->size()));
+      flatbuffers::Offset<flatbuffers::Vector<int32_t>> dims;
+      if (value->dims() == nullptr || value->dims()->size() <= 0) {
+        dims = 0;
+      } else {
+        dims = fbb.CreateVector(value->dims()->data(), value->dims()->size());
+      }
+      flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data;
+      if (value->data() == nullptr || value->data()->size() <= 0) {
+        data = 0;
+      } else {
+        data = fbb.CreateVector(value->data()->data(), value->data()->size());
+      }
+      flatbuffers::Offset<flatbuffers::String> name;
+      if (value->name() == nullptr || value->name()->size() <= 0) {
+        name = 0;
+      } else {
+        name = fbb.CreateString(value->name()->c_str(), value->name()->size());
+      }
+      auto ops_offset =
+        schema::CreateTensor(fbb, 0, value->dataType(), dims, static_cast<schema::Format>(value->format()), 0, 0, data,
+                             ConvertQuantParams(fbb, quant_params), 0, name);
       fbb.Finish(ops_offset);
       auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
       auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);

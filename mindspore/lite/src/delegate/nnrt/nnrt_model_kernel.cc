@@ -15,7 +15,6 @@
  */
 #include <include/errorcode.h>
 #include "nnrt_model_kernel.h"
-#include "kits/c/neural_network_runtime.h"
 int mindspore::NNRTModelKernel::Prepare() { return 0; }
 int mindspore::NNRTModelKernel::Execute() {
   lite::STATUS ret_val = PrepareInputs();

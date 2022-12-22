@@ -20,7 +20,7 @@
 #include <sstream>
 #include "utils/overload.h"
 
-#ifdef OHOS_HILOG
+#ifdef MS_COMPILE_OHOS
 #include "hilog/log.h"
 #endif
 // NOTICE: when relative path of 'log.h' changed, macro 'LITE_LOG_HEAR_FILE_REL_PATH' must be changed
@@ -98,7 +98,7 @@ class LiteLogWriter {
 #define MS_LOG_WARNING MSLOG_IF(mindspore::LiteLogLevel::WARNING)
 #define MS_LOG_ERROR MSLOG_IF(mindspore::LiteLogLevel::ERROR)
 
-#ifdef OHOS_HILOG
+#ifdef MS_COMPILE_OHOS
 namespace {
 constexpr unsigned int MSLITE_DOMAIN_ID_START = 0xD0029A0;
 constexpr unsigned int MSLITE_DOMAIN_ID_END = MSLITE_DOMAIN_ID_START + 32;

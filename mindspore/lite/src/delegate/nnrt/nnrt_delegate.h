@@ -20,7 +20,7 @@
 #include "include/api/delegate.h"
 #include "include/context.h"
 #include "include/model.h"
-#include "kits/c/neural_network_runtime_type.h"
+#include "interfaces/kits/c/neural_network_runtime_type.h"
 namespace mindspore {
 
 using namespace lite;
