@@ -25,7 +25,7 @@
 namespace mindspore {
 class ModelC {
  public:
-  ModelC() : session_(nullptr), context_(nullptr) {}
+  ModelC() : session_(nullptr) {}
   ~ModelC() {
     for (auto &impl : tensor_map_) {
       delete impl.second;
@@ -44,7 +44,6 @@ class ModelC {
 
  private:
   std::shared_ptr<lite::LiteSession> session_ = nullptr;
-  std::shared_ptr<const ContextC> context_ = nullptr;
   std::map<mindspore::tensor::MSTensor *, MSTensor::Impl *> tensor_map_;
   std::vector<MSTensor::Impl *> inputs_;
   std::vector<MSTensor::Impl *> outputs_;
@@ -54,7 +53,6 @@ class ModelC {
 };
 
 Status ModelC::Build(const void *model_data, size_t data_size, ModelType model_type, const ContextC *model_context) {
-  context_.reset(model_context);
   session_ = std::make_shared<lite::LiteSession>();
   if (session_ == nullptr) {
     MS_LOG(ERROR) << "create session failed";
@@ -73,7 +71,6 @@ Status ModelC::Build(const void *model_data, size_t data_size, ModelType model_t
 }
 
 Status ModelC::Build(const std::string &model_path, ModelType model_type, const ContextC *model_context) {
-  context_.reset(model_context);
   session_ = std::make_shared<lite::LiteSession>();
   if (session_ == nullptr) {
     MS_LOG(ERROR) << "create session failed";
