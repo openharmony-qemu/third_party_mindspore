@@ -54,7 +54,9 @@ class ModelC {
 };
 
 Status ModelC::Build(const void *model_data, size_t data_size, ModelType model_type, const ContextC *model_context) {
-  context_.reset(model_context);
+  if(context_.get() != model_context){
+    context_.reset(model_context);
+  }
   session_ = std::make_shared<lite::LiteSession>();
   if (session_ == nullptr) {
     MS_LOG(ERROR) << "create session failed";
@@ -73,7 +75,9 @@ Status ModelC::Build(const void *model_data, size_t data_size, ModelType model_t
 }
 
 Status ModelC::Build(const std::string &model_path, ModelType model_type, const ContextC *model_context) {
-  context_.reset(model_context);
+  if(context_.get() != model_context){
+    context_.reset(model_context);
+  }
   session_ = std::make_shared<lite::LiteSession>();
   if (session_ == nullptr) {
     MS_LOG(ERROR) << "create session failed";

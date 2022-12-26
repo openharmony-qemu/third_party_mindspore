@@ -17,6 +17,25 @@
     <target name="mindspore_test">
         <preparer>
             <option name="push" value="resources/models/mobilenetv2.ms -> /data/test" src="res"/>
+            <option name="push" value="resources/aiy_vision_classifier_plants_V1_3/aiy_vision_classifier_plants_V1_3.ms -> /data/test" src="res"/>
+            <option name="push" value="resources/aiy_vision_classifier_plants_V1_3/aiy_vision_classifier_plants_V1_3.bin -> /data/test" src="res"/>
+            <option name="push" value="resources/aiy_vision_classifier_plants_V1_3/aiy_vision_classifier_plants_V1_30_output.t -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_face_is_face/ml_face_isface.ms -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_face_is_face/ml_face_isfacer13.ms -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_face_is_face/ml_face_isface.bin -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_face_is_face/ml_face_isface_0.bin -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_face_is_face/ml_face_isface0_output.t -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_Hand_deploy/ml_Hand_deploy.ms -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_Hand_deploy/ml_Hand_deploy_0.bin -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_Hand_deploy/ml_Hand_deploy0_output.t -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_ocr_cn/ml_ocr_cn_0.bin -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_ocr_cn/ml_ocr_cn.prototxt.ms -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_ocr_cn/ml_ocr_cn0_output.t -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_headpose_pb2tflite/ml_headpose_pb2tflite.ms -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_headpose_pb2tflite/ml_headpose_pb2tflite_0.bin -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_headpose_pb2tflite/ml_headpose_pb2tflite_1.bin -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_headpose_pb2tflite/ml_headpose_pb2tflite_2.bin -> /data/test" src="res"/>
+            <option name="push" value="resources/ml_headpose_pb2tflite/ml_headpose_pb2tflite0_output.t -> /data/test" src="res"/>
         </preparer>
     </target>
 </configuration>
