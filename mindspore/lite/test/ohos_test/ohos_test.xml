@@ -16,7 +16,7 @@
 <configuration ver="2.0">
     <target name="mindspore_test">
         <preparer>
-            <option name="push" value="resources/models/mobilenetv2.ms -> /data/test" src="res"/>
+            <option name="push" value="resource/models/mobilenetv2.ms -> /data/test" src="res"/>
         </preparer>
     </target>
 </configuration>
