@@ -760,13 +760,13 @@ int LiteSession::Init(InnerContext *context) {
   }
 #endif
 #ifdef SUPPORT_NNRT
-  if (delegate_ == nullptr && context_->IsNpuEnabled()) {
+  if (delegate_ == nullptr && context_->IsNNRtEnabled()) {
     delegate_ = std::make_shared<NNRTDelegate>();
     if (delegate_ == nullptr) {
       MS_LOG(ERROR) << "New NNRt delegate failed";
       return RET_ERROR;
     }
-    delegate_device_type_ = DT_NPU;
+    delegate_device_type_ = DT_NNRT;
     this->context_->delegate = delegate_;
   }
 #endif

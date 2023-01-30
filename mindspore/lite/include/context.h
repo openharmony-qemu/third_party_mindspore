@@ -43,12 +43,17 @@ typedef struct NpuDeviceInfo {
 typedef struct AscendDeviceInfo {
   uint32_t device_id_;
 } AscendDeviceInfo;
+
+typedef struct NNRtDeviceInfo {
+} NNRtDeviceInfo;
+
 /// \brief DeviceInfo defined for backend's configuration information.
 struct DeviceInfo {
   CpuDeviceInfo cpu_device_info_;
   GpuDeviceInfo gpu_device_info_;
   NpuDeviceInfo npu_device_info_;
   AscendDeviceInfo ascend310_device_info_;
+  NNRtDeviceInfo nnrt_device_info_;
 };
 
 /// \brief DeviceContext defined for holding backend's configuration information.

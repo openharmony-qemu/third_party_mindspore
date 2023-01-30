@@ -37,14 +37,12 @@ class NNRTDelegate : public Delegate {
 
   void ShallowCopyLiteGraph(const lite::LiteGraph &liteGraph);
 
- protected:
-  LiteGraph *nnrt_lite_graph = nullptr;
-
  private:
-  //  static LiteGraph* CreateLiteGraph(const LiteGraph &liteGraph);
   Status PrepareInputs(DelegateModel<schema::Primitive> *model, OH_NNExecutor *oh_nn_executor);
   Status PrepareOutputs(DelegateModel<schema::Primitive> *model, OH_NNExecutor *oh_nn_executor);
   OH_NN_DataType ConvertDataType(mindspore::DataType data_type);
+
+  LiteGraph *nnrt_lite_graph = nullptr;
 };
 
 }  // namespace mindspore

@@ -46,6 +46,8 @@ struct InnerContext : public Context {
 
   bool IsNpuEnabled() const;
 
+  bool IsNNRtEnabled() const;
+
   bool IsProviderEnabled() const;
 
   std::set<std::string> GetProviders() const;
@@ -74,6 +76,8 @@ struct InnerContext : public Context {
   bool IsUserSetGpu() const;
 
   bool IsUserSetNpu() const;
+
+  bool IsUserSetNNRt() const;
 
   void SetContextDevice(const Context *context);
 

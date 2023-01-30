@@ -83,7 +83,10 @@ void InnerContext::SetContextDevice(const Context *context) {
   bool isUserSetGPU = context->device_list_.end() !=
                       std::find_if(this->device_list_.begin(), this->device_list_.end(),
                                    [](const DeviceContext &device) { return device.device_type_ == DT_GPU; });
-  if (isUserSetGPU == false && isUserSetNPU == false) {
+  bool isUserSetNNRt = context->device_list_.end() !=
+                       std::find_if(this->device_list_.begin(), this->device_list_.end(),
+                                    [](const DeviceContext &device) { return device.device_type_ == DT_NNRT; });
+  if (isUserSetGPU == false && isUserSetNPU == false && isUserSetNNRt == false) {
     return;
   }
 
@@ -97,7 +100,7 @@ void InnerContext::SetContextDevice(const Context *context) {
   /* add CPU */
   for (auto &device_ctx : context->device_list_) {
     if (device_ctx.device_type_ == DT_CPU) {
-      if (isUserSetNPU || (isUserSetGPU && enable_parallel_ == false)) {
+      if (isUserSetNPU || isUserSetNNRt || (isUserSetGPU && enable_parallel_ == false)) {
         auto cpu_ctx = device_ctx;
         cpu_ctx.device_info_.cpu_device_info_.cpu_bind_mode_ = NO_BIND;
         this->device_list_.push_back(cpu_ctx);
@@ -168,6 +171,11 @@ int InnerContext::Init() {
   if (IsGpuEnabled()) {
     MS_LOG(DEBUG) << "GPU enabled.";
   }
+#ifdef SUPPORT_NNRT
+  if (IsNNRtEnabled()) {
+    MS_LOG(DEBUG) << "NNRt enabled.";
+  }
+#endif
   return RET_OK;
 }
 
@@ -208,9 +216,16 @@ int InnerContext::IsValid() const {
   }
 #endif
 
-#ifndef SUPPORT_NNRT
+#ifndef SUPPORT_NPU
   if (IsUserSetNpu()) {
     MS_LOG(ERROR) << "NPU is not supported.";
+    return RET_NOT_SUPPORT;
+  }
+#endif
+
+#ifndef SUPPORT_NNRT
+  if (IsUserSetNNRt()) {
+    MS_LOG(ERROR) << "NNRt is not supported.";
     return RET_NOT_SUPPORT;
   }
 #endif
@@ -272,8 +287,14 @@ bool InnerContext::IsGpuEnabled() const {
 bool InnerContext::IsNpuEnabled() const {
 #ifdef SUPPORT_NPU
   return IsUserSetNpu();
-#elif defined(SUPPORT_NNRT)
-  return IsUserSetNpu();
+#else
+  return false;
+#endif
+}
+
+bool InnerContext::IsNNRtEnabled() const {
+#ifdef SUPPORT_NNRT
+  return IsUserSetNNRt();
 #else
   return false;
 #endif
@@ -287,7 +308,7 @@ bool InnerContext::IsProviderEnabled() const {
 
 bool InnerContext::IsAllDeviceTypeValid() const {
   return std::all_of(this->device_list_.begin(), this->device_list_.end(), [](const DeviceContext &device) {
-    return device.device_type_ >= DT_CPU && device.device_type_ <= DT_ASCEND310;
+    return device.device_type_ >= DT_CPU && device.device_type_ <= DT_NNRT;
   });
 }
 
@@ -315,6 +336,12 @@ bool InnerContext::IsUserSetNpu() const {
   return this->device_list_.end() !=
          std::find_if(this->device_list_.begin(), this->device_list_.end(),
                       [](const DeviceContext &device) { return device.device_type_ == DT_NPU; });
+}
+
+bool InnerContext::IsUserSetNNRt() const {
+  return this->device_list_.end() !=
+         std::find_if(this->device_list_.begin(), this->device_list_.end(),
+                      [](const DeviceContext &device) { return device.device_type_ == DT_NNRT; });
 }
 
 std::set<std::string> InnerContext::GetProviders() const {

@@ -147,6 +147,11 @@ void BenchmarkUnifiedApi::InitMSContext(const std::shared_ptr<mindspore::Context
     device_list.push_back(ascend310_device_info);
   }
 
+  if (flags_->device_ == "NNRT") {
+    std::shared_ptr<NNRTDeviceInfo> nnrt_device_info = std::make_shared<NNRTDeviceInfo>();
+    device_list.push_back(nnrt_device_info);
+  }
+
   // CPU priority is behind GPU and NPU
   std::shared_ptr<CPUDeviceInfo> device_info = std::make_shared<CPUDeviceInfo>();
   device_info->SetEnableFP16(flags_->enable_fp16_);
