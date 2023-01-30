@@ -399,12 +399,12 @@ int Scheduler::ReplaceDelegateKernels(std::vector<kernel::LiteKernel *> *dst_ker
     MS_LOG(ERROR) << "New delegate model failed.";
     return RET_NULL_PTR;
   }
-  MS_LOG(INFO) << "set lite graph.";
 #ifdef SUPPORT_NNRT
-  auto delegate = static_cast<NNRTDelegate *>(delegate_.get());
-  delegate->ShallowCopyLiteGraph(this->src_model_->graph_);
+  if (context_->IsNNRtEnabled()) {
+    auto delegate = static_cast<NNRTDelegate *>(delegate_.get());
+    delegate->ShallowCopyLiteGraph(this->src_model_->graph_);
+  }
 #endif
-  MS_LOG(INFO) << "Delegate build start.";
   auto ret = delegate_->Build(model);
   if (ret != mindspore::kSuccess) {
     delete model;

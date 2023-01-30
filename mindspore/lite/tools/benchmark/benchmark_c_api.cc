@@ -106,6 +106,12 @@ int BenchmarkCApi::InitContext() {
     OH_AI_DeviceInfoSetFrequency(npu_device_info, kFrequencyDefault);
     OH_AI_ContextAddDeviceInfo(context_, npu_device_info);
   }
+
+  if (flags_->device_ == "NNRT") {
+    OH_AI_DeviceInfoHandle nnrt_device_info = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_NNRT);
+    OH_AI_ContextAddDeviceInfo(context_, nnrt_device_info);
+  }
+
   OH_AI_DeviceInfoHandle cpu_device_info = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
   OH_AI_DeviceInfoSetEnableFP16(cpu_device_info, flags_->enable_fp16_);
   OH_AI_ContextAddDeviceInfo(context_, cpu_device_info);
