@@ -67,6 +67,12 @@ Status ContextUtils::AddAscend310Device(lite::InnerContext *inner_context, Devic
   return kSuccess;
 }
 
+Status ContextUtils::AddNNRtDevice(lite::InnerContext *inner_context) {
+  lite::DeviceInfo device_info = {0};
+  inner_context->device_list_.push_back({lite::DT_NNRT, device_info});
+  return kSuccess;
+}
+
 lite::InnerContext *ContextUtils::Convert(Context *context) {
   auto inner_context = std::make_unique<lite::InnerContext>();
   if ((context == nullptr) || (inner_context == nullptr)) {
@@ -100,6 +106,8 @@ lite::InnerContext *ContextUtils::Convert(Context *context) {
       ret = AddNpuDevice(npu_context->GetFrequency(), inner_context.get());
     } else if (device->GetDeviceType() == kAscend310) {
       ret = AddAscend310Device(inner_context.get(), device.get());
+    } else if (device->GetDeviceType() == kNNRt) {
+      ret = AddNNRtDevice(inner_context.get());
     }
     if (ret != kSuccess) {
       MS_LOG(ERROR) << "Add device failed!";
@@ -137,6 +145,8 @@ lite::InnerContext *ContextUtils::Convert(const ContextC *context_c) {
                          device_info_c->allocator, inner_context.get());
     } else if (device_info_c->device_type == OH_AI_DEVICETYPE_KIRIN_NPU) {
       ret = AddNpuDevice(device_info_c->frequency, inner_context.get());
+    } else if (device_info_c->device_type == OH_AI_DEVICETYPE_NNRT) {
+      ret = AddNNRtDevice(inner_context.get());
     }
     if (ret != kSuccess) {
       MS_LOG(ERROR) << "Add device failed!";
