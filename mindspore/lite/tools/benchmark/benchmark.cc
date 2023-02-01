@@ -140,6 +140,11 @@ void Benchmark::InitContext(const std::shared_ptr<Context> &context) {
     context->device_list_.push_back(npu_device_ctx);
   }
 
+  if (flags_->device_ == "NNRT") {
+    DeviceContext nnrt_device_ctx{DT_NNRT};
+    context->device_list_.push_back(nnrt_device_ctx);
+  }
+
   context->thread_num_ = flags_->num_threads_;
   context->enable_parallel_ = flags_->enable_parallel_;
 }
