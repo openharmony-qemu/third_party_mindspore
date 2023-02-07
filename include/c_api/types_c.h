@@ -38,8 +38,9 @@ typedef enum OH_AI_DeviceType {
   OH_AI_DEVICETYPE_CPU = 0,
   OH_AI_DEVICETYPE_GPU,
   OH_AI_DEVICETYPE_KIRIN_NPU,
-  OH_AI_DEVICETYPE_NNRT,
   // add new type here
+  //ohos-only device range[60,80)
+  OH_AI_DEVICETYPE_NNRT = 60,
   OH_AI_DEVICETYPE_INVALID = 100,
 } OH_AI_DeviceType;
 

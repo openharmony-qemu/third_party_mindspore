@@ -30,8 +30,9 @@ enum DeviceType {
   kKirinNPU,
   kAscend910,
   kAscend310,
-  kNNRt,
   // add new type here
+  //ohos-only device range[60,80)
+  kNNRt = 60,
   kInvalidDeviceType = 100,
 };
 
