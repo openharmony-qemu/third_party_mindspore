@@ -80,12 +80,11 @@ typedef enum OH_AI_DeviceType {
    * @since 9
    */
   OH_AI_DEVICETYPE_KIRIN_NPU,
-
   /** Device type: NNRt
    *
    * @since 9
    */
-  OH_AI_DEVICETYPE_NNRT,
+  OH_AI_DEVICETYPE_NNRT = 60,
   /** Invalid device type
    *
    * @since 9
