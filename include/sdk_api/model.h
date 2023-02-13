@@ -121,6 +121,9 @@ OH_AI_API void OH_AI_ModelDestroy(OH_AI_ModelHandle *model);
 /**
  * \brief Loads and builds a MindSpore model from the memory buffer.
  *
+ * Note that the same {@Link OH_AI_ContextHandle} object can only be passed to {@Link OH_AI_ModelBuild} or {@Link OH_AI_ModelBuildFromFile} once.
+ * If you call this function multiple times, make sure that you create multiple {@Link OH_AI_ContextHandle} objects accordingly.
+ * 
  * \param model Pointer to the model object.
  * \param model_data Address of the loaded model data in the memory.
  * \param data_size Length of the model data.
@@ -135,6 +138,9 @@ OH_AI_API OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *mod
 /**
  * \brief Loads and builds a MindSpore model from a model file.
  *
+ * Note that the same {@Link OH_AI_ContextHandle} object can only be passed to {@Link OH_AI_ModelBuild} or {@Link OH_AI_ModelBuildFromFile} once.
+ * If you call this function multiple times, make sure that you create multiple {@Link OH_AI_ContextHandle} objects accordingly.
+ * 
  * \param model Pointer to the model object.
  * \param model_path Path of the model file.
  * \param model_type Type of the model file. For details, see {@link OH_AI_ModelType}.

@@ -73,21 +73,32 @@ typedef enum OH_AI_DeviceType {
   /** Device type: CPU
    *
    * @since 9
+   * 
    */
   OH_AI_DEVICETYPE_CPU = 0,
+  /** Device type: GPU
+   * 
+   * Reserved, not support yet.
+   * @since 9
+   */
+  OH_AI_DEVICETYPE_GPU,
   /** Device type: Kirin NPU
    *
+   * Reserved, not support yet.
    * @since 9
+   * 
    */
   OH_AI_DEVICETYPE_KIRIN_NPU,
   /** Device type: NNRt
    *
    * @since 9
+   * 
    */
   OH_AI_DEVICETYPE_NNRT = 60,
   /** Invalid device type
    *
    * @since 9
+   * 
    */
   OH_AI_DEVICETYPE_INVALID = 100,
 } OH_AI_DeviceType;
