@@ -21,7 +21,6 @@
 #include "lite_graph.h"
 #include "schema/model_generated.h"
 #include "mindir_types.h"
-#include "message_parcel.h"
 #include "nnrt/v1_0/nnrt_types.h"
 #include "nnrt/v1_0/node_attr_types.h"
 #include "nnrt/v1_0/model_types.h"
