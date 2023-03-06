@@ -13,27 +13,22 @@
 <!-- TOC -->
 
 - [MindSpore介绍](#mindspore介绍)
-  - [自动微分](#自动微分)
-  - [自动并行](#自动并行)
+    - [自动微分](#自动微分)
+    - [自动并行](#自动并行)
 - [安装](#安装)
-  - [pip方式安装](#pip方式安装)
-  - [源码编译方式安装](#源码编译方式安装)
-  - [Docker镜像](#docker镜像)
+    - [pip方式安装](#pip方式安装)
+    - [源码编译方式安装](#源码编译方式安装)
+    - [Docker镜像](#docker镜像)
 - [快速入门](#快速入门)
 - [文档](#文档)
 - [社区](#社区)
-  - [治理](#治理)
-  - [交流](#交流)
+    - [治理](#治理)
+    - [交流](#交流)
 - [贡献](#贡献)
 - [分支维护策略](#分支维护策略)
 - [现有分支维护状态](#现有分支维护状态)
 - [版本说明](#版本说明)
 - [许可证](#许可证)
-- [OpenHarmony系统部件](#openharmony系统部件)
-  - [MindSpore Lite](#mindspore-lite)
-    - [使用方法](#使用方法)
-  - [MindIR 构图接口](#mindir-构图接口)
-    - [使用方法](#使用方法-1)
 
 <!-- /TOC -->
 
@@ -44,23 +39,22 @@ MindSpore提供了友好的设计和高效的执行，旨在提升数据科学�
 
 同时，MindSpore作为全球AI开源社区，致力于进一步开发和丰富AI软硬件应用生态。
 
-<img src="https://gitee.com/mindspore/mindspore/raw/r1.5/docs/MindSpore-architecture.png" alt="MindSpore Architecture" width="600"/>
+<img src="https://gitee.com/mindspore/mindspore/raw/master/docs/MindSpore-architecture-zh.png" alt="MindSpore Architecture"/>
 
-欲了解更多详情，请查看我们的[总体架构](https://www.mindspore.cn/docs/programming_guide/zh-CN/r1.5/architecture.html)。
+欲了解更多详情，请查看我们的[总体架构](https://www.mindspore.cn/tutorials/zh-CN/master/beginner/introduction.html)。
 
 ### 自动微分
 
-当前主流深度学习框架中有三种自动微分技术：
+当前主流深度学习框架中有两种自动微分技术：
 
-- **基于静态计算图的转换**：编译时将网络转换为静态数据流图，将链式法则应用于数据流图，实现自动微分。
-- **基于动态计算图的转换**：记录算子过载正向执行时网络的运行轨迹，对动态生成的数据流图应用链式法则，实现自动微分。
-- **基于源码的转换**：该技术是从功能编程框架演进而来，以即时编译（Just-in-time Compilation，JIT）的形式对中间表达式（程序在编译过程中的表达式）进行自动差分转换，支持复杂的控制流场景、高阶函数和闭包。
+- **操作符重载法**： 通过操作符重载对编程语言中的基本操作语义进行重定义，封装其微分规则。 在程序运行时记录算子过载正向执行时网络的运行轨迹，对动态生成的数据流图应用链式法则，实现自动微分。
+- **代码变换法**： 该技术是从功能编程框架演进而来，以即时编译（Just-in-time Compilation，JIT）的形式对中间表达式（程序在编译过程中的表达式）进行自动差分转换，支持复杂的控制流场景、高阶函数和闭包。
 
-TensorFlow早期采用的是静态计算图，PyTorch采用的是动态计算图。静态映射可以利用静态编译技术来优化网络性能，但是构建网络或调试网络非常复杂。动态图的使用非常方便，但很难实现性能的极限优化。
+PyTorch采用的是操作符重载法。相较于代码变换法，操作符重载法是在运行时生成微分计算图的， 无需考虑函数调用与控制流等情况， 开发更为简单。 但该方法不能在编译时刻做微分图的优化， 控制流也需要根据运行时的信息来展开， 很难实现性能的极限优化。
 
-MindSpore找到了另一种方法，即基于源代码转换的自动微分。一方面，它支持自动控制流的自动微分，因此像PyTorch这样的模型构建非常方便。另一方面，MindSpore可以对神经网络进行静态编译优化，以获得更好的性能。
+MindSpore则采用的是代码变换法。一方面，它支持自动控制流的自动微分，因此像PyTorch这样的模型构建非常方便。另一方面，MindSpore可以对神经网络进行静态编译优化，以获得更好的性能。
 
-<img src="https://gitee.com/mindspore/mindspore/raw/r1.5/docs/Automatic-differentiation.png" alt="Automatic Differentiation" width="600"/>
+<img src="https://gitee.com/mindspore/mindspore/raw/master/docs/Automatic-differentiation.png" alt="Automatic Differentiation" width="600"/>
 
 MindSpore自动微分的实现可以理解为程序本身的符号微分。MindSpore IR是一个函数中间表达式，它与基础代数中的复合函数具有直观的对应关系。复合函数的公式由任意可推导的基础函数组成。MindSpore IR中的每个原语操作都可以对应基础代数中的基本功能，从而可以建立更复杂的流控制。
 
@@ -68,7 +62,7 @@ MindSpore自动微分的实现可以理解为程序本身的符号微分。MindS
 
 MindSpore自动并行的目的是构建数据并行、模型并行和混合并行相结合的训练方法。该方法能够自动选择开销最小的模型切分策略，实现自动分布并行训练。
 
-<img src="https://gitee.com/mindspore/mindspore/raw/r1.5/docs/Automatic-parallel.png" alt="Automatic Parallel" width="600"/>
+<img src="https://gitee.com/mindspore/mindspore/raw/master/docs/Automatic-parallel.png" alt="Automatic Parallel" width="600"/>
 
 目前MindSpore采用的是算子切分的细粒度并行策略，即图中的每个算子被切分为一个集群，完成并行操作。在此期间的切分策略可能非常复杂，但是作为一名Python开发者，您无需关注底层实现，只要顶层API计算是有效的即可。
 
@@ -237,11 +231,11 @@ MindSpore的Docker镜像托管在[Docker Hub](https://hub.docker.com/r/mindspore
     [ 2.  2.  2.  2.]]]
     ```
 
-如果您想了解更多关于MindSpore Docker镜像的构建过程，请查看[docker](https://gitee.com/mindspore/mindspore/blob/r1.5/scripts/docker/README.md) repo了解详细信息。
+如果您想了解更多关于MindSpore Docker镜像的构建过程，请查看[docker](https://gitee.com/mindspore/mindspore/blob/master/scripts/docker/README.md) repo了解详细信息。
 
 ## 快速入门
 
-参考[快速入门](https://www.mindspore.cn/tutorials/zh-CN/r1.5/quick_start.html)实现图片分类。
+参考[快速入门](https://www.mindspore.cn/tutorials/zh-CN/master/beginner/quick_start.html)实现图片分类。
 
 ## 文档
 
@@ -280,10 +274,13 @@ MindSpore的版本分支有以下几种维护阶段：
 
 | **分支名** | **当前状态**  | **上线时间**          | **后续状态**                           | **EOL 日期**|
 |------------|--------------|----------------------|----------------------------------------|------------|
+| **r1.8**   | Maintained   | 2022-07-29           | Unmaintained <br> 2023-07-29 estimated |            |
+| **r1.7**   | Maintained   | 2022-04-29           | Unmaintained <br> 2023-04-29 estimated |            |
+| **r1.6**   | Maintained   | 2022-01-29           | Unmaintained <br> 2023-01-29 estimated |            |
 | **r1.5**   | Maintained   | 2021-10-15           | Unmaintained <br> 2022-10-15 estimated |            |
 | **r1.4**   | Maintained   | 2021-08-15           | Unmaintained <br> 2022-08-15 estimated |            |
-| **r1.3**   | Maintained   | 2021-07-15           | Unmaintained <br> 2022-07-15 estimated |            |
-| **r1.2**   | Unmaintained | 2021-04-15           | End Of Life  <br> 2022-04-15 estimated |            |
+| **r1.3**   | End Of Life  | 2021-07-15           |                                        | 2022-07-15 |
+| **r1.2**   | End Of Life  | 2021-04-15           |                                        | 2022-04-29 |
 | **r1.1**   | End Of Life  | 2020-12-31           |                                        | 2021-09-30 |
 | **r1.0**   | End Of Life  | 2020-09-24           |                                        | 2021-07-30 |
 | **r0.7**   | End Of Life  | 2020-08-31           |                                        | 2021-02-28 |
@@ -299,45 +296,58 @@ MindSpore的版本分支有以下几种维护阶段：
 
 ## 许可证
 
-[Apache License 2.0](https://gitee.com/mindspore/mindspore#/mindspore/mindspore/blob/master/LICENSE)
+[Apache License 2.0](https://gitee.com/mindspore/mindspore/blob/master/LICENSE)
 
-## OpenHarmony系统部件
-目前OpenHarmony的标准系统内置了Mindspore Lite，和MindIR构图接口。
-### MindSpore Lite
-关于MindSpore Lite的介绍详见(MindSpore Lite介绍)[mindspore/lite/README_CN.md]。
-#### 使用方法
-在BUILD.gn中加入如下依赖即可使用MindSpore Lite:
+
+---
+
+## OpenHarmony MindSpore系统组件
+
+Mindspore Lite，和MindIR构图接口已内置到OpenHarmony标准系统。
+
+如需了解MindSpore Lite推理框架，请详见[MindSpore Lite介绍](mindspore/lite/README_CN.md)。
+
+### OpenHarmony组件使用MindSpore Lite
+
+在组件BUILD.gn中加入如下依赖即可使用MindSpore Lite:
+
 ```gn
 include_dirs = [
-    "//third_party/mindspore/"
+    "//third_party/mindspore/mindspore-src/source/"
 ]
 external_deps = ["mindspore:mindspore_lib"]
 ```
+注意：`mindspore-src/`为构建时生成的源码目录，仅下载源代码时，此目录不存在！
 
-C++ 的头文件存放在`include/api`目录中，使用方法：
+- 使用C++ API
+
+C++ API头文件存放在`include/api`目录中，使用如下方式包含：
+
 ```C++
-#include "include/api/xxx"
+#include "include/api/xxx.h"
 ```
 
-C 的头文件存放在`include/c_api`目录中，使用方法：
-```C++
-#include "include/c_api/xxx"
+C API头文件存放在`include/c_api`目录中，使用如下方式包含：
+
+```C
+#include "include/c_api/xxx.h"
 ```
 ### MindIR 构图接口
-MindIR是MindSpore 用于描述图结构的中间表达方式。
+MindIR是MindSpore Lite用于描述模型计算图的中间表达方式。
 Primitive 是一套基于flatbuffers的对模型进行序列化的工具，MindSpore Lite使用它存储图结构、算子、张量等信息。
-Lite Graph是MindSpore Lite用于描述模型中节点、张量、子图等信息的结构，并且可以通过MindIR接口构建Lite Graph。
+Lite Graph是MindSpore Lite用于描述模型中节点、张量、子图等信息的结构，可通过MindIR接口构建。
 
-#### 使用方法
+#### 使用MindIR
 在BUILD.gn中加入如下依赖即可使用MindIR 构图接口:
 ```gn
 include_dirs = [
-    "//third_party/mindspore/mindspore/lite/mindir/include"
+    "//third_party/mindspore/mindspore-src/source/mindspore/lite/mindir/include"
 ]
 external_deps = ["mindspore:mindir"]
 ```
 
-C++ 接口存放目录为`mindspore/mindspore/lite/mindir/include`直接使用
+MindIR C++ API接口存放目录为`third_party/mindspore/mindspore-src/source/mindspore/lite/mindir/include`。
+
 ```
 ├── include                     # 对外的所有头文件
 │   ├── mindir.h                # MindIR所有功能的头文件
@@ -349,3 +359,18 @@ C++ 接口存放目录为`mindspore/mindspore/lite/mindir/include`直接使用
 ├── src                         # MindIR构图接口的源代码
 └── tests                       # 测试代码
 ```
+
+### 编译MindSpore Lite
+
+以rk3568为例，单独编译mindspore lite动态库：
+
+```bash
+./build.sh --product-name rk3568 --target-cpu arm -T mindspore_lib --ccache
+```
+
+编译出的so文件位于`out/rk3568/thirdparty/mindspore/`目录。
+
+```
+libmindir.z.so  libmindspore-lite.huawei.so
+```
+
