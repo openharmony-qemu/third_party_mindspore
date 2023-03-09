@@ -42,23 +42,22 @@ processor, and software hardware co-optimization. At the meantime MindSpore as
 a global AI open source community, aims to further advance the development and
 enrichment of the AI software/hardware application ecosystem.
 
-<img src="https://gitee.com/mindspore/mindspore/raw/r1.5/docs/MindSpore-architecture.png" alt="MindSpore Architecture" width="600"/>
+<img src="https://gitee.com/mindspore/mindspore/raw/master/docs/MindSpore-architecture.png" alt="MindSpore Architecture"/>
 
-For more details please check out our [Architecture Guide](https://www.mindspore.cn/docs/programming_guide/en/r1.5/architecture.html).
+For more details please check out our [Architecture Guide](https://www.mindspore.cn/tutorials/en/master/beginner/introduction.html).
 
 ### Automatic Differentiation
 
-There are currently three automatic differentiation techniques in mainstream deep learning frameworks:
+Currently, there are two automatic differentiation techniques in mainstream deep learning frameworks:
 
-- **Conversion based on static compute graph**: Convert the network into a static data flow graph at compile time, then turn the chain rule into a data flow graph to implement automatic differentiation.
-- **Conversion based on dynamic compute graph**: Record the operation trajectory of the network during forward execution in an operator overloaded manner, then apply the chain rule to the dynamically generated data flow graph to implement automatic differentiation.
-- **Conversion based on source code**: This technology is evolving from the functional programming framework and performs automatic differential transformation on the intermediate expression (the expression form of the program during the compilation process) in the form of just-in-time compilation (JIT), supporting complex control flow scenarios, higher-order functions and closures.
+- **Operator Overloading (OO)**: Overloading the basic operators of the programming language to encapsulate their gradient rules. Record the operation trajectory of the network during forward execution in an operator overloaded manner, then apply the chain rule to the dynamically generated data flow graph to implement automatic differentiation.
+- **Source Transformation (ST)**: This technology is evolving from the functional programming framework and performs automatic differential transformation on the intermediate expression (the expression form of the program during the compilation process) in the form of just-in-time compilation (JIT), supporting complex control flow scenarios, higher-order functions and closures.
 
-TensorFlow adopted static calculation diagrams in the early days, whereas PyTorch used dynamic calculation diagrams. Static maps can utilize static compilation technology to optimize network performance, however, building a network or debugging it is very complicated. The use of dynamic graphics is very convenient, but it is difficult to achieve extreme optimization in performance.
+PyTorch used OO. Compared to ST, OO generates gradient graph in runtime, so it does not need to take function call and control flow into consideration, which makes it easier to develop. However, OO can not perform gradient graph optimization in compilation time and the control flow has to be unfolded in runtime, so it is difficult to achieve extreme optimization in performance.
 
-But MindSpore finds another way, automatic differentiation based on source code conversion. On the one hand, it supports automatic differentiation of automatic control flow, so it is quite convenient to build models like PyTorch. On the other hand, MindSpore can perform static compilation optimization on neural networks to achieve great performance.
+MindSpore implemented automatic differentiation based on ST. On the one hand, it supports automatic differentiation of automatic control flow, so it is quite convenient to build models like PyTorch. On the other hand, MindSpore can perform static compilation optimization on neural networks to achieve great performance.
 
-<img src="https://gitee.com/mindspore/mindspore/raw/r1.5/docs/Automatic-differentiation.png" alt="Automatic Differentiation" width="600"/>
+<img src="https://gitee.com/mindspore/mindspore/raw/master/docs/Automatic-differentiation.png" alt="Automatic Differentiation" width="600"/>
 
 The implementation of MindSpore automatic differentiation can be understood as the symbolic differentiation of the program itself. Because MindSpore IR is a functional intermediate expression, it has an intuitive correspondence with the composite function in basic algebra. The derivation formula of the composite function composed of arbitrary basic functions can be derived. Each primitive operation in MindSpore IR can correspond to the basic functions in basic algebra, which can build more complex flow control.
 
@@ -66,7 +65,7 @@ The implementation of MindSpore automatic differentiation can be understood as t
 
 The goal of MindSpore automatic parallel is to build a training method that combines data parallelism, model parallelism, and hybrid parallelism. It can automatically select a least cost model splitting strategy to achieve automatic distributed parallel training.
 
-<img src="https://gitee.com/mindspore/mindspore/raw/r1.5/docs/Automatic-parallel.png" alt="Automatic Parallel" width="600"/>
+<img src="https://gitee.com/mindspore/mindspore/raw/master/docs/Automatic-parallel.png" alt="Automatic Parallel" width="600"/>
 
 At present, MindSpore uses a fine-grained parallel strategy of splitting operators, that is, each operator in the figure is split into a cluster to complete parallel operations. The splitting strategy during this period may be very complicated, but as a developer advocating Pythonic, you don't need to care about the underlying implementation, as long as the top-level API compute is efficient.
 
@@ -236,11 +235,11 @@ currently the containerized build options are supported as follows:
     ```
 
 If you want to learn more about the building process of MindSpore docker images,
-please check out [docker](https://gitee.com/mindspore/mindspore/blob/r1.5/scripts/docker/README.md) repo for the details.
+please check out [docker](https://gitee.com/mindspore/mindspore/blob/master/scripts/docker/README.md) repo for the details.
 
 ## Quickstart
 
-See the [Quick Start](https://www.mindspore.cn/tutorials/en/r1.5/quick_start.html)
+See the [Quick Start](https://www.mindspore.cn/tutorials/en/master/beginner/quick_start.html)
 to implement the image classification.
 
 ## Docs
@@ -282,10 +281,13 @@ Project stable branches will be in one of the following states:
 
 | **Branch** | **Status**   | **Initial Release Date** | **Next Phase**                         | **EOL Date**|
 |------------|--------------|--------------------------|----------------------------------------|-------------|
+| **r1.8**   | Maintained   | 2022-07-29               | Unmaintained <br> 2023-07-29 estimated |             |
+| **r1.7**   | Maintained   | 2022-04-29               | Unmaintained <br> 2023-04-29 estimated |             |
+| **r1.6**   | Maintained   | 2022-01-29               | Unmaintained <br> 2023-01-29 estimated |             |
 | **r1.5**   | Maintained   | 2021-10-15               | Unmaintained <br> 2022-10-15 estimated |             |
 | **r1.4**   | Maintained   | 2021-08-15               | Unmaintained <br> 2022-08-15 estimated |             |
-| **r1.3**   | Maintained   | 2021-07-15               | Unmaintained <br> 2022-07-15 estimated |             |
-| **r1.2**   | Unmaintained | 2021-04-15               | End Of Life  <br> 2022-04-15 estimated |             |
+| **r1.3**   | End Of Life  | 2021-07-15               |                                        | 2022-07-15  |
+| **r1.2**   | End Of Life  | 2021-04-15               |                                        | 2022-04-29  |
 | **r1.1**   | End Of Life  | 2020-12-31               |                                        | 2021-09-30  |
 | **r1.0**   | End Of Life  | 2020-09-24               |                                        | 2021-07-30  |
 | **r0.7**   | End Of Life  | 2020-08-31               |                                        | 2021-02-28  |
@@ -301,4 +303,4 @@ The release notes, see our [RELEASE](https://gitee.com/mindspore/mindspore/blob/
 
 ## License
 
-[Apache License 2.0](https://gitee.com/mindspore/mindspore#/mindspore/mindspore/blob/master/LICENSE)
+[Apache License 2.0](https://gitee.com/mindspore/mindspore/blob/master/LICENSE)
