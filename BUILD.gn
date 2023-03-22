@@ -35,7 +35,7 @@ args += [
 ]
 print(args)
 
-exec_script("build_helper.py", args, "", [ in_zip_path ])
+exec_script("build_helper.py", args)
 print("Done prepare mindspore source.")
 
 # Define targets
