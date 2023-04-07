@@ -21,6 +21,7 @@ def do_patch(patch_dir, target_dir):
         '0002-generate-nnacl-simd-headers-manually.patch',
         '0003-implement-mindir-module-and-support-nnrt-delegate.patch',
         '0004-adapt-build-gn-and-provide-C-API-for-OHOS.patch',
+        '0005-mindir-add-custom-op.patch',
     ]
 
     cwd = os.getcwd()
