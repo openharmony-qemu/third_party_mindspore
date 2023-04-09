@@ -22,6 +22,7 @@ def do_patch(patch_dir, target_dir):
         '0003-implement-mindir-module-and-support-nnrt-delegate.patch',
         '0004-adapt-build-gn-and-provide-C-API-for-OHOS.patch',
         '0005-mindir-add-custom-op.patch',
+        '0006-Support-converting-THIRDPARTY-model-in-MSLite.patch',
     ]
 
     cwd = os.getcwd()
