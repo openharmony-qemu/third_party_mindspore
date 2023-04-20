@@ -24,6 +24,7 @@ def do_patch(patch_dir, target_dir):
         '0005-mindir-add-custom-op.patch',
         '0006-Support-converting-THIRDPARTY-model-in-MSLite.patch',
         '0007-support-third-party-model-in-mslite-runtime.patch',
+        '0008-add-js-api.patch',
     ]
 
     cwd = os.getcwd()
