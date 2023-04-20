@@ -23,6 +23,7 @@ def do_patch(patch_dir, target_dir):
         '0004-adapt-build-gn-and-provide-C-API-for-OHOS.patch',
         '0005-mindir-add-custom-op.patch',
         '0006-Support-converting-THIRDPARTY-model-in-MSLite.patch',
+        '0007-support-third-party-model-in-mslite-runtime.patch',
     ]
 
     cwd = os.getcwd()
