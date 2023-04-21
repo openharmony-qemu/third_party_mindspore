@@ -1,12 +1,10 @@
-From 6eced779748050a5ce40e66a66152f9300ba34b4 Mon Sep 17 00:00:00 2001
+From 38e07644b4a68b591c0751378860e19307e524a6 Mon Sep 17 00:00:00 2001
 From: fangzhou0329 <fangzhou12@huawei.com>
-Date: Wed, 19 Apr 2023 09:25:41 +0800
-Subject: [PATCH] auto-apply 0007-add-js-api.patch
+Date: Thu, 20 Apr 2023 20:15:52 +0800
+Subject: [PATCH] js api
 
-js api modify
 ---
  build.sh                                      |   0
- include/api/context.h                         |  10 +
  include/js_api/@ohos.ai.mindspore.d.ts        | 185 +++++
  include/js_api/common_napi.h                  | 102 +++
  include/js_api/ms_errors.h                    |  39 ++
@@ -17,14 +15,13 @@ js api modify
  include/js_api/mstensor_napi.h                |  53 ++
  include/js_api/native_module_ohos_ms.h        |  22 +
  mindspore/lite/BUILD.gn                       |   1 +
- mindspore/lite/include/context.h              |   5 +
  mindspore/lite/src/runtime/js_api/BUILD.gn    |  55 ++
  .../lite/src/runtime/js_api/common_napi.cc    | 231 +++++++
  .../src/runtime/js_api/mslite_model_napi.cc   | 642 ++++++++++++++++++
  .../lite/src/runtime/js_api/mslitejs_log.h    |  62 ++
  .../lite/src/runtime/js_api/mstensor_napi.cc  | 356 ++++++++++
  .../runtime/js_api/native_module_ohos_ms.cc   |  51 ++
- 19 files changed, 2028 insertions(+)
+ 17 files changed, 2013 insertions(+)
  mode change 100644 => 100755 build.sh
  create mode 100644 include/js_api/@ohos.ai.mindspore.d.ts
  create mode 100644 include/js_api/common_napi.h
@@ -45,33 +42,6 @@ js api modify
 diff --git a/build.sh b/build.sh
 old mode 100644
 new mode 100755
-diff --git a/include/api/context.h b/include/api/context.h
-index 93ed2706..8f0844aa 100644
---- a/include/api/context.h
-+++ b/include/api/context.h
-@@ -32,6 +32,8 @@ enum DeviceType {
-   kAscend910,
-   kAscend310,
-   // add new type here
-+  //ohos-only device range[60,80)
-+  kNNRt = 60,
-   kInvalidDeviceType = 100,
- };
- 
-@@ -510,5 +512,13 @@ void AscendDeviceInfo::SetBufferOptimizeMode(const std::string &buffer_optimize_
-   SetBufferOptimizeMode(StringToChar(buffer_optimize_mode));
- }
- std::string AscendDeviceInfo::GetBufferOptimizeMode() const { return CharToString(GetBufferOptimizeModeChar()); }
-+
-+class MS_API NNRTDeviceInfo : public DeviceInfoContext {
-+ public:
-+  /// \brief Get the type of this DeviceInfoContext.
-+  ///
-+  /// \return Type of this DeviceInfoContext.
-+  enum DeviceType GetDeviceType() const override { return DeviceType::kNNRt; };
-+};
- }  // namespace mindspore
- #endif  // MINDSPORE_INCLUDE_API_CONTEXT_H
 diff --git a/include/js_api/@ohos.ai.mindspore.d.ts b/include/js_api/@ohos.ai.mindspore.d.ts
 new file mode 100644
 index 00000000..631be6ce
@@ -751,7 +721,7 @@ index 00000000..db38b2d8
 +#endif // MINDSPORE_INCLUDE_JS_API_NATIVE_MODULE_OHOS_MS_H
 \ No newline at end of file
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index a472283a..f6d2aa53 100644
+index d761b69c..b8bac6c4 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
 @@ -69,6 +69,7 @@ ohos_group("mindspore") {
@@ -762,28 +732,6 @@ index a472283a..f6d2aa53 100644
    ]
  }
  
-diff --git a/mindspore/lite/include/context.h b/mindspore/lite/include/context.h
-index 915f2f66..22bd24df 100644
---- a/mindspore/lite/include/context.h
-+++ b/mindspore/lite/include/context.h
-@@ -50,12 +50,17 @@ typedef struct AscendDeviceInfo {
-   std::string batch_size_;
-   std::string image_size_;
- } AscendDeviceInfo;
-+
-+typedef struct NNRtDeviceInfo {
-+} NNRtDeviceInfo;
-+
- /// \brief DeviceInfo defined for backend's configuration information.
- struct DeviceInfo {
-   CpuDeviceInfo cpu_device_info_;
-   GpuDeviceInfo gpu_device_info_;
-   NpuDeviceInfo npu_device_info_;
-   AscendDeviceInfo ascend_device_info_;
-+  NNRtDeviceInfo nnrt_device_info_;
- };
- 
- /// \brief DeviceContext defined for holding backend's configuration information.
 diff --git a/mindspore/lite/src/runtime/js_api/BUILD.gn b/mindspore/lite/src/runtime/js_api/BUILD.gn
 new file mode 100644
 index 00000000..44669c26
