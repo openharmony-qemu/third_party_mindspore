@@ -26,6 +26,7 @@ def do_patch(patch_dir, target_dir):
         '0007-support-third-party-model-in-mslite-runtime.patch',
         '0008-add-js-api.patch',
         '0009-adapt-nnrt-v2_0.patch',
+        '0010-nnrt-delegate-supports-heterogeneous-predition.patch',
     ]
 
     cwd = os.getcwd()
