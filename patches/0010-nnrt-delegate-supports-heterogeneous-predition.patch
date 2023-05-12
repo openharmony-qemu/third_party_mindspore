@@ -1,23 +1,24 @@
-From f6d77553bbc72bb17e127275349aed0f00599695 Mon Sep 17 00:00:00 2001
+From 6c5c1ead99a113a8f676423d1bab4cd8e39332cc Mon Sep 17 00:00:00 2001
 From: Zhu Guodong <zhuguodong0001@163.com>
-Date: Mon, 8 May 2023 17:13:37 +0800
+Date: Wed, 17 May 2023 14:30:55 +0800
 Subject: [PATCH] auto-apply
  0010-nnrt-delegate-supports-heterogeneous-predition.patch
 
 ---
  include/api/context.h                         |  40 ++
  include/c_api/context_c.h                     |  85 +++
- include/c_api/types_c.h                       |  44 ++
+ include/c_api/types_c.h                       |  36 +
  include/sdk_api/context.h                     |  85 +++
- include/sdk_api/types.h                       |  44 ++
+ include/sdk_api/types.h                       |  38 +-
  mindspore/lite/include/context.h              |   4 +
  mindspore/lite/include/model.h                |   4 +
- mindspore/lite/src/runtime/c_api/context_c.cc | 190 ++++++
+ mindspore/lite/src/runtime/c_api/context_c.cc | 191 ++++++
  mindspore/lite/src/runtime/c_api/context_c.h  |   3 +
+ .../lite/src/runtime/c_api/type_c_private.h   |  40 ++
  mindspore/lite/src/runtime/cxx_api/context.cc |  68 ++
  .../lite/src/runtime/cxx_api/converters.cc    |  15 +-
  .../lite/src/runtime/cxx_api/converters.h     |   2 +-
- .../runtime/delegate/nnrt/nnrt_delegate.cc    | 621 ++++++++++++------
+ .../runtime/delegate/nnrt/nnrt_delegate.cc    | 633 +++++++++++++-----
  .../src/runtime/delegate/nnrt/nnrt_delegate.h |  54 +-
  .../src/runtime/delegate/nnrt/nnrt_stub.cc    |  21 +
  mindspore/lite/src/runtime/lite_model.cc      |  29 +
@@ -26,7 +27,8 @@ Subject: [PATCH] auto-apply
  mindspore/lite/src/runtime/tensor_category.h  |   1 +
  mindspore/lite/test/CMakeLists.txt            |  10 +-
  .../nnrt_delegate/nnrt_delegate_tests.cc      |  59 ++
- 21 files changed, 1186 insertions(+), 206 deletions(-)
+ 22 files changed, 1224 insertions(+), 207 deletions(-)
+ create mode 100644 mindspore/lite/src/runtime/c_api/type_c_private.h
  create mode 100644 mindspore/lite/test/ut/src/runtime/nnrt_delegate/nnrt_delegate_tests.cc
 
 diff --git a/include/api/context.h b/include/api/context.h
@@ -177,31 +179,22 @@ index 53839e80..481caf24 100644
  }
  #endif
 diff --git a/include/c_api/types_c.h b/include/c_api/types_c.h
-index fdf91f5a..7bf00490 100644
+index fdf91f5a..d612eb97 100644
 --- a/include/c_api/types_c.h
 +++ b/include/c_api/types_c.h
-@@ -16,6 +16,8 @@
- #ifndef MINDSPORE_INCLUDE_C_API_TYPES_C_H
- #define MINDSPORE_INCLUDE_C_API_TYPES_C_H
- 
-+#include <stddef.h>
-+
- #ifdef __cplusplus
- extern "C" {
- #endif
-@@ -44,6 +46,48 @@ typedef enum OH_AI_DeviceType {
+@@ -44,6 +44,42 @@ typedef enum OH_AI_DeviceType {
    OH_AI_DEVICETYPE_INVALID = 100,
  } OH_AI_DeviceType;
  
 +typedef enum OH_AI_NNRTDeviceType {
 +  /** Devices that are not CPU, GPU, or dedicated accelerator */
-+  OH_AI_OTHERS = 0,
++  OH_AI_NNRTDEVICE_OTHERS = 0,
 +  /** CPU device */
-+  OH_AI_CPU = 1,
++  OH_AI_NNRTDEVICE_CPU = 1,
 +  /** GPU device */
-+  OH_AI_GPU = 2,
++  OH_AI_NNRTDEVICE_GPU = 2,
 +  /** Dedicated hardware accelerator */
-+  OH_AI_ACCELERATOR = 3,
++  OH_AI_NNRTDEVICE_ACCELERATOR = 3,
 +} OH_AI_NNRTDeviceType;
 +
 +typedef enum OH_AI_PerformanceMode {
@@ -228,13 +221,7 @@ index fdf91f5a..7bf00490 100644
 +  OH_AI_PRIORITY_HIGH = 3
 +} OH_AI_Priority;
 +
-+#define NNRT_DEVICE_NAME_MAX (128)
-+
-+typedef struct NNRTDeviceDesc {
-+  size_t device_id;
-+  OH_AI_NNRTDeviceType device_type;
-+  char device_name[NNRT_DEVICE_NAME_MAX];
-+} NNRTDeviceDesc;
++typedef struct NNRTDeviceDesc NNRTDeviceDesc;
  #ifdef __cplusplus
  }
  #endif
@@ -335,31 +322,27 @@ index 5bfc9279..88508864 100644
  }
  #endif
 diff --git a/include/sdk_api/types.h b/include/sdk_api/types.h
-index a39c6daa..cbe7e378 100644
+index a39c6daa..d38660b0 100644
 --- a/include/sdk_api/types.h
 +++ b/include/sdk_api/types.h
-@@ -16,6 +16,8 @@
- #ifndef MINDSPORE_INCLUDE_C_API_TYPES_C_H
- #define MINDSPORE_INCLUDE_C_API_TYPES_C_H
- 
-+#include <stddef.h>
-+
- #ifdef __cplusplus
- extern "C" {
- #endif
-@@ -44,6 +46,48 @@ typedef enum OH_AI_DeviceType {
+@@ -40,10 +40,46 @@ typedef enum OH_AI_DeviceType {
+   OH_AI_DEVICETYPE_KIRIN_NPU,
+   // add new type here
+   // ohos-only device range: [60, 80)
+-  OH_AI_DeviceType_NNRT = 60,
++  OH_AI_DEVICETYPE_NNRT = 60,
    OH_AI_DEVICETYPE_INVALID = 100,
  } OH_AI_DeviceType;
  
 +typedef enum OH_AI_NNRTDeviceType {
 +  /** Devices that are not CPU, GPU, or dedicated accelerator */
-+  OH_AI_OTHERS = 0,
++  OH_AI_NNRTDEVICE_OTHERS = 0,
 +  /** CPU device */
-+  OH_AI_CPU = 1,
++  OH_AI_NNRTDEVICE_CPU = 1,
 +  /** GPU device */
-+  OH_AI_GPU = 2,
++  OH_AI_NNRTDEVICE_GPU = 2,
 +  /** Dedicated hardware accelerator */
-+  OH_AI_ACCELERATOR = 3,
++  OH_AI_NNRTDEVICE_ACCELERATOR = 3,
 +} OH_AI_NNRTDeviceType;
 +
 +typedef enum OH_AI_PerformanceMode {
@@ -386,13 +369,7 @@ index a39c6daa..cbe7e378 100644
 +  OH_AI_PRIORITY_HIGH = 3
 +} OH_AI_Priority;
 +
-+#define NNRT_DEVICE_NAME_MAX (128)
-+
-+typedef struct NNRTDeviceDesc {
-+  size_t device_id;
-+  OH_AI_NNRTDeviceType device_type;
-+  char device_name[NNRT_DEVICE_NAME_MAX];
-+} NNRTDeviceDesc;
++typedef struct NNRTDeviceDesc NNRTDeviceDesc;
  #ifdef __cplusplus
  }
  #endif
@@ -435,21 +412,22 @@ index 44cba37b..a54904c8 100644
    LiteGraph graph_;
    char *buf = nullptr;
 diff --git a/mindspore/lite/src/runtime/c_api/context_c.cc b/mindspore/lite/src/runtime/c_api/context_c.cc
-index d030e931..3df63f69 100644
+index d030e931..dfaa07fd 100644
 --- a/mindspore/lite/src/runtime/c_api/context_c.cc
 +++ b/mindspore/lite/src/runtime/c_api/context_c.cc
-@@ -14,8 +14,10 @@
+@@ -14,8 +14,11 @@
   * limitations under the License.
   */
  #include "include/c_api/context_c.h"
 +#include <string.h>
  #include "src/runtime/c_api/context_c.h"
++#include "src/runtime/c_api/type_c_private.h"
  #include "src/common/log_adapter.h"
 +#include "interfaces/kits/c/neural_network_runtime.h"
  
  // ================ Context ================
  OH_AI_ContextHandle OH_AI_ContextCreate() {
-@@ -238,3 +240,191 @@ int OH_AI_DeviceInfoGetFrequency(const OH_AI_DeviceInfoHandle device_info) {  //
+@@ -238,3 +241,191 @@ int OH_AI_DeviceInfoGetFrequency(const OH_AI_DeviceInfoHandle device_info) {  //
      return -1;
    }
  }
@@ -518,7 +496,7 @@ index d030e931..3df63f69 100644
 +OH_AI_NNRTDeviceType OH_AI_NNRTDeviceDescGetType(NNRTDeviceDesc *desc) {
 +  if (desc == nullptr) {
 +    MS_LOG(ERROR) << "NNRT desc is null";
-+    return OH_AI_NNRTDeviceType::OH_AI_OTHERS;
++    return OH_AI_NNRTDeviceType::OH_AI_NNRTDEVICE_OTHERS;
 +  }
 +  return desc->device_type;
 +}
@@ -655,8 +633,54 @@ index 7b9db3ea..0fb2f3e7 100644
    std::string provider;
    std::string provider_device;
    std::shared_ptr<Allocator> allocator = nullptr;
+diff --git a/mindspore/lite/src/runtime/c_api/type_c_private.h b/mindspore/lite/src/runtime/c_api/type_c_private.h
+new file mode 100644
+index 00000000..b3b64748
+--- /dev/null
++++ b/mindspore/lite/src/runtime/c_api/type_c_private.h
+@@ -0,0 +1,40 @@
++/**
++ * Copyright 2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++#ifndef MINDSPORE_LITE_SRC_RUNTIME_C_API_TYPE_C_PRIVATE_H_
++#define MINDSPORE_LITE_SRC_RUNTIME_C_API_TYPE_C_PRIVATE_H_
++
++#include <string>
++#include <vector>
++#include <memory>
++#include <stddef.h>
++#include "include/c_api/types_c.h"
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define NNRT_DEVICE_NAME_MAX (128)
++
++struct NNRTDeviceDesc {
++  size_t device_id;
++  OH_AI_NNRTDeviceType device_type;
++  char device_name[NNRT_DEVICE_NAME_MAX];
++};
++
++#ifdef __cplusplus
++}
++#endif
++#endif  // MINDSPORE_LITE_SRC_RUNTIME_C_API_TYPE_C_PRIVATE_H_
 diff --git a/mindspore/lite/src/runtime/cxx_api/context.cc b/mindspore/lite/src/runtime/cxx_api/context.cc
-index d550975b..40cb958f 100644
+index d550975b..6ac926b9 100644
 --- a/mindspore/lite/src/runtime/cxx_api/context.cc
 +++ b/mindspore/lite/src/runtime/cxx_api/context.cc
 @@ -48,6 +48,10 @@ constexpr auto KModelOptionAscendFusionSwitchCfgPath = "mindspore.option.ascend.
@@ -702,7 +726,7 @@ index d550975b..40cb958f 100644
 +int NNRTDeviceInfo::GetPerformanceMode() const {
 +  if (data_ == nullptr) {
 +    MS_LOG(ERROR) << "Invalid context.";
-+    return false;
++    return 0;
 +  }
 +  return GetValue<int>(data_, kModelOptionNNRTPerformanceMode);
 +}
@@ -718,7 +742,7 @@ index d550975b..40cb958f 100644
 +int NNRTDeviceInfo::GetPriority() const {
 +  if (data_ == nullptr) {
 +    MS_LOG(ERROR) << "Invalid context.";
-+    return false;
++    return 0;
 +  }
 +  return GetValue<int>(data_, kModelOptionNNRTPriority);
 +}
@@ -794,7 +818,7 @@ index 11338875..bd7daabb 100644
      return affinity_mode >= lite::NO_BIND && affinity_mode <= lite::MID_CPU;
    }
 diff --git a/mindspore/lite/src/runtime/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/runtime/delegate/nnrt/nnrt_delegate.cc
-index 67d4e6c4..51683958 100644
+index 67d4e6c4..8b6e5ba4 100644
 --- a/mindspore/lite/src/runtime/delegate/nnrt/nnrt_delegate.cc
 +++ b/mindspore/lite/src/runtime/delegate/nnrt/nnrt_delegate.cc
 @@ -13,6 +13,9 @@
@@ -807,7 +831,7 @@ index 67d4e6c4..51683958 100644
  #include "nnrt_delegate.h"
  #include "checker/primitive_check.h"
  #include "src/common/log_adapter.h"
-@@ -21,139 +24,420 @@
+@@ -21,139 +24,432 @@
  #include "nnrt_model_kernel.h"
  #include "schema/model_generated.h"
  #include "flatbuffers/flatbuffers.h"
@@ -822,7 +846,7 @@ index 67d4e6c4..51683958 100644
 -    MS_LOG(ERROR) << "nnrt_lite_graph is nullptr.";
 -    return mindspore::kLiteError;
 +  if ((lite_graph_ == nullptr) || (lite_graph_->sub_graphs_.size() > 1)) {
-+    MS_LOG(INFO) << "LiteGraph contains more than one subgraph. NNRT does not support control-flow model yet, fallback to CPU";
++    MS_LOG(WARNING) << "LiteGraph contains more than one subgraph. NNRT does not support control-flow model yet, fallback to CPU";
 +    return kSuccess;
    }
 -  if (this->nnrt_lite_graph->sub_graphs_.empty()) {
@@ -878,14 +902,19 @@ index 67d4e6c4..51683958 100644
 +  MS_LOG(INFO) << "NNRTDelegate build success.";
 +  return kSuccess;
 +}
++
++OH_NNModel *NNRTDelegate::BuildFullNNModel() {
++  if (lite_graph_ == nullptr) {
++    MS_LOG(ERROR) << "Lite graph is null";
++    return nullptr;
++  }
  
 -  if (oh_nn_compilation == nullptr) {
 -    MS_LOG(ERROR) << "Construct NNCompilation failed";
 -    OH_NNModel_Destroy(&oh_nnmodel);
 -    return mindspore::kLiteError;
-+OH_NNModel *NNRTDelegate::BuildFullNNModel() {
-+  if (lite_graph_ == nullptr) {
-+    MS_LOG(ERROR) << "Lite graph is null";
++  if (lite_graph_->sub_graphs_.empty()) {
++    MS_LOG(ERROR) << "Lite graph must have at lease one subgraph";
 +    return nullptr;
    }
 -  MS_LOG(DEBUG) << "NNRTDelegate creates NNCompilation success.";
@@ -898,8 +927,9 @@ index 67d4e6c4..51683958 100644
 -    OH_NNCompilation_Destroy(&oh_nn_compilation);
 -    OH_NNModel_Destroy(&oh_nnmodel);
 -    return mindspore::kLiteError;
-+  if (lite_graph_->sub_graphs_.empty()) {
-+    MS_LOG(ERROR) << "Lite graph must have at lease one subgraph";
++  OH_NNModel *nn_model = OH_NNModel_Construct();
++  if (nn_model == nullptr) {
++    MS_LOG(ERROR) << "Create NNModel failed, result is nullptr";
 +    return nullptr;
    }
  
@@ -908,24 +938,18 @@ index 67d4e6c4..51683958 100644
 -    // OH_NNCompilation_Destroy(&oh_nn_compilation);
 -    // OH_NNModel_Destroy(&oh_nnmodel);
 -    return mindspore::kSuccess;
-+  OH_NNModel *nn_model = OH_NNModel_Construct();
-+  if (nn_model == nullptr) {
-+    MS_LOG(ERROR) << "Create NNModel failed, result is nullptr";
-+    return nullptr;
-   }
--  MS_LOG(DEBUG) << "NNRTDelegate GetAllDevicesID success. device_count: " << device_count;
- 
--  // check if model ops are supported
--  const bool *issupported = nullptr;
 +  auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, lite_graph_);
 +  if (ret != OH_NN_SUCCESS) {
 +    MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
 +    OH_NNModel_Destroy(&nn_model);
 +    return nullptr;
-+  }
+   }
+-  MS_LOG(DEBUG) << "NNRTDelegate GetAllDevicesID success. device_count: " << device_count;
 +  return nn_model;
 +}
-+
+ 
+-  // check if model ops are supported
+-  const bool *issupported = nullptr;
 +std::vector<bool> NNRTDelegate::QueryOpSupports(OH_NNModel *nn_model) {
 +  const bool *is_supported = nullptr; // Note: this memory is owned by nn_model, don't free alone.
    uint32_t op_count = 0;
@@ -1003,7 +1027,11 @@ index 67d4e6c4..51683958 100644
 +  MS_LOG(INFO) << "Start creating LiteGraph for NNRT subgraph";
 +  for (const auto &op_range: nnrt_op_ranges) {
 +    MS_LOG(INFO) << "Process op range: [" << op_range.begin_index_ << ", " << op_range.end_index_ << ")";
-+    LiteGraph *sub_lite_graph = new LiteGraph;
++    LiteGraph *sub_lite_graph = new (std::nothrow)LiteGraph;
++    if (sub_lite_graph == nullptr) {
++      MS_LOG(ERROR) << "Allocate LiteGraph failed";
++      return kLiteError;
++    }
 +    sub_lite_graph->name_ = lite_graph_->name_;
 +    sub_lite_graph->version_ = lite_graph_->version_;
  
@@ -1012,7 +1040,11 @@ index 67d4e6c4..51683958 100644
 -    OH_NNCompilation_Destroy(&oh_nn_compilation);
 -    OH_NNModel_Destroy(&oh_nnmodel);
 -    return mindspore::kLiteError;
-+    auto sub_graph = new LiteGraph::SubGraph;
++    auto sub_graph = new (std::nothrow)LiteGraph::SubGraph;
++    if (sub_graph == nullptr) {
++      MS_LOG(ERROR) << "Allocate SubGraph failed";
++      return kLiteError;
++    }
 +    sub_graph->name_ = lite_graph_->name_;
 +    sub_lite_graph->sub_graphs_.push_back(sub_graph);
 +
@@ -1022,7 +1054,11 @@ index 67d4e6c4..51683958 100644
 +    std::map<uint32_t, schema::Tensor *> in_tensor_index_map;
 +    std::map<uint32_t, schema::Tensor *> out_tensor_index_map;
 +    for (size_t index = op_range.begin_index_; index < op_range.end_index_; index++) {
-+      LiteGraph::Node *node = new LiteGraph::Node;
++      LiteGraph::Node *node = new (std::nothrow)LiteGraph::Node;
++      if (node == nullptr) {
++        MS_LOG(ERROR) << "Allocate Node failed";
++        return kLiteError;
++      }
 +      *node = *lite_graph_->all_nodes_[index];
 +      sub_lite_graph->all_nodes_.push_back(node);
 +      sub_graph->node_indices_.push_back(new_node_index++);
@@ -1107,7 +1143,7 @@ index 67d4e6c4..51683958 100644
 +        }
 +        auto node = lite_graph_->all_nodes_[i];
 +        if (std::find(node->input_indices_.begin(), node->input_indices_.end(), iter.first) !=
-+            node->input_indices_.end()) { // 是子图外节点的输入
++            node->input_indices_.end()) { // As the input of node which does not belong to the subgraph.
 +          is_subgraph_output = true;
 +          MS_LOG(DEBUG) << "- tensor: " << new_tensor_index << " is original subgraph output. node: " << node->primitive_ << std::endl;
 +          break;
@@ -1328,7 +1364,7 @@ index 67d4e6c4..51683958 100644
    auto input_tensors = model->inputs();
    for (size_t i = 0; i < input_tensors.size(); i++) {
      auto tensor = input_tensors[i];
-@@ -164,10 +448,10 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
+@@ -164,10 +460,10 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
      std::vector<double> scale;
      std::vector<int32_t> zero_point;
      if (!tmp_quant_param.empty()) {
@@ -1341,7 +1377,7 @@ index 67d4e6c4..51683958 100644
        }
        for (auto qparam : tmp_quant_param) {
          bit_num.emplace_back(qparam.bit_num);
-@@ -179,12 +463,12 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
+@@ -179,12 +475,12 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
        quant_param->scale = scale.data();
        quant_param->zeroPoint = zero_point.data();
      }
@@ -1357,7 +1393,7 @@ index 67d4e6c4..51683958 100644
      oprend->dimensionCount = tensor_shape.size();
  
      std::vector<int32_t> dimensions_list;
-@@ -194,14 +478,14 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
+@@ -194,14 +490,14 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
        } else {
          MS_LOG(ERROR) << "NNExecutor SetInput failed,tensor dimension is is too large, max dim = " << INT32_MAX
                        << ", but get dimension = " << shape;
@@ -1374,7 +1410,7 @@ index 67d4e6c4..51683958 100644
      delete (oprend);
  
      if (!tmp_quant_param.empty()) {
-@@ -212,70 +496,37 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
+@@ -212,70 +508,37 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
      if (ret_code != OH_NN_SUCCESS) {
        MS_LOG(ERROR) << "NNExecutor SetInput failed, current input tensor is" << tensor.Name()
                      << "OH_NN_ReturnCode = " << ret_code;
@@ -1470,7 +1506,7 @@ index 67d4e6c4..51683958 100644
    auto output_tensors = model->outputs();
    for (size_t i = 0; i < output_tensors.size(); i++) {
      auto tensor = output_tensors[i];
-@@ -283,17 +534,17 @@ mindspore::Status mindspore::NNRTDelegate::PrepareOutputs(DelegateModel<schema::
+@@ -283,17 +546,17 @@ mindspore::Status mindspore::NNRTDelegate::PrepareOutputs(DelegateModel<schema::
      if (ret_code != OH_NN_SUCCESS) {
        MS_LOG(ERROR) << "NNExecutor SetOutput failed, current out tensor is" << tensor.Name()
                      << ", OH_NN_ReturnCode = " << ret_code;
@@ -1492,7 +1528,7 @@ index 67d4e6c4..51683958 100644
        MS_LOG(ERROR) << " primitive supported check failed.";
        return;
      }
-@@ -302,7 +553,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
+@@ -302,7 +565,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
    node_list.reserve(lite_graph.all_nodes_.size());
    // copy node
    for (auto node : lite_graph.all_nodes_) {
@@ -1501,7 +1537,7 @@ index 67d4e6c4..51683958 100644
      if (new_node == nullptr) {
        MS_LOG(ERROR) << " new LiteGraph::Node failed.";
        return;
-@@ -321,7 +572,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
+@@ -321,7 +584,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
    // copy subgraph
    std::vector<LiteGraph::SubGraph *> subgraph_list;
    for (auto subgraph : lite_graph.sub_graphs_) {
@@ -1510,7 +1546,7 @@ index 67d4e6c4..51683958 100644
      if (new_subgraph == nullptr) {
        MS_LOG(ERROR) << "new LiteGraph::Subgraph failed.";
        return;
-@@ -334,30 +585,32 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
+@@ -334,30 +597,32 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
    }
    for (auto tensor : lite_graph.all_tensors_) {
      ret = lite::CheckTensorSupported(static_cast<const schema::Tensor *>(tensor));
