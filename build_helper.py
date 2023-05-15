@@ -63,10 +63,6 @@ def main_work():
     out_src_path = args['out_src_path']
     patch_dir = os.path.realpath(args['patch_dir'])
 
-    if os.path.exists(out_src_path + '/.status'):
-        print("Out source path is ready, skip generation. Or remove it manually to trigger again.")
-        return
-    
     if os.path.exists(out_src_path):
         shutil.rmtree(out_src_path)
 
