@@ -58,7 +58,6 @@ def main_work():
     parser.add_argument('--patch_dir')
     args = vars(parser.parse_args())
 
-
     in_zip_path = os.path.realpath(args['in_zip_path'])
     out_src_path = args['out_src_path']
     patch_dir = os.path.realpath(args['patch_dir'])
