@@ -1,26 +1,26 @@
-From a8000da649b1dbb724e253cc184e281f22d81439 Mon Sep 17 00:00:00 2001
-From: fangzhou12 <fangzhou12@huawei.com>
-Date: Sun, 23 Apr 2023 16:16:45 +0800
+From 53b13af45b23aaac2ad84f42a7c6624509be1333 Mon Sep 17 00:00:00 2001
+From: fangzhou0329 <fangzhou12@huawei.com>
+Date: Mon, 15 May 2023 17:42:41 +0800
 Subject: [PATCH] auto-apply 0008-add-js-api.patch
 
 ---
- build.sh                                      |   0
- include/js_api/@ohos.ai.mindspore.d.ts        | 185 +++++
- include/js_api/common_napi.h                  | 103 +++
- include/js_api/ms_errors.h                    |  39 +
- include/js_api/ms_info.h                      |  69 ++
- include/js_api/ms_parameters_napi.h           |  24 +
- include/js_api/mslite_model_callback_napi.h   |  38 +
- include/js_api/mslite_model_napi.h            |  82 ++
- include/js_api/mstensor_napi.h                |  52 ++
- include/js_api/native_module_ohos_ms.h        |  22 +
- mindspore/lite/BUILD.gn                       |   1 +
- mindspore/lite/src/runtime/js_api/BUILD.gn    |  55 ++
- .../lite/src/runtime/js_api/common_napi.cc    | 246 ++++++
- .../src/runtime/js_api/mslite_model_napi.cc   | 743 ++++++++++++++++++
- .../lite/src/runtime/js_api/mstensor_napi.cc  | 426 ++++++++++
- .../runtime/js_api/native_module_ohos_ms.cc   |  48 ++
- 16 files changed, 2133 insertions(+)
+ build.sh                                      |    0
+ include/js_api/@ohos.ai.mindspore.d.ts        |  222 ++++
+ include/js_api/common_napi.h                  |  104 ++
+ include/js_api/ms_errors.h                    |   39 +
+ include/js_api/ms_info.h                      |   69 ++
+ include/js_api/ms_parameters_napi.h           |   24 +
+ include/js_api/mslite_model_callback_napi.h   |   38 +
+ include/js_api/mslite_model_napi.h            |   85 ++
+ include/js_api/mstensor_napi.h                |   52 +
+ include/js_api/native_module_ohos_ms.h        |   22 +
+ mindspore/lite/BUILD.gn                       |    1 +
+ mindspore/lite/src/runtime/js_api/BUILD.gn    |   55 +
+ .../lite/src/runtime/js_api/common_napi.cc    |  246 ++++
+ .../src/runtime/js_api/mslite_model_napi.cc   | 1045 +++++++++++++++++
+ .../lite/src/runtime/js_api/mstensor_napi.cc  |  426 +++++++
+ .../runtime/js_api/native_module_ohos_ms.cc   |   48 +
+ 16 files changed, 2476 insertions(+)
  mode change 100644 => 100755 build.sh
  create mode 100644 include/js_api/@ohos.ai.mindspore.d.ts
  create mode 100644 include/js_api/common_napi.h
@@ -42,10 +42,10 @@ old mode 100644
 new mode 100755
 diff --git a/include/js_api/@ohos.ai.mindspore.d.ts b/include/js_api/@ohos.ai.mindspore.d.ts
 new file mode 100644
-index 00000000..631be6ce
+index 00000000..ccb2c600
 --- /dev/null
 +++ b/include/js_api/@ohos.ai.mindspore.d.ts
-@@ -0,0 +1,185 @@
+@@ -0,0 +1,222 @@
 +/*
 +* Copyright (C) 2023 Huawei Device Co., Ltd.
 +* Licensed under the Apache License, Version 2.0 (the "License");
@@ -72,29 +72,56 @@ index 00000000..631be6ce
 +  /**
 +   * Creates an MSLiteModel instance.
 +   * @since 9
-+   * @syscap SystemCapability.Mslite.MSLiteModel
++   * @syscap SystemCapability.MsLite.MsLiteModel
 +   * @import import mslite from '@ohos.mslite'
-+   * @param model The path to the model (string), or the model content in memory(ArrayBuffer), or memory fd.
++   * @param model The path to the model (string)
 +   * @param options Options related to model inference.
-+   * @throws { BusinessError } 5400101 - No memory. Return by callback.
++   * @throws { BusinessError } 401 - invaild path. Return by callback.
 +   * @return A Promise instance used to return MSLiteModel instance if the operation is successful; returns null otherwise.
 +   */
-+  function loadModel(
-+    model: string|ArrayBuffer,
-+    options?: ContextOptions): Promise<MSLiteModel>;
-+
++  function loadModelFromFile(
++    model: string,
++    options?: Context): Promise<MSLiteModel>;
 +
 +  /**
++   * Creates an MSLiteModel instance.
++   * @since 9
++   * @syscap SystemCapability.MsLite.MsLiteModel
++   * @import import mslite from '@ohos.mslite'
++   * @param model The model content in memory(ArrayBuffer).
++   * @param options Options related to model inference.
++   * @throws { BusinessError } 401 - No memory. Return by callback.
++   * @return A Promise instance used to return MSLiteModel instance if the operation is successful; returns null otherwise.
++   */
++  function loadModelFromBuffer(
++    model: ArrayBuffer,
++    options?: Context): Promise<MSLiteModel>;
++
++  /**
++   * Creates an MSLiteModel instance.
++   * @since 9
++   * @syscap SystemCapability.MsLite.MsLiteModel
++   * @import import mslite from '@ohos.mslite'
++   * @param model The memory fd to the model (number).
++   * @param options Options related to model inference.
++   * @throws { BusinessError } 401 - invaild fd. Return by callback.
++   * @return A Promise instance used to return MSLiteModel instance if the operation is successful; returns null otherwise.
++   */
++  function loadModelFromFd(
++    model: number,
++    options?: Context): Promise<MSLiteModel>;
++
++    /**
 +   * Manages model. Before calling an MSLiteModel method, you must use loadMSLiteModel()
 +   * to create an MSLiteModel instance.
 +   * @since 9
-+   * @syscap SystemCapability.Mslite.MSLiteModel
++   * @syscap SystemCapability.MsLite.MsLiteModel
 +   */
 +  interface MSLiteModel {
 +    /**
 +     * Get model input tensors.
 +     * @since 9
-+     * @syscap SystemCapability.Mslite.MSLiteModel
++     * @syscap SystemCapability.MsLite.MsLiteModel
 +     * @return MSTensor Array
 +     */
 +    getInputs(): MSTensor[];
@@ -102,19 +129,29 @@ index 00000000..631be6ce
 +    /**
 +     * Infer model.
 +     * @since 9
-+     * @syscap SystemCapability.Mslite.MSLiteModel
++     * @syscap SystemCapability.MsLite.MsLiteModel
 +     * @inputs inputs tensor
 +     * @return A Promise instance used to return MSTensor array if the operation is successful; returns null otherwise.
 +     */
 +     predict(inputs: MSTensor[]): Promise<MSTensor[]>;
++
++     /**
++     * resize model input.
++     * @since 9
++     * @syscap SystemCapability.MsLite.MsLiteModel
++     * @inputs inputs tensor
++     * @dims   resize shape,the order is same with inputs
++     * @return  true if the operation is successful; returns false otherwise.
++     */
++     resize(inputs: MSTensor[], dims: Array<Array<number>>): boolean;
 +  }
 +
 +  /**
 +   * Provides the device configurations.
 +   * @since 9
-+   * @syscap SystemCapability.Mslite.MSLiteModel
++   * @syscap SystemCapability.MsLite.MsLiteModel
 +   */
-+  interface ContextOptions {
++  interface Context {
 +    target?: string[];
 +    cpu?:CpuDevice;
 +    nnrt?:NnrtDevice;
@@ -123,10 +160,10 @@ index 00000000..631be6ce
 +  /**
 +   * Provides the CPU device info.
 +   * @since 9
-+   * @syscap SystemCapability.Mslite.MSLiteModel
++   * @syscap SystemCapability.MsLite.MsLiteModel
 +   */
 +  interface CpuDevice {
-+    runtime_num_threads?: number
++    thread_num?: number
 +    thread_affinity_mode?: ThreadAffinityMode;
 +    thread_affinity_core_list?: number[];
 +    precision_mode?: string;
@@ -135,7 +172,7 @@ index 00000000..631be6ce
 +  /**
 +   * Provides the NNRT device info.
 +   * @since 9
-+   * @syscap SystemCapability.Mslite.MSLiteModel
++   * @syscap SystemCapability.MsLite.MsLiteModel
 +   */
 +  interface NnrtDevice {
 +  }
@@ -143,27 +180,27 @@ index 00000000..631be6ce
 +  /**
 +   * Provides CPU thread affinity mode.
 +   * @since 9
-+   * @syscap SystemCapability.Mslite.ContextOptions
++   * @syscap SystemCapability.MsLite.Context
 +   */
 +  enum ThreadAffinityMode {
 +    /**
 +     * NO_BIND.
 +     * @since 9
-+     * @syscap SystemCapability.Mslite.ContextOptions
++     * @syscap SystemCapability.MsLite.Context
 +     */
 +    NO_AFFINITIES = 0,
 +
 +    /**
-+     * HIGHER_CPU.
++     * BIG_CORES_FIRST.
 +     * @since 9
-+     * @syscap SystemCapability.Mslite.ContextOptions
++     * @syscap SystemCapability.MsLite.Context
 +     */
 +    BIG_CORES_FIRST = 1,
 +
 +    /**
-+     * MID_CPU.
++     * LITTLE_CORES_FIRST.
 +     * @since 9
-+     * @syscap SystemCapability.Mslite.ContextOptions
++     * @syscap SystemCapability.MsLite.Context
 +     */
 +    LITTLE_CORES_FIRST = 2,
 +  }
@@ -171,26 +208,26 @@ index 00000000..631be6ce
 +  /**
 +   * Provides MSTensor defination.
 +   * @since 9
-+   * @syscap SystemCapability.Mslite.MSTensor
++   * @syscap SystemCapability.MsLite.MsTensor
 +   */
 +  interface MSTensor {
 +    /** The name of the tensor. */
-+    readonly name: string;
++    'name': string;
 +    /** The shape of the tensor. */
-+    readonly shape: number[];
++    'shape': number[];
 +    /** Number of elements in the tensor. */
-+    readonly element_num: number;
++    'element_num': number;
 +    /** Number of elements in the tensor. */
-+    readonly data_size: number;
++    'data_size': number;
 +    /** The data type for the array. */
-+    readonly dtype: number;
++    'dtype': number;
 +    /** The format type of the tensor. */
-+    readonly format: number;
++    'format': number;
 +
 +    /**
 +     * Get MSTensor data.
 +     * @since 9
-+     * @syscap SystemCapability.Mslite.MSTensor
++     * @syscap SystemCapability.MsLite.MsTensor
 +     * @return ArrayBuffer.
 +     */
 +    data(): ArrayBuffer;
@@ -198,7 +235,7 @@ index 00000000..631be6ce
 +    /**
 +     * Set MSTensor data.
 +     * @since 9
-+     * @syscap SystemCapability.Mslite.MSTensor
++     * @syscap SystemCapability.MsLite.MsTensor
 +     * @param inputArray
 +     */
 +    setData(inputArray: ArrayBuffer): void;
@@ -234,10 +271,10 @@ index 00000000..631be6ce
 \ No newline at end of file
 diff --git a/include/js_api/common_napi.h b/include/js_api/common_napi.h
 new file mode 100644
-index 00000000..7749332f
+index 00000000..c52f3b80
 --- /dev/null
 +++ b/include/js_api/common_napi.h
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,104 @@
 +/**
 + * Copyright (C) 2023 Huawei Device Co., Ltd.
 + * Licensed under the Apache License, Version 2.0 (the "License");
@@ -300,17 +337,18 @@ index 00000000..7749332f
 +  std::string model_path = "";
 +  char *model_buffer_data = nullptr;
 +  size_t model_buffer_total = 0;
++  size_t model_fd = 0;
 +  ModelMode mode = kBuffer;
 +};
 +
 +struct CpuDevice {
-+  int runtime_num_threads;
++  int thread_num;
 +  int thread_affinity_mode;
 +  std::vector<int32_t> thread_affinity_cores;
 +  std::string precision_mode;
 +  CpuDevice(){};
 +  CpuDevice(int thread_num, int affinity_mode, std::vector<int32_t> affinity_cores, std::string precision)
-+      : runtime_num_threads(thread_num),
++      : thread_num(thread_num),
 +        thread_affinity_mode(affinity_mode),
 +        thread_affinity_cores(affinity_cores),
 +        precision_mode(precision){};
@@ -542,10 +580,10 @@ index 00000000..3b3ee595
 \ No newline at end of file
 diff --git a/include/js_api/mslite_model_napi.h b/include/js_api/mslite_model_napi.h
 new file mode 100644
-index 00000000..01835fe4
+index 00000000..f570d232
 --- /dev/null
 +++ b/include/js_api/mslite_model_napi.h
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,85 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -595,15 +633,18 @@ index 00000000..01835fe4
 +    MSLiteModelAsyncContext() {
 +      // setting context default value
 +      context.target.push_back("cpu");
-+      context.cpu_device.runtime_num_threads = 2;
++      context.cpu_device.thread_num = 2;
 +      context.cpu_device.thread_affinity_mode = 0;
-+      context.cpu_device.precision_mode = "fp32";
++      context.cpu_device.precision_mode = "enforce_fp32";
 +    }
 +  };
 +  static napi_value Constructor(napi_env env, napi_callback_info info);
 +  static void Finalize(napi_env env, void *nativeObject, void *finalize);
-+  static napi_value LoadMSLiteModel(napi_env env, napi_callback_info info);
++  static napi_value LoadMSLiteModelFromFile(napi_env env, napi_callback_info info);
++  static napi_value LoadMSLiteModelFromBuffer(napi_env env, napi_callback_info info);
++  static napi_value LoadMSLiteModelFromFd(napi_env env, napi_callback_info info);
 +  static napi_value GetInputs(napi_env env, napi_callback_info info);
++  static napi_value Resize(napi_env env, napi_callback_info info);
 +  static napi_value PredictAsync(napi_env env, napi_callback_info info);
 +  static int32_t ParseModelInfo(napi_env env, napi_value root, ModelInfo &model_info);
 +  static int32_t ParseContextInfo(napi_env env, napi_value root, ContextInfo &info);
@@ -792,7 +833,7 @@ index 00000000..44669c26
 +}
 diff --git a/mindspore/lite/src/runtime/js_api/common_napi.cc b/mindspore/lite/src/runtime/js_api/common_napi.cc
 new file mode 100644
-index 00000000..6fa2501e
+index 00000000..6a07c712
 --- /dev/null
 +++ b/mindspore/lite/src/runtime/js_api/common_napi.cc
 @@ -0,0 +1,246 @@
@@ -1045,10 +1086,10 @@ index 00000000..6fa2501e
 \ No newline at end of file
 diff --git a/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc b/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..9d7cc654
+index 00000000..0ea92e13
 --- /dev/null
 +++ b/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc
-@@ -0,0 +1,743 @@
+@@ -0,0 +1,1045 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -1071,6 +1112,9 @@ index 00000000..9d7cc654
 +#include <cstring>
 +#include <memory>
 +#include <map>
++#include <vector>
++#include <unistd.h>
++#include <fcntl.h>
 +#include "include/js_api/mstensor_napi.h"
 +#include "include/js_api/common_napi.h"
 +#include "include/js_api/ms_parameters_napi.h"
@@ -1099,7 +1143,8 @@ index 00000000..9d7cc654
 +const int PARAM1 = 1;
 +
 +const int SIZE = 100;
-+
++const int BUF_SIZE = 100000;
++const int ERROR_VALUE = -1;
 +const std::string CLASS_NAME = "MSLiteModel";
 +
 +const std::unordered_map<std::string, DeviceType> kDeviceTypes{
@@ -1139,10 +1184,13 @@ index 00000000..9d7cc654
 +
 +napi_value MSLiteModelNapi::Init(napi_env env, napi_value exports) {
 +  napi_property_descriptor properties[] = {DECLARE_NAPI_FUNCTION("getInputs", GetInputs),
++                                           DECLARE_NAPI_FUNCTION("resize", Resize),
 +                                           DECLARE_NAPI_FUNCTION("predict", PredictAsync)};
 +
 +  napi_property_descriptor staticProperty[] = {
-+    DECLARE_NAPI_STATIC_FUNCTION("loadModel", LoadMSLiteModel),
++    DECLARE_NAPI_STATIC_FUNCTION("loadModelFromFile", LoadMSLiteModelFromFile),
++    DECLARE_NAPI_STATIC_FUNCTION("loadModelFromBuffer", LoadMSLiteModelFromBuffer),
++    DECLARE_NAPI_STATIC_FUNCTION("loadModelFromFd", LoadMSLiteModelFromFd),
 +  };
 +
 +  napi_value constructor = nullptr;
@@ -1233,6 +1281,22 @@ index 00000000..9d7cc654
 +      }
 +      return nullptr;
 +    }
++    case kFD: {
++      MS_LOG(DEBUG) << "input model fd:" << model_info_ptr->model_fd
++                    << ", model_buffer_total: " << model_info_ptr->model_buffer_total;
++      std::shared_ptr<mindspore::Model> model_ptr = std::make_shared<mindspore::Model>();
++      if (model_ptr == nullptr) {
++        MS_LOG(ERROR) << "Failed to new mindspore::model.";
++        return nullptr;
++      }
++      auto ret = model_ptr->Build(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total,
++                                  mindspore::kMindIR, context);
++      if (ret == mindspore::kSuccess) {
++        MS_LOG(INFO) << "Build model from buffer success.";
++        return model_ptr;
++      }
++      break;
++    }
 +    default: {
 +      MS_LOG(ERROR) << "Invalid model mode.";
 +    }
@@ -1257,7 +1321,7 @@ index 00000000..9d7cc654
 +          MS_LOG(ERROR) << "Failed to new CPU deviceInfo.";
 +          return ERR_INVALID_OPERATION;
 +        }
-+        bool is_fp16 = (context_ptr->cpu_device.precision_mode.compare("fp16") == 0) ? true : false;
++        bool is_fp16 = (context_ptr->cpu_device.precision_mode.compare("preferred_fp16") == 0) ? true : false;
 +        cpu_device->SetEnableFP16(is_fp16);
 +        device_infos.push_back(cpu_device);
 +        break;
@@ -1316,17 +1380,13 @@ index 00000000..9d7cc654
 +    MS_LOG(ERROR) << "napi_typeof error.";
 +    return ERR_INVALID_PARAM;
 +  }
-+  if ((valueType != napi_object) && (valueType != napi_string)) {
++  if ((valueType != napi_object) && (valueType != napi_string) && (valueType != napi_number)) {
 +    MS_LOG(ERROR) << "napi_type not support.";
 +    return ERR_INVALID_PARAM;
 +  }
 +
 +  bool is_model_buffer = false;
-+  status = napi_is_arraybuffer(env, root, &is_model_buffer);
-+  if (status != napi_ok) {
-+    MS_LOG(ERROR) << "napi_buffer not support.";
-+    return ERR_INVALID_PARAM;
-+  }
++  napi_is_arraybuffer(env, root, &is_model_buffer);
 +  if (is_model_buffer) {
 +    // copy buffer
 +    char *array_buffer_data;
@@ -1341,6 +1401,25 @@ index 00000000..9d7cc654
 +    model_info.model_buffer_data = array_buffer_data;
 +    model_info.model_buffer_total = array_buffer_total;
 +    model_info.mode = kBuffer;
++  } else if (valueType == napi_number) {
++    char char_buf[BUF_SIZE];
++    int32_t fd;
++    status = napi_get_value_int32(env, root, &fd);
++    if ((status != napi_ok) || (fd <= 0)) {
++      MS_LOG(ERROR) << "Parse model FD failed.";
++      return ERR_INVALID_PARAM;
++    }
++    int ret = read(fd, char_buf, sizeof(char_buf));
++    if (ret == ERROR_VALUE) {
++      MS_LOG(ERROR) << " read file failed.";
++      close(fd);
++      return ERR_INVALID_PARAM;
++    }
++    model_info.model_fd = fd;
++    model_info.model_buffer_data = char_buf;
++    model_info.model_buffer_total = ret;
++    model_info.mode = kFD;
++    close(fd);
 +  } else {
 +    char char_buf[SIZE];
 +    size_t buf_length = 0;
@@ -1454,7 +1533,7 @@ index 00000000..9d7cc654
 +  asyncContext = nullptr;
 +}
 +
-+napi_value MSLiteModelNapi::LoadMSLiteModel(napi_env env, napi_callback_info info) {
++napi_value MSLiteModelNapi::LoadMSLiteModelFromFile(napi_env env, napi_callback_info info) {
 +  napi_status status;
 +  napi_value result = nullptr;
 +
@@ -1478,9 +1557,9 @@ index 00000000..9d7cc654
 +      }
 +    } else {
 +      MS_LOG(ERROR) << "Invalid input params.";
++      return result;
 +    }
 +  }
-+
 +  status = napi_create_promise(env, &asyncContext->deferred, &result);
 +  if (status != napi_ok) {
 +    MS_LOG(ERROR) << "create promise failed.";
@@ -1488,7 +1567,117 @@ index 00000000..9d7cc654
 +  }
 +
 +  napi_value resource = nullptr;
-+  napi_create_string_utf8(env, "LoadMSLiteModel", NAPI_AUTO_LENGTH, &resource);
++  napi_create_string_utf8(env, "LoadMSLiteModelFromFile", NAPI_AUTO_LENGTH, &resource);
++  status = napi_create_async_work(
++    env, nullptr, resource,
++    [](napi_env env, void *data) {
++      auto context = static_cast<MSLiteModelAsyncContext *>(data);
++      context->status = SUCCESS;
++    },
++    GetMSLiteModelAsyncCallbackComplete, static_cast<void *>(asyncContext.get()), &asyncContext->work);
++  if (status != napi_ok) {
++    result = nullptr;
++  } else {
++    status = napi_queue_async_work(env, asyncContext->work);
++    if (status == napi_ok) {
++      asyncContext.release();
++    } else {
++      result = nullptr;
++    }
++  }
++  return result;
++}
++
++napi_value MSLiteModelNapi::LoadMSLiteModelFromBuffer(napi_env env, napi_callback_info info) {
++  napi_status status;
++  napi_value result = nullptr;
++
++  GET_PARAMS(env, info, ARGS_TWO);
++
++  std::unique_ptr<MSLiteModelAsyncContext> asyncContext = std::make_unique<MSLiteModelAsyncContext>();
++
++  int32_t ret;
++  for (size_t i = PARAM0; i < argc; i++) {
++    if (i == PARAM0) {
++      ret = ParseModelInfo(env, argv[i], asyncContext->model_info);
++      if (ret != SUCCESS) {
++        MS_LOG(ERROR) << "Parsing model info failed.";
++        return result;
++      }
++    } else if (i == PARAM1) {
++      ret = ParseContextInfo(env, argv[i], asyncContext->context);
++      if (ret != SUCCESS && ret != ERR_NOT_EXISTED_PARAM) {
++        MS_LOG(ERROR) << "Parsing context info failed.";
++        return result;
++      }
++    } else {
++      MS_LOG(ERROR) << "Invalid input params.";
++      return result;
++    }
++  }
++  status = napi_create_promise(env, &asyncContext->deferred, &result);
++  if (status != napi_ok) {
++    MS_LOG(ERROR) << "create promise failed.";
++    return result;
++  }
++
++  napi_value resource = nullptr;
++  napi_create_string_utf8(env, "LoadMSLiteModelFromBuffer", NAPI_AUTO_LENGTH, &resource);
++  status = napi_create_async_work(
++    env, nullptr, resource,
++    [](napi_env env, void *data) {
++      auto context = static_cast<MSLiteModelAsyncContext *>(data);
++      context->status = SUCCESS;
++    },
++    GetMSLiteModelAsyncCallbackComplete, static_cast<void *>(asyncContext.get()), &asyncContext->work);
++  if (status != napi_ok) {
++    result = nullptr;
++  } else {
++    status = napi_queue_async_work(env, asyncContext->work);
++    if (status == napi_ok) {
++      asyncContext.release();
++    } else {
++      result = nullptr;
++    }
++  }
++  return result;
++}
++
++napi_value MSLiteModelNapi::LoadMSLiteModelFromFd(napi_env env, napi_callback_info info) {
++  napi_status status;
++  napi_value result = nullptr;
++
++  GET_PARAMS(env, info, ARGS_TWO);
++
++  std::unique_ptr<MSLiteModelAsyncContext> asyncContext = std::make_unique<MSLiteModelAsyncContext>();
++
++  int32_t ret;
++  for (size_t i = PARAM0; i < argc; i++) {
++    if (i == PARAM0) {
++      ret = ParseModelInfo(env, argv[i], asyncContext->model_info);
++      if (ret != SUCCESS) {
++        MS_LOG(ERROR) << "Parsing model info failed.";
++        return result;
++      }
++    } else if (i == PARAM1) {
++      ret = ParseContextInfo(env, argv[i], asyncContext->context);
++      if (ret != SUCCESS && ret != ERR_NOT_EXISTED_PARAM) {
++        MS_LOG(ERROR) << "Parsing context info failed.";
++        return result;
++      }
++    } else {
++      MS_LOG(ERROR) << "Invalid input params.";
++      return result;
++    }
++  }
++  status = napi_create_promise(env, &asyncContext->deferred, &result);
++  if (status != napi_ok) {
++    MS_LOG(ERROR) << "create promise failed.";
++    return result;
++  }
++
++  napi_value resource = nullptr;
++  napi_create_string_utf8(env, "LoadMSLiteModelFromFd", NAPI_AUTO_LENGTH, &resource);
 +  status = napi_create_async_work(
 +    env, nullptr, resource,
 +    [](napi_env env, void *data) {
@@ -1531,14 +1720,14 @@ index 00000000..9d7cc654
 +  std::string str_value = "";
 +  std::vector<int32_t> affinity_cores;
 +
-+  if (CommonNapi::GetPropertyInt32(env, config_item, "runtime_num_threads", int_value) == SUCCESS) {
-+    MS_LOG(DEBUG) << "runtime_num_threads: " << int_value;
-+    context.cpu_device.runtime_num_threads = int_value;
++  if (CommonNapi::GetPropertyInt32(env, config_item, "thread_num", int_value) == SUCCESS) {
++    MS_LOG(DEBUG) << "thread_num: " << int_value;
++    context.cpu_device.thread_num = int_value;
 +  }
 +
 +  if (CommonNapi::GetPropertyInt32(env, config_item, "thread_affinity_mode", int_value) == SUCCESS) {
 +    MS_LOG(DEBUG) << "thread_affinity_mode: " << int_value;
-+    context.cpu_device.runtime_num_threads = int_value;
++    context.cpu_device.thread_num = int_value;
 +  }
 +
 +  if (CommonNapi::GetPropertyInt32Array(env, config_item, "thread_affinity_core_list", affinity_cores) == SUCCESS) {
@@ -1604,6 +1793,160 @@ index 00000000..9d7cc654
 +    }
 +  }
 +  MS_LOG(INFO) << "get model inputs success: " << inputs[0].Name().c_str();
++  return jsResult;
++}
++
++napi_value MSLiteModelNapi::Resize(napi_env env, napi_callback_info info) {
++  napi_value undefinedResult = nullptr;
++  bool result = false;
++  napi_get_undefined(env, &undefinedResult);
++  GET_PARAMS(env, info, ARGS_TWO);
++
++  napi_value jsThis = nullptr;
++  napi_value jsResult = nullptr;
++  MSLiteModelNapi *modelNapi = nullptr;
++
++  napi_status status = napi_unwrap(env, jsThis, reinterpret_cast<void **>(&modelNapi));
++  if (status != napi_ok || modelNapi == nullptr) {
++    MS_LOG(ERROR) << "get model napi error";
++    return undefinedResult;
++  }
++
++  if (modelNapi->native_model_ == nullptr) {
++    MS_LOG(ERROR) << "model is released(null), please create model again";
++    return undefinedResult;
++  }
++  std::vector<MSTensor> inputs = modelNapi->native_model_->GetInputs();
++  std::vector<MSTensor> tensor_inputs;
++  std::vector<std::vector<int64_t>> dims;
++
++  // set inputs data
++  uint32_t array_length = 0;
++  status = napi_get_array_length(env, argv[PARAM0], &array_length);
++  if (status != napi_ok || array_length <= 0) {
++    MS_LOG(ERROR) << "Get inputs tensor length failed.";
++    return undefinedResult;
++  }
++  if (inputs.size() != array_length) {
++    MS_LOG(ERROR) << "array length not equal to model inputs size.";
++    return undefinedResult;
++  }
++  for (size_t i = 0; i < array_length; i++) {
++    napi_value element = nullptr;
++    status = napi_get_element(env, argv[PARAM0], i, &element);
++    if (status != napi_ok) {
++      MS_LOG(ERROR) << "can not get element";
++      return undefinedResult;
++    }
++
++    std::string property_name = "data";
++    bool exist = false;
++    napi_value data_func = nullptr;
++
++    status = napi_has_named_property(env, element, property_name.c_str(), &exist);
++    if (status != napi_ok || !exist) {
++      MS_LOG(ERROR) << "can not find target property";
++      return undefinedResult;
++    }
++
++    if (status != napi_ok || !exist) {
++      MS_LOG(INFO) << "can not find " << property_name.c_str() << " property.";
++      return undefinedResult;
++    }
++
++    if (napi_get_named_property(env, element, property_name.c_str(), &data_func) != napi_ok) {
++      MS_LOG(ERROR) << "get " << property_name.c_str() << " property fail.";
++      return undefinedResult;
++    }
++    void *js_data = nullptr;
++    size_t length = 0;
++    napi_value return_val;
++
++    status = napi_call_function(env, element, data_func, 0, nullptr, &return_val);
++    if (status != napi_ok || return_val == nullptr) {
++      MS_LOG(ERROR) << "napi call function error.";
++      return undefinedResult;
++    }
++
++    status = napi_get_arraybuffer_info(env, return_val, &js_data, &length);
++    if (status != napi_ok || js_data == nullptr) {
++      MS_LOG(ERROR) << "Get js data error.";
++      return undefinedResult;
++    }
++    if (inputs[i].DataSize() != length) {
++      MS_LOG(ERROR) << "tensor size is: " << static_cast<int>(inputs[i].DataSize()) << ", but data length got "
++                    << static_cast<int>(length);
++      return undefinedResult;
++    }
++
++    auto tensor_data = inputs[i].MutableData();
++    if (tensor_data == nullptr) {
++      MS_LOG(ERROR) << "malloc data for tensor failed.";
++      return undefinedResult;
++    }
++    memcpy(tensor_data, js_data, length);
++  }
++
++  napi_value dim_num = nullptr;
++  int64_t dim_ele = 0;
++  uint32_t dims_size = 0;
++  uint32_t dim_size = 0;
++
++  status = napi_is_array(env, argv[PARAM1], &result);
++  if (status != napi_ok || result == false) {
++    MS_LOG(ERROR) << "new dim is not a array";
++    return undefinedResult;
++  }
++
++  status = napi_get_array_length(env, argv[PARAM1], &dims_size);
++  if (status != napi_ok) {
++    MS_LOG(ERROR) << "get new dims size error";
++    return undefinedResult;
++  }
++  for (size_t i = 0; i < dims_size; i++) {
++    napi_value dim_element = nullptr;
++    status = napi_get_element(env, argv[PARAM1], i, &dim_element);
++    if (status != napi_ok) {
++      MS_LOG(ERROR) << "can not get element";
++      return undefinedResult;
++    }
++
++    status = napi_is_array(env, dim_element, &result);
++    if (status != napi_ok || result == false) {
++      MS_LOG(ERROR) << "new dim's element is not a array";
++      return undefinedResult;
++    }
++
++    status = napi_get_array_length(env, dim_element, &dim_size);
++    if (status != napi_ok) {
++      MS_LOG(ERROR) << "get new dim size error";
++      return undefinedResult;
++    }
++    std::vector<int64_t> dim(dim_size);
++    for (size_t j = 0; j < dim_size; j++) {
++      status = napi_get_element(env, dim_element, j, &dim_num);
++      if (status != napi_ok) {
++        MS_LOG(ERROR) << "get dim num error";
++        return undefinedResult;
++      }
++      status = napi_get_value_int64(env, dim_num, &dim_ele);
++      if (status != napi_ok) {
++        MS_LOG(ERROR) << "get dim element error";
++        return undefinedResult;
++      }
++      dim.push_back(dim_ele);
++    }
++    dims.push_back(dim);
++  }
++  if (modelNapi->native_model_->Resize(inputs, dims) != mindspore::kSuccess) {
++    MS_LOG(ERROR) << "resize failed";
++    return undefinedResult;
++  }
++  status = napi_get_boolean(env, result, &jsResult);
++  if (status != napi_ok) {
++    MS_LOG(ERROR) << "get bool error";
++    return undefinedResult;
++  }
 +  return jsResult;
 +}
 +
