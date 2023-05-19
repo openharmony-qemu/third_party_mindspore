@@ -1,6 +1,6 @@
-From 6c5c1ead99a113a8f676423d1bab4cd8e39332cc Mon Sep 17 00:00:00 2001
+From ac189630423e63d98d1afc08a8285839e365f559 Mon Sep 17 00:00:00 2001
 From: Zhu Guodong <zhuguodong0001@163.com>
-Date: Wed, 17 May 2023 14:30:55 +0800
+Date: Thu, 18 May 2023 16:43:51 +0800
 Subject: [PATCH] auto-apply
  0010-nnrt-delegate-supports-heterogeneous-predition.patch
 
@@ -12,7 +12,7 @@ Subject: [PATCH] auto-apply
  include/sdk_api/types.h                       |  38 +-
  mindspore/lite/include/context.h              |   4 +
  mindspore/lite/include/model.h                |   4 +
- mindspore/lite/src/runtime/c_api/context_c.cc | 191 ++++++
+ mindspore/lite/src/runtime/c_api/context_c.cc | 190 ++++++
  mindspore/lite/src/runtime/c_api/context_c.h  |   3 +
  .../lite/src/runtime/c_api/type_c_private.h   |  40 ++
  mindspore/lite/src/runtime/cxx_api/context.cc |  68 ++
@@ -27,7 +27,7 @@ Subject: [PATCH] auto-apply
  mindspore/lite/src/runtime/tensor_category.h  |   1 +
  mindspore/lite/test/CMakeLists.txt            |  10 +-
  .../nnrt_delegate/nnrt_delegate_tests.cc      |  59 ++
- 22 files changed, 1224 insertions(+), 207 deletions(-)
+ 22 files changed, 1223 insertions(+), 207 deletions(-)
  create mode 100644 mindspore/lite/src/runtime/c_api/type_c_private.h
  create mode 100644 mindspore/lite/test/ut/src/runtime/nnrt_delegate/nnrt_delegate_tests.cc
 
@@ -83,7 +83,7 @@ index d88b9d44..4c25aa10 100644
  }  // namespace mindspore
  #endif  // MINDSPORE_INCLUDE_API_CONTEXT_H
 diff --git a/include/c_api/context_c.h b/include/c_api/context_c.h
-index 53839e80..481caf24 100644
+index 53839e80..f4b6676e 100644
 --- a/include/c_api/context_c.h
 +++ b/include/c_api/context_c.h
 @@ -173,6 +173,91 @@ OH_AI_API void OH_AI_DeviceInfoSetFrequency(OH_AI_DeviceInfoHandle device_info,
@@ -95,33 +95,33 @@ index 53839e80..481caf24 100644
 +/// \param[out] num Number of NNRT device description.
 +///
 +/// \return NNRT device description array.
-+OH_AI_API NNRTDeviceDesc *OH_AI_NNRTGetAllDeviceDescs(size_t *num);
++OH_AI_API NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num);
 +
-+/// \brief Destroy the NNRT device descriptions returned by OH_AI_NNRTGetAllDeviceDescs().
++/// \brief Destroy the NNRT device descriptions returned by OH_AI_GetAllNNRTDeviceDescs().
 +///
 +/// \param[in] desc NNRT device description array.
-+OH_AI_API void OH_AI_NNRTDestroyAllDeviceDescs(NNRTDeviceDesc **desc);
++OH_AI_API void OH_AI_DestroyAllNNRTDeviceDescs(NNRTDeviceDesc **desc);
 +
 +/// \brief Obtain the device id in NNRT device description.
 +///
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device id.
-+OH_AI_API size_t OH_AI_NNRTDeviceDescGetId(NNRTDeviceDesc *desc);
++OH_AI_API size_t OH_AI_GetDeviceIdFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
 +
 +/// \brief Obtain the device name in NNRT device description.
 +///
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device name.
-+OH_AI_API const char *OH_AI_NNRTDeviceDescGetName(NNRTDeviceDesc *desc);
++OH_AI_API const char *OH_AI_GetNameFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
 +
 +/// \brief Obtain the device type in NNRT device description.
 +///
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device type.
-+OH_AI_API OH_AI_NNRTDeviceType OH_AI_NNRTDeviceDescGetType(NNRTDeviceDesc *desc);
++OH_AI_API OH_AI_NNRTDeviceType OH_AI_GetTypeFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
 +
 +/// \brief Create the NNRT device info by exactly matching the specific device name.
 +///
@@ -226,7 +226,7 @@ index fdf91f5a..d612eb97 100644
  }
  #endif
 diff --git a/include/sdk_api/context.h b/include/sdk_api/context.h
-index 5bfc9279..88508864 100644
+index 5bfc9279..f54a61f0 100644
 --- a/include/sdk_api/context.h
 +++ b/include/sdk_api/context.h
 @@ -174,6 +174,91 @@ OH_AI_API void OH_AI_DeviceInfoSetFrequency(OH_AI_DeviceInfoHandle device_info,
@@ -238,33 +238,33 @@ index 5bfc9279..88508864 100644
 +/// \param[out] num Number of NNRT device description.
 +///
 +/// \return NNRT device description array.
-+OH_AI_API NNRTDeviceDesc *OH_AI_NNRTGetAllDeviceDescs(size_t *num);
++OH_AI_API NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num);
 +
 +/// \brief Destroy the NNRT device descriptions returned by OH_AI_NNRTGetAllDeviceDescs().
 +///
 +/// \param[in] desc NNRT device description array.
-+OH_AI_API void OH_AI_NNRTDestroyAllDeviceDescs(NNRTDeviceDesc **desc);
++OH_AI_API void OH_AI_DestroyAllNNRTDeviceDescs(NNRTDeviceDesc **desc);
 +
 +/// \brief Obtain the device id in NNRT device description.
 +///
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device id.
-+OH_AI_API size_t OH_AI_NNRTDeviceDescGetId(NNRTDeviceDesc *desc);
++OH_AI_API size_t OH_AI_GetDeviceIdFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
 +
 +/// \brief Obtain the device name in NNRT device description.
 +///
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device name.
-+OH_AI_API const char *OH_AI_NNRTDeviceDescGetName(NNRTDeviceDesc *desc);
++OH_AI_API const char *OH_AI_GetNameFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
 +
 +/// \brief Obtain the device type in NNRT device description.
 +///
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device type.
-+OH_AI_API OH_AI_NNRTDeviceType OH_AI_NNRTDeviceDescGetType(NNRTDeviceDesc *desc);
++OH_AI_API OH_AI_NNRTDeviceType OH_AI_GetTypeFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
 +
 +/// \brief Create the NNRT device info by exactly matching the specific device name.
 +///
@@ -412,7 +412,7 @@ index 44cba37b..a54904c8 100644
    LiteGraph graph_;
    char *buf = nullptr;
 diff --git a/mindspore/lite/src/runtime/c_api/context_c.cc b/mindspore/lite/src/runtime/c_api/context_c.cc
-index d030e931..dfaa07fd 100644
+index d030e931..cf2f8f45 100644
 --- a/mindspore/lite/src/runtime/c_api/context_c.cc
 +++ b/mindspore/lite/src/runtime/c_api/context_c.cc
 @@ -14,8 +14,11 @@
@@ -427,12 +427,12 @@ index d030e931..dfaa07fd 100644
  
  // ================ Context ================
  OH_AI_ContextHandle OH_AI_ContextCreate() {
-@@ -238,3 +241,191 @@ int OH_AI_DeviceInfoGetFrequency(const OH_AI_DeviceInfoHandle device_info) {  //
+@@ -238,3 +241,190 @@ int OH_AI_DeviceInfoGetFrequency(const OH_AI_DeviceInfoHandle device_info) {  //
      return -1;
    }
  }
 +
-+NNRTDeviceDesc *OH_AI_NNRTGetAllDeviceDescs(size_t *num) {
++NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num) {
 +  if (num == nullptr) {
 +    MS_LOG(ERROR) << "Input num is null";
 +    return nullptr;
@@ -468,7 +468,7 @@ index d030e931..dfaa07fd 100644
 +  return desc;
 +}
 +
-+void OH_AI_NNRTDestroyAllDeviceDescs(NNRTDeviceDesc **desc) {
++void OH_AI_DestroyAllNNRTDeviceDescs(NNRTDeviceDesc **desc) {
 +  if (desc == nullptr) {
 +    MS_LOG(WARNING) << "desc is null";
 +    return;
@@ -477,7 +477,7 @@ index d030e931..dfaa07fd 100644
 +  *desc = nullptr;
 +}
 +
-+size_t OH_AI_NNRTDeviceDescGetId(NNRTDeviceDesc *desc) {
++size_t OH_AI_GetDeviceIdFromNNRTDeviceDesc(NNRTDeviceDesc *desc) {
 +  if (desc == nullptr) {
 +    MS_LOG(ERROR) << "NNRT desc is null";
 +    return 0;
@@ -485,7 +485,7 @@ index d030e931..dfaa07fd 100644
 +  return desc->device_id;
 +}
 +
-+const char *OH_AI_NNRTDeviceDescGetName(NNRTDeviceDesc *desc) {
++const char *OH_AI_GetNameFromNNRTDeviceDesc(NNRTDeviceDesc *desc) {
 +  if (desc == nullptr) {
 +    MS_LOG(ERROR) << "NNRT desc is null";
 +    return nullptr;
@@ -493,7 +493,7 @@ index d030e931..dfaa07fd 100644
 +  return desc->device_name;
 +}
 +
-+OH_AI_NNRTDeviceType OH_AI_NNRTDeviceDescGetType(NNRTDeviceDesc *desc) {
++OH_AI_NNRTDeviceType OH_AI_GetTypeFromNNRTDeviceDesc(NNRTDeviceDesc *desc) {
 +  if (desc == nullptr) {
 +    MS_LOG(ERROR) << "NNRT desc is null";
 +    return OH_AI_NNRTDeviceType::OH_AI_NNRTDEVICE_OTHERS;
@@ -503,28 +503,27 @@ index d030e931..dfaa07fd 100644
 +
 +OH_AI_DeviceInfoHandle OH_AI_CreateNNRTDeviceInfoByName(const char *name) {
 +  size_t num = 0;
-+  NNRTDeviceDesc *desc = OH_AI_NNRTGetAllDeviceDescs(&num);
++  NNRTDeviceDesc *desc = OH_AI_GetAllNNRTDeviceDescs(&num);
 +  if (desc == nullptr) {
 +    MS_LOG(ERROR) << "Get all device desc failed";
 +    return nullptr;
 +  }
 +
 +  OH_AI_DeviceInfoHandle handle = nullptr;
-+
 +  for (size_t i = 0; i < num; i++) {
-+    if (strncmp(desc[i].device_name, name, 127) == 0) {
++    if (strncmp(desc[i].device_name, name, NNRT_DEVICE_NAME_MAX - 1) == 0) {
 +      handle = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_NNRT);
 +      OH_AI_DeviceInfoSetDeviceId(handle, desc[i].device_id);
 +      break;
 +    }
 +  }
-+  OH_AI_NNRTDestroyAllDeviceDescs(&desc);
++  OH_AI_DestroyAllNNRTDeviceDescs(&desc);
 +  return handle;
 +}
 +
 +OH_AI_DeviceInfoHandle OH_AI_CreateNNRTDeviceInfoByType(OH_AI_NNRTDeviceType type) {
 +  size_t num = 0;
-+  NNRTDeviceDesc *desc = OH_AI_NNRTGetAllDeviceDescs(&num);
++  NNRTDeviceDesc *desc = OH_AI_GetAllNNRTDeviceDescs(&num);
 +  if (desc == nullptr) {
 +    MS_LOG(ERROR) << "Get all device desc failed";
 +    return nullptr;
@@ -538,7 +537,7 @@ index d030e931..dfaa07fd 100644
 +      break;
 +    }
 +  }
-+  OH_AI_NNRTDestroyAllDeviceDescs(&desc);
++  OH_AI_DestroyAllNNRTDeviceDescs(&desc);
 +  return handle;
 +}
 +
