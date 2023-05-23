@@ -1,6 +1,6 @@
-From ac189630423e63d98d1afc08a8285839e365f559 Mon Sep 17 00:00:00 2001
+From c5ff1e907466f0c9c3c08416804a5834a3e6c273 Mon Sep 17 00:00:00 2001
 From: Zhu Guodong <zhuguodong0001@163.com>
-Date: Thu, 18 May 2023 16:43:51 +0800
+Date: Mon, 22 May 2023 20:38:16 +0800
 Subject: [PATCH] auto-apply
  0010-nnrt-delegate-supports-heterogeneous-predition.patch
 
@@ -83,7 +83,7 @@ index d88b9d44..4c25aa10 100644
  }  // namespace mindspore
  #endif  // MINDSPORE_INCLUDE_API_CONTEXT_H
 diff --git a/include/c_api/context_c.h b/include/c_api/context_c.h
-index 53839e80..f4b6676e 100644
+index 53839e80..09220f20 100644
 --- a/include/c_api/context_c.h
 +++ b/include/c_api/context_c.h
 @@ -173,6 +173,91 @@ OH_AI_API void OH_AI_DeviceInfoSetFrequency(OH_AI_DeviceInfoHandle device_info,
@@ -107,21 +107,21 @@ index 53839e80..f4b6676e 100644
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device id.
-+OH_AI_API size_t OH_AI_GetDeviceIdFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
++OH_AI_API size_t OH_AI_GetDeviceIdFromNNRTDeviceDesc(const NNRTDeviceDesc *desc);
 +
 +/// \brief Obtain the device name in NNRT device description.
 +///
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device name.
-+OH_AI_API const char *OH_AI_GetNameFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
++OH_AI_API const char *OH_AI_GetNameFromNNRTDeviceDesc(const NNRTDeviceDesc *desc);
 +
 +/// \brief Obtain the device type in NNRT device description.
 +///
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device type.
-+OH_AI_API OH_AI_NNRTDeviceType OH_AI_GetTypeFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
++OH_AI_API OH_AI_NNRTDeviceType OH_AI_GetTypeFromNNRTDeviceDesc(const NNRTDeviceDesc *desc);
 +
 +/// \brief Create the NNRT device info by exactly matching the specific device name.
 +///
@@ -226,7 +226,7 @@ index fdf91f5a..d612eb97 100644
  }
  #endif
 diff --git a/include/sdk_api/context.h b/include/sdk_api/context.h
-index 5bfc9279..f54a61f0 100644
+index 5bfc9279..bf0ff0a6 100644
 --- a/include/sdk_api/context.h
 +++ b/include/sdk_api/context.h
 @@ -174,6 +174,91 @@ OH_AI_API void OH_AI_DeviceInfoSetFrequency(OH_AI_DeviceInfoHandle device_info,
@@ -250,21 +250,21 @@ index 5bfc9279..f54a61f0 100644
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device id.
-+OH_AI_API size_t OH_AI_GetDeviceIdFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
++OH_AI_API size_t OH_AI_GetDeviceIdFromNNRTDeviceDesc(const NNRTDeviceDesc *desc);
 +
 +/// \brief Obtain the device name in NNRT device description.
 +///
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device name.
-+OH_AI_API const char *OH_AI_GetNameFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
++OH_AI_API const char *OH_AI_GetNameFromNNRTDeviceDesc(const NNRTDeviceDesc *desc);
 +
 +/// \brief Obtain the device type in NNRT device description.
 +///
 +/// \param[in] desc pointer to the NNRT device description instance.
 +///
 +/// \return NNRT device type.
-+OH_AI_API OH_AI_NNRTDeviceType OH_AI_GetTypeFromNNRTDeviceDesc(NNRTDeviceDesc *desc);
++OH_AI_API OH_AI_NNRTDeviceType OH_AI_GetTypeFromNNRTDeviceDesc(const NNRTDeviceDesc *desc);
 +
 +/// \brief Create the NNRT device info by exactly matching the specific device name.
 +///
@@ -412,7 +412,7 @@ index 44cba37b..a54904c8 100644
    LiteGraph graph_;
    char *buf = nullptr;
 diff --git a/mindspore/lite/src/runtime/c_api/context_c.cc b/mindspore/lite/src/runtime/c_api/context_c.cc
-index d030e931..cf2f8f45 100644
+index d030e931..3d5c6922 100644
 --- a/mindspore/lite/src/runtime/c_api/context_c.cc
 +++ b/mindspore/lite/src/runtime/c_api/context_c.cc
 @@ -14,8 +14,11 @@
@@ -477,7 +477,7 @@ index d030e931..cf2f8f45 100644
 +  *desc = nullptr;
 +}
 +
-+size_t OH_AI_GetDeviceIdFromNNRTDeviceDesc(NNRTDeviceDesc *desc) {
++size_t OH_AI_GetDeviceIdFromNNRTDeviceDesc(const NNRTDeviceDesc *desc) {
 +  if (desc == nullptr) {
 +    MS_LOG(ERROR) << "NNRT desc is null";
 +    return 0;
@@ -485,7 +485,7 @@ index d030e931..cf2f8f45 100644
 +  return desc->device_id;
 +}
 +
-+const char *OH_AI_GetNameFromNNRTDeviceDesc(NNRTDeviceDesc *desc) {
++const char *OH_AI_GetNameFromNNRTDeviceDesc(const NNRTDeviceDesc *desc) {
 +  if (desc == nullptr) {
 +    MS_LOG(ERROR) << "NNRT desc is null";
 +    return nullptr;
@@ -493,7 +493,7 @@ index d030e931..cf2f8f45 100644
 +  return desc->device_name;
 +}
 +
-+OH_AI_NNRTDeviceType OH_AI_GetTypeFromNNRTDeviceDesc(NNRTDeviceDesc *desc) {
++OH_AI_NNRTDeviceType OH_AI_GetTypeFromNNRTDeviceDesc(const NNRTDeviceDesc *desc) {
 +  if (desc == nullptr) {
 +    MS_LOG(ERROR) << "NNRT desc is null";
 +    return OH_AI_NNRTDeviceType::OH_AI_NNRTDEVICE_OTHERS;
