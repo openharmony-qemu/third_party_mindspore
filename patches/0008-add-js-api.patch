@@ -17,7 +17,7 @@ Subject: [PATCH] auto-apply 0008-add-js-api.patch
  mindspore/lite/BUILD.gn                       |    1 +
  mindspore/lite/src/runtime/js_api/BUILD.gn    |   55 +
  .../lite/src/runtime/js_api/common_napi.cc    |  246 ++++
- .../src/runtime/js_api/mslite_model_napi.cc   | 1045 +++++++++++++++++
+ .../src/runtime/js_api/mslite_model_napi.cc   | 1053 +++++++++++++++++
  .../lite/src/runtime/js_api/mstensor_napi.cc  |  426 +++++++
  .../runtime/js_api/native_module_ohos_ms.cc   |   48 +
  16 files changed, 2476 insertions(+)
@@ -1089,7 +1089,7 @@ new file mode 100644
 index 00000000..0ea92e13
 --- /dev/null
 +++ b/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc
-@@ -0,0 +1,1045 @@
+@@ -0,0 +1,1053 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -1115,6 +1115,8 @@ index 00000000..0ea92e13
 +#include <vector>
 +#include <unistd.h>
 +#include <fcntl.h>
++#include <sys/stat.h>
++#include <sys/mman.h>
 +#include "include/js_api/mstensor_napi.h"
 +#include "include/js_api/common_napi.h"
 +#include "include/js_api/ms_parameters_napi.h"
@@ -1143,8 +1145,6 @@ index 00000000..0ea92e13
 +const int PARAM1 = 1;
 +
 +const int SIZE = 100;
-+const int BUF_SIZE = 100000;
-+const int ERROR_VALUE = -1;
 +const std::string CLASS_NAME = "MSLiteModel";
 +
 +const std::unordered_map<std::string, DeviceType> kDeviceTypes{
@@ -1295,6 +1295,8 @@ index 00000000..0ea92e13
 +        MS_LOG(INFO) << "Build model from buffer success.";
 +        return model_ptr;
 +      }
++      (void)munmap(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
++      close(model_info_ptr->model_fd);
 +      break;
 +    }
 +    default: {
@@ -1402,22 +1404,22 @@ index 00000000..0ea92e13
 +    model_info.model_buffer_total = array_buffer_total;
 +    model_info.mode = kBuffer;
 +  } else if (valueType == napi_number) {
-+    char char_buf[BUF_SIZE];
 +    int32_t fd;
 +    status = napi_get_value_int32(env, root, &fd);
 +    if ((status != napi_ok) || (fd <= 0)) {
 +      MS_LOG(ERROR) << "Parse model FD failed.";
 +      return ERR_INVALID_PARAM;
 +    }
-+    int ret = read(fd, char_buf, sizeof(char_buf));
-+    if (ret == ERROR_VALUE) {
-+      MS_LOG(ERROR) << " read file failed.";
-+      close(fd);
++    int size = lseek(fd, 0, SEEK_END);
++    (void)lseek(fd, 0, SEEK_SET);
++    auto mmap_buffers = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
++    if (mmap_buffers == NULL) {
++      MS_LOG(ERROR) << "mmap_buffers is NULL.";
 +      return ERR_INVALID_PARAM;
 +    }
 +    model_info.model_fd = fd;
-+    model_info.model_buffer_data = char_buf;
-+    model_info.model_buffer_total = ret;
++    model_info.model_buffer_data = static_cast<char *>(mmap_buffers);
++    model_info.model_buffer_total = size;
 +    model_info.mode = kFD;
 +    close(fd);
 +  } else {
@@ -1800,13 +1802,19 @@ index 00000000..0ea92e13
 +  napi_value undefinedResult = nullptr;
 +  bool result = false;
 +  napi_get_undefined(env, &undefinedResult);
-+  GET_PARAMS(env, info, ARGS_TWO);
-+
++  napi_value argv[ARGS_TWO] = {0};
++  size_t argCount = 2;
 +  napi_value jsThis = nullptr;
 +  napi_value jsResult = nullptr;
 +  MSLiteModelNapi *modelNapi = nullptr;
 +
-+  napi_status status = napi_unwrap(env, jsThis, reinterpret_cast<void **>(&modelNapi));
++  napi_status status = napi_get_cb_info(env, info, &argCount, argv, &jsThis, nullptr);
++  if (status != napi_ok || jsThis == nullptr) {
++    MS_LOG(ERROR) << "Failed to retrieve details about the callback";
++    return undefinedResult;
++  }
++
++  status = napi_unwrap(env, jsThis, reinterpret_cast<void **>(&modelNapi));
 +  if (status != napi_ok || modelNapi == nullptr) {
 +    MS_LOG(ERROR) << "get model napi error";
 +    return undefinedResult;
@@ -1934,7 +1942,7 @@ index 00000000..0ea92e13
 +        MS_LOG(ERROR) << "get dim element error";
 +        return undefinedResult;
 +      }
-+      dim.push_back(dim_ele);
++      dim[j] = dim_ele;
 +    }
 +    dims.push_back(dim);
 +  }
