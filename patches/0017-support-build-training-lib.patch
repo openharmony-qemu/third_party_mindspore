@@ -1,0 +1,595 @@
+From d78e79cffba557e7050bfea1a602821099d77cdd Mon Sep 17 00:00:00 2001
+From: Zhu Guodong <zhuguodong0001@163.com>
+Date: Fri, 26 May 2023 10:03:43 +0800
+Subject: [PATCH] auto-apply 0017-support-build-training-lib.patch
+
+---
+ .../plugin/device/cpu/kernel/nnacl/BUILD.gn   |  19 +-
+ mindspore/lite/BUILD.gn                       | 230 +++++++++++++++++-
+ .../lite/src/runtime/kernel/cpu/BUILD.gn      | 226 -----------------
+ 3 files changed, 243 insertions(+), 232 deletions(-)
+ delete mode 100644 mindspore/lite/src/runtime/kernel/cpu/BUILD.gn
+
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
+index 1156f33d..9acc5b76 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
+@@ -197,6 +197,7 @@ fp32_kernel_sources = [
+   "fp32/winograd_avx.c",
+   "fp32/winograd_transform.c",
+   "fp32/winograd_utils.c",
++  "fp32/custom_gru_fp32.c",
+ ]
+ 
+ no_fast_math_fp32_kernel_sources = [
+@@ -282,6 +283,7 @@ fp16_kernel_sources = [
+   "fp16/where_fp16.c",
+   "fp16/winograd_transform_fp16.c",
+   "fp16/winograd_utils_fp16.c",
++  "fp16/custom_gru_fp16.c",
+ ]
+ 
+ fp16_grad_sources = [
+@@ -480,6 +482,7 @@ infer_shape_sources = [
+   "infer/unsqueeze_infer.c",
+   "infer/unstack_infer.c",
+   "infer/where_infer.c",
++  "infer/custom_gru_infer.c",
+ ]
+ 
+ infer_string_sources = [
+@@ -582,7 +585,17 @@ arm32_assembly_sources = [
+   "assembly/arm32/WinogradTransRight.S",
+ ]
+ 
+-fp16_assembly_sources = [
++arm32_fp16_assembly_sources = [
++  "assembly/arm82_aarch32_fp16/Float16Tofloat32.S",
++  "assembly/arm82_aarch32_fp16/Float32ToFloat16.S",
++  "assembly/arm82_aarch32_fp16/Matmul12x8Fp16.S",
++  "assembly/arm82_aarch32_fp16/MatVecMulFp16.S",
++  "assembly/arm82_aarch32_fp16/TiledC4MatmulFp16.S",
++  "assembly/arm82_aarch32_fp16/WinogradTransLeft.S",
++  "assembly/arm82_aarch32_fp16/WinogradTransRight.S",
++]
++
++arm64_fp16_assembly_sources = [
+   "assembly/fp16/ConvDwFp16Border.S",
+   "assembly/fp16/ConvDwFp16Center.S",
+   "assembly/fp16/ConvDwFp16Row.S",
+@@ -702,11 +715,13 @@ nnacl_sources += infer_control_sources
+ 
+ # source files on arm32
+ arm_only_sources = arm32_assembly_sources
++#arm_only_sources += arm32_fp16_assembly_sources
++not_needed(arm32_fp16_assembly_sources)
+ 
+ # source files on arm64
+ arm64_only_sources = fp16_kernel_sources
+ arm64_only_sources += fp16_grad_sources
+-arm64_only_sources += fp16_assembly_sources
++arm64_only_sources += arm64_fp16_assembly_sources
+ arm64_only_sources += arm64_assembly_sources
+ arm64_only_sources += optimizing_assembly_sources
+ 
+diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
+index 4d4af7f6..edb2115e 100644
+--- a/mindspore/lite/BUILD.gn
++++ b/mindspore/lite/BUILD.gn
+@@ -68,11 +68,13 @@ import("//build/ohos.gni")
+ ohos_group("mindspore") {
+   deps = [
+     ":mindspore_lib",
++    ":mindspore_train_lib",
+     "mindir:mindir_lib",
+     "src/runtime/js_api:mslite"
+   ]
+ }
+ 
++# Inference library
+ cxx_api_sources = [
+   "src/runtime/cxx_api/cell.cc",
+   "src/runtime/cxx_api/context.cc",
+@@ -318,6 +320,8 @@ cpu_kernel_sources = [
+   "src/runtime/kernel/cpu/fp32/unstack_fp32.cc",
+   "src/runtime/kernel/cpu/fp32/where_fp32.cc",
+   "src/runtime/kernel/cpu/fp32/zeroslike_fp32.cc",
++  "src/runtime/kernel/cpu/fp32/oneslike_fp32.cc",
++  "src/runtime/kernel/cpu/fp32/custom_gru_fp32.cc",
+ ]
+ 
+ int8_kernel_sources = [
+@@ -430,8 +434,6 @@ basic_populate_sources = [
+   "src/common/ops/populate/batch_norm_populate.cc",
+   "src/common/ops/populate/batch_to_space_populate.cc",
+   "src/common/ops/populate/bias_add_populate.cc",
+-  "src/common/ops/populate/binary_cross_entropy_grad_populate.cc",
+-  "src/common/ops/populate/binary_cross_entropy_populate.cc",
+   "src/common/ops/populate/broadcast_to_populate.cc",
+   "src/common/ops/populate/call_populate.cc",
+   "src/common/ops/populate/cast_populate.cc",
+@@ -639,7 +641,6 @@ ohos_shared_library("mindspore_lib") {
+   SUPPORT_NNRT = true
+   if (SUPPORT_NNRT) {
+     sources += [
+-      # "mindir/src/mindir_nnrt_lite_graph.cc",
+       "src/runtime/delegate/nnrt/checker/primitive_check.cc",
+       "src/runtime/delegate/nnrt/nnrt_delegate.cc",
+       "src/runtime/delegate/nnrt/nnrt_model_kernel.cc",
+@@ -654,8 +655,9 @@ ohos_shared_library("mindspore_lib") {
+     external_deps += [ "neural_network_runtime:nnrt_target" ]
+     deps += [ "mindir:mindir_lib" ]
+     defines += [ "SUPPORT_NNRT" ]
+-    defines += [ "MSLITE_ENABLE_EXPERIMENTAL_KERNEL" ]
+   }
++  defines += [ "MSLITE_ENABLE_EXPERIMENTAL_KERNEL" ]
++  defines += [ "SUPPORT_TRAIN" ]
+   cflags_cc = [
+     "-Wno-ignored-qualifiers",
+     "-Wunused-private-field",
+@@ -667,6 +669,222 @@ ohos_shared_library("mindspore_lib") {
+   part_name = "mindspore"
+ }
+ 
++# Train library
++expression_cxx_api_sources = [
++  "src/runtime/cxx_api/expression/net.cc",
++  "src/runtime/cxx_api/expression/net_impl.cc",
++  "src/runtime/cxx_api/expression/node_impl.cc",
++]
++
++expression_op_sources = [
++  "src/expression/ops/activation.cc",
++  "src/expression/ops/adam.cc",
++  "src/expression/ops/addn.cc",
++  "src/expression/ops/arithmetic.cc",
++  "src/expression/ops/arithmetic_self.cc",
++  "src/expression/ops/assign.cc",
++  "src/expression/ops/batchnorm.cc",
++  "src/expression/ops/biasadd.cc",
++  "src/expression/ops/conv.cc",
++  "src/expression/ops/dense.cc",
++  "src/expression/ops/depend.cc",
++  "src/expression/ops/dropout.cc",
++  "src/expression/ops/flatten.cc",
++  "src/expression/ops/pooling.cc",
++  "src/expression/ops/reduce.cc",
++  "src/expression/ops/reshape.cc",
++  "src/expression/ops/softmax.cc",
++  "src/expression/ops/softmaxCE.cc",
++  "src/expression/ops/tile.cc",
++  "src/expression/ops/transpose.cc",
++]
++
++all_expression_sources = [
++  "src/expression/export.cc",
++  "src/expression/expr.cc",
++  "src/expression/import.cc",
++  "src/expression/net.cc",
++  "src/expression/node.cc",
++  "src/expression/ops.cc",
++  "src/expression/ops_utils.cc",
++  "src/expression/param.cc",
++  "src/expression/sequential.cc",
++]
++
++all_expression_sources += expression_cxx_api_sources
++all_expression_sources += expression_op_sources
++
++all_train_sources = [
++  # ${API_TRAIN_SRC} is empty.
++  # ${TRAIN_SRC_WITH_MD} is empty.
++  "src/common/quant_utils.cc",
++  "src/runtime/cxx_api/metrics/accuracy.cc",
++  "src/runtime/cxx_api/train/model_build.cc",
++  "src/runtime/cxx_api/train/model_build_impl.cc",
++  "src/runtime/cxx_api/train/converters.cc",
++  "src/runtime/cxx_api/train/train_support.cc",
++  "src/train/train_populate_parameter.cc",
++  "src/train/train_session.cc",
++  "src/train/graph_fusion.cc",
++  "src/train/graph_dropout.cc",
++  "src/train/transfer_session.cc",
++  "src/train/train_utils.cc",
++  "src/train/loss_monitor.cc",
++  "src/train/lr_scheduler.cc",
++  "src/train/accuracy_metrics.cc",
++#  "src/train/accuracy_monitor.cc", # depends on minddata header, not compiled
++  "src/train/classification_train_accuracy_monitor.cc",
++  "src/train/train_export.cc",
++  "src/train/opt_allocator.cc",
++  "src/train/optimizer/common/fusion_utils.cc",
++  "src/train/optimizer/fusion/matmul_activation_fusion_pass.cc",
++  "src/train/optimizer/fusion/reshape_gather_reshape_fusion_pass.cc",
++  "src/train/optimizer/fusion/gru_fusion_pass.cc",
++  "src/common/storage.cc",
++  "tools/converter/optimizer.cc",
++  "tools/converter/legacy_optimizer/fusion/fusion_pass.cc",
++  "tools/converter/legacy_optimizer/fusion/fusion_pattern.cc",
++  "tools/common/meta_graph_utils.cc",
++  "tools/converter/legacy_optimizer/fusion/matmul_biasadd_fusion_pass.cc",
++  "tools/converter/legacy_optimizer/graph/dropout_node_remove_pass.cc",
++  "tools/converter/legacy_optimizer/graph/isolated_node_remove_pass.cc",
++  "tools/converter/legacy_optimizer/graph/subgraph_node_pass.cc",
++]
++
++all_train_sources += all_expression_sources
++
++fp16_train_kernel_sources = [
++  "src/runtime/kernel/cpu/fp16_grad/activation_fp16_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/arithmetic_fp16_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/arithmetic_fp16_self_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/bias_fp16_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/bn_fp16_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/convolution_fp16_grad_filter.cc",
++  "src/runtime/kernel/cpu/fp16_grad/convolution_fp16_grad_input.cc",
++  "src/runtime/kernel/cpu/fp16_grad/dropout_fp16_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/layernorm_fp16_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/neg_fp16_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/pooling_fp16_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/resize_fp16_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/strided_slice_fp16_grad.cc",
++  "src/runtime/kernel/cpu/fp16_grad/unsorted_segment_sum_fp16.cc",
++]
++
++fp32_train_kernel_sources = [
++  "src/runtime/kernel/cpu/fp32_grad/activation_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/adam.cc",
++  "src/runtime/kernel/cpu/fp32_grad/apply_momentum.cc",
++  "src/runtime/kernel/cpu/fp32_grad/arithmetic_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/arithmetic_self_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/assign.cc",
++  "src/runtime/kernel/cpu/fp32_grad/bias_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/bn_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/convolution.cc",
++  "src/runtime/kernel/cpu/fp32_grad/convolution_grad_filter.cc",
++  "src/runtime/kernel/cpu/fp32_grad/convolution_grad_input.cc",
++  "src/runtime/kernel/cpu/fp32_grad/deconvolution_grad_filter.cc",
++  "src/runtime/kernel/cpu/fp32_grad/dropout.cc",
++  "src/runtime/kernel/cpu/fp32_grad/dropout_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/layernorm_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/lstm_grad_data_fp32.cc",
++  "src/runtime/kernel/cpu/fp32_grad/lstm_grad_fp32.cc",
++  "src/runtime/kernel/cpu/fp32_grad/lstm_grad_weight_fp32.cc",
++  "src/runtime/kernel/cpu/fp32_grad/neg_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/nllloss_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/pooling_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/power_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/resize_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/sgd.cc",
++  "src/runtime/kernel/cpu/fp32_grad/sigmoid_cross_entropy_with_logits.cc",
++  "src/runtime/kernel/cpu/fp32_grad/sigmoid_cross_entropy_with_logits_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/smooth_l1_loss.cc",
++  "src/runtime/kernel/cpu/fp32_grad/smooth_l1_loss_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/softmax_cross_entropy_with_logits.cc",
++  "src/runtime/kernel/cpu/fp32_grad/softmax_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/sparse_softmax_cross_entropy_with_logits.cc",
++  "src/runtime/kernel/cpu/fp32_grad/strided_slice_grad.cc",
++  "src/runtime/kernel/cpu/fp32_grad/unsorted_segment_sum.cc",
++  "src/runtime/kernel/cpu/fp32_grad/binary_cross_entropy.cc",
++  "src/runtime/kernel/cpu/fp32_grad/binary_cross_entropy_grad.cc",
++]
++
++#all_train_sources += fp16_train_kernel_sources
++not_needed(fp16_train_kernel_sources)
++all_train_sources += fp32_train_kernel_sources
++
++ohos_shared_library("mindspore_train_lib") {
++  deps = [
++    ":mindspore_lib",
++  ]
++
++  sources = all_train_sources
++
++  include_dirs = [
++    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
++    "//third_party/flatbuffers/include",
++    "./",
++    "../",
++    "../../",
++    "../core",
++    "src",
++    "src/c_api/",
++    "../ccsrc/plugin/device/cpu/kernel/",
++    "../core/mindrt/src/",
++    "../core/mindrt/include/",
++    "../../third_party/",
++    "./schema/",
++    "../ccsrc/",
++  ]
++
++  defines = [
++    "ENABLE_MINDRT",
++    "MS_COMPILE_OHOS",
++    "PRIMITIVE_WRITEABLE",
++    "VERSION_STR=\"1.8.1\"",
++  ]
++
++  if (target_cpu == "arm") {
++    defines += [
++      "ENABLE_ARM",
++      "ENABLE_ARM32",
++      "ENABLE_NEON",
++    ]
++  } else if (target_cpu == "arm64") {
++    defines += [
++      "ENABLE_ARM",
++      "ENABLE_ARM64",
++      "ENABLE_NEON",
++      "ENABLE_FP16",
++      "USE_OPENCL_WRAPPER",
++      "MS_OPENCL_PROFILE=false",
++      "CL_TARGET_OPENCL_VERSION=200",
++      "CL_HPP_TARGET_OPENCL_VERSION=120",
++      "CL_HPP_MINIMUM_OPENCL_VERSION=120",
++    ]
++  }
++  configs = [
++    ":mindspore_api",
++    ":disable_android",
++    ":train_kernel_option",
++  ]
++
++  remove_configs = [ "//build/config/compiler:no_rtti" ]
++  external_deps = [ "hilog_native:libhilog" ]
++  output_name = "libmindspore-lite-train"
++  output_extension = "so"
++  defines += [ "SUPPORT_TRAIN" ]
++  cflags_cc = [
++    "-Wno-ignored-qualifiers",
++    "-Wunused-private-field",
++    "-Wno-unused-private-field",
++    "-Wno-inconsistent-missing-override",
++    "-Wno-macro-redefined",
++    "-Wno-constant-conversion",
++  ]
++  part_name = "mindspore"
++}
++
++# Build configurations
+ config("opencl_option") {
+   cflags_cc = [ "-Wno-missing-braces" ]
+ }
+@@ -691,3 +909,7 @@ config("disable_android") {
+ config("secure_option") {
+   cflags = [ "-fstack-protector-all" ]
+ }
++
++config("train_kernel_option") {
++  cflags_cc = [ "-fno-finite-math-only" ]
++}
+diff --git a/mindspore/lite/src/runtime/kernel/cpu/BUILD.gn b/mindspore/lite/src/runtime/kernel/cpu/BUILD.gn
+deleted file mode 100644
+index fa20755f..00000000
+--- a/mindspore/lite/src/runtime/kernel/cpu/BUILD.gn
++++ /dev/null
+@@ -1,226 +0,0 @@
+-import("//build/ohos.gni")
+-
+-cpu_kernel_sources = [
+-    "cpu_kernel.cc",
+-    "base/argminmax_base.cc",
+-    "base/arithmetic_base.cc",
+-    "base/assert.cc",
+-    "base/call.cc",
+-    "base/concat_base.cc",
+-    "base/constant_of_shape.cc",
+-    "base/convolution_base.cc",
+-    "base/crop_base.cc",
+-    "base/custom_base.cc",
+-    "base/detection_post_process_base.cc",
+-    "base/format_transpose.cc",
+-    "base/gather_base.cc",
+-    "base/group_convolution_base.cc",
+-    "base/group_convolution_creator.cc",
+-    "base/layout_transform.cc",
+-    "base/one_hot_base.cc",
+-    "base/partial_fusion.cc",
+-    "base/pooling_base.cc",
+-    "base/prior_box.cc",
+-    "base/quant_dtype_cast.cc",
+-    "base/random_normal.cc",
+-    "base/reduce_base.cc",
+-    "base/reshape_base.cc",
+-    "base/resize_base.cc",
+-    "base/scatter_nd_base.cc",
+-    "base/select.cc",
+-    "base/slice_base.cc",
+-    "base/softmax_base.cc",
+-    "base/split_base.cc",
+-    "base/split_with_over_lap_base.cc",
+-    "base/stack_base.cc",
+-    "base/strided_slice.cc",
+-    "base/tile_base.cc",
+-    "base/transpose_base.cc",
+-    "fp32/activation_fp32.cc",
+-    "fp32/adder_fp32.cc",
+-    "fp32/addn_fp32.cc",
+-    "fp32/affine_fp32.cc",
+-    "fp32/all_gather_fp32.cc",
+-    "fp32/arithmetic_compare_fp32.cc",
+-    "fp32/arithmetic_fp32.cc",
+-    "fp32/arithmetic_self_fp32.cc",
+-    "fp32/batchnorm_fp32.cc",
+-    "fp32/batch_to_space_fp32.cc",
+-    "fp32/bias_fp32.cc",
+-    "fp32/broadcast_to_fp32.cc",
+-    "fp32/cast_for_x86_fp16.cc",
+-    "fp32/cast_fp32.cc",
+-    "fp32/convolution_1x1_fp32.cc",
+-    "fp32/convolution_delegate_fp32.cc",
+-    "fp32/convolution_depthwise_3x3_fp32.cc",
+-    "fp32/convolution_depthwise_fp32.cc",
+-    "fp32/convolution_depthwise_indirect_fp32.cc",
+-    "fp32/convolution_depthwise_slidewindow_fp32.cc",
+-    "fp32/convolution_depthwise_slidewindow_x86_fp32.cc",
+-    "fp32/convolution_fp32.cc",
+-    "fp32/convolution_slidewindow_avx_fp32.cc",
+-    "fp32/convolution_slidewindow_fp32.cc",
+-    "fp32/convolution_sw_1x1_fp32.cc",
+-    "fp32/convolution_winograd_fp32.cc",
+-    "fp32/crop_and_resize_fp32.cc",
+-    "fp32/crop_fp32.cc",
+-    "fp32/cumsum_fp32.cc",
+-    "fp32/deconvolution_depthwise_fp32.cc",
+-    "fp32/deconvolution_fp32.cc",
+-    "fp32/deconvolution_winograd_fp32.cc",
+-    "fp32/depth_to_space_fp32.cc",
+-    "fp32/detection_post_process_fp32.cc",
+-    "fp32/embedding_lookup_fp32.cc",
+-    "fp32/fill_fp32.cc",
+-    "fp32/fullconnection_fp32.cc",
+-    "fp32/fused_batchnorm_fp32.cc",
+-    "fp32/gather_d_fp32.cc",
+-    "fp32/gather_fp32.cc",
+-    "fp32/gatherNd_fp32.cc",
+-    "fp32/glu_fp32.cc",
+-    "fp32/group_convolution_fp32.cc",
+-    "fp32/groupnorm_fp32.cc",
+-    "fp32/gru_fp32.cc",
+-    "fp32/instance_norm_fp32.cc",
+-    "fp32/invert_permutation_fp32.cc",
+-    "fp32/l2_norm_fp32.cc",
+-    "fp32/layer_norm_fp32.cc",
+-    "fp32/local_response_norm_fp32.cc",
+-    "fp32/log_softmax_fp32.cc",
+-    "fp32/lstm_fp32.cc",
+-    "fp32/matmul_fp32_arm32.cc",
+-    "fp32/matmul_fp32_arm64.cc",
+-    "fp32/matmul_fp32_avx512.cc",
+-    "fp32/matmul_fp32_avx.cc",
+-    "fp32/matmul_fp32_base.cc",
+-    "fp32/matmul_fp32.cc",
+-    "fp32/matmul_fp32_sse.cc",
+-    "fp32/nllloss_fp32.cc",
+-    "fp32/non_max_suppression_fp32.cc",
+-    "fp32/nonzero_fp32.cc",
+-    "fp32/pad_fp32.cc",
+-    "fp32/pooling_fp32.cc",
+-    "fp32/power_fp32.cc",
+-    "fp32/prelu_fp32.cc",
+-    "fp32/ragged_range_fp32.cc",
+-    "fp32/range_fp32.cc",
+-    "fp32/rank_fp32.cc",
+-    "fp32/reduce_fp32.cc",
+-    "fp32/reduce_scatter_fp32.cc",
+-    "fp32/relative_position_attention_fp32.cc",
+-    "fp32/resize_fp32.cc",
+-    "fp32/reverse_fp32.cc",
+-    "fp32/reverse_sequence_fp32.cc",
+-    "fp32/roi_pooling_fp32.cc",
+-    "fp32/scale_fp32.cc",
+-    "fp32/scatter_nd_update_fp32.cc",
+-    "fp32/shape_fp32.cc",
+-    "fp32/shape_fusion_fp32.cc",
+-    "fp32/size_fp32.cc",
+-    "fp32/softmax_fp32.cc",
+-    "fp32/space_to_batch_fp32.cc",
+-    "fp32/space_to_depth_fp32.cc",
+-    "fp32/sparse_to_dense_fp32.cc",
+-    "fp32/splice_fp32.cc",
+-    "fp32/topk_fp32.cc",
+-    "fp32/transpose_fp32.cc",
+-    "fp32/transpose_server_fp32.cc",
+-    "fp32/uniform_real_fp32.cc",
+-    "fp32/unique_fp32.cc",
+-    "fp32/unstack_fp32.cc",
+-    "fp32/where_fp32.cc",
+-    "fp32/zeroslike_fp32.cc",
+-]
+-
+-int8_kernel_sources = [
+-    "int8/activation_int8.cc",
+-    "int8/add_int8.cc",
+-    "int8/argminmax_int8.cc",
+-    "int8/arithmetic_int8.cc",
+-    "int8/arithmetic_self_int8.cc",
+-    "int8/batchnorm_int8.cc",
+-    "int8/batch_to_space_int8.cc",
+-    "int8/concat_int8.cc",
+-    "int8/convolution_1x1_int8.cc",
+-    "int8/convolution_3x3_int8.cc",
+-    "int8/convolution_depthwise_3x3_int8.cc",
+-    "int8/convolution_depthwise_int8.cc",
+-    "int8/convolution_depthwise_slidewindow_int8.cc",
+-    "int8/convolution_int8.cc",
+-    "int8/convolution_int8_creator.cc",
+-    "int8/crop_int8.cc",
+-    "int8/deconvolution_depthwise_int8.cc",
+-    "int8/deconvolution_int8.cc",
+-    "int8/depth_to_space_int8.cc",
+-    "int8/detection_post_process_int8.cc",
+-    "int8/div_int8.cc",
+-    "int8/dynamic_gather_int8.cc",
+-    "int8/dynamic_quant.cc",
+-    "int8/fullconnection_int8.cc",
+-    "int8/gather_int8.cc",
+-    "int8/gatherNd_int8.cc",
+-    "int8/group_convolution_int8.cc",
+-    "int8/hswish_int8.cc",
+-    "int8/l2_norm_int8.cc",
+-    "int8/layer_norm_int8.cc",
+-    "int8/leaky_relu_int8.cc",
+-    "int8/matmul_base_int8.cc",
+-    "int8/matmul_dynamic_base_int8.cc",
+-    "int8/matmul_dynamic_int8.cc",
+-    "int8/matmul_dynamic_sdot_int8.cc",
+-    "int8/matmul_int8.cc",
+-    "int8/mul_int8.cc",
+-    "int8/opt_op_handler.cc",
+-    "int8/pad_int8.cc",
+-    "int8/pooling_int8.cc",
+-    "int8/power_int8.cc",
+-    "int8/reduce_int8.cc",
+-    "int8/relux_int8.cc",
+-    "int8/reshape_int8.cc",
+-    "int8/resize_int8.cc",
+-    "int8/scale_int8.cc",
+-    "int8/sigmoid_int8.cc",
+-    "int8/slice_int8.cc",
+-    "int8/softmax_int8.cc",
+-    "int8/space_to_batch_int8.cc",
+-    "int8/split_int8.cc",
+-    "int8/squeeze_int8.cc",
+-    "int8/sub_int8.cc",
+-    "int8/tanh_int8.cc",
+-    "int8/topk_int8.cc",
+-    "int8/transpose_int8.cc",
+-    "int8/unsqueeze_int8.cc",
+-]
+-
+-int8_kernel_sources -= [
+-    "int8/opt_op_handler.cc"
+-]
+-
+-string_kernel_sources = [
+-    "string/extract_feature.cc",
+-    "string/hashtable_lookup.cc",
+-    "string/lsh_projection.cc",
+-    "string/normalize.cc",
+-    "string/predict.cc",
+-    "string/skip_gram.cc",
+-]
+-
+-control_kernel_sources = [
+-    "control/switch.cc",
+-    "control/switch_layer.cc",
+-    "control/tensor_array.cc",
+-    "control/tensorlist_fromtensor.cc",
+-    "control/tensorlist_getitem.cc",
+-    "control/tensorlist_reserve.cc",
+-    "control/tensorlist_setitem.cc",
+-    "control/tensorlist_stack.cc",
+-]
+-
+-all_cpu_kernel_sources = cpu_kernel_sources
+-all_cpu_kernel_sources += int8_kernel_sources
+-all_cpu_kernel_sources += string_kernel_sources
+-all_cpu_kernel_sources += control_kernel_sources
+-
+-ohos_source_set("cpu_kernel_obj") {
+-    sources = all_cpu_kernel_sources,
+-}
+-- 
+2.34.1
+
