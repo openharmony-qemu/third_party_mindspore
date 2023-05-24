@@ -28,6 +28,7 @@ def do_patch(patch_dir, target_dir):
         '0009-adapt-nnrt-v2_0.patch',
         '0010-nnrt-delegate-supports-heterogeneous-predition.patch',
         '0011-replace-memcpy-with-memcpy_s-in-mindir.patch',
+        '0012-add-secure-option.patch',
     ]
 
     cwd = os.getcwd()
