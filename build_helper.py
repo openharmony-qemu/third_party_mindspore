@@ -34,6 +34,7 @@ def do_patch(patch_dir, target_dir):
         '0015-train-0003.patch',
         '0016-fix-train-bug.patch',
         '0017-support-build-training-lib.patch',
+        '0018-mindir-MaxPoolFusion-add-roundMode.patch',
     ]
 
     cwd = os.getcwd()
