@@ -1,5 +1,5 @@
 {
-    "name": "@ohos/ai_mindspore",
+    "name": "@ohos/mindspore",
     "description": "AI Framework.",
     "version": "3.1",
     "license": "Apache License 2.0",
@@ -23,9 +23,19 @@
       "ram": "",
       "deps": {
         "components": [
-          "hiviewdfx_hilog_native"
+	  "c_utils",
+	  "hilog_native",
+	  "hdf_core",
+	  "ipc",
+	  "neural_network_runtime",
+	  "drivers_interface_nnrt",
+	  "ability_runtime",
+	  "napi",
+	  "resource_management"
         ],
-        "third_party": []
+        "third_party": [
+	  "bounds_checking_function"
+	]
       },
       "build": {
         "sub_component": [
