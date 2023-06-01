@@ -1,6 +1,6 @@
-From c5ff1e907466f0c9c3c08416804a5834a3e6c273 Mon Sep 17 00:00:00 2001
+From d8ae073cf0e9f10fcbd129a145927492f65edcca Mon Sep 17 00:00:00 2001
 From: Zhu Guodong <zhuguodong0001@163.com>
-Date: Mon, 22 May 2023 20:38:16 +0800
+Date: Tue, 30 May 2023 12:17:40 +0800
 Subject: [PATCH] auto-apply
  0010-nnrt-delegate-supports-heterogeneous-predition.patch
 
@@ -12,7 +12,7 @@ Subject: [PATCH] auto-apply
  include/sdk_api/types.h                       |  38 +-
  mindspore/lite/include/context.h              |   4 +
  mindspore/lite/include/model.h                |   4 +
- mindspore/lite/src/runtime/c_api/context_c.cc | 190 ++++++
+ mindspore/lite/src/runtime/c_api/context_c.cc | 196 ++++++
  mindspore/lite/src/runtime/c_api/context_c.h  |   3 +
  .../lite/src/runtime/c_api/type_c_private.h   |  40 ++
  mindspore/lite/src/runtime/cxx_api/context.cc |  68 ++
@@ -27,7 +27,7 @@ Subject: [PATCH] auto-apply
  mindspore/lite/src/runtime/tensor_category.h  |   1 +
  mindspore/lite/test/CMakeLists.txt            |  10 +-
  .../nnrt_delegate/nnrt_delegate_tests.cc      |  59 ++
- 22 files changed, 1223 insertions(+), 207 deletions(-)
+ 22 files changed, 1229 insertions(+), 207 deletions(-)
  create mode 100644 mindspore/lite/src/runtime/c_api/type_c_private.h
  create mode 100644 mindspore/lite/test/ut/src/runtime/nnrt_delegate/nnrt_delegate_tests.cc
 
@@ -412,10 +412,10 @@ index 44cba37b..a54904c8 100644
    LiteGraph graph_;
    char *buf = nullptr;
 diff --git a/mindspore/lite/src/runtime/c_api/context_c.cc b/mindspore/lite/src/runtime/c_api/context_c.cc
-index d030e931..3d5c6922 100644
+index d030e931..2a0a6d06 100644
 --- a/mindspore/lite/src/runtime/c_api/context_c.cc
 +++ b/mindspore/lite/src/runtime/c_api/context_c.cc
-@@ -14,8 +14,11 @@
+@@ -14,8 +14,13 @@
   * limitations under the License.
   */
  #include "include/c_api/context_c.h"
@@ -423,11 +423,13 @@ index d030e931..3d5c6922 100644
  #include "src/runtime/c_api/context_c.h"
 +#include "src/runtime/c_api/type_c_private.h"
  #include "src/common/log_adapter.h"
++#ifdef SUPPORT_NNRT
 +#include "interfaces/kits/c/neural_network_runtime.h"
++#endif
  
  // ================ Context ================
  OH_AI_ContextHandle OH_AI_ContextCreate() {
-@@ -238,3 +241,190 @@ int OH_AI_DeviceInfoGetFrequency(const OH_AI_DeviceInfoHandle device_info) {  //
+@@ -238,3 +243,194 @@ int OH_AI_DeviceInfoGetFrequency(const OH_AI_DeviceInfoHandle device_info) {  //
      return -1;
    }
  }
@@ -437,6 +439,7 @@ index d030e931..3d5c6922 100644
 +    MS_LOG(ERROR) << "Input num is null";
 +    return nullptr;
 +  }
++#ifdef SUPPORT_NNRT
 +  *num = 0;
 +
 +  const size_t *all_device_ids;
@@ -466,6 +469,9 @@ index d030e931..3d5c6922 100644
 +  }
 +  *num = device_count;
 +  return desc;
++#else
++  return nullptr;
++#endif
 +}
 +
 +void OH_AI_DestroyAllNNRTDeviceDescs(NNRTDeviceDesc **desc) {
