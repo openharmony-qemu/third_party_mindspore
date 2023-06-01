@@ -1,7 +1,8 @@
-From 21e1249b67225adcd6d0ffc0b983107296c46530 Mon Sep 17 00:00:00 2001
+From c2f6e9f2c5cc9ec0260437a1dfd70b5d535ee740 Mon Sep 17 00:00:00 2001
 From: Zhu Guodong <zhuguodong0001@163.com>
-Date: Sun, 2 Apr 2023 16:15:50 +0800
-Subject: [PATCH] Support converting THIRDPARTY model in MSLite
+Date: Thu, 1 Jun 2023 22:02:23 +0800
+Subject: [PATCH] auto-apply
+ 0006-Support-converting-THIRDPARTY-model-in-MSLite.patch
 
 ---
  .../lite/include/registry/converter_context.h |   2 +
@@ -11,19 +12,19 @@ Subject: [PATCH] Support converting THIRDPARTY model in MSLite
  .../tools/converter/api/converter_api_test.cc |  28 ++
  .../third_party_param_parser_test.cc          | 176 +++++++++++
  mindspore/lite/tools/converter/CMakeLists.txt |   4 +
- .../config_parser/config_file_parser.cc       |  25 ++
- .../config_parser/config_file_parser.h        |  15 +
- .../config_parser/third_party_param_parser.cc | 220 ++++++++++++++
- .../config_parser/third_party_param_parser.h  |  43 +++
+ .../config_parser/config_file_parser.cc       |  27 ++
+ .../config_parser/config_file_parser.h        |  17 +
+ .../config_parser/third_party_param_parser.cc | 299 ++++++++++++++++++
+ .../config_parser/third_party_param_parser.h  |  44 +++
  mindspore/lite/tools/converter/converter.cc   |  58 ++--
  .../converter_lite/converter_flags.cc         |   8 +-
- .../tools/converter/cxx_api/converter_para.h  |  12 +
- .../tools/converter/graphdef_transform.cc     |  18 ++
+ .../tools/converter/cxx_api/converter_para.h  |  14 +
+ .../tools/converter/graphdef_transform.cc     |  44 +++
  .../parser/third_party/CMakeLists.txt         |   4 +
- .../third_party/third_party_model_parser.cc   | 277 ++++++++++++++++++
- .../third_party/third_party_model_parser.h    |  50 ++++
+ .../third_party/third_party_model_parser.cc   | 277 ++++++++++++++++
+ .../third_party/third_party_model_parser.h    |  50 +++
  .../registry/model_parser_registry.cc         |   4 +-
- 19 files changed, 933 insertions(+), 29 deletions(-)
+ 19 files changed, 1045 insertions(+), 29 deletions(-)
  create mode 100644 mindspore/lite/test/ut/test_data/third_party_model.cfg
  create mode 100644 mindspore/lite/test/ut/tools/converter/api/converter_api_test.cc
  create mode 100644 mindspore/lite/test/ut/tools/converter/config_parser/third_party_param_parser_test.cc
@@ -34,7 +35,7 @@ Subject: [PATCH] Support converting THIRDPARTY model in MSLite
  create mode 100644 mindspore/lite/tools/converter/parser/third_party/third_party_model_parser.h
 
 diff --git a/mindspore/lite/include/registry/converter_context.h b/mindspore/lite/include/registry/converter_context.h
-index a92a3a34d1..dd6e6d08c6 100644
+index a92a3a34..dd6e6d08 100644
 --- a/mindspore/lite/include/registry/converter_context.h
 +++ b/mindspore/lite/include/registry/converter_context.h
 @@ -33,6 +33,8 @@ enum MS_API FmkType : int {
@@ -47,7 +48,7 @@ index a92a3a34d1..dd6e6d08c6 100644
  
  /// \brief ConverterParameters defined read-only converter parameters used by users in ModelParser.
 diff --git a/mindspore/lite/test/CMakeLists.txt b/mindspore/lite/test/CMakeLists.txt
-index c0ba8e39c8..5fa7bea00a 100644
+index c0ba8e39..5fa7bea0 100644
 --- a/mindspore/lite/test/CMakeLists.txt
 +++ b/mindspore/lite/test/CMakeLists.txt
 @@ -120,6 +120,8 @@ if(MSLITE_ENABLE_CONVERTER)
@@ -69,7 +70,7 @@ index c0ba8e39c8..5fa7bea00a 100644
  
  if(ENABLE_MODEL_OBF)
 diff --git a/mindspore/lite/test/runtest.sh b/mindspore/lite/test/runtest.sh
-index 57c9c0aa14..921d3fb325 100644
+index 57c9c0aa..921d3fb3 100644
 --- a/mindspore/lite/test/runtest.sh
 +++ b/mindspore/lite/test/runtest.sh
 @@ -61,10 +61,12 @@ echo 'run common ut tests'
@@ -97,7 +98,7 @@ index 57c9c0aa14..921d3fb325 100644
    ./lite-test --gtest_filter="GraphTest.UserSetGraphOutput*"
 diff --git a/mindspore/lite/test/ut/test_data/third_party_model.cfg b/mindspore/lite/test/ut/test_data/third_party_model.cfg
 new file mode 100644
-index 0000000000..b5fcba75b7
+index 00000000..b5fcba75
 --- /dev/null
 +++ b/mindspore/lite/test/ut/test_data/third_party_model.cfg
 @@ -0,0 +1,8 @@
@@ -111,7 +112,7 @@ index 0000000000..b5fcba75b7
 +extended_parameters=foo:foo_value;bar:bar_value
 diff --git a/mindspore/lite/test/ut/tools/converter/api/converter_api_test.cc b/mindspore/lite/test/ut/tools/converter/api/converter_api_test.cc
 new file mode 100644
-index 0000000000..0d43457509
+index 00000000..0d434575
 --- /dev/null
 +++ b/mindspore/lite/test/ut/tools/converter/api/converter_api_test.cc
 @@ -0,0 +1,28 @@
@@ -145,7 +146,7 @@ index 0000000000..0d43457509
 +}
 diff --git a/mindspore/lite/test/ut/tools/converter/config_parser/third_party_param_parser_test.cc b/mindspore/lite/test/ut/tools/converter/config_parser/third_party_param_parser_test.cc
 new file mode 100644
-index 0000000000..c8eb5536fc
+index 00000000..c8eb5536
 --- /dev/null
 +++ b/mindspore/lite/test/ut/tools/converter/config_parser/third_party_param_parser_test.cc
 @@ -0,0 +1,176 @@
@@ -326,7 +327,7 @@ index 0000000000..c8eb5536fc
 +  ASSERT_NE(ThirdPartyParamParser::Parse(param_string, &result), RET_OK);
 +}
 diff --git a/mindspore/lite/tools/converter/CMakeLists.txt b/mindspore/lite/tools/converter/CMakeLists.txt
-index 215d2e171a..8ce0304ee4 100644
+index 215d2e17..8ce0304e 100644
 --- a/mindspore/lite/tools/converter/CMakeLists.txt
 +++ b/mindspore/lite/tools/converter/CMakeLists.txt
 @@ -8,6 +8,8 @@ endif()
@@ -355,7 +356,7 @@ index 215d2e171a..8ce0304ee4 100644
          graph_pass_mid
          fusion_mid
 diff --git a/mindspore/lite/tools/converter/config_parser/config_file_parser.cc b/mindspore/lite/tools/converter/config_parser/config_file_parser.cc
-index bb3e7bcf00..ea263e6451 100644
+index bb3e7bcf..e2e15230 100644
 --- a/mindspore/lite/tools/converter/config_parser/config_file_parser.cc
 +++ b/mindspore/lite/tools/converter/config_parser/config_file_parser.cc
 @@ -30,6 +30,7 @@ constexpr auto kDataPreprocessParam = "data_preprocess_param";
@@ -379,7 +380,7 @@ index bb3e7bcf00..ea263e6451 100644
  
    for (const auto &config_info : *maps) {
      ConverterInnerContext::GetInstance()->SetExternalUsedConfigInfos(config_info.first, config_info.second);
-@@ -223,5 +230,23 @@ int ConfigFileParser::ParseMicroParamString(const std::map<std::string, std::map
+@@ -223,5 +230,25 @@ int ConfigFileParser::ParseMicroParamString(const std::map<std::string, std::map
    }
    return RET_OK;
  }
@@ -394,9 +395,11 @@ index bb3e7bcf00..ea263e6451 100644
 +    {"input_shapes", third_party_model_string_.input_shapes},
 +    {"input_dtypes", third_party_model_string_.input_dtypes},
 +    {"input_names", third_party_model_string_.input_names},
++    {"input_formats", third_party_model_string_.input_formats},
 +    {"output_shapes", third_party_model_string_.output_shapes},
 +    {"output_dtypes", third_party_model_string_.output_dtypes},
 +    {"output_names", third_party_model_string_.output_names},
++    {"output_formats", third_party_model_string_.output_formats},
 +    {"extended_parameters", third_party_model_string_.extended_parameters},
 +  };
 +  return SetMapData(input_args, kValidArgs, kThirdPartyModelParam);
@@ -404,7 +407,7 @@ index bb3e7bcf00..ea263e6451 100644
  }  // namespace lite
  }  // namespace mindspore
 diff --git a/mindspore/lite/tools/converter/config_parser/config_file_parser.h b/mindspore/lite/tools/converter/config_parser/config_file_parser.h
-index 876bb30746..0ada406eea 100644
+index 876bb307..6bad9e85 100644
 --- a/mindspore/lite/tools/converter/config_parser/config_file_parser.h
 +++ b/mindspore/lite/tools/converter/config_parser/config_file_parser.h
 @@ -19,6 +19,8 @@
@@ -416,7 +419,7 @@ index 876bb30746..0ada406eea 100644
  
  namespace mindspore {
  namespace lite {
-@@ -86,6 +88,16 @@ struct MicroParamString {
+@@ -86,6 +88,18 @@ struct MicroParamString {
    std::string enable_micro;
  };
  
@@ -424,16 +427,18 @@ index 876bb30746..0ada406eea 100644
 +  std::string input_dtypes;
 +  std::string input_shapes;
 +  std::string input_names;  // optional, default: ""
++  std::string input_formats;  // optional, default: NHWC
 +  std::string output_dtypes;
 +  std::string output_shapes;
-+  std::string output_names;         // optional, default: ""
++  std::string output_names;  // optional, default: ""
++  std::string output_formats;  // optional, default: NHWC
 +  std::string extended_parameters;  // format: {key1:value1;ker2:value2}
 +};
 +
  class ConfigFileParser {
   public:
    int ParseConfigFile(const std::string &config_file_path);
-@@ -98,6 +110,7 @@ class ConfigFileParser {
+@@ -98,6 +112,7 @@ class ConfigFileParser {
    RegistryInfoString GetRegistryInfoString() const { return this->registry_info_string_; }
    AclOptionCfgString GetAclOptionCfgString() { return this->acl_option_cfg_string_; }
    MicroParamString GetMicroParamString() { return this->micro_param_string_; }
@@ -441,7 +446,7 @@ index 876bb30746..0ada406eea 100644
  
   private:
    int ParseDataPreProcessString(const std::map<std::string, std::map<std::string, std::string>> &maps);
-@@ -109,6 +122,7 @@ class ConfigFileParser {
+@@ -109,6 +124,7 @@ class ConfigFileParser {
    int SetMapData(const std::map<std::string, std::string> &input_map,
                   const std::map<std::string, std::string &> &parse_map, const std::string &section);
    int ParseMicroParamString(const std::map<std::string, std::map<std::string, std::string>> &maps);
@@ -449,7 +454,7 @@ index 876bb30746..0ada406eea 100644
  
   private:
    DataPreProcessString data_pre_process_string_;
-@@ -118,6 +132,7 @@ class ConfigFileParser {
+@@ -118,6 +134,7 @@ class ConfigFileParser {
    RegistryInfoString registry_info_string_;
    AclOptionCfgString acl_option_cfg_string_;
    MicroParamString micro_param_string_;
@@ -459,10 +464,10 @@ index 876bb30746..0ada406eea 100644
  }  // namespace lite
 diff --git a/mindspore/lite/tools/converter/config_parser/third_party_param_parser.cc b/mindspore/lite/tools/converter/config_parser/third_party_param_parser.cc
 new file mode 100644
-index 0000000000..ee4f6e606f
+index 00000000..aee6a29c
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/config_parser/third_party_param_parser.cc
-@@ -0,0 +1,220 @@
+@@ -0,0 +1,299 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -616,6 +621,73 @@ index 0000000000..ee4f6e606f
 +  return RET_OK;
 +}
 +
++/**
++ * Parse formats like "NCHW;NHWC" and get [NCHW, NHWC]
++ */
++namespace {
++  int StringToFormat(const std::string &format_string, schema::Format *format) {
++    static const std::unordered_map<std::string, schema::Format> kFormatTable = {
++      {"NCHW", schema::Format::Format_NCHW},
++      {"NHWC", schema::Format::Format_NHWC},
++      {"NHWC4", schema::Format::Format_NHWC4},
++      {"HWKC", schema::Format::Format_HWKC},
++      {"HWCK", schema::Format::Format_HWCK},
++      {"KCHW", schema::Format::Format_KCHW},
++      {"CKHW", schema::Format::Format_CKHW},
++      {"KHWC", schema::Format::Format_KHWC},
++      {"CHWK", schema::Format::Format_CHWK},
++      {"HW", schema::Format::Format_HW},
++      {"HW4", schema::Format::Format_HW4},
++      {"NC", schema::Format::Format_NC},
++      {"NC4", schema::Format::Format_NC4},
++      {"NC4HW4", schema::Format::Format_NC4HW4},
++      {"NUM_OF_FORMAT", schema::Format::Format_NUM_OF_FORMAT},
++      {"NCDHW", schema::Format::Format_NCDHW},
++      {"NWC", schema::Format::Format_NWC},
++      {"NCW", schema::Format::Format_NCW},
++    };
++
++    if (format == nullptr) {
++      return RET_NULL_PTR;
++    }
++
++    auto iter = kFormatTable.find(format_string);
++    if (iter == kFormatTable.end()) {
++      return RET_PARAM_INVALID;
++    }
++
++    *format = iter->second;
++    return RET_OK;
++  }
++}
++
++int ThirdPartyParamParser::DoParseFormats(const std::string &src, size_t num,
++                                          std::vector<schema::Format> *result_formats) {
++  MS_CHECK_TRUE_RET(result_formats != nullptr, RET_ERROR);
++  std::string tmp_names = src;
++  if (tmp_names.empty()) {
++    std::vector<schema::Format> default_formats(num, schema::Format::Format_NHWC);
++    *result_formats = default_formats;
++    return RET_OK;
++  }
++
++  auto format_strings = SplitStringToVector(tmp_names, ";");
++  if (format_strings.size() != num) {
++    MS_LOG(ERROR) << "Number of format: " << format_strings.size() << " and number of tensor: " << num << " are not equal";
++    return RET_ERROR;
++  }
++
++  std::vector<schema::Format> result(num);
++  for (size_t i = 0; i < num; i++) {
++    if (StringToFormat(format_strings[i], &result[i]) != RET_OK) {
++      MS_LOG(ERROR) << "Tensor format:" << format_strings[i] << " is invalid";
++      return RET_PARAM_INVALID;
++    }
++  }
++  *result_formats = result;
++  return RET_OK;
++}
++
 +int ThirdPartyParamParser::Parse(const ThirdPartyModelString &param_string, ThirdPartyModelParam *param) {
 +  MS_CHECK_TRUE_RET(param != nullptr, RET_ERROR);
 +
@@ -636,6 +708,12 @@ index 0000000000..ee4f6e606f
 +  if (input_shape_num != input_dtype_num) {
 +    MS_LOG(ERROR) << "Input shape number: " << input_shape_num << " and dtype number: " << input_dtype_num
 +                  << " are not equal";
++    return RET_ERROR;
++  }
++
++  ret = DoParseFormats(param_string.input_formats, input_shape_num, &(param->input_formats));
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "Parse input formats of third party param failed";
 +    return RET_ERROR;
 +  }
 +
@@ -666,6 +744,12 @@ index 0000000000..ee4f6e606f
 +    return RET_ERROR;
 +  }
 +
++  ret = DoParseFormats(param_string.output_formats, output_shape_num, &(param->output_formats));
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "Parse output formats of third party param failed";
++    return RET_ERROR;
++  }
++
 +  const std::string kOutputNamePrefix = "out";
 +  ret = DoParseNames(param_string.output_names, output_shape_num, kOutputNamePrefix, &(param->output_names));
 +  if (ret != RET_OK) {
@@ -685,10 +769,10 @@ index 0000000000..ee4f6e606f
 +}  // namespace mindspore
 diff --git a/mindspore/lite/tools/converter/config_parser/third_party_param_parser.h b/mindspore/lite/tools/converter/config_parser/third_party_param_parser.h
 new file mode 100644
-index 0000000000..5e5bbb9b6c
+index 00000000..5cf6e8fb
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/config_parser/third_party_param_parser.h
-@@ -0,0 +1,43 @@
+@@ -0,0 +1,44 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -727,13 +811,14 @@ index 0000000000..5e5bbb9b6c
 +  static int DoParseDtypes(const std::string &src, std::vector<TypeId> *dst_dtypes);
 +  static int DoParseNames(const std::string &src, size_t num, const std::string &default_prefix,
 +                          std::vector<std::string> *dst_names);
++  static int DoParseFormats(const std::string &src, size_t num, std::vector<schema::Format> *result_formats);
 +};
 +}  // namespace lite
 +}  // namespace mindspore
 +
 +#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_CONFIG_PARSER_THIRD_PARTY_PARAM_PARSER_H_
 diff --git a/mindspore/lite/tools/converter/converter.cc b/mindspore/lite/tools/converter/converter.cc
-index f3d4d65851..449c6ef9ab 100644
+index f3d4d658..449c6ef9 100644
 --- a/mindspore/lite/tools/converter/converter.cc
 +++ b/mindspore/lite/tools/converter/converter.cc
 @@ -44,6 +44,7 @@
@@ -851,7 +936,7 @@ index f3d4d65851..449c6ef9ab 100644
      }
    }
 diff --git a/mindspore/lite/tools/converter/converter_lite/converter_flags.cc b/mindspore/lite/tools/converter/converter_lite/converter_flags.cc
-index 033db968bf..595b59ed97 100644
+index 033db968..595b59ed 100644
 --- a/mindspore/lite/tools/converter/converter_lite/converter_flags.cc
 +++ b/mindspore/lite/tools/converter/converter_lite/converter_flags.cc
 @@ -118,13 +118,13 @@ int Flags::InitInputOutputDataType() {
@@ -873,7 +958,7 @@ index 033db968bf..595b59ed97 100644
    }
  
 diff --git a/mindspore/lite/tools/converter/cxx_api/converter_para.h b/mindspore/lite/tools/converter/cxx_api/converter_para.h
-index 58bc4c7c0a..7f230c76a4 100644
+index 58bc4c7c..00b7fa3c 100644
 --- a/mindspore/lite/tools/converter/cxx_api/converter_para.h
 +++ b/mindspore/lite/tools/converter/cxx_api/converter_para.h
 @@ -21,6 +21,7 @@
@@ -884,7 +969,7 @@ index 58bc4c7c0a..7f230c76a4 100644
  #include "tools/converter/quantizer/quant_params.h"
  #include "tools/converter/preprocess/preprocess_param.h"
  #include "tools/converter/adapter/acl/common/acl_types.h"
-@@ -35,6 +36,16 @@ struct ParallelSplitConfig {
+@@ -35,6 +36,18 @@ struct ParallelSplitConfig {
    std::vector<std::string> parallel_devices_;
  };
  
@@ -892,16 +977,18 @@ index 58bc4c7c0a..7f230c76a4 100644
 +  std::vector<TypeId> input_dtypes;
 +  std::vector<std::vector<int64_t>> input_shapes;
 +  std::vector<std::string> input_names;
++  std::vector<schema::Format> input_formats;
 +  std::vector<TypeId> output_dtypes;
 +  std::vector<std::vector<int64_t>> output_shapes;
 +  std::vector<std::string> output_names;
++  std::vector<schema::Format> output_formats;
 +  std::map<std::string, std::vector<uint8_t>> extended_parameters;
 +};
 +
  struct ConverterPara {
    converter::FmkType fmk_type;
    std::string model_file;
-@@ -68,6 +79,7 @@ struct ConverterPara {
+@@ -68,6 +81,7 @@ struct ConverterPara {
    lite::acl::AclModelOptionCfg aclModelOptionCfgParam;
    lite::micro::MicroParam microParam;
    ParallelSplitConfig parallel_split_config;
@@ -910,10 +997,10 @@ index 58bc4c7c0a..7f230c76a4 100644
  }  // namespace mindspore
  #endif  // MINDSPORE_LITE_TOOLS_CONVERTER_CXX_API_CONVERTER_PARA_H_
 diff --git a/mindspore/lite/tools/converter/graphdef_transform.cc b/mindspore/lite/tools/converter/graphdef_transform.cc
-index 538b1ab1b3..09f7366e4b 100644
+index 538b1ab1..7361204d 100644
 --- a/mindspore/lite/tools/converter/graphdef_transform.cc
 +++ b/mindspore/lite/tools/converter/graphdef_transform.cc
-@@ -92,10 +92,28 @@ int QuantTransform(const std::shared_ptr<ConverterPara> &param, schema::MetaGrap
+@@ -92,10 +92,54 @@ int QuantTransform(const std::shared_ptr<ConverterPara> &param, schema::MetaGrap
    }
    return RET_OK;
  }
@@ -929,22 +1016,48 @@ index 538b1ab1b3..09f7366e4b 100644
 +  }
 +  return RET_OK;
 +}
++
++void FillGraphInputAndOutputFormats(MetaGraphT *meta_graph, const ConverterPara &para) {
++  const auto &in_indices = meta_graph->inputIndex;
++  for (size_t i = 0; i < in_indices.size(); i++) {
++    auto &in_tensor = meta_graph->allTensors[in_indices[i]];
++    in_tensor->format = para.thirdPartyModelParam.input_formats[i];
++    MS_LOG_DEBUG << "input " << i << " format: " << EnumNameFormat(in_tensor->format);
++  }
++
++  const auto &out_indices = meta_graph->outputIndex;
++  for (size_t i = 0; i < out_indices.size(); i++) {
++    auto &out_tensor = meta_graph->allTensors[out_indices[i]];
++    out_tensor->format = para.thirdPartyModelParam.output_formats[i];
++    MS_LOG_DEBUG << "output " << i << " format: " << EnumNameFormat(out_tensor->format);
++  }
++}
  }  // namespace
  
  int GraphDefTransform::Transform(const std::shared_ptr<ConverterPara> &param) {
    STATUS status;
 +
 +  if (param->fmk_type == converter::kFmkTypeThirdParty) {
++
 +    // Legacy optimizer infer shape, but op Custom which wraps third party model has no infer-shape function.
 +    // So we don't perform legacy optimization for kFmkTypeThirdParty case.
-+    return FillGraphOutputShape(graph_defT_, param->thirdPartyModelParam.output_shapes);
++    auto ret = FillGraphOutputShape(graph_defT_, param->thirdPartyModelParam.output_shapes);
++    if (ret != RET_OK) {
++      MS_LOG(ERROR) << "Fill output shape of third party model failed, ret:" << ret;
++      return ret;
++    }
++
++    // Tensor of FuncGraph has no attribute of format, so set format in MetaGraph.
++    FillGraphInputAndOutputFormats(graph_defT_, *param);
++    return RET_OK;
 +  }
++
    {
      auto old_nodes = GetGraphNodes(*graph_defT_);
      Optimizer unused_op_remove_optimizer;
 diff --git a/mindspore/lite/tools/converter/parser/third_party/CMakeLists.txt b/mindspore/lite/tools/converter/parser/third_party/CMakeLists.txt
 new file mode 100644
-index 0000000000..b55e01942c
+index 00000000..b55e0194
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/parser/third_party/CMakeLists.txt
 @@ -0,0 +1,4 @@
@@ -955,7 +1068,7 @@ index 0000000000..b55e01942c
 \ No newline at end of file
 diff --git a/mindspore/lite/tools/converter/parser/third_party/third_party_model_parser.cc b/mindspore/lite/tools/converter/parser/third_party/third_party_model_parser.cc
 new file mode 100644
-index 0000000000..652db4af23
+index 00000000..652db4af
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/parser/third_party/third_party_model_parser.cc
 @@ -0,0 +1,277 @@
@@ -1238,7 +1351,7 @@ index 0000000000..652db4af23
 +}  // namespace mindspore
 diff --git a/mindspore/lite/tools/converter/parser/third_party/third_party_model_parser.h b/mindspore/lite/tools/converter/parser/third_party/third_party_model_parser.h
 new file mode 100644
-index 0000000000..c4b197b8cd
+index 00000000..c4b197b8
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/parser/third_party/third_party_model_parser.h
 @@ -0,0 +1,50 @@
@@ -1293,7 +1406,7 @@ index 0000000000..c4b197b8cd
 +
 +#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_PARSER_THIRDPARTY_THIRDPARTY_MODEL_PARSER_H_
 diff --git a/mindspore/lite/tools/converter/registry/model_parser_registry.cc b/mindspore/lite/tools/converter/registry/model_parser_registry.cc
-index bbdafd9689..c6337ea412 100644
+index bbdafd96..c6337ea4 100644
 --- a/mindspore/lite/tools/converter/registry/model_parser_registry.cc
 +++ b/mindspore/lite/tools/converter/registry/model_parser_registry.cc
 @@ -26,7 +26,7 @@ std::map<FmkType, ModelParserCreator> model_parser_room;
