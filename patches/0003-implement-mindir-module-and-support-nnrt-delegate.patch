@@ -111,7 +111,7 @@ index 00000000..2ef8225d
 +  defines = [ "MS_COMPILE_OHOS" ]
 +  deps = [ "//drivers/interface/nnrt/v1_0:nnrt_idl_headers" ]
 +  output_name = "mindir"
-+
++  innerapi_tags = [ "platformsdk_indirect"]
 +  part_name = "mindspore"
 +}
 diff --git a/mindspore/lite/mindir/CMakeLists.txt b/mindspore/lite/mindir/CMakeLists.txt
