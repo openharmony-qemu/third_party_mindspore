@@ -48,8 +48,7 @@ def do_patch(patch_dir, target_dir):
         print('Applying ', patch, '...')
         ret = os.system('git apply ' + patch_dir + '/' + patch)
         if ret != 0:
-            print('Applying patch failed, abort')
-            break
+            raise Exception("Apply patch {} failed.".format(patch))
         os.system('git add .; git commit -m "auto-apply ' + patch + '"')
         print('Done')
     os.chdir(cwd)
