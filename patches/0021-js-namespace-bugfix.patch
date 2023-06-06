@@ -1,0 +1,53 @@
+From 37f88a78099229235dc466b68d44406567370e8a Mon Sep 17 00:00:00 2001
+From: fangzhou12 <fangzhou12@huawei.com>
+Date: Tue, 6 Jun 2023 19:28:08 +0800
+Subject: [PATCH] namespace bugfix
+
+---
+ mindspore/lite/BUILD.gn                                    | 2 +-
+ mindspore/lite/src/runtime/js_api/BUILD.gn                 | 2 +-
+ mindspore/lite/src/runtime/js_api/native_module_ohos_ms.cc | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
+index 9ad0caf7..2ac6f7db 100644
+--- a/mindspore/lite/BUILD.gn
++++ b/mindspore/lite/BUILD.gn
+@@ -70,7 +70,7 @@ ohos_group("mindspore") {
+     ":mindspore_lib",
+     ":mindspore_train_lib",
+     "mindir:mindir_lib",
+-    "src/runtime/js_api:mindspore_lite_napi"
++    "src/runtime/js_api:mindsporelite_napi"
+   ]
+ }
+ 
+diff --git a/mindspore/lite/src/runtime/js_api/BUILD.gn b/mindspore/lite/src/runtime/js_api/BUILD.gn
+index 04031370..3994ad0f 100644
+--- a/mindspore/lite/src/runtime/js_api/BUILD.gn
++++ b/mindspore/lite/src/runtime/js_api/BUILD.gn
+@@ -14,7 +14,7 @@
+ import("//build/ohos.gni")
+ import("//build/ohos/ace/ace.gni")
+ 
+-ohos_shared_library("mindspore_lite_napi") {
++ohos_shared_library("mindsporelite_napi") {
+   include_dirs = [
+     "//third_party/mindspore/mindspore-src/source/",
+     "//third_party/mindspore/mindspore-src/source/include/api",
+diff --git a/mindspore/lite/src/runtime/js_api/native_module_ohos_ms.cc b/mindspore/lite/src/runtime/js_api/native_module_ohos_ms.cc
+index a1954ae1..7a381c1e 100644
+--- a/mindspore/lite/src/runtime/js_api/native_module_ohos_ms.cc
++++ b/mindspore/lite/src/runtime/js_api/native_module_ohos_ms.cc
+@@ -35,7 +35,7 @@ static napi_module g_module = {.nm_version = 1,
+                                .nm_flags = 0,
+                                .nm_filename = nullptr,
+                                .nm_register_func = Export,
+-                               .nm_modname = "ai.mslite",
++                               .nm_modname = "ai.mindSporeLite",
+                                .nm_priv = ((void *)0),
+                                .reserved = {0}};
+ 
+-- 
+2.17.1
+
