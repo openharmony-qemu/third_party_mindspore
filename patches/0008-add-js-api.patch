@@ -1296,7 +1296,7 @@ index 00000000..0ea92e13
 +        return model_ptr;
 +      }
 +      (void)munmap(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
-+      close(model_info_ptr->model_fd);
++
 +      break;
 +    }
 +    default: {
