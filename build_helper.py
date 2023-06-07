@@ -36,7 +36,8 @@ def do_patch(patch_dir, target_dir):
         '0017-support-build-training-lib.patch',
         '0018-mindir-MaxPoolFusion-add-roundMode.patch',
         '0019-change-nnrt-as-external_dep-in-mindir.patch',
-        '0020-add-ohos-js-callback-api-and-bugfix.patch'
+        '0020-add-ohos-js-callback-api-and-bugfix.patch',
+        '0021-js-namespace-bugfix.patch'
     ]
 
     cwd = os.getcwd()
