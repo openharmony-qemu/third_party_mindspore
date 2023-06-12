@@ -29,7 +29,7 @@ ohos_ndk_headers("mindspore_header") {
 }
 
 ohos_ndk_library("mindspore_lib") {
-  output_name = "mindspore-lite.huawei"
+  output_name = "mindspore_lite_ndk"
   output_extension = "so"
   ndk_description_file = "./mindspore_lib.ndk.json"
   system_capability = "SystemCapability.Ai.MindSpore"
