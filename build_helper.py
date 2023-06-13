@@ -40,7 +40,8 @@ def do_patch(patch_dir, target_dir):
         '0021-js-namespace-bugfix.patch',
         '0022-support-cross-compile-with-ohos-ndk.patch',
         '0023-js-info-bugfix.patch',
-        '0024-js-info2-bugfix.patch'
+        '0024-js-info2-bugfix.patch',
+        '0025-js-callback-bugfix.patch'
     ]
 
     cwd = os.getcwd()
