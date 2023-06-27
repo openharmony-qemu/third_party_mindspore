@@ -42,7 +42,8 @@ def do_patch(patch_dir, target_dir):
         '0023-js-info-bugfix.patch',
         '0024-js-info2-bugfix.patch',
         '0025-js-callback-bugfix.patch',
-        '0026-js-buffer-add-bugfix.patch'
+        '0026-js-buffer-add-bugfix.patch',
+        '0027-js-buffer-leakage-bugfix.patch'
     ]
 
     cwd = os.getcwd()
