@@ -24,7 +24,7 @@
       "deps": {
         "components": [
 	  "c_utils",
-	  "hilog_native",
+	  "hilog",
 	  "hdf_core",
 	  "ipc",
 	  "neural_network_runtime",
