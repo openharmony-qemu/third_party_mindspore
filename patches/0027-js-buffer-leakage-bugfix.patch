@@ -1,0 +1,194 @@
+From a7a733c9f2a5ed38749ef358b64f955444d78328 Mon Sep 17 00:00:00 2001
+From: fangzhou12 <fangzhou12@huawei.com>
+Date: Wed, 28 Jun 2023 08:57:09 +0800
+Subject: [PATCH] auto-apply 0027-js-buffer-leakage-bugfix.patch
+
+---
+ include/js_api/mslite_model_napi.h            |  1 -
+ include/js_api/mstensor_napi.h                |  7 ++--
+ .../src/runtime/js_api/mslite_model_napi.cc   | 34 ++++++++++---------
+ .../lite/src/runtime/js_api/mstensor_napi.cc  | 24 ++++++-------
+ 4 files changed, 30 insertions(+), 36 deletions(-)
+
+diff --git a/include/js_api/mslite_model_napi.h b/include/js_api/mslite_model_napi.h
+index be1c5167..717b595a 100644
+--- a/include/js_api/mslite_model_napi.h
++++ b/include/js_api/mslite_model_napi.h
+@@ -75,7 +75,6 @@ class MSLiteModelNapi {
+ 
+   static thread_local napi_ref constructor_;
+   napi_env env_ = nullptr;
+-  napi_ref wrapper_ = nullptr;
+ 
+   static ModelInfo *model_info_;
+   static ContextInfo *context_;
+diff --git a/include/js_api/mstensor_napi.h b/include/js_api/mstensor_napi.h
+index 0e9462c8..e2b181b8 100644
+--- a/include/js_api/mstensor_napi.h
++++ b/include/js_api/mstensor_napi.h
+@@ -24,7 +24,8 @@ namespace mindspore {
+ class MSTensorNapi {
+  public:
+   static napi_value NewInstance(napi_env env, mindspore::MSTensor tensor);
+-
++  MSTensorNapi();
++  ~MSTensorNapi();
+  private:
+   static napi_value Constructor(napi_env env, napi_callback_info info);
+   static void Finalize(napi_env env, void *nativeObject, void *finalize);
+@@ -39,12 +40,8 @@ class MSTensorNapi {
+   static napi_value GetDataBuffer(napi_env env, napi_callback_info info);
+   static napi_value SetData(napi_env env, napi_callback_info info);
+ 
+-  MSTensorNapi();
+-  ~MSTensorNapi();
+-
+   static thread_local napi_ref constructor_;
+   napi_env env_ = nullptr;
+-  napi_ref wrapper_ = nullptr;
+ 
+   std::unique_ptr<MSTensor> nativeMSTensor_ = nullptr;
+ };
+diff --git a/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc b/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc
+index 4ebc1a3d..0f1934a7 100644
+--- a/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc
++++ b/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc
+@@ -65,14 +65,13 @@ const std::unordered_map<std::string, DeviceType> kDeviceTypes{
+ };
+ }  // namespace
+ 
+-MSLiteModelNapi::MSLiteModelNapi() : env_(nullptr), wrapper_(nullptr) {
++MSLiteModelNapi::MSLiteModelNapi() : native_model_(nullptr), env_(nullptr) {
+   MS_LOG(INFO) << "MSLiteModelNapi Instances create.";
+ }
+ 
+ MSLiteModelNapi::~MSLiteModelNapi() {
+-  if (wrapper_ != nullptr) {
+-    napi_delete_reference(env_, wrapper_);
+-  }
++  native_model_ = nullptr;
++  env_ = nullptr;
+   if (model_info_ != nullptr) {
+     if (model_info_->model_buffer_data != nullptr) {
+       model_info_->model_buffer_data = nullptr;
+@@ -203,12 +202,12 @@ std::shared_ptr<mindspore::Model> MSLiteModelNapi::CreateModel(ModelInfo *model_
+       }
+       auto ret = model_ptr->Build(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total,
+                                   mindspore::kMindIR, context);
+-      
++
++      (void)munmap(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
+       if (ret == mindspore::kSuccess) {
+         MS_LOG(INFO) << "Build model from fd success.";
+         return model_ptr;
+       }
+-      (void)munmap(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
+ 
+       break;
+     }
+@@ -262,9 +261,10 @@ int32_t MSLiteModelNapi::GetDeviceInfoContext(ContextInfo *context_ptr,
+ napi_value MSLiteModelNapi::Constructor(napi_env env, napi_callback_info info) {
+   napi_status status;
+   napi_value result = nullptr;
++  napi_get_undefined(env, &result);
+   GET_PARAMS(env, info, ARGS_TWO);
+ 
+-  MSLiteModelNapi *model_napi = new (std::nothrow) MSLiteModelNapi();
++  std::unique_ptr<MSLiteModelNapi> model_napi = std::make_unique<MSLiteModelNapi>();
+   if (model_napi == nullptr) {
+     MS_LOG(ERROR) << "No memory";
+     return result;
+@@ -277,15 +277,13 @@ napi_value MSLiteModelNapi::Constructor(napi_env env, napi_callback_info info) {
+     return result;
+   }
+ 
+-  status = napi_wrap(env, thisVar, reinterpret_cast<void *>(model_napi), MSLiteModelNapi::Finalize, nullptr,
++  status = napi_wrap(env, thisVar, reinterpret_cast<void *>(model_napi.get()), MSLiteModelNapi::Finalize, nullptr,
+                      nullptr);
+-  if (status != napi_ok) {
+-    delete model_napi;
+-    napi_get_undefined(env, &result);
+-    MS_LOG(ERROR) << "Failed to wrap native instance";
+-    return result;
++  if (status == napi_ok) {
++    model_napi.release();
++    return thisVar;
+   }
+-  return thisVar;
++  return result;
+ }
+ 
+ int32_t MSLiteModelNapi::ParseModelInfo(napi_env env, napi_value root, ModelInfo &model_info) {
+@@ -788,14 +786,18 @@ napi_value MSLiteModelNapi::GetInputs(napi_env env, napi_callback_info info) {
+ napi_value MSLiteModelNapi::Resize(napi_env env, napi_callback_info info) {
+   napi_value undefinedResult = nullptr;
+   bool result = false;
+-  napi_get_undefined(env, &undefinedResult);
++  napi_status status = napi_get_boolean(env, result, &undefinedResult);
++  if (status != napi_ok) {
++    MS_LOG(ERROR) << "get bool error";
++    return undefinedResult;
++  }
+ 
+   napi_value jsThis = nullptr;
+   napi_value jsResult = nullptr;
+   MSLiteModelNapi *modelNapi = nullptr;
+   napi_value argv[ARGS_TWO] = {0};
+   size_t argCount = PARAM2;
+-  napi_status status = napi_get_cb_info(env, info, &argCount, argv, &jsThis, nullptr);
++  status = napi_get_cb_info(env, info, &argCount, argv, &jsThis, nullptr);
+   if (status != napi_ok || jsThis == nullptr) {
+     MS_LOG(ERROR) << "failed to retrieve details about the callback";
+     return undefinedResult;
+diff --git a/mindspore/lite/src/runtime/js_api/mstensor_napi.cc b/mindspore/lite/src/runtime/js_api/mstensor_napi.cc
+index 898e81bd..975d3d94 100644
+--- a/mindspore/lite/src/runtime/js_api/mstensor_napi.cc
++++ b/mindspore/lite/src/runtime/js_api/mstensor_napi.cc
+@@ -45,11 +45,8 @@ const int ARGS_TWO = 2;
+ MSTensorNapi::MSTensorNapi() { MS_LOG(DEBUG) << "MSLITE MSTensorNapi Instances create."; }
+ 
+ MSTensorNapi::~MSTensorNapi() {
+-  if (wrapper_ != nullptr) {
+-    napi_delete_reference(env_, wrapper_);
+-  }
+   if (nativeMSTensor_ != nullptr) {
+-    nativeMSTensor_->SetData(nullptr);
++    nativeMSTensor_ = nullptr;
+   }
+   MS_LOG(INFO) << "MSLITE MSTensorNapi Instances destroy.";
+ }
+@@ -62,22 +59,21 @@ napi_value MSTensorNapi::Constructor(napi_env env, napi_callback_info info) {
+     return nullptr;
+   }
+ 
+-  MSTensorNapi *tensprNapi = new (std::nothrow) MSTensorNapi();
+-  if (tensprNapi == nullptr) {
++  std::unique_ptr<MSTensorNapi> tensorNapi = std::make_unique<MSTensorNapi>();
++  if (tensorNapi == nullptr) {
+     MS_LOG(ERROR) << "No memory";
+     return nullptr;
+   }
+ 
+-  tensprNapi->env_ = env;
+-  status = napi_wrap(env, jsThis, tensprNapi, MSTensorNapi::Finalize, nullptr, nullptr);
+-  if (status != napi_ok) {
+-    delete tensprNapi;
+-    MS_LOG(ERROR) << "Failed to wrap native instance";
+-    return nullptr;
++  tensorNapi->env_ = env;
++  status = napi_wrap(env, jsThis, reinterpret_cast<void *>(tensorNapi.get()), MSTensorNapi::Finalize, nullptr, nullptr);
++  if (status == napi_ok) {
++    tensorNapi.release();
++    return jsThis;
+   }
+ 
+-  MS_LOG(INFO) << "Constructor success.";
+-  return jsThis;
++  MS_LOG(ERROR) << "Constructor fail.";
++  return nullptr;
+ }
+ 
+ void MSTensorNapi::Finalize(napi_env env, void *nativeObject, void *finalize) {
+-- 
+2.17.1
+
