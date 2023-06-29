@@ -1,0 +1,41 @@
+From 68e7e6d23a058209d3158597101435ea1007b284 Mon Sep 17 00:00:00 2001
+From: Zhu Guodong <zhuguodong0001@163.com>
+Date: Thu, 29 Jun 2023 17:13:06 +0800
+Subject: [PATCH] change subsystem name to thirdparty
+
+---
+ mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn | 2 ++
+ mindspore/lite/src/runtime/js_api/BUILD.gn              | 2 +-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
+index 9acc5b76..ccb21a59 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
+@@ -749,10 +749,12 @@ ohos_source_set("nnacl_common") {
+   configs = [ ":nnacl_public_config" ]
+   cflags_c = [ "-ffast-math" ]
+   sources = nnacl_sources
++  part_name = "mindspore"
+ }
+ 
+ ohos_source_set("nnacl_no_fast_math") {
+   configs = [ ":nnacl_public_config" ]
+   cflags_c = [ "-fno-fast-math" ]
+   sources = no_fast_math_fp32_kernel_sources
++  part_name = "mindspore"
+ }
+diff --git a/mindspore/lite/src/runtime/js_api/BUILD.gn b/mindspore/lite/src/runtime/js_api/BUILD.gn
+index 7fb1cff0..b105bb77 100644
+--- a/mindspore/lite/src/runtime/js_api/BUILD.gn
++++ b/mindspore/lite/src/runtime/js_api/BUILD.gn
+@@ -50,5 +50,5 @@ ohos_shared_library("mindsporelite_napi") {
+ 
+   relative_install_dir = "module/ai"
+   part_name = "mindspore"
+-  subsystem_name = "ai"
++  subsystem_name = "thirdparty"
+ }
+-- 
+2.34.1
+
