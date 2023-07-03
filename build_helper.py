@@ -45,7 +45,8 @@ def do_patch(patch_dir, target_dir):
         '0026-js-buffer-add-bugfix.patch',
         '0027-js-buffer-leakage-bugfix.patch',
         '0028-modify-ext_dep-hilog.patch',
-        '0029-change-subsystem-name-to-thirdparty.patch'
+        '0029-change-subsystem-name-to-thirdparty.patch',
+        '0030-fix-core-binding-in-ohos.patch'
     ]
 
     cwd = os.getcwd()
