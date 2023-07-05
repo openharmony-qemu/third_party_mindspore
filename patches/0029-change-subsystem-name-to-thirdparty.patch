@@ -1,22 +1,26 @@
-From 68e7e6d23a058209d3158597101435ea1007b284 Mon Sep 17 00:00:00 2001
+From f487355de250d679169f9ae279d520cd67fe0971 Mon Sep 17 00:00:00 2001
 From: Zhu Guodong <zhuguodong0001@163.com>
-Date: Thu, 29 Jun 2023 17:13:06 +0800
-Subject: [PATCH] change subsystem name to thirdparty
+Date: Mon, 3 Jul 2023 20:08:53 +0800
+Subject: [PATCH] auto-apply 0029-change-subsystem-name-to-thirdparty.patch
 
 ---
- mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn | 2 ++
+ mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn | 4 ++++
+ mindspore/core/mindrt/BUILD.gn                          | 1 +
+ mindspore/lite/BUILD.gn                                 | 2 ++
+ mindspore/lite/mindir/BUILD.gn                          | 1 +
  mindspore/lite/src/runtime/js_api/BUILD.gn              | 2 +-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ 5 files changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
-index 9acc5b76..ccb21a59 100644
+index 9acc5b76..3427a8a4 100644
 --- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
 +++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
-@@ -749,10 +749,12 @@ ohos_source_set("nnacl_common") {
+@@ -749,10 +749,14 @@ ohos_source_set("nnacl_common") {
    configs = [ ":nnacl_public_config" ]
    cflags_c = [ "-ffast-math" ]
    sources = nnacl_sources
 +  part_name = "mindspore"
++  subsystem_name = "thirdparty"
  }
  
  ohos_source_set("nnacl_no_fast_math") {
@@ -24,6 +28,47 @@ index 9acc5b76..ccb21a59 100644
    cflags_c = [ "-fno-fast-math" ]
    sources = no_fast_math_fp32_kernel_sources
 +  part_name = "mindspore"
++  subsystem_name = "thirdparty"
+ }
+diff --git a/mindspore/core/mindrt/BUILD.gn b/mindspore/core/mindrt/BUILD.gn
+index 2bc0e6cd..e1771b30 100644
+--- a/mindspore/core/mindrt/BUILD.gn
++++ b/mindspore/core/mindrt/BUILD.gn
+@@ -42,4 +42,5 @@ ohos_source_set("mindrt_obj") {
+   remove_configs = [ "//build/config/compiler:no_rtti" ]
+ 
+   part_name = "mindspore"
++  subsystem_name = "thirdparty"
+ }
+diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
+index dd542cfe..48b0461d 100644
+--- a/mindspore/lite/BUILD.gn
++++ b/mindspore/lite/BUILD.gn
+@@ -666,6 +666,7 @@ ohos_shared_library("mindspore_lib") {
+     "-Wno-constant-conversion",
+   ]
+   part_name = "mindspore"
++  subsystem_name = "thirdparty"
+ }
+ 
+ # Train library
+@@ -880,6 +881,7 @@ ohos_shared_library("mindspore_train_lib") {
+     "-Wno-constant-conversion",
+   ]
+   part_name = "mindspore"
++  subsystem_name = "thirdparty"
+ }
+ 
+ # Build configurations
+diff --git a/mindspore/lite/mindir/BUILD.gn b/mindspore/lite/mindir/BUILD.gn
+index 8da00c2b..d2618716 100644
+--- a/mindspore/lite/mindir/BUILD.gn
++++ b/mindspore/lite/mindir/BUILD.gn
+@@ -56,4 +56,5 @@ ohos_shared_library("mindir_lib") {
+   output_name = "mindir"
+   innerapi_tags = [ "platformsdk_indirect"]
+   part_name = "mindspore"
++  subsystem_name = "thirdparty"
  }
 diff --git a/mindspore/lite/src/runtime/js_api/BUILD.gn b/mindspore/lite/src/runtime/js_api/BUILD.gn
 index 7fb1cff0..b105bb77 100644
