@@ -47,7 +47,8 @@ def do_patch(patch_dir, target_dir):
         '0028-modify-ext_dep-hilog.patch',
         '0029-change-subsystem-name-to-thirdparty.patch',
         '0030-fix-core-binding-in-ohos.patch',
-        '0031-backport-CVE-2023-2970.patch'
+        '0031-backport-CVE-2023-2970.patch',
+        '0032-js-enable-enum.patch'
     ]
 
     cwd = os.getcwd()
