@@ -1,0 +1,159 @@
+From 1ea5a2bea36a22b58d65c7ead2ddd8671eb6dba4 Mon Sep 17 00:00:00 2001
+From: Zhu Guodong <zhuguodong0001@163.com>
+Date: Sat, 8 Jul 2023 15:28:04 +0800
+Subject: [PATCH] support fp16 for arm64 arch
+
+---
+ mindspore/lite/BUILD.gn | 115 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 114 insertions(+), 1 deletion(-)
+
+diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
+index 48b0461d..10930fde 100644
+--- a/mindspore/lite/BUILD.gn
++++ b/mindspore/lite/BUILD.gn
+@@ -70,6 +70,7 @@ ohos_group("mindspore") {
+     ":mindspore_lib",
+     ":mindspore_train_lib",
+     "mindir:mindir_lib",
++    "tools/benchmark:benchmark_bin",
+     "src/runtime/js_api:mindsporelite_napi"
+   ]
+ }
+@@ -238,7 +239,6 @@ cpu_kernel_sources = [
+   "src/runtime/kernel/cpu/fp32/batch_to_space_fp32.cc",
+   "src/runtime/kernel/cpu/fp32/bias_fp32.cc",
+   "src/runtime/kernel/cpu/fp32/broadcast_to_fp32.cc",
+-  "src/runtime/kernel/cpu/fp32/cast_for_x86_fp16.cc",
+   "src/runtime/kernel/cpu/fp32/cast_fp32.cc",
+   "src/runtime/kernel/cpu/fp32/convolution_1x1_fp32.cc",
+   "src/runtime/kernel/cpu/fp32/convolution_delegate_fp32.cc",
+@@ -324,6 +324,114 @@ cpu_kernel_sources = [
+   "src/runtime/kernel/cpu/fp32/custom_gru_fp32.cc",
+ ]
+ 
++if ((target_cpu != "arm") && (target_cpu != "arm64")) {
++    cpu_kernel_sources += [ "src/runtime/kernel/cpu/fp32/cast_for_x86_fp16.cc" ]
++}
++
++fp16_kernel_sources = [
++    "src/runtime/kernel/cpu/fp16/activation_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/activation_fp16.h",
++    "src/runtime/kernel/cpu/fp16/addn_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/addn_fp16.h",
++    "src/runtime/kernel/cpu/fp16/arithmetic_compare_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/arithmetic_compare_fp16.h",
++    "src/runtime/kernel/cpu/fp16/arithmetic_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/arithmetic_fp16.h",
++    "src/runtime/kernel/cpu/fp16/arithmetic_self_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/arithmetic_self_fp16.h",
++    "src/runtime/kernel/cpu/fp16/batchnorm_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/batchnorm_fp16.h",
++    "src/runtime/kernel/cpu/fp16/biasadd_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/biasadd_fp16.h",
++    "src/runtime/kernel/cpu/fp16/cast_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/cast_fp16.h",
++    "src/runtime/kernel/cpu/fp16/common_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/common_fp16.h",
++    "src/runtime/kernel/cpu/fp16/concat_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/concat_fp16.h",
++    "src/runtime/kernel/cpu/fp16/convolution_1x1_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/convolution_1x1_fp16.h",
++    "src/runtime/kernel/cpu/fp16/convolution_delegate_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/convolution_delegate_fp16.h",
++    "src/runtime/kernel/cpu/fp16/convolution_depthwise_3x3_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/convolution_depthwise_3x3_fp16.h",
++    "src/runtime/kernel/cpu/fp16/convolution_depthwise_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/convolution_depthwise_fp16.h",
++    "src/runtime/kernel/cpu/fp16/convolution_depthwise_slidewindow_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/convolution_depthwise_slidewindow_fp16.h",
++    "src/runtime/kernel/cpu/fp16/convolution_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/convolution_fp16.h",
++    "src/runtime/kernel/cpu/fp16/convolution_winograd_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/convolution_winograd_fp16.h",
++    "src/runtime/kernel/cpu/fp16/crop_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/crop_fp16.h",
++    "src/runtime/kernel/cpu/fp16/custom_gru_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/custom_gru_fp16.h",
++    "src/runtime/kernel/cpu/fp16/deconvolution_depthwise_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/deconvolution_depthwise_fp16.h",
++    "src/runtime/kernel/cpu/fp16/deconvolution_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/deconvolution_fp16.h",
++    "src/runtime/kernel/cpu/fp16/deconvolution_winograd_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/deconvolution_winograd_fp16.h",
++    "src/runtime/kernel/cpu/fp16/depth_to_space_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/depth_to_space_fp16.h",
++    "src/runtime/kernel/cpu/fp16/fill_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/fill_fp16.h",
++    "src/runtime/kernel/cpu/fp16/fp16_op_handler.h",
++    "src/runtime/kernel/cpu/fp16/fullconnection_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/fullconnection_fp16.h",
++    "src/runtime/kernel/cpu/fp16/fused_batchnorm_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/fused_batchnorm_fp16.h",
++    "src/runtime/kernel/cpu/fp16/gather_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/gather_fp16.h",
++    "src/runtime/kernel/cpu/fp16/group_convolution_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/group_convolution_fp16.h",
++    "src/runtime/kernel/cpu/fp16/gru_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/gru_fp16.h",
++    "src/runtime/kernel/cpu/fp16/instance_norm_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/instance_norm_fp16.h",
++    "src/runtime/kernel/cpu/fp16/layer_norm_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/layer_norm_fp16.h",
++    "src/runtime/kernel/cpu/fp16/layout_transform_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/layout_transform_fp16.h",
++    "src/runtime/kernel/cpu/fp16/log_softmax_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/log_softmax_fp16.h",
++    "src/runtime/kernel/cpu/fp16/lstm_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/lstm_fp16.h",
++    "src/runtime/kernel/cpu/fp16/matmul_base_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/matmul_base_fp16.h",
++    "src/runtime/kernel/cpu/fp16/matmul_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/matmul_fp16.h",
++    "src/runtime/kernel/cpu/fp16/pad_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/pad_fp16.h",
++    "src/runtime/kernel/cpu/fp16/pooling_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/pooling_fp16.h",
++    "src/runtime/kernel/cpu/fp16/power_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/power_fp16.h",
++    "src/runtime/kernel/cpu/fp16/prelu_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/prelu_fp16.h",
++    "src/runtime/kernel/cpu/fp16/quant_dtype_cast_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/quant_dtype_cast_fp16.h",
++    "src/runtime/kernel/cpu/fp16/ragged_range_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/ragged_range_fp16.h",
++    "src/runtime/kernel/cpu/fp16/reduce_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/reduce_fp16.h",
++    "src/runtime/kernel/cpu/fp16/resize_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/resize_fp16.h",
++    "src/runtime/kernel/cpu/fp16/scale_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/scale_fp16.h",
++    "src/runtime/kernel/cpu/fp16/slice_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/slice_fp16.h",
++    "src/runtime/kernel/cpu/fp16/softmax_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/softmax_fp16.h",
++    "src/runtime/kernel/cpu/fp16/stack_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/stack_fp16.h",
++    "src/runtime/kernel/cpu/fp16/transpose_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/transpose_fp16.h",
++    "src/runtime/kernel/cpu/fp16/where_fp16.cc",
++    "src/runtime/kernel/cpu/fp16/where_fp16.h"
++]
++
+ int8_kernel_sources = [
+   "src/runtime/kernel/cpu/int8/activation_int8.cc",
+   "src/runtime/kernel/cpu/int8/add_int8.cc",
+@@ -409,6 +517,11 @@ all_cpu_kernel_sources += int8_kernel_sources
+ all_cpu_kernel_sources += string_kernel_sources
+ all_cpu_kernel_sources += control_kernel_sources
+ 
++if (target_cpu == "arm64") {
++    all_cpu_kernel_sources += fp16_kernel_sources
++}
++
++
+ ops_base_sources = [
+ #  "src/common/ops/anf_utils.cc", # disable runtiem convert
+ #  "src/common/ops/ops_def.cc", # disable kernel executor
+-- 
+2.34.1
+

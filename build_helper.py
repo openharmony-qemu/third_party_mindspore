@@ -48,7 +48,8 @@ def do_patch(patch_dir, target_dir):
         '0029-change-subsystem-name-to-thirdparty.patch',
         '0030-fix-core-binding-in-ohos.patch',
         '0031-backport-CVE-2023-2970.patch',
-        '0032-js-enable-enum.patch'
+        '0032-js-enable-enum.patch',
+        '0033-support-fp16-for-arm64-arch.patch'
     ]
 
     cwd = os.getcwd()
