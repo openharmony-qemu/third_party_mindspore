@@ -51,6 +51,7 @@ def do_patch(patch_dir, target_dir):
         '0032-js-enable-enum.patch',
         '0033-support-fp16-for-arm64-arch.patch',
         '0034-splite-ndk-so.patch',
+        '0035-nnrt-delegate-support-metagraph.patch',
     ]
 
     cwd = os.getcwd()

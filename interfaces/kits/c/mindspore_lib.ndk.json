@@ -241,6 +241,14 @@
   },
   {
       "first_introduced": "10",
-      "name": "OH_AI_DeviceInfoGetPriority"
+      "name": "OH_AI_GetElementOfNNRTDeviceDescs"
+  },
+  {
+      "first_introduced": "10",
+      "name": "OH_AI_DeviceInfoAddExtension"
+  },
+  {
+      "first_introduced": "10",
+      "name": "OH_AI_TensorSetUserData"
   }
 ]

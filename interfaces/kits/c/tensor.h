@@ -17,6 +17,7 @@
 #define MINDSPORE_INCLUDE_C_API_TENSOE_C_H
 
 #include <stddef.h>
+#include "mindspore/status.h"
 #include "mindspore/types.h"
 #include "mindspore/data_type.h"
 #include "mindspore/format.h"
@@ -139,6 +140,19 @@ OH_AI_API int64_t OH_AI_TensorGetElementNum(const OH_AI_TensorHandle tensor);
 ///
 /// \return The data size of the tensor.
 OH_AI_API size_t OH_AI_TensorGetDataSize(const OH_AI_TensorHandle tensor);
+
+/// \brief Set the data for the tensor with user-allocated data buffer.
+/// The main purpose of this interface is providing a way of using memory already allocated by user as the Model's
+/// input, but not which allocated inside the Model object. It can reduce one copy.
+/// Note: The tensor won't free the data provided by invoker. Invoker has the responsibility to free it. And this
+/// free action should not be preformed before destruction of the tensor.
+///
+/// \param[in] tensor Tensor object handle.
+/// \param[in] data A pointer to the user data buffer.
+/// \param[in] data the byte size of the user data buffer.
+///
+/// \return OH_AI_STATUS_SUCCESS if success, or detail error code if failed.
+OH_AI_API OH_AI_Status OH_AI_TensorSetUserData(OH_AI_TensorHandle tensor, void *data, size_t data_size);
 
 #ifdef __cplusplus
 }

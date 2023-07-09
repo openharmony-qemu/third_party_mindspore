@@ -181,6 +181,14 @@ OH_AI_API int OH_AI_DeviceInfoGetFrequency(const OH_AI_DeviceInfoHandle device_i
 /// \return NNRT device description array.
 OH_AI_API NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num);
 
+/// \brief Obtain the specified element in NNRt device description array.
+///
+/// \param[in] descs NNRT device description array.
+/// \param[in] index Element index.
+///
+/// \return NNRT device description.
+OH_AI_API NNRTDeviceDesc *OH_AI_GetElementOfNNRTDeviceDescs(NNRTDeviceDesc *descs, size_t index);
+
 /// \brief Destroy the NNRT device descriptions returned by OH_AI_NNRTGetAllDeviceDescs().
 ///
 /// \param[in] desc NNRT device description array.
@@ -259,6 +267,16 @@ OH_AI_API void OH_AI_DeviceInfoSetPriority(OH_AI_DeviceInfoHandle device_info, O
 ///
 /// \return NNRT priority.
 OH_AI_API OH_AI_Priority OH_AI_DeviceInfoGetPriority(const OH_AI_DeviceInfoHandle device_info);
+
+/// \brief Add extension of key/value format to device info, Only valid for NNRT.
+///
+/// \param[in] device_info Device info object handle.
+/// \param[in] name The content of key as a C string.
+/// \param[in] value The pointer to the value, which is a byte array.
+/// \param[in] value_size The size of the value, which is a byte array.
+///
+/// \return OH_AI_STATUS_SUCCESS if success, or detail error code if failed.
+OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle device_info, const char *name, const char *value, size_t value_size);
 #ifdef __cplusplus
 }
 #endif
