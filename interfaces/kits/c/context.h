@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "mindspore/types.h"
+#include "mindspore/status.h"
 
 #ifdef __cplusplus
 extern "C" {
