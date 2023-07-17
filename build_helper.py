@@ -53,6 +53,7 @@ def do_patch(patch_dir, target_dir):
         '0034-splite-ndk-so.patch',
         '0035-nnrt-delegate-support-metagraph.patch',
         '0036-new-dynamic-quant-algorigthm-and-init-packed.patch',
+        '0037-npu-support-custom-model.patch'
     ]
 
     cwd = os.getcwd()
