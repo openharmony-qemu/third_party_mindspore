@@ -1,0 +1,42 @@
+From 4d3a95b9cd858301f26d63f3ed1005c914d0a2a6 Mon Sep 17 00:00:00 2001
+From: Zhu Guodong <zhuguodong0001@163.com>
+Date: Fri, 21 Jul 2023 10:02:26 +0800
+Subject: [PATCH] auto-apply 0001-adapt-nnrt-ext-deps.patch
+
+---
+ mindspore/lite/BUILD.gn | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
+index 86b80a28..42f268b9 100644
+--- a/mindspore/lite/BUILD.gn
++++ b/mindspore/lite/BUILD.gn
+@@ -774,7 +774,11 @@ ohos_shared_library("mindspore_lib") {
+       "mindir/include",
+       "mindir/inner_headers",
+     ]
+-    external_deps += [ "neural_network_runtime:nnrt_target" ]
++    if (mindspore_feature_nnrt_metagraph) {
++        external_deps += [ "neural_network_runtime_ext:nnrt_ext_target" ]
++    } else {
++        external_deps += [ "neural_network_runtime:nnrt_target" ]
++    }
+     deps += [ "mindir:mindir_lib" ]
+     defines += [ "SUPPORT_NNRT" ]
+   }
+@@ -828,7 +832,11 @@ ohos_shared_library("mindspore_ndk") {
+     ":secure_option",
+   ]
+ 
+-  external_deps = [ "neural_network_runtime:nnrt_target" ]
++  if (mindspore_feature_nnrt_metagraph) {
++      external_deps = [ "neural_network_runtime_ext:nnrt_ext_target" ]
++  } else {
++      external_deps = [ "neural_network_runtime:nnrt_target" ]
++  }
+ 
+   remove_configs = [ "//build/config/compiler:no_rtti" ]
+ 
+-- 
+2.34.1
+
