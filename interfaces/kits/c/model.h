@@ -45,91 +45,103 @@ typedef struct OH_AI_CallBackParam {
 typedef bool (*OH_AI_KernelCallBack)(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
                                      const OH_AI_CallBackParam kernel_Info);
 
-/// \brief Create a model object.
-///
-/// \return Model object handle.
+/**
+ * @brief Create a model object.
+ * @return Model object handle.
+ * @since 9
+ */
 OH_AI_API OH_AI_ModelHandle OH_AI_ModelCreate();
 
-/// \brief Destroy the model object.
-///
-/// \param[in] model Model object handle address.
+/**
+ * @brief Destroy the model object.
+ * @param model Model object handle address.
+ * @since 9
+ */
 OH_AI_API void OH_AI_ModelDestroy(OH_AI_ModelHandle *model);
 
-/// \brief Build the model from model file buffer so that it can run on a device.
-///
-/// \param[in] model Model object handle.
-/// \param[in] model_data Define the buffer read from a model file.
-/// \param[in] data_size Define bytes number of model file buffer.
-/// \param[in] model_type Define The type of model file.
-/// \param[in] model_context Define the context used to store options during execution.
-///
-/// \return OH_AI_Status.
+/**
+ * @brief Build the model from model file buffer so that it can run on a device.
+ * @param model Model object handle.
+ * @param model_data Define the buffer read from a model file.
+ * @param data_size Define bytes number of model file buffer.
+ * @param model_type Define The type of model file.
+ * @param model_context Define the context used to store options during execution.
+ * @return OH_AI_Status.
+ * @since 9
+ */
 OH_AI_API OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size,
                                         OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context);
 
-/// \brief Load and build the model from model path so that it can run on a device.
-///
-/// \param[in] model Model object handle.
-/// \param[in] model_path Define the model file path.
-/// \param[in] model_type Define The type of model file.
-/// \param[in] model_context Define the context used to store options during execution.
-///
-/// \return OH_AI_Status.
+/**
+ * @brief Load and build the model from model path so that it can run on a device.
+ * @param model Model object handle.
+ * @param model_path Define the model file path.
+ * @param model_type Define The type of model file.
+ * @param model_context Define the context used to store options during execution.
+ * @return OH_AI_Status.
+ * @since 9
+ */
 OH_AI_API OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path,
                                                 OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context);
 
-/// \brief Resizes the shapes of inputs.
-///
-/// \param[in] model Model object handle.
-/// \param[in] inputs The array that includes all input tensor handles.
-/// \param[in] shape_infos Defines the new shapes of inputs, should be consistent with inputs.
-/// \param[in] shape_info_num The num of shape_infos.
-///
-/// \return OH_AI_Status.
+/**
+ * @brief Resizes the shapes of inputs.
+ * @param model Model object handle.
+ * @param inputs The array that includes all input tensor handles.
+ * @param shape_infos Defines the new shapes of inputs, should be consistent with inputs.
+ * @param shape_info_num The num of shape_infos.
+ * @return OH_AI_Status.
+ * @since 9
+ */
 OH_AI_API OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
                                          OH_AI_ShapeInfo *shape_infos, size_t shape_info_num);
 
-/// \brief Inference model.
-///
-/// \param[in] model Model object handle.
-/// \param[in] inputs The array that includes all input tensor handles.
-/// \param[out] outputs The array that includes all output tensor handles.
-/// \param[in] before CallBack before predict.
-/// \param[in] after CallBack after predict.
-///
-/// \return OH_AI_Status.
+/**
+ * @brief Inference model.
+ * @param model Model object handle.
+ * @param inputs The array that includes all input tensor handles.
+ * @param outputs The array that includes all output tensor handles.
+ * @param before CallBack before predict.
+ * @param after CallBack after predict.
+ * @return OH_AI_Status.
+ * @since 9
+ */
 OH_AI_API OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
                                           OH_AI_TensorHandleArray *outputs, const OH_AI_KernelCallBack before,
                                           const OH_AI_KernelCallBack after);
 
-/// \brief Obtains all input tensor handles of the model.
-///
-/// \param[in] model Model object handle.
-///
-/// \return The array that includes all input tensor handles.
+/**
+ * @brief Obtains all input tensor handles of the model.
+ * @param model Model object handle.
+ * @return The array that includes all input tensor handles.
+ * @since 9
+ */
 OH_AI_API OH_AI_TensorHandleArray OH_AI_ModelGetInputs(const OH_AI_ModelHandle model);
 
-/// \brief Obtains all output tensor handles of the model.
-///
-/// \param[in] model Model object handle.
-///
-/// \return The array that includes all output tensor handles.
+/**
+ * @brief Obtains all output tensor handles of the model.
+ * @param model Model object handle.
+ * @return The array that includes all output tensor handles.
+ * @since 9
+ */
 OH_AI_API OH_AI_TensorHandleArray OH_AI_ModelGetOutputs(const OH_AI_ModelHandle model);
 
-/// \brief Obtains the input tensor handle of the model by name.
-///
-/// \param[in] model Model object handle.
-/// \param[in] tensor_name The name of tensor.
-///
-/// \return The input tensor handle with the given name, if the name is not found, an NULL is returned.
+/**
+ * @brief Obtains the input tensor handle of the model by name.
+ * @param model Model object handle.
+ * @param tensor_name The name of tensor.
+ * @return The input tensor handle with the given name, if the name is not found, an NULL is returned.
+ * @since 9
+ */
 OH_AI_API OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name);
 
-/// \brief Obtains the output tensor handle of the model by name.
-///
-/// \param[in] model Model object handle.
-/// \param[in] tensor_name The name of tensor.
-///
-/// \return The output tensor handle with the given name, if the name is not found, an NULL is returned.
+/**
+ * @brief Obtains the output tensor handle of the model by name.
+ * @param model Model object handle.
+ * @param tensor_name The name of tensor.
+ * @return The output tensor handle with the given name, if the name is not found, an NULL is returned.
+ * @since 9
+ */
 OH_AI_API OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name);
 
 #ifdef __cplusplus
