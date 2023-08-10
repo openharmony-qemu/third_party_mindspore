@@ -55,6 +55,7 @@ def do_patch(patch_dir, target_dir):
         '0036-new-dynamic-quant-algorigthm-and-init-packed.patch',
         '0037-npu-support-custom-model.patch',
         '0038-adapt-nnrt-ext-deps.patch',
+        '0039-fix-double-destry-nnrt-mode.patch',
     ]
 
     cwd = os.getcwd()
