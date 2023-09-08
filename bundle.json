@@ -58,6 +58,9 @@
           }
         ],
         "test": [
+          "//third_party/mindspore/test/:mindspore_unit_test",
+          "//third_party/mindspore/test/:mindspore_system_test",
+          "//third_party/mindspore/test/:mindspore_fuzz_test"
         ]
       }
     }
