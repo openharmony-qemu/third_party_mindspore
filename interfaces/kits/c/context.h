@@ -112,7 +112,7 @@ OH_AI_API void OH_AI_ContextSetEnableParallel(OH_AI_ContextHandle context, bool 
  * @return Bool value that indicates whether in parallel.
  * @since 9
  */
- OH_AI_API bool OH_AI_ContextGetEnableParallel(const OH_AI_ContextHandle context);
+OH_AI_API bool OH_AI_ContextGetEnableParallel(const OH_AI_ContextHandle context);
 
 /**
  * @brief Add device info to context object.
