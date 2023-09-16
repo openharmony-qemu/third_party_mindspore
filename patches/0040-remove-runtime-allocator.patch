@@ -1,0 +1,29 @@
+From 092efdd0c2e871fefc19762069a7e55883ed536c Mon Sep 17 00:00:00 2001
+From: 22dimensions <waitingwind@foxmail.com>
+Date: Sat, 16 Sep 2023 21:12:54 +0800
+Subject: [PATCH] remove runtime allocator
+
+---
+ mindspore/lite/src/runtime/lite_session.cc | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/mindspore/lite/src/runtime/lite_session.cc b/mindspore/lite/src/runtime/lite_session.cc
+index eb1b5ef7..8d640163 100644
+--- a/mindspore/lite/src/runtime/lite_session.cc
++++ b/mindspore/lite/src/runtime/lite_session.cc
+@@ -1252,12 +1252,6 @@ int LiteSession::Resize(const std::vector<mindspore::lite::Tensor *> &inputs,
+     return ret;
+   }
+ 
+-  if (RuntimeAllocatorInit() != RET_OK) {
+-    MS_LOG(ERROR) << "Runtime allocator in resize failed.";
+-    is_running_.store(false);
+-    return RET_ERROR;
+-  }
+-
+   auto status = GraphOptimizePass(&kernels_);
+   if (status != RET_OK) {
+     MS_LOG(ERROR) << "GraphOptimizePass failed.";
+-- 
+2.25.1
+
