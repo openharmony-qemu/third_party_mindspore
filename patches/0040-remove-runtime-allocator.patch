@@ -1,17 +1,31 @@
-From 092efdd0c2e871fefc19762069a7e55883ed536c Mon Sep 17 00:00:00 2001
-From: 22dimensions <waitingwind@foxmail.com>
-Date: Sat, 16 Sep 2023 21:12:54 +0800
+From 4e24e1c19b24f22ffea941886a37aa04facd6bd2 Mon Sep 17 00:00:00 2001
+From: qinzheng4 <qinzheng4@huawei.com>
+Date: Mon, 18 Sep 2023 10:16:02 +0800
 Subject: [PATCH] remove runtime allocator
 
 ---
- mindspore/lite/src/runtime/lite_session.cc | 6 ------
- 1 file changed, 6 deletions(-)
+ mindspore/lite/src/runtime/lite_session.cc | 13 -------------
+ 1 file changed, 13 deletions(-)
 
 diff --git a/mindspore/lite/src/runtime/lite_session.cc b/mindspore/lite/src/runtime/lite_session.cc
-index eb1b5ef7..8d640163 100644
+index eb1b5ef7..3cf69aba 100644
 --- a/mindspore/lite/src/runtime/lite_session.cc
 +++ b/mindspore/lite/src/runtime/lite_session.cc
-@@ -1252,12 +1252,6 @@ int LiteSession::Resize(const std::vector<mindspore::lite::Tensor *> &inputs,
+@@ -600,13 +600,6 @@ int LiteSession::CompileGraph(Model *model) {
+   MarkSharedWeight(kernels_);
+   FreePackOpWeight(kernels_);
+ 
+-  ret = RuntimeAllocatorInit();
+-  if (ret != RET_OK) {
+-    MS_LOG(ERROR) << "Runtime allocator init failed.";
+-    is_running_.store(false);
+-    return ret;
+-  }
+-
+   is_running_.store(false);
+ #if defined(LINUX_RUNTIME)
+   (void)malloc_trim(0);
+@@ -1252,12 +1245,6 @@ int LiteSession::Resize(const std::vector<mindspore::lite::Tensor *> &inputs,
      return ret;
    }
  
