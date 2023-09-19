@@ -1,0 +1,37 @@
+From 170a6f83420a87bac821cb4ec6592f4da00e1bc9 Mon Sep 17 00:00:00 2001
+From: liuyifei <liuyifei20@huawei.com>
+Date: Tue, 19 Sep 2023 10:47:58 +0800
+Subject: [PATCH] hilog compile workaround
+
+---
+ mindspore/core/mindrt/src/thread/threadlog.h | 1 +
+ mindspore/lite/src/common/log.cc             | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/mindspore/core/mindrt/src/thread/threadlog.h b/mindspore/core/mindrt/src/thread/threadlog.h
+index 5fc182ae..19606698 100644
+--- a/mindspore/core/mindrt/src/thread/threadlog.h
++++ b/mindspore/core/mindrt/src/thread/threadlog.h
+@@ -17,6 +17,7 @@
+ #ifndef MINDSPORE_CORE_MINDRT_RUNTIME_THREADPOOL_LOG_H_
+ #define MINDSPORE_CORE_MINDRT_RUNTIME_THREADPOOL_LOG_H_
+ 
++#undef HILOG_RAWFORMAT
+ namespace mindspore {
+ #ifdef THREAD_POOL_DEBUG
+ #include <stdio.h>
+diff --git a/mindspore/lite/src/common/log.cc b/mindspore/lite/src/common/log.cc
+index f8ba18af..1c3c0b47 100644
+--- a/mindspore/lite/src/common/log.cc
++++ b/mindspore/lite/src/common/log.cc
+@@ -28,6 +28,7 @@
+ #include "hilog/log.h"
+ #endif
+ 
++#undef HILOG_RAWFORMAT
+ // namespace to support utils module definition namespace mindspore constexpr const char *ANDROID_LOG_TAG = "MS_LITE";
+ namespace mindspore {
+ #if defined(__ANDROID__)
+-- 
+2.25.1
+
