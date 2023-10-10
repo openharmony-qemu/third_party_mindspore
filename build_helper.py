@@ -57,7 +57,7 @@ def do_patch(patch_dir, target_dir):
         '0038-adapt-nnrt-ext-deps.patch',
         '0039-fix-double-destry-nnrt-mode.patch',
         '0040-remove-runtime-allocator.patch',
-        '0041-hilog-compile-workaround.patch',
+        '0041-remove-hilog-log-h-from-namespace.patch',
     ]
 
     cwd = os.getcwd()
