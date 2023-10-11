@@ -1,0 +1,1134 @@
+diff --git a/mindspore/lite/src/runtime/c_api/context_c.cc b/mindspore/lite/src/runtime/c_api/context_c.cc
+index 5ce4902b..c7615c6b 100644
+--- a/mindspore/lite/src/runtime/c_api/context_c.cc
++++ b/mindspore/lite/src/runtime/c_api/context_c.cc
+@@ -14,8 +14,8 @@
+  * limitations under the License.
+  */
+ #include "include/c_api/context_c.h"
++#include "include/api/context.h"
+ #include <string.h>
+-#include "src/runtime/c_api/context_c.h"
+ #include "src/runtime/c_api/type_c_private.h"
+ #include "src/common/log_adapter.h"
+ #ifdef SUPPORT_NNRT
+@@ -24,7 +24,7 @@
+ 
+ // ================ Context ================
+ OH_AI_ContextHandle OH_AI_ContextCreate() {
+-  auto impl = new (std::nothrow) mindspore::ContextC;
++  auto impl = new (std::nothrow) mindspore::Context();
+   if (impl == nullptr) {
+     MS_LOG(ERROR) << "memory allocation failed.";
+     return nullptr;
+@@ -34,7 +34,7 @@ OH_AI_ContextHandle OH_AI_ContextCreate() {
+ 
+ void OH_AI_ContextDestroy(OH_AI_ContextHandle *context) {
+   if (context != nullptr && *context != nullptr) {
+-    auto impl = static_cast<mindspore::ContextC *>(*context);
++    auto impl = static_cast<mindspore::Context *>(*context);
+     delete impl;
+     *context = nullptr;
+   }
+@@ -45,8 +45,8 @@ void OH_AI_ContextSetThreadNum(OH_AI_ContextHandle context, int32_t thread_num)
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::ContextC *>(context);
+-  impl->thread_num = thread_num;
++  auto impl = static_cast<mindspore::Context *>(context);
++  impl->SetThreadNum(thread_num);
+ }
+ 
+ int32_t OH_AI_ContextGetThreadNum(const OH_AI_ContextHandle context) {
+@@ -54,8 +54,8 @@ int32_t OH_AI_ContextGetThreadNum(const OH_AI_ContextHandle context) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return 0;
+   }
+-  auto impl = static_cast<mindspore::ContextC *>(context);
+-  return impl->thread_num;
++  auto impl = static_cast<mindspore::Context *>(context);
++  return impl->GetThreadNum();
+ }
+ 
+ void OH_AI_ContextSetThreadAffinityMode(OH_AI_ContextHandle context, int mode) {
+@@ -63,8 +63,8 @@ void OH_AI_ContextSetThreadAffinityMode(OH_AI_ContextHandle context, int mode) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::ContextC *>(context);
+-  impl->affinity_mode = mode;
++  auto impl = static_cast<mindspore::Context *>(context);
++  impl->SetThreadAffinity(mode);
+   return;
+ }
+ 
+@@ -73,8 +73,8 @@ int OH_AI_ContextGetThreadAffinityMode(const OH_AI_ContextHandle context) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return 0;
+   }
+-  auto impl = static_cast<mindspore::ContextC *>(context);
+-  return impl->affinity_mode;
++  auto impl = static_cast<mindspore::Context *>(context);
++  return impl->GetThreadAffinityMode();
+ }
+ 
+ void OH_AI_ContextSetThreadAffinityCoreList(OH_AI_ContextHandle context, const int32_t *core_list, size_t core_num) {
+@@ -83,8 +83,8 @@ void OH_AI_ContextSetThreadAffinityCoreList(OH_AI_ContextHandle context, const i
+     return;
+   }
+   const std::vector<int32_t> vec_core_list(core_list, core_list + core_num);
+-  auto impl = static_cast<mindspore::ContextC *>(context);
+-  impl->affinity_core_list = vec_core_list;
++  auto impl = static_cast<mindspore::Context *>(context);
++  impl->SetThreadAffinity(vec_core_list);
+   return;
+ }
+ 
+@@ -93,9 +93,11 @@ const int32_t *OH_AI_ContextGetThreadAffinityCoreList(const OH_AI_ContextHandle
+     MS_LOG(ERROR) << "param is nullptr.";
+     return nullptr;
+   }
+-  auto impl = static_cast<mindspore::ContextC *>(context);
+-  *core_num = impl->affinity_core_list.size();
+-  return impl->affinity_core_list.data();
++  auto impl = static_cast<mindspore::Context *>(context);
++  *core_num = impl->GetThreadAffinityCoreList().size();
++  int32_t *core_list = static_cast<int32_t *>(malloc((*core_num) * sizeof(int32_t)));
++  memcpy(core_list, impl->GetThreadAffinityCoreList().data(), (*core_num) * sizeof(int32_t));
++  return core_list;
+ }
+ 
+ void OH_AI_ContextSetEnableParallel(OH_AI_ContextHandle context, bool is_parallel) {
+@@ -103,8 +105,8 @@ void OH_AI_ContextSetEnableParallel(OH_AI_ContextHandle context, bool is_paralle
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::ContextC *>(context);
+-  impl->enable_parallel = is_parallel;
++  auto impl = static_cast<mindspore::Context *>(context);
++  impl->SetEnableParallel(is_parallel);
+ }
+ 
+ bool OH_AI_ContextGetEnableParallel(const OH_AI_ContextHandle context) {
+@@ -112,8 +114,8 @@ bool OH_AI_ContextGetEnableParallel(const OH_AI_ContextHandle context) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return false;
+   }
+-  auto impl = static_cast<mindspore::ContextC *>(context);
+-  return impl->enable_parallel;
++  auto impl = static_cast<mindspore::Context *>(context);
++  return impl->GetEnableParallel();
+ }
+ 
+ void OH_AI_ContextAddDeviceInfo(OH_AI_ContextHandle context, OH_AI_DeviceInfoHandle device_info) {
+@@ -121,25 +123,36 @@ void OH_AI_ContextAddDeviceInfo(OH_AI_ContextHandle context, OH_AI_DeviceInfoHan
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::ContextC *>(context);
+-  std::shared_ptr<mindspore::DeviceInfoC> device(static_cast<mindspore::DeviceInfoC *>(device_info));
+-  impl->device_info_list.push_back(device);
++  auto impl = static_cast<mindspore::Context *>(context);
++  std::shared_ptr<mindspore::DeviceInfoContext> device(static_cast<mindspore::DeviceInfoContext *>(device_info));
++  impl->MutableDeviceInfo().push_back(device);
+ }
+ 
+ // ================ DeviceInfo ================
+ OH_AI_DeviceInfoHandle OH_AI_DeviceInfoCreate(OH_AI_DeviceType device_type) {
+-  mindspore::DeviceInfoC *impl = new (std::nothrow) mindspore::DeviceInfoC;
++  mindspore::DeviceInfoContext *impl;
++  if (OH_AI_DEVICETYPE_CPU == device_type) {
++    impl = new (std::nothrow) mindspore::CPUDeviceInfo();
++  } else if (OH_AI_DEVICETYPE_GPU == device_type) {
++    impl = new (std::nothrow) mindspore::GPUDeviceInfo();
++  } else if (OH_AI_DEVICETYPE_KIRIN_NPU == device_type) {
++    impl = new (std::nothrow) mindspore::KirinNPUDeviceInfo();
++  } else if (OH_AI_DEVICETYPE_NNRT == device_type) {
++    impl = new (std::nothrow) mindspore::NNRTDeviceInfo();
++  } else {
++    MS_LOG(ERROR) << "device_type is invalid.";
++    impl = nullptr;
++  }
+   if (impl == nullptr) {
+     MS_LOG(ERROR) << "memory allocation failed.";
+     return nullptr;
+   }
+-  impl->device_type = device_type;
+   return static_cast<OH_AI_DeviceInfoHandle>(impl);
+ }
+ 
+ void OH_AI_DeviceInfoDestroy(OH_AI_DeviceInfoHandle *device_info) {
+   if (device_info != nullptr && *device_info != nullptr) {
+-    auto impl = static_cast<mindspore::DeviceInfoC *>(*device_info);
++    auto impl = static_cast<mindspore::DeviceInfoContext *>(*device_info);
+     delete impl;
+     *device_info = nullptr;
+   }
+@@ -150,8 +163,8 @@ void OH_AI_DeviceInfoSetProvider(OH_AI_DeviceInfoHandle device_info, const char
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
+-  impl->provider = provider;
++  auto impl = static_cast<mindspore::DeviceInfoContext *>(device_info);
++  impl->SetProvider(provider);
+ }
+ 
+ const char *OH_AI_DeviceInfoGetProvider(const OH_AI_DeviceInfoHandle device_info) {
+@@ -159,8 +172,10 @@ const char *OH_AI_DeviceInfoGetProvider(const OH_AI_DeviceInfoHandle device_info
+     MS_LOG(ERROR) << "param is nullptr.";
+     return nullptr;
+   }
+-  auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
+-  return impl->provider.c_str();
++  auto impl = static_cast<mindspore::DeviceInfoContext *>(device_info);
++  char *provider = static_cast<char *>(malloc(impl->GetProvider().size() + 1));
++  strcpy(provider, impl->GetProvider().c_str());
++  return provider;
+ }
+ 
+ void OH_AI_DeviceInfoSetProviderDevice(OH_AI_DeviceInfoHandle device_info, const char *device) {
+@@ -168,8 +183,8 @@ void OH_AI_DeviceInfoSetProviderDevice(OH_AI_DeviceInfoHandle device_info, const
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
+-  impl->provider_device = device;
++  auto impl = static_cast<mindspore::DeviceInfoContext *>(device_info);
++  impl->SetProviderDevice(device);
+ }
+ 
+ const char *OH_AI_DeviceInfoGetProviderDevice(const OH_AI_DeviceInfoHandle device_info) {
+@@ -177,8 +192,10 @@ const char *OH_AI_DeviceInfoGetProviderDevice(const OH_AI_DeviceInfoHandle devic
+     MS_LOG(ERROR) << "param is nullptr.";
+     return nullptr;
+   }
+-  auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
+-  return impl->provider_device.c_str();
++  auto impl = static_cast<mindspore::DeviceInfoContext *>(device_info);
++  char *provider_device = static_cast<char *>(malloc(impl->GetProviderDevice().size() + 1));
++  strcpy(provider_device, impl->GetProviderDevice().c_str());
++  return provider_device;
+ }
+ 
+ OH_AI_DeviceType OH_AI_DeviceInfoGetDeviceType(const OH_AI_DeviceInfoHandle device_info) {
+@@ -186,8 +203,8 @@ OH_AI_DeviceType OH_AI_DeviceInfoGetDeviceType(const OH_AI_DeviceInfoHandle devi
+     MS_LOG(ERROR) << "param is nullptr.";
+     return OH_AI_DEVICETYPE_INVALID;
+   }
+-  auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
+-  return impl->device_type;
++  auto impl = static_cast<mindspore::DeviceInfoContext *>(device_info);
++  return static_cast<OH_AI_DeviceType>(impl->GetDeviceType());
+ }
+ 
+ void OH_AI_DeviceInfoSetEnableFP16(OH_AI_DeviceInfoHandle device_info, bool is_fp16) {
+@@ -195,9 +212,17 @@ void OH_AI_DeviceInfoSetEnableFP16(OH_AI_DeviceInfoHandle device_info, bool is_f
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
+-  if (impl->device_type == OH_AI_DEVICETYPE_CPU || impl->device_type == OH_AI_DEVICETYPE_GPU) {
+-    impl->enable_fp16 = is_fp16;
++
++  auto impl_device = static_cast<mindspore::DeviceInfoContext *>(device_info);
++  if (OH_AI_DEVICETYPE_CPU == static_cast<OH_AI_DeviceType>(impl_device->GetDeviceType())) {
++    auto impl = static_cast<mindspore::CPUDeviceInfo *>(device_info);
++    impl->SetEnableFP16(is_fp16);
++  } else if (OH_AI_DEVICETYPE_GPU == static_cast<OH_AI_DeviceType>(impl_device->GetDeviceType())) {
++    auto impl = static_cast<mindspore::GPUDeviceInfo *>(device_info);
++    impl->SetEnableFP16(is_fp16);
++  } else if (OH_AI_DEVICETYPE_NNRT == static_cast<OH_AI_DeviceType>(impl_device->GetDeviceType())) {
++    auto impl = static_cast<mindspore::NNRTDeviceInfo *>(device_info);
++    impl->SetEnableFP16(is_fp16);
+   } else {
+     MS_LOG(ERROR) << "Unsupported Feature.";
+   }
+@@ -208,11 +233,19 @@ bool OH_AI_DeviceInfoGetEnableFP16(const OH_AI_DeviceInfoHandle device_info) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return false;
+   }
+-  auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
+-  if (impl->device_type == OH_AI_DEVICETYPE_CPU || impl->device_type == OH_AI_DEVICETYPE_GPU) {
+-    return impl->enable_fp16;
++
++  auto impl_device = static_cast<mindspore::DeviceInfoContext *>(device_info);
++  if (OH_AI_DEVICETYPE_CPU == static_cast<OH_AI_DeviceType>(impl_device->GetDeviceType())) {
++    auto impl = static_cast<mindspore::CPUDeviceInfo *>(device_info);
++    return impl->GetEnableFP16();
++  } else if (OH_AI_DEVICETYPE_GPU == static_cast<OH_AI_DeviceType>(impl_device->GetDeviceType())) {
++    auto impl = static_cast<mindspore::GPUDeviceInfo *>(device_info);
++    return impl->GetEnableFP16();
++  } else if (OH_AI_DEVICETYPE_NNRT == static_cast<OH_AI_DeviceType>(impl_device->GetDeviceType())) {
++    auto impl = static_cast<mindspore::NNRTDeviceInfo *>(device_info);
++    return impl->GetEnableFP16();
+   } else {
+-    MS_LOG(ERROR) << "Unsupported Feature. device_type: " << impl->device_type;
++    MS_LOG(ERROR) << "Unsupported Feature. device_type: " << impl_device->GetDeviceType();
+     return false;
+   }
+ }
+@@ -222,9 +255,10 @@ void OH_AI_DeviceInfoSetFrequency(OH_AI_DeviceInfoHandle device_info, int freque
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
+-  if (impl->device_type == OH_AI_DEVICETYPE_KIRIN_NPU) {
+-    impl->frequency = frequency;
++  auto impl_device = static_cast<mindspore::DeviceInfoContext *>(device_info);
++  if (static_cast<OH_AI_DeviceType>(impl_device->GetDeviceType()) == OH_AI_DEVICETYPE_KIRIN_NPU) {
++    auto impl = static_cast<mindspore::KirinNPUDeviceInfo *>(device_info);
++    impl->SetFrequency(frequency);
+   } else {
+     MS_LOG(ERROR) << "Unsupported Feature.";
+   }
+@@ -235,9 +269,10 @@ int OH_AI_DeviceInfoGetFrequency(const OH_AI_DeviceInfoHandle device_info) {  //
+     MS_LOG(ERROR) << "param is nullptr.";
+     return -1;
+   }
+-  auto impl = static_cast<mindspore::DeviceInfoC *>(device_info);
+-  if (impl->device_type == OH_AI_DEVICETYPE_KIRIN_NPU) {
+-    return impl->frequency;
++  auto impl_device = static_cast<mindspore::DeviceInfoContext *>(device_info);
++  if (static_cast<OH_AI_DeviceType>(impl_device->GetDeviceType()) == OH_AI_DEVICETYPE_KIRIN_NPU) {
++    auto impl = static_cast<mindspore::KirinNPUDeviceInfo *>(device_info);
++    return impl->GetFrequency();
+   } else {
+     MS_LOG(ERROR) << "Unsupported Feature.";
+     return -1;
+@@ -374,8 +409,8 @@ void OH_AI_DeviceInfoSetDeviceId(OH_AI_DeviceInfoHandle device_info, size_t devi
+     MS_LOG(ERROR) << "Set device_id of non-NNRT device is not allowable, ignored";
+     return;
+   }
+-  auto impl = reinterpret_cast<mindspore::DeviceInfoC *>(device_info);
+-  impl->device_id = device_id;
++  auto impl = reinterpret_cast<mindspore::NNRTDeviceInfo *>(device_info);
++  impl->SetDeviceID(device_id);
+ }
+ 
+ size_t OH_AI_DeviceInfoGetDeviceId(const OH_AI_DeviceInfoHandle device_info) {
+@@ -387,8 +422,8 @@ size_t OH_AI_DeviceInfoGetDeviceId(const OH_AI_DeviceInfoHandle device_info) {
+     MS_LOG(ERROR) << "Get device_id of non-NNRT device is not allowable, ignored";
+     return 0;
+   }
+-  auto impl = reinterpret_cast<mindspore::DeviceInfoC *>(device_info);
+-  return impl->device_id;
++  auto impl = reinterpret_cast<mindspore::NNRTDeviceInfo *>(device_info);
++  return impl->GetDeviceID();
+ }
+ 
+ void OH_AI_DeviceInfoSetPerformanceMode(OH_AI_DeviceInfoHandle device_info, OH_AI_PerformanceMode mode) {
+@@ -400,8 +435,8 @@ void OH_AI_DeviceInfoSetPerformanceMode(OH_AI_DeviceInfoHandle device_info, OH_A
+     MS_LOG(ERROR) << "Set performance_mode of non-NNRT device is not allowable, ignored";
+     return;
+   }
+-  auto impl = reinterpret_cast<mindspore::DeviceInfoC *>(device_info);
+-  impl->performance_mode = mode;
++  auto impl = reinterpret_cast<mindspore::NNRTDeviceInfo *>(device_info);
++  impl->SetPerformanceMode(mode);
+ }
+ 
+ OH_AI_PerformanceMode OH_AI_DeviceInfoGetPerformanceMode(const OH_AI_DeviceInfoHandle device_info) {
+@@ -413,8 +448,8 @@ OH_AI_PerformanceMode OH_AI_DeviceInfoGetPerformanceMode(const OH_AI_DeviceInfoH
+     MS_LOG(ERROR) << "Get performance_mode of non-NNRT device is not allowable, ignored";
+     return OH_AI_PERFORMANCE_NONE;
+   }
+-  auto impl = reinterpret_cast<mindspore::DeviceInfoC *>(device_info);
+-  return impl->performance_mode;
++  auto impl = reinterpret_cast<mindspore::NNRTDeviceInfo *>(device_info);
++  return static_cast<OH_AI_PerformanceMode>(impl->GetPerformanceMode());
+ }
+ 
+ void OH_AI_DeviceInfoSetPriority(OH_AI_DeviceInfoHandle device_info, OH_AI_Priority priority) {
+@@ -426,8 +461,8 @@ void OH_AI_DeviceInfoSetPriority(OH_AI_DeviceInfoHandle device_info, OH_AI_Prior
+     MS_LOG(ERROR) << "Set priority of non-NNRT device is not allowable, ignored";
+     return;
+   }
+-  auto impl = reinterpret_cast<mindspore::DeviceInfoC *>(device_info);
+-  impl->priority = priority;
++  auto impl = reinterpret_cast<mindspore::NNRTDeviceInfo *>(device_info);
++  impl->SetPriority(priority);
+ }
+ 
+ OH_AI_Priority OH_AI_DeviceInfoGetPriority(const OH_AI_DeviceInfoHandle device_info) {
+@@ -439,8 +474,8 @@ OH_AI_Priority OH_AI_DeviceInfoGetPriority(const OH_AI_DeviceInfoHandle device_i
+     MS_LOG(ERROR) << "Get priority of non-NNRT device is not allowable, ignored";
+     return OH_AI_PRIORITY_NONE;
+   }
+-  auto impl = reinterpret_cast<mindspore::DeviceInfoC *>(device_info);
+-  return impl->priority;
++  auto impl = reinterpret_cast<mindspore::NNRTDeviceInfo *>(device_info);
++  return static_cast<OH_AI_Priority>(impl->GetPriority());
+ }
+ 
+ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle device_info,
+@@ -453,10 +488,12 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
+     MS_LOG(ERROR) << "Add extension to non-NNRT device is not allowable, ignored";
+     return OH_AI_STATUS_LITE_ERROR;
+   }
+-  auto impl = reinterpret_cast<mindspore::DeviceInfoC *>(device_info);
+-  mindspore::ExtensionC extension;
++  auto impl = reinterpret_cast<mindspore::NNRTDeviceInfo *>(device_info);
++  mindspore::Extension extension;
+   extension.name = std::string(name);
+   extension.value = std::vector<uint8_t>(value, value + value_size);
+-  impl->extensions_.push_back(extension);
++  std::vector<mindspore::Extension> extension_list = impl->GetExtensions();
++  extension_list.push_back(extension);
++  impl->SetExtensions(extension_list);
+   return OH_AI_STATUS_SUCCESS;
+ }
+\ No newline at end of file
+diff --git a/mindspore/lite/src/runtime/c_api/context_c.h b/mindspore/lite/src/runtime/c_api/context_c.h
+index 7d29b009..dc88b8a4 100644
+--- a/mindspore/lite/src/runtime/c_api/context_c.h
++++ b/mindspore/lite/src/runtime/c_api/context_c.h
+@@ -21,35 +21,4 @@
+ #include <memory>
+ #include "include/c_api/types_c.h"
+ 
+-namespace mindspore {
+-class Allocator;
+-class Delegate;
+-
+-struct ExtensionC {
+- std::string name; // config name
+- std::vector<uint8_t> value; // config value
+-};
+-
+-typedef struct DeviceInfoC {
+-  OH_AI_DeviceType device_type;
+-  bool enable_fp16 = false;
+-  int frequency = 3;
+-  size_t device_id = 0;
+-  OH_AI_PerformanceMode performance_mode = OH_AI_PERFORMANCE_NONE;
+-  OH_AI_Priority priority = OH_AI_PRIORITY_NONE;
+-  std::vector<ExtensionC> extensions_;
+-  std::string provider;
+-  std::string provider_device;
+-  std::shared_ptr<Allocator> allocator = nullptr;
+-} DeviceInfoC;
+-
+-typedef struct ContextC {
+-  std::vector<std::shared_ptr<DeviceInfoC>> device_info_list;
+-  int32_t thread_num = 2;
+-  bool enable_parallel = false;
+-  std::vector<int32_t> affinity_core_list;
+-  int affinity_mode = 0;
+-  std::shared_ptr<Delegate> delegate = nullptr;
+-} ContextC;
+-}  // namespace mindspore
+ #endif  // MINDSPORE_LITE_SRC_RUNTIME_C_API_CONTEXT_C_H_
+diff --git a/mindspore/lite/src/runtime/c_api/model_c.cc b/mindspore/lite/src/runtime/c_api/model_c.cc
+index 8ed23452..6f28b2ae 100644
+--- a/mindspore/lite/src/runtime/c_api/model_c.cc
++++ b/mindspore/lite/src/runtime/c_api/model_c.cc
+@@ -16,290 +16,119 @@
+ #include "include/c_api/model_c.h"
+ #include <vector>
+ #include <cstdint>
++#include <include/api/serialization.h>
+ #include "include/api/context.h"
+ #include "include/api/types.h"
+ #include "src/runtime/cxx_api/tensor/tensor_impl.h"
+ #include "src/runtime/cxx_api/converters.h"
+-#include "src/runtime/lite_session.h"
+-#include "src/runtime/cpu_info.h"
++#include "src/runtime/cxx_api/model/model_impl.h"
+ 
+ namespace mindspore {
+ class ModelC {
+- public:
+-  ModelC() : session_(nullptr), context_(nullptr) {}
+-  ~ModelC() {
+-    for (auto &impl : tensor_map_) {
+-      delete impl.second;
++  public:
++    ModelC() : model_(nullptr) {}
++    ~ModelC() {
++      for (auto in : inputs_) {
++        delete in;
++      }
++      for (auto out : outputs_) {
++        delete out;
++      }
+     }
+-  }
+-
+-  Status Build(const void *model_data, size_t data_size, ModelType model_type, const ContextC *model_context);
+-  Status Build(const std::string &model_path, ModelType model_type, const ContextC *model_context);
+-  Status Resize(const std::vector<LiteTensorImpl *> &inputs, const std::vector<std::vector<int64_t>> &shapes);
+-
+-  Status Predict(const OH_AI_TensorHandle *inputs, size_t input_num, OH_AI_TensorHandle **outputs, size_t *output_num,
+-                 const OH_AI_KernelCallBack &before, const OH_AI_KernelCallBack &after);
+ 
+-  LiteTensorImpl **GetInputs(size_t *input_num);
+-  LiteTensorImpl **GetOutputs(size_t *output_num);
++    MSTensor **GetInputs(size_t *input_num);
++    MSTensor **GetOutputs(size_t *output_num);
++    mindspore::MSKernelCallBack TransCallBack(const OH_AI_KernelCallBack &oh_callback);
++    std::shared_ptr<Model> model_;
+ 
+- private:
+-  std::shared_ptr<lite::LiteSession> session_ = nullptr;
+-  std::shared_ptr<const ContextC> context_ = nullptr;
+-  std::map<mindspore::lite::Tensor *, LiteTensorImpl *> tensor_map_;
+-  std::vector<LiteTensorImpl *> inputs_;
+-  std::vector<LiteTensorImpl *> outputs_;
+-  Status RunGraph(const OH_AI_KernelCallBack &before, const OH_AI_KernelCallBack &after);
+-  void ResetTensorData(std::vector<void *> old_data, std::vector<lite::Tensor *> tensors);
+-  LiteTensorImpl *TensorToTensorImpl(mindspore::lite::Tensor *tensor);
++private:
++    std::vector<MSTensor *> inputs_;
++    std::vector<MSTensor *> outputs_;
+ };
+ 
+-Status ModelC::Build(const void *model_data, size_t data_size, ModelType model_type, const ContextC *model_context) {
+-  if (!PlatformInstructionSetSupportCheck()) {
+-    MS_LOG(ERROR) << "The platform exist don't support's instruction.";
+-    return kLiteNotSupport;
+-  }
+-  if(context_.get() != model_context){
+-    context_.reset(model_context);
+-  }
+-  session_ = std::make_shared<lite::LiteSession>();
+-  if (session_ == nullptr) {
+-    MS_LOG(ERROR) << "create session failed";
+-    return kLiteNullptr;
+-  }
+-  auto ret = session_->Init(ContextUtils::Convert(model_context));
+-  if (ret != mindspore::lite::RET_OK) {
+-    MS_LOG(ERROR) << "init session failed";
+-    return static_cast<StatusCode>(ret);
+-  }
+-  ret = session_->LoadModelAndCompileByBuf(static_cast<const char *>(model_data), model_type, data_size);
+-  if (ret != RET_OK) {
+-    MS_LOG(ERROR) << "Load and compile failed";
+-  }
+-  return static_cast<StatusCode>(ret);
+-}
+-
+-Status ModelC::Build(const std::string &model_path, ModelType model_type, const ContextC *model_context) {
+-  if (!PlatformInstructionSetSupportCheck()) {
+-    MS_LOG(ERROR) << "The platform exist don't support's instruction.";
+-    return kLiteNotSupport;
+-  }
+-  if(context_.get() != model_context){
+-    context_.reset(model_context);
+-  }
+-  session_ = std::make_shared<lite::LiteSession>();
+-  if (session_ == nullptr) {
+-    MS_LOG(ERROR) << "create session failed";
+-    return kLiteNullptr;
+-  }
+-  auto ret = session_->Init(ContextUtils::Convert(model_context));
+-  if (ret != mindspore::lite::RET_OK) {
+-    MS_LOG(ERROR) << "init session failed";
+-    return static_cast<StatusCode>(ret);
++MSTensor **ModelC::GetInputs(size_t *input_num) {
++  if (model_ == nullptr) {
++    MS_LOG(ERROR) << "model_impl is null.";
++    return nullptr;
+   }
+-  ret = session_->LoadModelAndCompileByPath(model_path, model_type);
+-  if (ret != RET_OK) {
+-    MS_LOG(ERROR) << "Load and compile failed";
++  if (!inputs_.empty()) {
++    *input_num = inputs_.size();
++    return inputs_.data();
+   }
+-  return static_cast<StatusCode>(ret);
+-}
+ 
+-Status ModelC::Resize(const std::vector<LiteTensorImpl *> &inputs, const std::vector<std::vector<int64_t>> &shapes) {
+-  std::vector<lite::Tensor *> inner_input;
+-  size_t input_num = inputs.size();
+-  for (size_t i = 0; i < input_num; i++) {
+-    auto input = inputs[i];
+-    if (input == nullptr || input->lite_tensor() == nullptr) {
+-      MS_LOG(ERROR) << "Input tensor is null.";
+-      return kLiteInputTensorError;
+-    }
+-    inner_input.push_back(input->lite_tensor());
+-  }
+-  size_t shape_num = shapes.size();
+-  std::vector<std::vector<int32_t>> inner_shapes(shape_num);
+-  for (size_t i = 0; i < shape_num; i++) {
+-    std::transform(shapes[i].begin(), shapes[i].end(), std::back_inserter(inner_shapes[i]),
+-                   [](int64_t value) { return static_cast<int32_t>(value); });
++  auto inputs = model_->GetInputs();
++  *input_num = inputs.size();
++  if (inputs_.capacity() < inputs.size()) {
++    inputs_.reserve(inputs.size());
+   }
+-  if (session_ == nullptr) {
+-    MS_LOG(ERROR) << "Session implement is null.";
+-    return kLiteNullptr;
++  for (auto in : inputs_) {
++    delete in;
+   }
+-  auto ret = session_->Resize(inner_input, inner_shapes);
+-  return static_cast<StatusCode>(ret);
+-}
+-
+-void ModelC::ResetTensorData(std::vector<void *> old_data, std::vector<lite::Tensor *> tensors) {
+-  for (size_t j = 0; j < old_data.size(); j++) {
+-    tensors.at(j)->set_data(old_data.at(j));
++  inputs_.clear();
++  for (size_t i = 0; i < inputs.size(); i++) {
++    inputs_.push_back(new MSTensor(inputs[i].impl()));
+   }
++  return inputs_.data();
+ }
+ 
+-Status ModelC::Predict(const OH_AI_TensorHandle *inputs, size_t input_num, OH_AI_TensorHandle **outputs,
+-                       size_t *output_num, const OH_AI_KernelCallBack &before, const OH_AI_KernelCallBack &after) {
+-  if (outputs == nullptr || session_ == nullptr) {
+-    MS_LOG(ERROR) << "param is nullptr.";
+-    return kLiteError;
+-  }
+-  auto model_inputs = session_->GetInputs();
+-  if (model_inputs.size() != input_num) {
+-    MS_LOG(ERROR) << "Wrong input size.";
+-    return kLiteError;
+-  }
+-  std::vector<void *> old_data;
+-  for (size_t i = 0; i < input_num; i++) {
+-    auto real_input = model_inputs[i];
+-    auto user_input = static_cast<LiteTensorImpl *>(inputs[i]);
+-    if (user_input->DataType() != static_cast<DataType>(real_input->data_type())) {
+-      ResetTensorData(old_data, model_inputs);
+-      MS_LOG(ERROR) << "DataType does not match, input:" << user_input->Name()
+-                    << ", real:" << real_input->tensor_name();
+-      return kLiteInputTensorError;
+-    }
+-    if (user_input->Data() == nullptr) {
+-      ResetTensorData(old_data, model_inputs);
+-      MS_LOG(ERROR) << "Tensor " << user_input->Name() << " has no data.";
+-      return kLiteInputTensorError;
+-    }
+-    old_data.push_back(real_input->data());
+-    if (real_input->data_type() == kObjectTypeString) {
+-      std::vector<int32_t> shape;
+-      std::transform(user_input->Shape().begin(), user_input->Shape().end(), std::back_inserter(shape),
+-                     [](int64_t value) { return static_cast<int32_t>(value); });
+-      real_input->set_shape(shape);
+-      real_input->set_data(user_input->MutableData());
+-    } else {
+-      if (user_input->MutableData() != real_input->data()) {
+-        if (real_input->Size() != user_input->DataSize()) {
+-          ResetTensorData(old_data, model_inputs);
+-          MS_LOG(ERROR) << "Tensor " << user_input->Name() << " has wrong data size.";
+-          return kLiteInputTensorError;
+-        }
+-        real_input->set_data(user_input->MutableData());
+-      }
+-    }
++MSTensor **ModelC::GetOutputs(size_t *output_num) {
++  if (model_ == nullptr) {
++    MS_LOG(ERROR) << "model_impl is null.";
++    return nullptr;
+   }
+-  auto ret = RunGraph(before, after);
+-  ResetTensorData(old_data, model_inputs);
+-  if (ret != kSuccess) {
+-    MS_LOG(ERROR) << "Run graph failed.";
+-    return ret;
++  if (!outputs_.empty()) {
++    *output_num = outputs_.size();
++    return outputs_.data();
+   }
+ 
+-  *outputs = reinterpret_cast<OH_AI_TensorHandle *>(GetOutputs(output_num));
+-  return kSuccess;
+-}
+-
+-Status ModelC::RunGraph(const OH_AI_KernelCallBack &before, const OH_AI_KernelCallBack &after) {
+-  KernelCallBack before_call_back = nullptr;
+-  KernelCallBack after_call_back = nullptr;
+-  if (before != nullptr) {
+-    before_call_back = [&](const std::vector<mindspore::lite::Tensor *> &before_inputs,
+-                           const std::vector<mindspore::lite::Tensor *> &before_outputs,
+-                           const MSCallBackParam &call_param) {
+-      std::vector<LiteTensorImpl> inputs_impl;
+-      std::vector<LiteTensorImpl> outputs_impl;
+-      std::vector<OH_AI_TensorHandle> op_inputs;
+-      std::vector<OH_AI_TensorHandle> op_outputs;
+-    size_t op_input_num = before_inputs.size();
+-    for (size_t i = 0; i < op_input_num; i++) {
+-      inputs_impl.emplace_back(before_inputs[i]);
+-      op_inputs.push_back(&(inputs_impl.back()));
+-    }
+-    size_t op_output_num = before_outputs.size();
+-    for (size_t i = 0; i < op_output_num; i++) {
+-      outputs_impl.emplace_back(before_outputs[i]);
+-      op_outputs.push_back(&(outputs_impl.back()));
+-    }
+-      const OH_AI_CallBackParam op_info = {const_cast<char *>(call_param.node_name.c_str()),
+-                                         const_cast<char *>(call_param.node_type.c_str())};
+-      OH_AI_TensorHandleArray inputs = {op_input_num, op_inputs.data()};
+-      OH_AI_TensorHandleArray outputs = {op_output_num, op_outputs.data()};
+-    return before(inputs, outputs, op_info);
+-  };
++  auto outputs = model_->GetOutputs();
++  *output_num = outputs.size();
++  if (outputs_.capacity() < outputs.size()) {
++    outputs_.reserve(outputs.size());
+   }
+-  if (after != nullptr) {
+-    after_call_back = [&](const std::vector<mindspore::lite::Tensor *> &after_inputs,
+-                          const std::vector<mindspore::lite::Tensor *> &after_outputs,
+-                          const MSCallBackParam &call_param) {
+-      std::vector<LiteTensorImpl> inputs_impl;
+-      std::vector<LiteTensorImpl> outputs_impl;
+-      std::vector<OH_AI_TensorHandle> op_inputs;
+-      std::vector<OH_AI_TensorHandle> op_outputs;
+-    size_t op_input_num = after_inputs.size();
+-    for (size_t i = 0; i < op_input_num; i++) {
+-      inputs_impl.emplace_back(after_inputs[i]);
+-      op_inputs.push_back(&(inputs_impl.back()));
+-    }
+-    size_t op_output_num = after_outputs.size();
+-    for (size_t i = 0; i < op_output_num; i++) {
+-      outputs_impl.emplace_back(after_outputs[i]);
+-      op_outputs.push_back(&(outputs_impl.back()));
+-    }
+-    const OH_AI_CallBackParam op_info = {const_cast<char *>(call_param.node_name.c_str()),
+-                                         const_cast<char *>(call_param.node_type.c_str())};
+-    OH_AI_TensorHandleArray inputs = {op_input_num, op_inputs.data()};
+-    OH_AI_TensorHandleArray outputs = {op_output_num, op_outputs.data()};
+-    return after(inputs, outputs, op_info);
+-  };
++  for (auto out : outputs_) {
++    delete out;
+   }
+-  auto ret = session_->RunGraph(before_call_back, after_call_back);
+-  return static_cast<StatusCode>(ret);
+-}
+-
+-LiteTensorImpl *ModelC::TensorToTensorImpl(mindspore::lite::Tensor *tensor) {
+-  LiteTensorImpl *impl = nullptr;
+-  auto iter = tensor_map_.find(tensor);
+-  if (iter != tensor_map_.end()) {
+-    impl = iter->second;
+-  } else {
+-    impl = new (std::nothrow) LiteTensorImpl(tensor);
+-    if (impl == nullptr || impl->lite_tensor() == nullptr) {
+-      MS_LOG(ERROR) << "Create tensor failed.";
+-      return nullptr;
+-    }
+-    tensor_map_[tensor] = impl;
++  outputs_.clear();
++  for (size_t i = 0; i < outputs.size(); i++) {
++    outputs_.push_back(new MSTensor(outputs[i].impl()));
+   }
+-  return impl;
++  return outputs_.data();
+ }
+ 
+-LiteTensorImpl **ModelC::GetInputs(size_t *input_num) {
+-  if (session_ == nullptr || input_num == nullptr) {
+-    MS_LOG(ERROR) << "Session is null.";
+-    return nullptr;
+-  }
+-  auto inputs = session_->GetInputs();
+-  *input_num = inputs.size();
+-  if (inputs_.capacity() < *input_num) {
+-    inputs_.reserve(*input_num);
+-  }
+-  inputs_.clear();
+-  std::transform(inputs.begin(), inputs.end(), std::back_inserter(inputs_),
+-                 [&](lite::Tensor *input) { return TensorToTensorImpl(input); });
+-  return inputs_.data();
+-}
++mindspore::MSKernelCallBack ModelC::TransCallBack(const OH_AI_KernelCallBack &oh_callback) {
++  mindspore::MSKernelCallBack call_back = nullptr;
++  if (oh_callback != nullptr) {
++    call_back = [&](const std::vector<mindspore::MSTensor> &inputs,
++                           const std::vector<mindspore::MSTensor> &outputs,
++                           const mindspore::MSCallBackParam &opInfo) {
++      std::vector<OH_AI_TensorHandle> vec_inputs;
++      std::vector<OH_AI_TensorHandle> vec_outputs;
++      OH_AI_CallBackParam call_back = {const_cast<char *>(opInfo.node_name.c_str()),
++                                       const_cast<char *>(opInfo.node_type.c_str())};
++      size_t inputs_handle_num = inputs.size();
++      for (size_t i = 0; i < inputs_handle_num; i++) {
++        vec_inputs.push_back(
++          static_cast<OH_AI_TensorHandle>(&(static_cast<std::vector<mindspore::MSTensor>>(inputs)[i])));
++      }
++      size_t outputs_handle_num = inputs.size();
++      for (size_t i = 0; i < outputs_handle_num; i++) {
++        vec_outputs.push_back(
++          static_cast<OH_AI_TensorHandle>(&(static_cast<std::vector<mindspore::MSTensor>>(outputs)[i])));
++      }
+ 
+-LiteTensorImpl **ModelC::GetOutputs(size_t *output_num) {
+-  if (session_ == nullptr || output_num == nullptr) {
+-    MS_LOG(ERROR) << "Session is null.";
+-    return nullptr;
+-  }
+-  auto outputs = session_->GetOutputs();
+-  *output_num = outputs.size();
+-  if (outputs_.capacity() < *output_num) {
+-    outputs_.reserve(*output_num);
++      OH_AI_TensorHandleArray handle_inputs = {inputs_handle_num, vec_inputs.data()};
++      OH_AI_TensorHandleArray handle_outputs = {outputs_handle_num, vec_outputs.data()};
++      return oh_callback(handle_inputs, handle_outputs, call_back);
++    };
+   }
+-  outputs_.clear();
+-  std::transform(outputs.begin(), outputs.end(), std::back_inserter(outputs_),
+-                 [&](std::unordered_map<std::string, mindspore::lite::Tensor *>::value_type iter) {
+-                   return TensorToTensorImpl(iter.second);
+-                 });
+-  return outputs_.data();
++  return call_back;
+ }
+ }  // namespace mindspore
+ 
+ OH_AI_ModelHandle OH_AI_ModelCreate() {
+   auto impl = new (std::nothrow) mindspore::ModelC();
++  impl->model_ = std::make_shared<mindspore::Model>();
+   if (impl == nullptr) {
+     MS_LOG(ERROR) << "Model implement is null.";
+     return nullptr;
+@@ -330,9 +159,9 @@ OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, s
+     MS_LOG(ERROR) << "param is invalid.";
+     return OH_AI_STATUS_LITE_PARAM_INVALID;
+   }
+-  mindspore::ContextC *context = static_cast<mindspore::ContextC *>(model_context);
++  mindspore::Context *context = static_cast<mindspore::Context *>(model_context);
+   auto impl = static_cast<mindspore::ModelC *>(model);
+-  auto ret = impl->Build(model_data, data_size, static_cast<mindspore::ModelType>(model_type), context);
++  auto ret = impl->model_->Build(model_data, data_size, static_cast<mindspore::ModelType>(model_type), static_cast<const std::shared_ptr<mindspore::Context>>(context));
+   return static_cast<OH_AI_Status>(ret.StatusCode());
+ }
+ 
+@@ -346,9 +175,9 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
+     MS_LOG(ERROR) << "param is invalid.";
+     return OH_AI_STATUS_LITE_PARAM_INVALID;
+   }
+-  mindspore::ContextC *context = static_cast<mindspore::ContextC *>(model_context);
++  mindspore::Context *context = static_cast<mindspore::Context *>(model_context);
+   auto impl = static_cast<mindspore::ModelC *>(model);
+-  auto ret = impl->Build(model_path, static_cast<mindspore::ModelType>(model_type), context);
++  auto ret = impl->model_->Build(model_path, static_cast<mindspore::ModelType>(model_type), static_cast<const std::shared_ptr<mindspore::Context>>(context));
+   return static_cast<OH_AI_Status>(ret.StatusCode());
+ }
+ 
+@@ -358,16 +187,18 @@ OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandle
+     MS_LOG(ERROR) << "param is nullptr.";
+     return OH_AI_STATUS_LITE_NULLPTR;
+   }
+-  std::vector<mindspore::LiteTensorImpl *> vec_inputs;
+-  std::transform(inputs.handle_list, inputs.handle_list + inputs.handle_num, std::back_inserter(vec_inputs),
+-                 [](OH_AI_TensorHandle value) { return static_cast<mindspore::LiteTensorImpl *>(value); });
++  std::vector<mindspore::MSTensor> vec_inputs;
++  for (size_t i = 0; i < inputs.handle_num; ++i) {
++    vec_inputs.push_back(*static_cast<mindspore::MSTensor *>(inputs.handle_list[i]));
++  }
++
+   std::vector<std::vector<int64_t>> vec_dims;
+   for (size_t i = 0; i < shape_info_num; i++) {
+     std::vector<int64_t> shape(shape_infos[i].shape, shape_infos[i].shape + shape_infos[i].shape_num);
+     vec_dims.push_back(shape);
+   }
+   auto impl = static_cast<mindspore::ModelC *>(model);
+-  auto ret = impl->Resize(vec_inputs, vec_dims);
++  auto ret = impl->model_->Resize(vec_inputs, vec_dims);
+   return static_cast<OH_AI_Status>(ret.StatusCode());
+ }
+ 
+@@ -378,12 +209,22 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+     MS_LOG(ERROR) << "param is nullptr.";
+     return OH_AI_STATUS_LITE_NULLPTR;
+   }
++  std::vector<mindspore::MSTensor> ms_tensor_inputs;
++  for (size_t i = 0; i < inputs.handle_num; i++) {
++    auto user_input = static_cast<mindspore::MSTensor *>(inputs.handle_list[i]);
++    ms_tensor_inputs.push_back(*user_input);
++  }
++
+   auto impl = static_cast<mindspore::ModelC *>(model);
+-  auto ret = impl->Predict(inputs.handle_list, inputs.handle_num, &(outputs->handle_list), &(outputs->handle_num),
+-                           before, after);
++  mindspore::MSKernelCallBack before_call_back = impl->TransCallBack(before);
++  mindspore::MSKernelCallBack after_call_back = impl->TransCallBack(after);
++
++  std::vector<mindspore::MSTensor> ms_tensor_outputs;
++  auto ret = impl->model_->Predict(ms_tensor_inputs, &ms_tensor_outputs, before_call_back, after_call_back);
+   if (!ret.IsOk()) {
+     MS_LOG(ERROR) << "Predict fail, ret :" << ret;
+   }
++  outputs->handle_list = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&outputs->handle_num));
+   return static_cast<OH_AI_Status>(ret.StatusCode());
+ }
+ 
+@@ -441,5 +282,4 @@ OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle mode
+   }
+   MS_LOG(ERROR) << "tensor is not exist.";
+   return nullptr;
+-}
+-
++}
+\ No newline at end of file
+diff --git a/mindspore/lite/src/runtime/c_api/tensor_c.cc b/mindspore/lite/src/runtime/c_api/tensor_c.cc
+index be68ee3b..a1814488 100644
+--- a/mindspore/lite/src/runtime/c_api/tensor_c.cc
++++ b/mindspore/lite/src/runtime/c_api/tensor_c.cc
+@@ -17,7 +17,6 @@
+ #include "include/api/status.h"
+ #include "src/tensor.h"
+ #include "src/runtime/cxx_api/tensor/tensor_impl.h"
+-#include "src/runtime/inner_allocator.h"
+ 
+ OH_AI_TensorHandle OH_AI_TensorCreate(const char *name, OH_AI_DataType type, const int64_t *shape, size_t shape_num,
+                                       const void *data, size_t data_len) {
+@@ -31,18 +30,19 @@ OH_AI_TensorHandle OH_AI_TensorCreate(const char *name, OH_AI_DataType type, con
+   }
+   auto lite_tensor =
+     mindspore::lite::Tensor::CreateTensor(name, static_cast<mindspore::TypeId>(type), vec_shape, data, data_len);
+-  auto impl = new (std::nothrow) mindspore::LiteTensorImpl(lite_tensor);
+-  if (impl == nullptr || impl->lite_tensor() == nullptr) {
++  auto lite_tensor_impl = std::make_shared<mindspore::LiteTensorImpl>(lite_tensor);
++  if (lite_tensor_impl == nullptr || lite_tensor_impl->lite_tensor() == nullptr) {
+     MS_LOG(ERROR) << "Failed to allocate tensor impl.";
+     return nullptr;
+   }
+-  impl->set_from_session(false);
++  lite_tensor_impl->set_from_session(false);
++  auto impl = new (std::nothrow) mindspore::MSTensor(lite_tensor_impl);
+   return impl;
+ }
+ 
+ void OH_AI_TensorDestroy(OH_AI_TensorHandle *tensor) {
+   if (tensor != nullptr && *tensor != nullptr) {
+-    auto impl = static_cast<mindspore::LiteTensorImpl *>(*tensor);
++    auto impl = static_cast<mindspore::MSTensor *>(*tensor);
+     delete impl;
+     *tensor = nullptr;
+   }
+@@ -53,20 +53,14 @@ OH_AI_TensorHandle OH_AI_TensorClone(OH_AI_TensorHandle tensor) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return nullptr;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
+-  auto lite_tensor = static_cast<mindspore::lite::Tensor *>(impl->lite_tensor());
+-  auto clone = mindspore::lite::Tensor::CopyTensor(*lite_tensor, true, lite_tensor->allocator());
+-  if (clone == nullptr) {
+-    MS_LOG(ERROR) << "Failed to allocate tensor.";
+-    return nullptr;
+-  }
+-  auto clone_impl = new (std::nothrow) mindspore::LiteTensorImpl(clone);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
++  auto clone_impl = impl->Clone();
+   if (clone_impl == nullptr) {
+-    delete clone;
+     MS_LOG(ERROR) << "Failed to allocate tensor impl.";
+     return nullptr;
+   }
+-  clone_impl->set_from_session(false);
++  std::static_pointer_cast<mindspore::LiteTensorImpl>(clone_impl->impl())->set_own_data(false);
++  clone_impl->SetTensorName(impl->Name() + "_duplicate");
+   return clone_impl;
+ }
+ 
+@@ -75,8 +69,8 @@ void OH_AI_TensorSetName(OH_AI_TensorHandle tensor, const char *name) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
+-  impl->SetName(name);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
++  impl->SetTensorName(name);
+ }
+ 
+ const char *OH_AI_TensorGetName(const OH_AI_TensorHandle tensor) {
+@@ -84,8 +78,8 @@ const char *OH_AI_TensorGetName(const OH_AI_TensorHandle tensor) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return nullptr;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
+-  return impl->Name().c_str();
++  auto ms_tensor = static_cast<mindspore::MSTensor *>(tensor);
++  return std::static_pointer_cast<mindspore::LiteTensorImpl>(ms_tensor->impl())->Name().c_str();
+ }
+ 
+ void OH_AI_TensorSetDataType(OH_AI_TensorHandle tensor, OH_AI_DataType type) {
+@@ -93,7 +87,7 @@ void OH_AI_TensorSetDataType(OH_AI_TensorHandle tensor, OH_AI_DataType type) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   impl->SetDataType(static_cast<mindspore::DataType>(type));
+ }
+ 
+@@ -102,7 +96,7 @@ OH_AI_DataType OH_AI_TensorGetDataType(const OH_AI_TensorHandle tensor) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return OH_AI_DATATYPE_UNKNOWN;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   auto dtype = impl->DataType();
+   return static_cast<OH_AI_DataType>(dtype);
+ }
+@@ -112,7 +106,7 @@ void OH_AI_TensorSetShape(OH_AI_TensorHandle tensor, const int64_t *shape, size_
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   std::vector<int64_t> vec_shape(shape_num);
+   for (size_t i = 0; i < shape_num; i++) {
+     vec_shape[i] = shape[i];
+@@ -125,7 +119,7 @@ const int64_t *OH_AI_TensorGetShape(const OH_AI_TensorHandle tensor, size_t *sha
+     MS_LOG(ERROR) << "param is nullptr.";
+     return nullptr;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   *shape_num = impl->Shape().size();
+   return impl->Shape().data();
+ }
+@@ -135,7 +129,7 @@ void OH_AI_TensorSetFormat(OH_AI_TensorHandle tensor, OH_AI_Format format) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   return impl->SetFormat(static_cast<mindspore::Format>(format));
+ }
+ 
+@@ -144,7 +138,7 @@ OH_AI_Format OH_AI_TensorGetFormat(const OH_AI_TensorHandle tensor) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return OH_AI_FORMAT_NHWC;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   return static_cast<OH_AI_Format>(impl->format());
+ }
+ 
+@@ -153,7 +147,7 @@ void OH_AI_TensorSetData(OH_AI_TensorHandle tensor, void *data) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   return impl->SetData(data);
+ }
+ 
+@@ -163,7 +157,7 @@ OH_AI_Status OH_AI_TensorSetUserData(OH_AI_TensorHandle tensor, void *data, size
+     return OH_AI_STATUS_LITE_NULLPTR;
+   }
+ 
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   if ((impl->DataSize() > 0) && (data_size != impl->DataSize())) {
+     MS_LOG(ERROR) << "input data size does not match inner data size";
+     return OH_AI_STATUS_LITE_PARAM_INVALID;
+@@ -180,7 +174,7 @@ const void *OH_AI_TensorGetData(const OH_AI_TensorHandle tensor) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return nullptr;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   return impl->Data().get();
+ }
+ 
+@@ -189,7 +183,7 @@ void *OH_AI_TensorGetMutableData(const OH_AI_TensorHandle tensor) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return nullptr;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   return impl->MutableData();
+ }
+ 
+@@ -198,7 +192,7 @@ int64_t OH_AI_TensorGetElementNum(const OH_AI_TensorHandle tensor) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return 0;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   return impl->ElementNum();
+ }
+ 
+@@ -207,6 +201,6 @@ size_t OH_AI_TensorGetDataSize(const OH_AI_TensorHandle tensor) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return 0;
+   }
+-  auto impl = static_cast<mindspore::LiteTensorImpl *>(tensor);
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   return impl->DataSize();
+ }
+diff --git a/mindspore/lite/src/runtime/cxx_api/converters.cc b/mindspore/lite/src/runtime/cxx_api/converters.cc
+index 63dfd110..b804237c 100644
+--- a/mindspore/lite/src/runtime/cxx_api/converters.cc
++++ b/mindspore/lite/src/runtime/cxx_api/converters.cc
+@@ -145,52 +145,4 @@ lite::InnerContext *ContextUtils::Convert(Context *context) {
+   }
+   return inner_context.release();
+ }
+-
+-lite::InnerContext *ContextUtils::Convert(const ContextC *context_c) {
+-  auto inner_context = std::make_unique<lite::InnerContext>();
+-  if ((context_c == nullptr) || (inner_context == nullptr)) {
+-    MS_LOG(ERROR) << "Invalid context pointers.";
+-    return nullptr;
+-  }
+-  auto device_list = context_c->device_info_list;
+-  if (device_list.size() == 0 || device_list.size() > kMaxNumOfDevices) {
+-    MS_LOG(ERROR) << "Device num, support min: 1, max: " << kMaxNumOfDevices;
+-    return nullptr;
+-  }
+-  SetContextAttr(context_c->thread_num, 1, context_c->enable_parallel, context_c->affinity_core_list,
+-                 context_c->delegate, inner_context.get());
+-  inner_context->device_list_.clear();
+-  Status ret = kLiteError;
+-  for (auto &device_info_c : device_list) {
+-    MS_CHECK_TRUE_RET(device_info_c != nullptr, nullptr);
+-    lite::DeviceInfo device_info = {{0}};
+-    if (device_info_c->device_type == OH_AI_DEVICETYPE_CPU) {
+-      if (device_info_c->allocator == nullptr) {
+-        device_info_c->allocator = Allocator::Create();
+-      }
+-      ret = AddCpuDevice(device_info_c->allocator, context_c->affinity_mode, device_info_c->enable_fp16,
+-                         device_info_c->provider, device_info_c->provider_device, inner_context.get());
+-    } else if (device_info_c->device_type == OH_AI_DEVICETYPE_GPU) {
+-      ret = AddGpuDevice(device_info_c->enable_fp16, 0, 0, 0, false, nullptr, nullptr, device_info_c->provider,
+-                         device_info_c->provider_device, device_info_c->allocator, inner_context.get());
+-    } else if (device_info_c->device_type == OH_AI_DEVICETYPE_KIRIN_NPU) {
+-      ret = AddNpuDevice(device_info_c->frequency, inner_context.get());
+-    } else if (device_info_c->device_type == OH_AI_DEVICETYPE_NNRT) {
+-      std::vector<mindspore::Extension> dst_extensions;
+-      for (const auto &extension: device_info_c->extensions_) {
+-        mindspore::Extension tmp_extension;
+-        tmp_extension.name = extension.name;
+-        tmp_extension.value = extension.value;
+-        dst_extensions.push_back(tmp_extension);
+-      }
+-      ret = AddNNRtDevice(inner_context.get(), device_info_c->device_id, device_info_c->performance_mode,
+-                          device_info_c->priority, device_info_c->enable_fp16, dst_extensions);
+-    }
+-    if (ret != kSuccess) {
+-      MS_LOG(ERROR) << "Add device failed!";
+-      return nullptr;
+-    }
+-  }
+-  return inner_context.release();
+-}
+ }  // namespace mindspore
+diff --git a/mindspore/lite/src/runtime/cxx_api/converters.h b/mindspore/lite/src/runtime/cxx_api/converters.h
+index c4f0f799..92d5ba00 100644
+--- a/mindspore/lite/src/runtime/cxx_api/converters.h
++++ b/mindspore/lite/src/runtime/cxx_api/converters.h
+@@ -30,7 +30,6 @@ namespace mindspore {
+ class MS_API ContextUtils {
+  public:
+   static lite::InnerContext *Convert(Context *context);
+-  static lite::InnerContext *Convert(const ContextC *context_c);
+ 
+  private:
+   static void SetContextAttr(int32_t thread_num, int32_t inter_op_parallel_num, bool enable_parallel,
