@@ -55,6 +55,21 @@
               ],
               "header_base": "//third_party/mindspore/mindspore-src/source/mindspore/lite/mindir/include"
             }
+          },
+          {
+            "name": "//third_party/mindspore/mindspore-src/source/mindspore/lite:mindspore_ndk",
+            "header": {
+              "header_files": [
+                "context_c.h",
+                "data_type_c.h",
+                "format_c.h",
+                "model_c.h",
+                "status_c.h",
+                "tensor_c.h",
+                "types_c.h"
+              ],
+              "header_base": "//third_party/mindspore/mindspore-src/source/include/c_api"
+            }
           }
         ],
         "test": [
