@@ -58,6 +58,7 @@ def do_patch(patch_dir, target_dir):
         '0039-fix-double-destry-nnrt-mode.patch',
         '0040-remove-runtime-allocator.patch',
         '0041-remove-hilog-log-h-from-namespace.patch',
+        '0042-refactor-c_api-in-ohos.patch',
     ]
 
     cwd = os.getcwd()
