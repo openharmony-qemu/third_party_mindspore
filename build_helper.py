@@ -59,6 +59,7 @@ def do_patch(patch_dir, target_dir):
         '0040-remove-runtime-allocator.patch',
         '0041-remove-hilog-log-h-from-namespace.patch',
         '0042-refactor-c_api-in-ohos.patch',
+        '0043-micro-bugfix-for-ohos.patch',
     ]
 
     cwd = os.getcwd()
