@@ -61,6 +61,7 @@ def do_patch(patch_dir, target_dir):
         '0042-refactor-c_api-in-ohos.patch',
         '0043-micro-bugfix-for-ohos.patch',
         '0044-support-OCR-GNN-model.patch',
+        '0045-micro-feature-for-xiaoyi-shurufa.patch',
     ]
 
     cwd = os.getcwd()
