@@ -60,6 +60,7 @@ def do_patch(patch_dir, target_dir):
         '0041-remove-hilog-log-h-from-namespace.patch',
         '0042-refactor-c_api-in-ohos.patch',
         '0043-micro-bugfix-for-ohos.patch',
+        '0044-support-OCR-GNN-model.patch',
     ]
 
     cwd = os.getcwd()
