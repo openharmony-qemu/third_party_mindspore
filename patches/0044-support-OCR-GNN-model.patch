@@ -1,4 +1,4 @@
-From a9d0ee413f0d4ef2b56ebb8db06b8c3d039945a5 Mon Sep 17 00:00:00 2001
+From 9c164bb9e1e4a907651cd75b23f15bb0d1363a0a Mon Sep 17 00:00:00 2001
 From: qinzheng4 <qinzheng4@huawei.com>
 Date: Wed, 18 Oct 2023 16:31:19 +0800
 Subject: [PATCH] support OCR model
@@ -1172,7 +1172,7 @@ index 00000000..e52c89e9
 +#endif  // MINDSPORE_LITE_SRC_RUNTIME_KERNEL_IS_INF_CPU_H_
 diff --git a/mindspore/lite/src/runtime/kernel/cpu/base/custom_masked_fill.cc b/mindspore/lite/src/runtime/kernel/cpu/base/custom_masked_fill.cc
 new file mode 100644
-index 00000000..f439beab
+index 00000000..545da0d1
 --- /dev/null
 +++ b/mindspore/lite/src/runtime/kernel/cpu/base/custom_masked_fill.cc
 @@ -0,0 +1,84 @@
@@ -1245,7 +1245,7 @@ index 00000000..f439beab
 +
 +  auto data_num = input->ElementsNum();
 +  auto input_data = reinterpret_cast<float *>(input->data());
-+  auto mask_data = reinterpret_cast<bool *>(input->data());
++  auto mask_data = reinterpret_cast<bool *>(mask->data());
 +  auto output_data = reinterpret_cast<float *>(output->data());
 +  for (int64_t i = 0; i < data_num; i++) {
 +    if (mask_data[i]) {
