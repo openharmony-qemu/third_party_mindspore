@@ -62,6 +62,7 @@ def do_patch(patch_dir, target_dir):
         '0043-micro-bugfix-for-ohos.patch',
         '0044-support-OCR-GNN-model.patch',
         '0045-micro-feature-for-xiaoyi-shurufa.patch',
+        '0046-add-train-c_api-benchmark_train.patch',
     ]
 
     cwd = os.getcwd()
@@ -83,7 +84,6 @@ def create_status_file(out_src_path):
     f = open(out_src_path + '/.status', 'w')
     f.write('ok')
     f.close
-
 
 def main_work():
     parser = argparse.ArgumentParser(description="mindspore build helper")

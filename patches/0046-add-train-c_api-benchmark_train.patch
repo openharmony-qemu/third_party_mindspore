@@ -1,0 +1,3014 @@
+diff --git a/include/c_api/model_c.h b/include/c_api/model_c.h
+index 450601cb..f836825c 100644
+--- a/include/c_api/model_c.h
++++ b/include/c_api/model_c.h
+@@ -26,6 +26,8 @@ extern "C" {
+ 
+ typedef void *OH_AI_ModelHandle;
+ 
++typedef void *OH_AI_TrainCfgHandle;
++
+ typedef struct OH_AI_TensorHandleArray {
+   size_t handle_num;
+   OH_AI_TensorHandle *handle_list;
+@@ -138,6 +140,161 @@ OH_AI_API OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHa
+ /// \return The output tensor handle with the given name, if the name is not found, an NULL is returned.
+ OH_AI_API OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name);
+ 
++/// \brief Create a TrainCfg object. Only valid for Lite Train.
++///
++/// \return TrainCfg object handle.
++OH_AI_API OH_AI_TrainCfgHandle OH_AI_TrainCfgCreate();
++
++/// \brief Destroy the train_cfg object. Only valid for Lite Train.
++///
++/// \param[in] train_cfg TrainCfg object handle.
++OH_AI_API void OH_AI_TrainCfgDestroy(OH_AI_TrainCfgHandle *train_cfg);
++
++/// \brief Obtains part of the name that identify a loss kernel. Only valid for Lite Train.
++///
++/// \param[in] train_cfg TrainCfg object handle.
++/// \param[in] num The num of loss_name.
++///
++/// \return loss_name.
++OH_AI_API char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_t *num);
++
++/// \brief Set part of the name that identify a loss kernel. Only valid for Lite Train.
++///
++/// \param[in] train_cfg TrainCfg object handle.
++/// \param[in] loss_name define part of the name that identify a loss kernel.
++/// \param[in] num The num of loss_name.
++OH_AI_API void OH_AI_TrainCfgSetLossName(OH_AI_TrainCfgHandle train_cfg, const char **loss_name, size_t num);
++
++/// \brief Obtains optimization level of the train_cfg. Only valid for Lite Train.
++///
++/// \param[in] train_cfg TrainCfg object handle.
++///
++/// \return OH_AI_OptimizationLevel.
++OH_AI_API OH_AI_OptimizationLevel OH_AI_TrainCfgGetOptimizationLevel(OH_AI_TrainCfgHandle train_cfg);
++
++/// \brief Set optimization level of the train_cfg. Only valid for Lite Train.
++///
++/// \param[in] train_cfg TrainCfg object handle.
++/// \param[in] level The optimization level of train_cfg.
++OH_AI_API void OH_AI_TrainCfgSetOptimizationLevel(OH_AI_TrainCfgHandle train_cfg, OH_AI_OptimizationLevel level);
++
++/// \brief Build the train model from model buffer so that it can run on a device. Only valid for Lite Train.
++///
++/// \param[in] model Model object handle.
++/// \param[in] model_data Define the buffer read from a model file.
++/// \param[in] data_size Define bytes number of model file buffer.
++/// \param[in] model_type Define The type of model file.
++/// \param[in] model_context Define the context used to store options during execution.
++/// \param[in] train_cfg Define the config used by training.
++///
++/// \return OH_AI_Status.
++OH_AI_API OH_AI_Status OH_AI_TrainModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size,
++                                     OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context,
++                                     const OH_AI_TrainCfgHandle train_cfg);
++
++/// \brief Build the train model from model file buffer so that it can run on a device. Only valid for Lite Train.
++///
++/// \param[in] model Model object handle.
++/// \param[in] model_path Define the model path.
++/// \param[in] model_type Define The type of model file.
++/// \param[in] model_context Define the context used to store options during execution.
++/// \param[in] train_cfg Define the config used by training.
++///
++/// \return OH_AI_Status.
++OH_AI_API OH_AI_Status OH_AI_TrainModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path,
++                                             OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context,
++                                             const OH_AI_TrainCfgHandle train_cfg);
++
++/// \brief Train model by step. Only valid for Lite Train.
++///
++/// \param[in] model Model object handle.
++/// \param[in] before CallBack before predict.
++/// \param[in] after CallBack after predict.
++///
++/// \return OH_AI_Status.
++OH_AI_API OH_AI_Status OH_AI_RunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after);
++
++/// \brief Sets the Learning Rate of the training. Only valid for Lite Train.
++///
++/// \param[in] learning_rate to set.
++///
++/// \return OH_AI_Status of operation.
++OH_AI_API OH_AI_Status OH_AI_ModelSetLearningRate(OH_AI_ModelHandle model, float learning_rate);
++
++/// \brief Obtains the Learning Rate of the optimizer. Only valid for Lite Train.
++///
++/// \return Learning rate. 0.0 if no optimizer was found.
++OH_AI_API float OH_AI_ModelGetLearningRate(OH_AI_ModelHandle model);
++
++/// \brief Obtains all weights tensors of the model. Only valid for Lite Train.
++///
++/// \param[in] model Model object handle.
++///
++/// \return The vector that includes all gradient tensors.
++OH_AI_API OH_AI_TensorHandleArray OH_AI_ModelGetWeights(OH_AI_ModelHandle model);
++
++/// \brief update weights tensors of the model. Only valid for Lite Train.
++///
++/// \param[in] new_weights A vector new weights.
++///
++/// \return OH_AI_Status
++OH_AI_API OH_AI_Status OH_AI_ModelUpdateWeights(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray new_weights);
++
++/// \brief Get the model running mode.
++///
++/// \param[in] model Model object handle.
++///
++/// \return Is Train Mode or not.
++OH_AI_API bool OH_AI_ModelGetTrainMode(OH_AI_ModelHandle model);
++
++/// \brief Set the model running mode. Only valid for Lite Train.
++///
++/// \param[in] model Model object handle.
++/// \param[in] train True means model runs in Train Mode, otherwise Eval Mode.
++///
++/// \return OH_AI_Status.
++OH_AI_API OH_AI_Status OH_AI_ModelSetTrainMode(OH_AI_ModelHandle model, bool train);
++
++/// \brief Setup training with virtual batches. Only valid for Lite Train.
++///
++/// \param[in] model Model object handle.
++/// \param[in] virtual_batch_multiplier - virtual batch multiplier, use any number < 1 to disable.
++/// \param[in] lr - learning rate to use for virtual batch, -1 for internal configuration.
++/// \param[in] momentum - batch norm momentum to use for virtual batch, -1 for internal configuration.
++///
++/// \return OH_AI_Status.
++OH_AI_API OH_AI_Status OH_AI_ModelSetupVirtualBatch(OH_AI_ModelHandle model, int virtual_batch_multiplier, float lr, float momentum);
++
++/// \brief Export training model from file. Only valid for Lite Train.
++///
++/// \param[in] model The model data.
++/// \param[in] model_type The model file type.
++/// \param[in] model_file The exported model file.
++/// \param[in] quantization_type The quantification type.
++/// \param[in] export_inference_only Whether to export a reasoning only model.
++/// \param[in] output_tensor_name The set the name of the output tensor of the exported reasoning model, default as
++/// empty, and export the complete reasoning model.
++/// \param[in] num The number of output_tensor_name.
++///
++/// \return OH_AI_Status.
++OH_AI_API OH_AI_Status OH_AI_ExportModel(OH_AI_ModelHandle model, OH_AI_ModelType model_type, const char *model_file,
++                                         OH_AI_QuantizationType quantization_type, bool export_inference_only,
++                                         char **output_tensor_name, size_t num);
++
++/// \brief Export model's weights, which can be used in micro only. Only valid for Lite Train.
++///
++/// \param[in] model The model data.
++/// \param[in] model_type The model file type.
++/// \param[in] weight_file The path of exported weight file.
++/// \param[in] is_inference Whether to export weights from a reasoning model. Currently, only support this is `true`.
++/// \param[in] enable_fp16 Float-weight is whether to be saved in float16 format.
++/// \param[in] changeable_weights_name The set the name of these weight tensors, whose shape is changeable.
++/// \param[in] num The number of changeable_weights_name.
++///
++/// \return OH_AI_Status.
++OH_AI_API OH_AI_Status OH_AI_ExportWeightsCollaborateWithMicro(OH_AI_ModelHandle model, OH_AI_ModelType model_type, const char *weight_file,
++                                                               bool is_inference, bool enable_fp16, char **changeable_weights_name, size_t num);
++
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/include/c_api/types_c.h b/include/c_api/types_c.h
+index d612eb97..e520e336 100644
+--- a/include/c_api/types_c.h
++++ b/include/c_api/types_c.h
+@@ -79,6 +79,25 @@ typedef enum OH_AI_Priority {
+   OH_AI_PRIORITY_HIGH = 3
+ } OH_AI_Priority;
+ 
++typedef enum OH_AI_OptimizationLevel {
++  /** Do not change */
++  OH_AI_KO0 = 0,
++  /** Cast network to float16, keep batchnorm and loss in float32 */
++  OH_AI_KO2 = 2,
++  /** Cast network to float16, including bacthnorm */
++  OH_AI_KO3 = 3,
++  /** Choose optimization based on device */
++  OH_AI_KAUTO = 4,
++  OH_AI_KOPTIMIZATIONTYPE = 0xFFFFFFFF
++} OH_AI_OptimizationLevel;
++
++typedef enum OH_AI_QuantizationType {
++  OH_AI_NO_QUANT = 0,
++  OH_AI_WEIGHT_QUANT = 1,
++  OH_AI_FULL_QUANT = 2,
++  OH_AI_UNKNOWN_QUANT_TYPE = 0xFFFFFFFF
++} OH_AI_QuantizationType;
++
+ typedef struct NNRTDeviceDesc NNRTDeviceDesc;
+ #ifdef __cplusplus
+ }
+diff --git a/mindspore/lite/src/runtime/c_api/context_c.cc b/mindspore/lite/src/runtime/c_api/context_c.cc
+index c7615c6b..d1617ec0 100644
+--- a/mindspore/lite/src/runtime/c_api/context_c.cc
++++ b/mindspore/lite/src/runtime/c_api/context_c.cc
+@@ -94,9 +94,16 @@ const int32_t *OH_AI_ContextGetThreadAffinityCoreList(const OH_AI_ContextHandle
+     return nullptr;
+   }
+   auto impl = static_cast<mindspore::Context *>(context);
+-  *core_num = impl->GetThreadAffinityCoreList().size();
++  auto affinity_core_list = impl->GetThreadAffinityCoreList();
++  *core_num = affinity_core_list.size();
+   int32_t *core_list = static_cast<int32_t *>(malloc((*core_num) * sizeof(int32_t)));
+-  memcpy(core_list, impl->GetThreadAffinityCoreList().data(), (*core_num) * sizeof(int32_t));
++  if (core_list == nullptr) {
++    MS_LOG(ERROR) << "malloc core_list is null.";
++    return nullptr;
++  }
++  for (size_t i = 0; i < affinity_core_list.size(); i++) {
++    core_list[i] = affinity_core_list[i];
++  }
+   return core_list;
+ }
+ 
+@@ -174,6 +181,10 @@ const char *OH_AI_DeviceInfoGetProvider(const OH_AI_DeviceInfoHandle device_info
+   }
+   auto impl = static_cast<mindspore::DeviceInfoContext *>(device_info);
+   char *provider = static_cast<char *>(malloc(impl->GetProvider().size() + 1));
++  if (provider == nullptr) {
++    MS_LOG(ERROR) << "malloc provider is null.";
++    return nullptr;
++  }
+   strcpy(provider, impl->GetProvider().c_str());
+   return provider;
+ }
+@@ -194,6 +205,10 @@ const char *OH_AI_DeviceInfoGetProviderDevice(const OH_AI_DeviceInfoHandle devic
+   }
+   auto impl = static_cast<mindspore::DeviceInfoContext *>(device_info);
+   char *provider_device = static_cast<char *>(malloc(impl->GetProviderDevice().size() + 1));
++  if (provider_device == nullptr) {
++    MS_LOG(ERROR) << "malloc provider_device is null.";
++    return nullptr;
++  }
+   strcpy(provider_device, impl->GetProviderDevice().c_str());
+   return provider_device;
+ }
+diff --git a/mindspore/lite/src/runtime/c_api/model_c.cc b/mindspore/lite/src/runtime/c_api/model_c.cc
+index 6f28b2ae..02462fb2 100644
+--- a/mindspore/lite/src/runtime/c_api/model_c.cc
++++ b/mindspore/lite/src/runtime/c_api/model_c.cc
+@@ -34,6 +34,9 @@ class ModelC {
+       for (auto out : outputs_) {
+         delete out;
+       }
++      for (auto out : outputs_train_) {
++        delete out;
++      }
+     }
+ 
+     MSTensor **GetInputs(size_t *input_num);
+@@ -42,8 +45,10 @@ class ModelC {
+     std::shared_ptr<Model> model_;
+ 
+ private:
++    MSTensor **GetOutputsTensor(size_t *output_num, std::vector<MSTensor *> *vec_tensors);
+     std::vector<MSTensor *> inputs_;
+     std::vector<MSTensor *> outputs_;
++    std::vector<MSTensor *> outputs_train_;
+ };
+ 
+ MSTensor **ModelC::GetInputs(size_t *input_num) {
+@@ -72,28 +77,36 @@ MSTensor **ModelC::GetInputs(size_t *input_num) {
+ }
+ 
+ MSTensor **ModelC::GetOutputs(size_t *output_num) {
++  if (model_->GetTrainMode() == true) {
++    return GetOutputsTensor(output_num, &outputs_train_);
++  } else {
++    return GetOutputsTensor(output_num, &outputs_);
++  }
++}
++
++MSTensor **ModelC::GetOutputsTensor(size_t *output_num, std::vector<MSTensor *> *vec_tensors) {
+   if (model_ == nullptr) {
+     MS_LOG(ERROR) << "model_impl is null.";
+     return nullptr;
+   }
+-  if (!outputs_.empty()) {
+-    *output_num = outputs_.size();
+-    return outputs_.data();
++  if (!vec_tensors->empty()) {
++    *output_num = vec_tensors->size();
++    return vec_tensors->data();
+   }
+ 
+   auto outputs = model_->GetOutputs();
+   *output_num = outputs.size();
+-  if (outputs_.capacity() < outputs.size()) {
+-    outputs_.reserve(outputs.size());
++  if (vec_tensors->capacity() < outputs.size()) {
++    vec_tensors->reserve(outputs.size());
+   }
+-  for (auto out : outputs_) {
++  for (auto out : (*vec_tensors)) {
+     delete out;
+   }
+-  outputs_.clear();
++  vec_tensors->clear();
+   for (size_t i = 0; i < outputs.size(); i++) {
+-    outputs_.push_back(new MSTensor(outputs[i].impl()));
++    vec_tensors->push_back(new MSTensor(outputs[i].impl()));
+   }
+-  return outputs_.data();
++  return vec_tensors->data();
+ }
+ 
+ mindspore::MSKernelCallBack ModelC::TransCallBack(const OH_AI_KernelCallBack &oh_callback) {
+@@ -128,11 +141,11 @@ mindspore::MSKernelCallBack ModelC::TransCallBack(const OH_AI_KernelCallBack &oh
+ 
+ OH_AI_ModelHandle OH_AI_ModelCreate() {
+   auto impl = new (std::nothrow) mindspore::ModelC();
+-  impl->model_ = std::make_shared<mindspore::Model>();
+   if (impl == nullptr) {
+     MS_LOG(ERROR) << "Model implement is null.";
+     return nullptr;
+   }
++  impl->model_ = std::make_shared<mindspore::Model>();
+   return static_cast<OH_AI_ModelHandle>(impl);
+ }
+ 
+@@ -282,4 +295,262 @@ OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle mode
+   }
+   MS_LOG(ERROR) << "tensor is not exist.";
+   return nullptr;
++}
++
++OH_AI_TrainCfgHandle OH_AI_TrainCfgCreate() {
++  auto impl = new (std::nothrow) mindspore::TrainCfg();
++  if (impl == nullptr) {
++    MS_LOG(ERROR) << "TrainCfg implement is null.";
++    return nullptr;
++  }
++  return static_cast<OH_AI_TrainCfgHandle>(impl);
++}
++
++void OH_AI_TrainCfgDestroy(OH_AI_TrainCfgHandle *train_cfg) {
++  if (train_cfg != nullptr && *train_cfg != nullptr) {
++    auto impl = static_cast<mindspore::TrainCfg *>(*train_cfg);
++    delete impl;
++    *train_cfg = nullptr;
++  }
++}
++
++char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_t *num) {
++  if (train_cfg == nullptr || num == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return nullptr;
++  }
++  auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
++  auto loss_name = impl->GetLossName();
++  *num = loss_name.size();
++  char **name = static_cast<char **>(malloc(loss_name.size()));
++  if (name == nullptr) {
++    MS_LOG(ERROR) << "Failed to malloc loss_name.";
++    return nullptr;
++  }
++  for (size_t i = 0; i < loss_name.size(); i++) {
++    name[i] = static_cast<char *>(malloc(loss_name[i].size() + 1));
++    strcpy(name[i], loss_name[i].c_str());
++  }
++  return name;
++}
++
++void OH_AI_TrainCfgSetLossName(OH_AI_TrainCfgHandle train_cfg, const char **loss_name, size_t num) {
++  if (train_cfg == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return;
++  }
++  auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
++  std::vector<std::string> vec_name;
++  for (size_t i = 0; i < num; i++) {
++    vec_name.push_back(loss_name[i]);
++  }
++  impl->SetLossName(vec_name);
++}
++
++OH_AI_OptimizationLevel OH_AI_TrainCfgGetOptimizationLevel(OH_AI_TrainCfgHandle train_cfg) {
++  if (train_cfg == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_KO0;
++  }
++  auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
++  return static_cast<OH_AI_OptimizationLevel>(impl->optimization_level_);
++}
++
++void OH_AI_TrainCfgSetOptimizationLevel(OH_AI_TrainCfgHandle train_cfg, OH_AI_OptimizationLevel level) {
++  if (train_cfg == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return;
++  }
++  auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
++  impl->optimization_level_ = static_cast<mindspore::OptimizationLevel>(level);
++}
++
++OH_AI_Status OH_AI_TrainModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size,
++                                   OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context,
++                                   const OH_AI_TrainCfgHandle train_cfg) {
++  if (model == nullptr || model_data == nullptr || model_context == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_NULLPTR;
++  }
++  if (model_type == OH_AI_MODELTYPE_INVALID) {
++    MS_LOG(ERROR) << "param is invalid.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++
++  mindspore::Graph graph;
++  auto status = mindspore::Serialization::Load(model_data, data_size, static_cast<mindspore::ModelType>(model_type), &graph);
++  if (status != mindspore::kSuccess) {
++    MS_LOG(ERROR) << "load ms file failed.";
++    return OH_AI_STATUS_LITE_ERROR;
++  }
++  auto context = static_cast<mindspore::Context *>(model_context);
++  auto build_train_cfg = static_cast<mindspore::TrainCfg *>(train_cfg);
++  auto ret = impl->model_->Build(static_cast<mindspore::GraphCell>(graph),
++                                 static_cast<const std::shared_ptr<mindspore::Context>>(context),
++                                 std::shared_ptr<mindspore::TrainCfg>(build_train_cfg));
++  if (ret != mindspore::kSuccess) {
++    MS_LOG(ERROR) << "Load and compile failed";
++  }
++  return static_cast<OH_AI_Status>(ret.StatusCode());
++}
++
++OH_AI_Status OH_AI_TrainModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path,
++                                           OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context,
++                                           const OH_AI_TrainCfgHandle train_cfg) {
++  if (model == nullptr || model_path == nullptr || model_context == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_NULLPTR;
++  }
++  if (model_type == OH_AI_MODELTYPE_INVALID) {
++    MS_LOG(ERROR) << "param is invalid.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++
++  mindspore::Graph graph;
++  auto status = mindspore::Serialization::Load(model_path, static_cast<mindspore::ModelType>(model_type), &graph);
++  if (status != mindspore::kSuccess) {
++    MS_LOG(ERROR) << "load ms file failed. " << model_path;
++    return OH_AI_STATUS_LITE_ERROR;
++  }
++  auto context = static_cast<mindspore::Context *>(model_context);
++  auto build_train_cfg = static_cast<mindspore::TrainCfg *>(train_cfg);
++  auto ret = impl->model_->Build(static_cast<mindspore::GraphCell>(graph),
++                                 static_cast<const std::shared_ptr<mindspore::Context>>(context),
++                                 std::shared_ptr<mindspore::TrainCfg>(build_train_cfg));
++  if (ret != mindspore::kSuccess) {
++    MS_LOG(ERROR) << "Load and compile failed";
++  }
++  return static_cast<OH_AI_Status>(ret.StatusCode());
++}
++
++OH_AI_Status OH_AI_ModelSetLearningRate(OH_AI_ModelHandle model, float learning_rate) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  auto ret = impl->model_->SetLearningRate(learning_rate);
++  return static_cast<OH_AI_Status>(ret.StatusCode());
++}
++
++float OH_AI_ModelGetLearningRate(OH_AI_ModelHandle model) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  return impl->model_->GetLearningRate();
++}
++
++OH_AI_Status OH_AI_RunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  auto ret = impl->model_->RunStep(impl->TransCallBack(before), impl->TransCallBack(after));
++  return static_cast<OH_AI_Status>(ret.StatusCode());
++}
++
++OH_AI_TensorHandleArray OH_AI_ModelGetWeights(OH_AI_ModelHandle model) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return {0, nullptr};
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  auto features = impl->model_->GetFeatureMaps();
++  size_t handle_num = features.size();
++
++  mindspore::MSTensor **handle_list = static_cast<mindspore::MSTensor **>(malloc(
++    handle_num * sizeof(mindspore::MSTensor *)));
++  if (handle_list == nullptr) {
++    MS_LOG(ERROR) << "Failed to malloc handle_list.";
++    return {0, nullptr};
++  }
++  for (size_t i = 0; i < handle_num; i++) {
++    handle_list[i] = new mindspore::MSTensor(features[i].impl());
++  }
++  return {handle_num, reinterpret_cast<OH_AI_TensorHandle *>(handle_list)};
++}
++
++OH_AI_Status OH_AI_ModelUpdateWeights(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray new_weights) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  std::vector<mindspore::MSTensor> weights;
++  for (size_t i = 0; i < new_weights.handle_num; i++) {
++    weights.push_back(*static_cast<mindspore::MSTensor *>(new_weights.handle_list[i]));
++  }
++  auto ret = impl->model_->UpdateFeatureMaps(weights);
++  return static_cast<OH_AI_Status>(ret.StatusCode());
++}
++
++bool OH_AI_ModelGetTrainMode(OH_AI_ModelHandle model) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return false;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  return impl->model_->GetTrainMode();
++}
++
++OH_AI_Status OH_AI_ModelSetTrainMode(OH_AI_ModelHandle model, bool train) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  auto ret = impl->model_->SetTrainMode(train);
++  return static_cast<OH_AI_Status>(ret.StatusCode());
++}
++
++OH_AI_Status OH_AI_ModelSetupVirtualBatch(OH_AI_ModelHandle model, int virtual_batch_multiplier, float lr, float momentum) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  auto ret = impl->model_->SetupVirtualBatch(virtual_batch_multiplier, lr, momentum);
++  return static_cast<OH_AI_Status>(ret.StatusCode());
++}
++
++OH_AI_Status OH_AI_ExportModel(OH_AI_ModelHandle model, OH_AI_ModelType model_type, const char *model_file,
++                               OH_AI_QuantizationType quantization_type, bool export_inference_only,
++                               char **output_tensor_name, size_t num) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  std::vector<std::string> tensor_name;
++  for (size_t i = 0; i < num; i++) {
++    tensor_name.push_back(output_tensor_name[i]);
++  }
++  auto ret = mindspore::Serialization::ExportModel(*(impl->model_.get()), static_cast<mindspore::ModelType>(model_type), model_file, static_cast<mindspore::QuantizationType>(quantization_type), export_inference_only, tensor_name);
++  if (!ret.IsOk()) {
++    MS_LOG(ERROR) << "export model fail, ret :" << ret;
++  }
++  return static_cast<OH_AI_Status>(ret.StatusCode());
++}
++
++OH_AI_Status OH_AI_ExportWeightsCollaborateWithMicro(OH_AI_ModelHandle model, OH_AI_ModelType model_type, const char *weight_file,
++  bool is_inference, bool enable_fp16, char **changeable_weights_name, size_t num) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  std::vector<std::string> weights_name;
++  for (size_t i = 0; i < num; i++) {
++    weights_name.push_back(changeable_weights_name[i]);
++  }
++  auto ret = mindspore::Serialization::ExportWeightsCollaborateWithMicro(*(impl->model_.get()), static_cast<mindspore::ModelType>(model_type), weight_file, is_inference, enable_fp16, weights_name);
++  if (!ret.IsOk()) {
++    MS_LOG(ERROR) << "export model fail, ret :" << ret;
++  }
++  return static_cast<OH_AI_Status>(ret.StatusCode());
+ }
+\ No newline at end of file
+diff --git a/mindspore/lite/src/runtime/c_api/tensor_c.cc b/mindspore/lite/src/runtime/c_api/tensor_c.cc
+index a1814488..9105423a 100644
+--- a/mindspore/lite/src/runtime/c_api/tensor_c.cc
++++ b/mindspore/lite/src/runtime/c_api/tensor_c.cc
+@@ -37,6 +37,10 @@ OH_AI_TensorHandle OH_AI_TensorCreate(const char *name, OH_AI_DataType type, con
+   }
+   lite_tensor_impl->set_from_session(false);
+   auto impl = new (std::nothrow) mindspore::MSTensor(lite_tensor_impl);
++  if (impl == nullptr) {
++    MS_LOG(ERROR) << "Failed to allocate MSTensor.";
++    return nullptr;
++  }
+   return impl;
+ }
+ 
+diff --git a/mindspore/lite/tools/benchmark_train/CMakeLists.txt b/mindspore/lite/tools/benchmark_train/CMakeLists.txt
+index 986ffac5..c5f2834d 100644
+--- a/mindspore/lite/tools/benchmark_train/CMakeLists.txt
++++ b/mindspore/lite/tools/benchmark_train/CMakeLists.txt
+@@ -9,7 +9,9 @@ set(COMMON_SRC
+ set(TEST_SRC
+     ${CMAKE_CURRENT_SOURCE_DIR}/main.cc
+     ${CMAKE_CURRENT_SOURCE_DIR}/net_train.cc
+-    )
++    ${CMAKE_CURRENT_SOURCE_DIR}/net_train_base.cc
++    ${CMAKE_CURRENT_SOURCE_DIR}/run_net_train.cc
++    ${CMAKE_CURRENT_SOURCE_DIR}/net_train_c_api.cc)
+ 
+ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
+     set(TEST_SRC
+diff --git a/mindspore/lite/tools/benchmark_train/main.cc b/mindspore/lite/tools/benchmark_train/main.cc
+index abf3d9dd..76f85aa7 100644
+--- a/mindspore/lite/tools/benchmark_train/main.cc
++++ b/mindspore/lite/tools/benchmark_train/main.cc
+@@ -17,7 +17,8 @@
+ #include <malloc.h>
+ #include <unistd.h>
+ #include <fstream>
+-#include "tools/benchmark_train/net_train.h"
++#include <iostream>
++#include "tools/benchmark_train/run_net_train.h"
+ 
+ void PrintMem() {
+   std::string proc_file = "/proc/" + std::to_string(getpid()) + "/status";
+diff --git a/mindspore/lite/tools/benchmark_train/net_runner.cc b/mindspore/lite/tools/benchmark_train/net_runner.cc
+index 9b63d29f..ce57f666 100644
+--- a/mindspore/lite/tools/benchmark_train/net_runner.cc
++++ b/mindspore/lite/tools/benchmark_train/net_runner.cc
+@@ -15,7 +15,7 @@
+  */
+ 
+ #include "tools/benchmark_train/net_runner.h"
+-#include "tools/benchmark_train/net_train.h"
++#include "tools/benchmark_train/net_train_base.h"
+ #include <getopt.h>
+ #include <malloc.h>
+ #include <cmath>
+diff --git a/mindspore/lite/tools/benchmark_train/net_train.cc b/mindspore/lite/tools/benchmark_train/net_train.cc
+index 20d2d298..7604c601 100644
+--- a/mindspore/lite/tools/benchmark_train/net_train.cc
++++ b/mindspore/lite/tools/benchmark_train/net_train.cc
+@@ -30,89 +30,11 @@
+ 
+ namespace mindspore {
+ namespace lite {
+-static const char *DELIM_SLASH = "/";
+-constexpr const char *DELIM_COLON = ":";
+-constexpr const char *DELIM_COMMA = ",";
+-constexpr int RET_TOO_BIG = -9;
+ constexpr int kField0 = 0;
+ constexpr int kField1 = 1;
+ constexpr int kField2 = 2;
+ constexpr int kField3 = 3;
+ constexpr int kField4 = 4;
+-constexpr int kFieldsToPrint = 5;
+-constexpr int kPrintOffset = 4;
+-static const int kTHOUSAND = 1000;
+-constexpr int kDumpInputsAndOutputs = 0;
+-constexpr int kDumpOutputs = 2;
+-
+-const std::unordered_map<int, std::string> kTypeIdMap{
+-  {kNumberTypeFloat16, "Float16"}, {kNumberTypeFloat, "Float32"},    {kNumberTypeFloat32, "Float32"},
+-  {kNumberTypeInt8, "Int8"},       {kNumberTypeInt16, "Int16"},      {kNumberTypeInt, "Int32"},
+-  {kNumberTypeInt32, "Int32"},     {kNumberTypeUInt8, "UInt8"},      {kNumberTypeUInt16, "UInt16"},
+-  {kNumberTypeUInt, "UInt32"},     {kNumberTypeUInt32, "UInt32"},    {kObjectTypeString, "String"},
+-  {kNumberTypeBool, "Bool"},       {kObjectTypeTensorType, "Tensor"}};
+-
+-const std::unordered_map<mindspore::Format, std::string> kTensorFormatMap{
+-  {mindspore::NCHW, "NCHW"}, {mindspore::NHWC, "NHWC"},     {mindspore::NHWC4, "NHWC4"}, {mindspore::HWKC, "HWKC"},
+-  {mindspore::HWCK, "HWCK"}, {mindspore::KCHW, "KCHW"},     {mindspore::CKHW, "CKHW"},   {mindspore::KHWC, "KHWC"},
+-  {mindspore::CHWK, "CHWK"}, {mindspore::HW, "HW"},         {mindspore::HW4, "HW4"},     {mindspore::NC, "NC"},
+-  {mindspore::NC4, "NC4"},   {mindspore::NC4HW4, "NC4HW4"}, {mindspore::NCDHW, "NCDHW"}};
+-
+-std::function<int(NetTrainFlags *)> NetTrain::nr_cb_ = nullptr;
+-
+-int NetTrain::SetNr(std::function<int(NetTrainFlags *)> param) {
+-  nr_cb_ = param;
+-  return 0;
+-}
+-
+-float *NetTrain::ReadFileBuf(const std::string file, size_t *size) {
+-  if (file.empty()) {
+-    MS_LOG(ERROR) << "file is nullptr";
+-    return nullptr;
+-  }
+-  MS_ASSERT(size != nullptr);
+-  std::string real_path = RealPath(file.c_str());
+-  std::ifstream ifs(real_path);
+-  if (!ifs.good()) {
+-    MS_LOG(ERROR) << "file: " << real_path << " is not exist";
+-    return nullptr;
+-  }
+-
+-  if (!ifs.is_open()) {
+-    MS_LOG(ERROR) << "file: " << real_path << " open failed";
+-    return nullptr;
+-  }
+-
+-  ifs.seekg(0, std::ios::end);
+-  *size = ifs.tellg();
+-  std::unique_ptr<float[]> buf = std::make_unique<float[]>(*size / sizeof(float) + 1);
+-  if (buf == nullptr) {
+-    MS_LOG(ERROR) << "malloc buf failed, file: " << real_path;
+-    ifs.close();
+-    return nullptr;
+-  }
+-
+-  ifs.seekg(0, std::ios::beg);
+-  ifs.read(reinterpret_cast<char *>(buf.get()), *size);
+-  ifs.close();
+-
+-  return buf.release();
+-}
+-
+-int NetTrain::GenerateRandomData(mindspore::MSTensor *tensor) {
+-  auto input_data = tensor->MutableData();
+-  if (input_data == nullptr) {
+-    MS_LOG(ERROR) << "MallocData for inTensor failed";
+-    return RET_ERROR;
+-  }
+-  auto tensor_byte_size = tensor->DataSize();
+-  char *casted_data = static_cast<char *>(input_data);
+-  for (size_t i = 0; i < tensor_byte_size; i++) {
+-    casted_data[i] =
+-      (tensor->DataType() == mindspore::DataType::kNumberTypeFloat32) ? static_cast<char>(i) : static_cast<char>(0);
+-  }
+-  return RET_OK;
+-}
+ 
+ int NetTrain::GenerateInputData() {
+   for (auto tensor : ms_inputs_for_api_) {
+@@ -126,25 +48,6 @@ int NetTrain::GenerateInputData() {
+   return RET_OK;
+ }
+ 
+-int NetTrain::LoadInput() {
+-  if (flags_->in_data_file_.empty()) {
+-    auto status = GenerateInputData();
+-    if (status != RET_OK) {
+-      std::cerr << "Generate input data error " << status << std::endl;
+-      MS_LOG(ERROR) << "Generate input data error " << status;
+-      return status;
+-    }
+-  } else {
+-    auto status = ReadInputFile();
+-    if (status != RET_OK) {
+-      std::cerr << "Read Input File error, " << status << std::endl;
+-      MS_LOG(ERROR) << "Read Input File error, " << status;
+-      return status;
+-    }
+-  }
+-  return RET_OK;
+-}
+-
+ int NetTrain::ReadInputFile() {
+   if (ms_inputs_for_api_.empty()) {
+     return RET_OK;
+@@ -521,26 +424,6 @@ int NetTrain::CreateAndRunNetwork(const std::string &filename, const std::string
+   return RET_OK;
+ }
+ 
+-int NetTrain::RunNetTrain() {
+-  auto file_name = flags_->model_file_.substr(flags_->model_file_.find_last_of(DELIM_SLASH) + 1);
+-  bool is_train = (file_name.find("train") != std::string::npos) || !flags_->bb_model_file_.empty();
+-  auto status = CreateAndRunNetwork(flags_->model_file_, flags_->bb_model_file_, is_train, flags_->epochs_);
+-  if (status != RET_OK) {
+-    MS_LOG(ERROR) << "CreateAndRunNetwork failed for model " << flags_->model_file_ << ". Status is " << status;
+-    std::cout << "CreateAndRunNetwork failed for model " << flags_->model_file_ << ". Status is " << status
+-              << std::endl;
+-    return status;
+-  }
+-
+-  status = CheckExecutionOfSavedModels();  // re-initialize sessions according to flags
+-  if (status != RET_OK) {
+-    MS_LOG(ERROR) << "Run CheckExecute error: " << status;
+-    std::cout << "Run CheckExecute error: " << status << std::endl;
+-    return status;
+-  }
+-  return RET_OK;
+-}
+-
+ int NetTrain::SaveModels() {
+   if (!flags_->export_file_.empty()) {
+     if (flags_->bb_model_file_.empty()) {
+@@ -582,101 +465,6 @@ int NetTrain::SaveModels() {
+   return RET_OK;
+ }
+ 
+-int NetTrain::CheckExecutionOfSavedModels() {
+-  int status = RET_OK;
+-  if (!flags_->export_file_.empty()) {
+-    status = NetTrain::CreateAndRunNetwork(flags_->export_file_, flags_->bb_model_file_, true, 0);
+-    if (status != RET_OK) {
+-      MS_LOG(ERROR) << "Run Exported model " << flags_->export_file_ << " error: " << status;
+-      std::cout << "Run Exported model " << flags_->export_file_ << " error: " << status << std::endl;
+-      return status;
+-    }
+-    if (flags_->bb_model_file_.empty()) {
+-      status = NetTrain::CreateAndRunNetwork(flags_->export_file_ + "_qt", "", true, 0, false);
+-      if (status != RET_OK) {
+-        MS_LOG(ERROR) << "Run Exported model " << flags_->export_file_ << "_qt.ms error: " << status;
+-        std::cout << "Run Exported model " << flags_->export_file_ << "_qt.ms error: " << status << std::endl;
+-        return status;
+-      }
+-    }
+-  }
+-  if (!flags_->inference_file_.empty()) {
+-    status = NetTrain::CreateAndRunNetwork(flags_->inference_file_, "", false, 0);
+-    if (status != RET_OK) {
+-      MS_LOG(ERROR) << "Running saved model " << flags_->inference_file_ << ".ms error: " << status;
+-      std::cout << "Running saved model " << flags_->inference_file_ << ".ms error: " << status << std::endl;
+-      return status;
+-    }
+-    status = NetTrain::CreateAndRunNetwork(flags_->inference_file_ + "_qt", "", false, 0, false);
+-    if (status != RET_OK) {
+-      MS_LOG(ERROR) << "Running saved model " << flags_->inference_file_ << "_qt.ms error: " << status;
+-      std::cout << "Running saved model " << flags_->inference_file_ << "_qt.ms error: " << status << std::endl;
+-      return status;
+-    }
+-  }
+-  return status;
+-}
+-
+-void NetTrain::CheckSum(MSTensor *tensor, const std::string &node_type, int id, const std::string &in_out) {
+-  if (tensor == nullptr) {
+-    MS_LOG(ERROR) << "input tensor is nullptr.";
+-    return;
+-  }
+-  int tensor_size = tensor->ElementNum();
+-  void *data = tensor->MutableData();
+-  auto *fdata = reinterpret_cast<float *>(tensor->MutableData());
+-  auto type = tensor->DataType();
+-  std::cout << node_type << " " << in_out << id << " shape=" << tensor->Shape() << " sum=";
+-  switch (type) {
+-    case mindspore::DataType::kNumberTypeFloat32:
+-      TensorNan(reinterpret_cast<float *>(data), tensor_size);
+-      std::cout << TensorSum<float>(data, tensor_size) << std::endl;
+-      std::cout << "tensor name: " << tensor->Name() << std::endl;
+-      std::cout << "data: ";
+-      for (int i = 0; i <= kPrintOffset && i < tensor_size; i++) {
+-        std::cout << static_cast<float>(fdata[i]) << ", ";
+-      }
+-      std::cout << std::endl;
+-      break;
+-    case mindspore::DataType::kNumberTypeInt32:
+-      std::cout << TensorSum<int>(data, tensor_size) << std::endl;
+-      break;
+-#ifdef ENABLE_FP16
+-    case mindspore::DataType::kNumberTypeFloat16:
+-      std::cout << TensorSum<float16_t>(data, tensor_size) << std::endl;
+-      TensorNan(reinterpret_cast<float16_t *>(data), tensor_size);
+-      break;
+-#endif
+-    default:
+-      std::cout << "unsupported type:" << static_cast<int>(type) << std::endl;
+-      break;
+-  }
+-}
+-
+-std::string GenerateOutputFileName(mindspore::MSTensor *tensor, const std::string &op_name,
+-                                   const std::string &file_type, const size_t &idx) {
+-  std::string file_name = op_name;
+-  auto pos = file_name.find_first_of('/');
+-  while (pos != std::string::npos) {
+-    file_name.replace(pos, 1, ".");
+-    pos = file_name.find_first_of('/');
+-  }
+-  file_name += "_" + file_type + "_" + std::to_string(idx) + "_shape_";
+-  for (const auto &dim : tensor->Shape()) {
+-    file_name += std::to_string(dim) + "_";
+-  }
+-  if (kTypeIdMap.find(static_cast<int>(tensor->DataType())) != kTypeIdMap.end()) {
+-    file_name += kTypeIdMap.at(static_cast<int>(tensor->DataType()));
+-  }
+-  auto tensor_format = tensor->format();
+-  if (kTensorFormatMap.find(tensor_format) != kTensorFormatMap.end()) {
+-    file_name += "_" + kTensorFormatMap.at(tensor_format) + ".bin";
+-  }
+-
+-  file_name += ".bin";
+-  return file_name;
+-}
+-
+ int NetTrain::InitDumpTensorDataCallbackParameter() {
+   // before callback
+   before_call_back_ = [&](const std::vector<mindspore::MSTensor> &before_inputs,
+@@ -786,178 +574,6 @@ int NetTrain::InitTimeProfilingCallbackParameter() {
+   return RET_OK;
+ }
+ 
+-int NetTrain::InitCallbackParameter() {
+-  int ret = RET_OK;
+-  if (flags_->dump_tensor_data_) {
+-    ret = InitDumpTensorDataCallbackParameter();
+-  } else if (flags_->time_profiling_) {
+-    ret = InitTimeProfilingCallbackParameter();
+-  }
+-  return ret;
+-}
+-
+-void NetTrainFlags::InitResizeDimsList() {
+-  std::string content = this->resize_dims_in_;
+-  std::vector<int> shape;
+-  auto shape_strs = StrSplit(content, std::string(DELIM_COLON));
+-  for (const auto &shape_str : shape_strs) {
+-    shape.clear();
+-    auto dim_strs = StrSplit(shape_str, std::string(DELIM_COMMA));
+-    std::cout << "Resize Dims: ";
+-    for (const auto &dim_str : dim_strs) {
+-      std::cout << dim_str << " ";
+-      shape.emplace_back(static_cast<int>(std::stoi(dim_str)));
+-    }
+-    std::cout << std::endl;
+-    this->resize_dims_.emplace_back(shape);
+-  }
+-}
+-
+-int NetTrain::Init() {
+-  if (this->flags_ == nullptr) {
+-    return 1;
+-  }
+-  MS_LOG(INFO) << "ModelPath = " << this->flags_->model_file_;
+-  MS_LOG(INFO) << "InDataPath = " << this->flags_->in_data_file_;
+-  MS_LOG(INFO) << "InDataType = " << this->flags_->in_data_type_in_;
+-  MS_LOG(INFO) << "Epochs = " << this->flags_->epochs_;
+-  MS_LOG(INFO) << "AccuracyThreshold = " << this->flags_->accuracy_threshold_;
+-  MS_LOG(INFO) << "WarmUpLoopCount = " << this->flags_->warm_up_loop_count_;
+-  MS_LOG(INFO) << "NumThreads = " << this->flags_->num_threads_;
+-  MS_LOG(INFO) << "expectedDataFile = " << this->flags_->data_file_;
+-  MS_LOG(INFO) << "exportDataFile = " << this->flags_->export_file_;
+-  MS_LOG(INFO) << "enableFp16 = " << this->flags_->enable_fp16_;
+-  MS_LOG(INFO) << "virtualBatch = " << this->flags_->virtual_batch_;
+-
+-  if (this->flags_->epochs_ < 0) {
+-    MS_LOG(ERROR) << "epochs:" << this->flags_->epochs_ << " must be equal/greater than 0";
+-    std::cerr << "epochs:" << this->flags_->epochs_ << " must be equal/greater than 0" << std::endl;
+-    return RET_ERROR;
+-  }
+-
+-  if (this->flags_->num_threads_ < 1) {
+-    MS_LOG(ERROR) << "numThreads:" << this->flags_->num_threads_ << " must be greater than 0";
+-    std::cerr << "numThreads:" << this->flags_->num_threads_ << " must be greater than 0" << std::endl;
+-    return RET_ERROR;
+-  }
+-
+-  this->flags_->in_data_type_ = this->flags_->in_data_type_in_ == "img" ? kImage : kBinary;
+-
+-  if (flags_->in_data_file_.empty() && !flags_->data_file_.empty()) {
+-    MS_LOG(ERROR) << "expectedDataFile not supported in case that inDataFile is not provided";
+-    std::cerr << "expectedDataFile is not supported in case that inDataFile is not provided" << std::endl;
+-    return RET_ERROR;
+-  }
+-
+-  if (flags_->in_data_file_.empty() && !flags_->export_file_.empty()) {
+-    MS_LOG(ERROR) << "exportDataFile not supported in case that inDataFile is not provided";
+-    std::cerr << "exportDataFile is not supported in case that inDataFile is not provided" << std::endl;
+-    return RET_ERROR;
+-  }
+-
+-  if (flags_->model_file_.empty()) {
+-    MS_LOG(ERROR) << "modelPath is required";
+-    std::cerr << "modelPath is required" << std::endl;
+-    return 1;
+-  }
+-
+-  // get dump data output path
+-  auto dump_cfg_path = std::getenv(dump::kConfigPath);
+-  if (dump_cfg_path != nullptr) {
+-    flags_->dump_tensor_data_ = true;
+-    if (InitDumpConfigFromJson(dump_cfg_path) != RET_OK) {
+-      MS_LOG(ERROR) << "parse dump config file failed.";
+-      return RET_ERROR;
+-    }
+-  } else {
+-    MS_LOG(INFO) << "No MINDSPORE_DUMP_CONFIG in env, don't need to dump data";
+-  }
+-
+-  auto status = InitCallbackParameter();
+-  if (status != RET_OK) {
+-    MS_LOG(ERROR) << "Init callback Parameter failed.";
+-    std::cerr << "Init callback Parameter failed." << std::endl;
+-    return RET_ERROR;
+-  }
+-
+-  flags_->InitResizeDimsList();
+-  if (!flags_->resize_dims_.empty() && !flags_->input_data_list_.empty() &&
+-      flags_->resize_dims_.size() != flags_->input_data_list_.size()) {
+-    MS_LOG(ERROR) << "Size of input resizeDims should be equal to size of input inDataPath";
+-    std::cerr << "Size of input resizeDims should be equal to size of input inDataPath" << std::endl;
+-    return RET_ERROR;
+-  }
+-  return RET_OK;
+-}
+-
+-int NetTrain::InitDumpConfigFromJson(char *path) {
+-  auto real_path = RealPath(path);
+-  std::ifstream ifs(real_path);
+-  if (!ifs.good()) {
+-    MS_LOG(ERROR) << "file: " << real_path << " is not exist";
+-    return RET_ERROR;
+-  }
+-  if (!ifs.is_open()) {
+-    MS_LOG(ERROR) << "file: " << real_path << " open failed";
+-    return RET_ERROR;
+-  }
+-
+-  try {
+-    dump_cfg_json_ = nlohmann::json::parse(ifs);
+-  } catch (const nlohmann::json::parse_error &error) {
+-    MS_LOG(ERROR) << "parse json file failed, please check your file.";
+-    return RET_ERROR;
+-  }
+-  if (dump_cfg_json_[dump::kSettings] == nullptr) {
+-    MS_LOG(ERROR) << "\"common_dump_settings\" is required.";
+-    return RET_ERROR;
+-  }
+-  if (dump_cfg_json_[dump::kSettings][dump::kMode] == nullptr) {
+-    MS_LOG(ERROR) << "\"dump_mode\" is required.";
+-    return RET_ERROR;
+-  }
+-  if (dump_cfg_json_[dump::kSettings][dump::kPath] == nullptr) {
+-    MS_LOG(ERROR) << "\"path\" is required.";
+-    return RET_ERROR;
+-  }
+-  if (dump_cfg_json_[dump::kSettings][dump::kNetName] == nullptr) {
+-    dump_cfg_json_[dump::kSettings][dump::kNetName] = "default";
+-  }
+-  if (dump_cfg_json_[dump::kSettings][dump::kInputOutput] == nullptr) {
+-    dump_cfg_json_[dump::kSettings][dump::kInputOutput] = 0;
+-  }
+-  if (dump_cfg_json_[dump::kSettings][dump::kKernels] != nullptr &&
+-      !dump_cfg_json_[dump::kSettings][dump::kKernels].empty()) {
+-    if (dump_cfg_json_[dump::kSettings][dump::kMode] == 0) {
+-      MS_LOG(ERROR) << R"("dump_mode" should be 1 when "kernels" isn't empty.)";
+-      return RET_ERROR;
+-    }
+-  }
+-
+-  auto abs_path = dump_cfg_json_[dump::kSettings][dump::kPath].get<std::string>();
+-  auto net_name = dump_cfg_json_[dump::kSettings][dump::kNetName].get<std::string>();
+-  if (abs_path.back() == '\\' || abs_path.back() == '/') {
+-    dump_file_output_dir_ = abs_path + net_name;
+-  } else {
+-#ifdef _WIN32
+-    dump_file_output_dir_ = abs_path + "\\" + net_name;
+-#else
+-    dump_file_output_dir_ = abs_path + "/" + net_name;
+-#endif
+-  }
+-
+-  auto status = CreateOutputDir(&dump_file_output_dir_);
+-  if (status != RET_OK) {
+-    MS_LOG(ERROR) << "create data output directory failed.";
+-    return RET_ERROR;
+-  }
+-  return RET_OK;
+-}
+-
+-namespace {
+-constexpr int kNumToPrint = 5;
+-}
+-
+ int NetTrain::PrintResult(const std::vector<std::string> &title,
+                           const std::map<std::string, std::pair<int, float>> &result) {
+   std::vector<size_t> columnLenMax(kFieldsToPrint);
+@@ -1006,7 +622,7 @@ int NetTrain::PrintResult(const std::vector<std::string> &title,
+   }
+ 
+   printf("-------------------------------------------------------------------------\n");
+-  for (int i = 0; i < kNumToPrint; i++) {
++  for (int i = 0; i < kFieldsToPrint; i++) {
+     auto printBuf = title[i];
+     if (printBuf.size() > columnLenMax.at(i)) {
+       columnLenMax.at(i) = printBuf.size();
+@@ -1016,7 +632,7 @@ int NetTrain::PrintResult(const std::vector<std::string> &title,
+   }
+   printf("\n");
+   for (auto &row : rows) {
+-    for (int j = 0; j < kNumToPrint; j++) {
++    for (int j = 0; j < kFieldsToPrint; j++) {
+       auto printBuf = row[j];
+       printBuf.resize(columnLenMax.at(j), ' ');
+       printf("%s\t", printBuf.c_str());
+@@ -1025,47 +641,5 @@ int NetTrain::PrintResult(const std::vector<std::string> &title,
+   }
+   return RET_OK;
+ }
+-
+-int RunNetTrain(int argc, const char **argv) {
+-  NetTrainFlags flags;
+-  Option<std::string> err = flags.ParseFlags(argc, argv);
+-
+-  if (err.IsSome()) {
+-    std::cerr << err.Get() << std::endl;
+-    std::cerr << flags.Usage() << std::endl;
+-    return RET_ERROR;
+-  }
+-
+-  if (flags.help) {
+-    std::cerr << flags.Usage() << std::endl;
+-    return RET_OK;
+-  }
+-  if (flags.unified_api_) {
+-    return NetTrain::RunNr(&flags);
+-  }
+-  NetTrain net_trainer(&flags);
+-  auto status = net_trainer.Init();
+-  if (status != RET_OK) {
+-    MS_LOG(ERROR) << "NetTrain init Error : " << status;
+-    std::cerr << "NetTrain init Error : " << status << std::endl;
+-    return RET_ERROR;
+-  }
+-
+-  status = net_trainer.RunNetTrain();
+-  if (status != RET_OK) {
+-    MS_LOG(ERROR) << "Run NetTrain "
+-                  << flags.model_file_.substr(flags.model_file_.find_last_of(DELIM_SLASH) + 1).c_str()
+-                  << " Failed : " << status;
+-    std::cerr << "Run NetTrain " << flags.model_file_.substr(flags.model_file_.find_last_of(DELIM_SLASH) + 1).c_str()
+-              << " Failed : " << status << std::endl;
+-    return RET_ERROR;
+-  }
+-
+-  MS_LOG(INFO) << "Run NetTrain " << flags.model_file_.substr(flags.model_file_.find_last_of(DELIM_SLASH) + 1).c_str()
+-               << " Success.";
+-  std::cout << "Run NetTrain " << flags.model_file_.substr(flags.model_file_.find_last_of(DELIM_SLASH) + 1).c_str()
+-            << " Success." << std::endl;
+-  return RET_OK;
+-}
+ }  // namespace lite
+ }  // namespace mindspore
+diff --git a/mindspore/lite/tools/benchmark_train/net_train.h b/mindspore/lite/tools/benchmark_train/net_train.h
+index ea0aaacd..b8048e4f 100644
+--- a/mindspore/lite/tools/benchmark_train/net_train.h
++++ b/mindspore/lite/tools/benchmark_train/net_train.h
+@@ -42,203 +42,41 @@
+ #include "tools/common/flag_parser.h"
+ #include "src/common/file_utils.h"
+ #include "src/common/utils.h"
+-
+-#ifdef ENABLE_FP16
+-static __attribute__((always_inline)) inline bool MS_ISNAN_FP16(float16_t var) {
+-  volatile float16_t d = var;
+-  return d != d;
+-}
+-#endif
++#include "tools/benchmark_train/net_train_base.h"
+ 
+ namespace mindspore::lite {
+-enum MS_API DataType { kImage = 0, kBinary = 1 };
+-
+-constexpr float relativeTolerance = 1e-5;
+-constexpr float absoluteTolerance = 1e-8;
+ extern const std::unordered_map<int, std::string> kTypeIdMap;
+ extern const std::unordered_map<mindspore::Format, std::string> kTensorFormatMap;
+ 
+-namespace dump {
+-constexpr auto kConfigPath = "MINDSPORE_DUMP_CONFIG";
+-constexpr auto kSettings = "common_dump_settings";
+-constexpr auto kMode = "dump_mode";
+-constexpr auto kPath = "path";
+-constexpr auto kNetName = "net_name";
+-constexpr auto kInputOutput = "input_output";
+-constexpr auto kKernels = "kernels";
+-}  // namespace dump
+-
+-template <typename T>
+-float TensorSum(const void *data, int size) {
+-  const T *typed_data = reinterpret_cast<const T *>(data);
+-  float sum = 0.f;
+-  for (int i = 0; i < size; i++) {
+-    sum += static_cast<float>(typed_data[i]);
+-  }
+-  return sum;
+-}
+-
+-class MS_API NetTrainFlags : public virtual FlagParser {
++class MS_API NetTrain : public NetTrainBase {
+  public:
+-  NetTrainFlags() {
+-    // common
+-    AddFlag(&NetTrainFlags::model_file_, "modelFile", "Input model file", "");
+-    AddFlag(&NetTrainFlags::bb_model_file_, "bbModelFile", "Backboine model for transfer session", "");
+-    AddFlag(&NetTrainFlags::in_data_file_, "inDataFile", "Input data file, if not set, use random input", "");
+-    // MarkPerformance
+-    AddFlag(&NetTrainFlags::warm_up_loop_count_, "warmUpLoopCount", "Run warm up loop", 0);
+-    AddFlag(&NetTrainFlags::time_profiling_, "timeProfiling", "Run time profiling", false);
+-    AddFlag(&NetTrainFlags::epochs_, "epochs", "Number of training epochs to run", 1);
+-    AddFlag(&NetTrainFlags::num_threads_, "numThreads", "Run threads number", 1);
+-    // MarkAccuracy
+-    AddFlag(&NetTrainFlags::data_file_, "expectedDataFile", "Expected results data file path", "");
+-    AddFlag(&NetTrainFlags::export_file_, "exportFile", "MS File to export trained model into", "");
+-    AddFlag(&NetTrainFlags::accuracy_threshold_, "accuracyThreshold", "Threshold of accuracy", 0.5);
+-    AddFlag(&NetTrainFlags::layer_checksum_, "layerCheckSum", "layer output checksum print (debug)", false);
+-    AddFlag(&NetTrainFlags::enable_fp16_, "enableFp16", "Enable float16", false);
+-    AddFlag(&NetTrainFlags::loss_name_, "lossName", "loss layer name", "");
+-    AddFlag(&NetTrainFlags::inference_file_, "inferenceFile", "MS file to export inference model", "");
+-    AddFlag(&NetTrainFlags::virtual_batch_, "virtualBatch", "use virtual batch", false);
+-    AddFlag(&NetTrainFlags::resize_dims_in_, "inputShapes",
+-            "Shape of input data, the format should be NHWC. e.g. 1,32,32,32:1,1,32,32,1", "");
+-    AddFlag(&NetTrainFlags::unified_api_, "unifiedApi", "do unified api test", false);
+-  }
+-
+-  ~NetTrainFlags() override = default;
+-  void InitResizeDimsList();
++  explicit NetTrain(NetTrainFlags *flags) : NetTrainBase(flags) {}
++  virtual ~NetTrain() {}
+ 
+- public:
+-  // common
+-  std::string model_file_;
+-  std::string in_data_file_;
+-  std::string bb_model_file_;
+-  std::vector<std::string> input_data_list_;
+-  DataType in_data_type_;
+-  std::string in_data_type_in_ = "bin";
+-  int cpu_bind_mode_ = 1;
+-  bool enable_fp16_ = false;
+-  bool virtual_batch_ = false;
+-  // MarkPerformance
+-  int num_threads_ = 1;
+-  int warm_up_loop_count_ = 0;
+-  bool time_profiling_;
+-  int epochs_ = 1;
+-  // MarkAccuracy
+-  std::string data_file_;
+-  std::string data_type_ = "FLOAT";
+-  float accuracy_threshold_;
+-  // Resize
+-  std::string export_file_ = "";
+-  std::string resize_dims_in_ = "";
+-  bool layer_checksum_ = false;
+-  std::vector<std::vector<int>> resize_dims_;
+-  std::string loss_name_ = "";
+-  std::string inference_file_ = "";
+-  bool unified_api_ = false;
+-  bool dump_tensor_data_ = false;
+-};
+-
+-class MS_API NetTrain {
+- public:
+-  explicit NetTrain(NetTrainFlags *flags) : flags_(flags) {}
+-  virtual ~NetTrain() = default;
+-
+-  int Init();
+-  int RunNetTrain();
+-  static float *ReadFileBuf(const std::string file, size_t *size);
+-  static int SetNr(std::function<int(NetTrainFlags *)> param);
+-  static int RunNr(NetTrainFlags *flags) {
+-    if (nr_cb_ != nullptr) {
+-      return nr_cb_(flags);
+-    }
+-    MS_LOG(WARNING) << "unified api was not tested";
+-    std::cout << "unified api was not tested";
+-    return RET_OK;
+-  }
+-  // tensorData need to be converter first
+-  template <typename T>
+-  static float CompareData(const float *refOutput, int size, const T *msTensorData) {
+-    size_t errorCount = 0;
+-    float meanError = 0;
+-    std::cout << "Out tensor size is: " << size << std::endl;
+-    std::cout << "Data of model output: ";
+-    for (int j = 0; j < std::min(50, size); j++) {
+-      std::cout << static_cast<float>(msTensorData[j]) << " ";
+-    }
+-    std::cout << std::endl;
+-    std::cout << "Data of Ref output  : ";
+-    for (int j = 0; j < std::min(50, size); j++) {
+-      std::cout << refOutput[j] << " ";
+-    }
+-    std::cout << std::endl;
+-    for (int j = 0; j < size; j++) {
+-      if (std::isnan(msTensorData[j]) || std::isinf(msTensorData[j])) {
+-        std::cerr << "Output tensor has nan or inf data, compare fail" << std::endl;
+-        MS_LOG(ERROR) << "Output tensor has nan or inf data, compare fail";
+-        return RET_ERROR;
+-      }
+-
+-      auto tolerance = absoluteTolerance + relativeTolerance * fabs(refOutput[j]);
+-      auto absoluteError = std::fabs(static_cast<float>(msTensorData[j]) - refOutput[j]);
+-      if (absoluteError > tolerance) {
+-        if (fabs(refOutput[j]) == 0) {
+-          if (absoluteError > 1e-5) {
+-            meanError += absoluteError;
+-            errorCount++;
+-          } else {
+-            continue;
+-          }
+-        } else {
+-          // just assume that atol = rtol
+-          meanError += absoluteError / (fabs(refOutput[j]) + FLT_MIN);
+-          errorCount++;
+-        }
+-      }
+-    }
+-    std::cout << std::endl;
+-    if (meanError > 0.0f) {
+-      meanError /= errorCount;
+-    }
+-
+-    if (meanError <= 0.0000001) {
+-      std::cout << "Mean bias of tensor: 0%" << std::endl;
+-    } else {
+-      std::cout << "Mean bias of tensor: " << meanError * 100 << "%" << std::endl;
+-    }
+-    return meanError;
+-  }
+-  int InitDumpConfigFromJson(char *path);
+-
+- private:
+-  // call GenerateInputData or ReadInputFile to init inputTensors
+-  int LoadInput();
+-  void CheckSum(MSTensor *tensor, const std::string &node_type, int id, const std::string &in_out);
++ protected:
+   // call GenerateRandomData to fill inputTensors
+-  int GenerateInputData();
++  int GenerateInputData() override;
+ 
+-  int GenerateRandomData(mindspore::MSTensor *tensor);
+-
+-  int ReadInputFile();
++  int ReadInputFile() override;
+ 
+   void InitMSContext(const std::shared_ptr<Context> &context);
+ 
+   void InitTrainCfg(const std::shared_ptr<TrainCfg> &train_cfg);
+ 
+   int CreateAndRunNetwork(const std::string &filename, const std::string &bb_filename, bool is_train, int epochs,
+-                          bool check_accuracy = true);
++                          bool check_accuracy = true) override;
+ 
+   int CreateAndRunNetworkForInference(const std::string &filename, const std::shared_ptr<mindspore::Context> &context);
+ 
+   int CreateAndRunNetworkForTrain(const std::string &filename, const std::string &bb_filename,
+                                   const std::shared_ptr<mindspore::Context> &context,
+                                   const std::shared_ptr<TrainCfg> &train_cfg, int epochs);
+-  int InitCallbackParameter();
+ 
+-  int InitDumpTensorDataCallbackParameter();
++  int InitDumpTensorDataCallbackParameter() override;
+ 
+-  int InitTimeProfilingCallbackParameter();
++  int InitTimeProfilingCallbackParameter() override;
+ 
+-  int PrintResult(const std::vector<std::string> &title, const std::map<std::string, std::pair<int, float>> &result);
++  int PrintResult(const std::vector<std::string> &title, const std::map<std::string, std::pair<int, float>> &result) override;
+ 
+   template <typename T>
+   void PrintInputData(mindspore::MSTensor *input) {
+@@ -254,39 +92,11 @@ class MS_API NetTrain {
+     std::cout << std::endl;
+   }
+ 
+-  template <typename T>
+-  std::vector<int64_t> ConverterToInt64Vector(const std::vector<T> &srcDims) {
+-    std::vector<int64_t> dims;
+-    for (auto shape : srcDims) {
+-      dims.push_back(static_cast<int64_t>(shape));
+-    }
+-    return dims;
+-  }
+-  int MarkPerformance();
+-  int MarkAccuracy(bool enforce_accuracy = true);
+-  int CompareOutput();
+-  int SaveModels();
+-  int CheckExecutionOfSavedModels();
+-  void TensorNan(const float *data, int size) {
+-    for (int i = 0; i < size; i++) {
+-      if (std::isnan(data[i])) {
+-        std::cout << "nan value of index=" << i << ", " << data[i] << std::endl;
+-        break;
+-      }
+-    }
+-  }
+-#ifdef ENABLE_FP16
+-  void TensorNan(float16_t *data, int size) {
+-    for (int i = 0; i < size; i++) {
+-      if (MS_ISNAN_FP16(data[i]) || std::isinf(data[i])) {
+-        std::cout << "nan or inf value of index=" << i << ", " << data[i] << std::endl;
+-        break;
+-      }
+-    }
+-  }
+-#endif
+-  NetTrainFlags *flags_{nullptr};
+-  static std::function<int(NetTrainFlags *)> nr_cb_;
++  int MarkPerformance() override;
++  int MarkAccuracy(bool enforce_accuracy = true) override;
++  int CompareOutput() override;
++  int SaveModels() override;
++
+   // callback parameters
+   uint64_t op_begin_ = 0;
+   int op_call_times_total_ = 0;
+@@ -299,10 +109,6 @@ class MS_API NetTrain {
+ 
+   mindspore::MSKernelCallBack before_call_back_{nullptr};
+   mindspore::MSKernelCallBack after_call_back_{nullptr};
+-  nlohmann::json dump_cfg_json_;
+-  std::string dump_file_output_dir_;
+ };
+-
+-int MS_API RunNetTrain(int argc, const char **argv);
+ }  // namespace mindspore::lite
+ #endif  // MINDSPORE_LITE_TOOLS_BENCHMARK_TRAIN_NET_TRAIN_H_
+diff --git a/mindspore/lite/tools/benchmark_train/net_train_base.cc b/mindspore/lite/tools/benchmark_train/net_train_base.cc
+new file mode 100644
+index 00000000..7cf6d757
+--- /dev/null
++++ b/mindspore/lite/tools/benchmark_train/net_train_base.cc
+@@ -0,0 +1,407 @@
++/**
++ * Copyright 2020-2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "tools/benchmark_train/net_train_base.h"
++#define __STDC_FORMAT_MACROS
++#undef __STDC_FORMAT_MACROS
++#include <algorithm>
++#include <cstring>
++#ifdef ENABLE_NEON
++#include <arm_neon.h>
++#endif
++#include "src/common/common.h"
++#include "include/api/serialization.h"
++
++namespace mindspore {
++namespace lite {
++const std::unordered_map<int, std::string> kTypeIdMap{
++  {kNumberTypeFloat16, "Float16"}, {kNumberTypeFloat, "Float32"},    {kNumberTypeFloat32, "Float32"},
++  {kNumberTypeInt8, "Int8"},       {kNumberTypeInt16, "Int16"},      {kNumberTypeInt, "Int32"},
++  {kNumberTypeInt32, "Int32"},     {kNumberTypeUInt8, "UInt8"},      {kNumberTypeUInt16, "UInt16"},
++  {kNumberTypeUInt, "UInt32"},     {kNumberTypeUInt32, "UInt32"},    {kObjectTypeString, "String"},
++  {kNumberTypeBool, "Bool"},       {kObjectTypeTensorType, "Tensor"}};
++
++const std::unordered_map<mindspore::Format, std::string> kTensorFormatMap{
++  {mindspore::NCHW, "NCHW"}, {mindspore::NHWC, "NHWC"},     {mindspore::NHWC4, "NHWC4"}, {mindspore::HWKC, "HWKC"},
++  {mindspore::HWCK, "HWCK"}, {mindspore::KCHW, "KCHW"},     {mindspore::CKHW, "CKHW"},   {mindspore::KHWC, "KHWC"},
++  {mindspore::CHWK, "CHWK"}, {mindspore::HW, "HW"},         {mindspore::HW4, "HW4"},     {mindspore::NC, "NC"},
++  {mindspore::NC4, "NC4"},   {mindspore::NC4HW4, "NC4HW4"}, {mindspore::NCDHW, "NCDHW"}};
++
++std::function<int(NetTrainFlags *)> NetTrainBase::nr_cb_ = nullptr;
++
++int NetTrainBase::SetNr(std::function<int(NetTrainFlags *)> param) {
++  nr_cb_ = param;
++  return 0;
++}
++
++float *NetTrainBase::ReadFileBuf(const std::string file, size_t *size) {
++  if (file.empty()) {
++    MS_LOG(ERROR) << "file is nullptr";
++    return nullptr;
++  }
++  MS_ASSERT(size != nullptr);
++  std::string real_path = RealPath(file.c_str());
++  std::ifstream ifs(real_path);
++  if (!ifs.good()) {
++    MS_LOG(ERROR) << "file: " << real_path << " is not exist";
++    return nullptr;
++  }
++
++  if (!ifs.is_open()) {
++    MS_LOG(ERROR) << "file: " << real_path << " open failed";
++    return nullptr;
++  }
++
++  ifs.seekg(0, std::ios::end);
++  *size = ifs.tellg();
++  std::unique_ptr<float[]> buf = std::make_unique<float[]>(*size / sizeof(float) + 1);
++  if (buf == nullptr) {
++    MS_LOG(ERROR) << "malloc buf failed, file: " << real_path;
++    ifs.close();
++    return nullptr;
++  }
++
++  ifs.seekg(0, std::ios::beg);
++  ifs.read(reinterpret_cast<char *>(buf.get()), *size);
++  ifs.close();
++
++  return buf.release();
++}
++
++int NetTrainBase::GenerateRandomData(mindspore::MSTensor *tensor) {
++  auto input_data = tensor->MutableData();
++  if (input_data == nullptr) {
++    MS_LOG(ERROR) << "MallocData for inTensor failed";
++    return RET_ERROR;
++  }
++  auto tensor_byte_size = tensor->DataSize();
++  char *casted_data = static_cast<char *>(input_data);
++  for (size_t i = 0; i < tensor_byte_size; i++) {
++    casted_data[i] =
++      (tensor->DataType() == mindspore::DataType::kNumberTypeFloat32) ? static_cast<char>(i) : static_cast<char>(0);
++  }
++  return RET_OK;
++}
++
++int NetTrainBase::LoadInput() {
++  if (flags_->in_data_file_.empty()) {
++    auto status = GenerateInputData();
++    if (status != RET_OK) {
++      std::cerr << "Generate input data error " << status << std::endl;
++      MS_LOG(ERROR) << "Generate input data error " << status;
++      return status;
++    }
++  } else {
++    auto status = ReadInputFile();
++    if (status != RET_OK) {
++      std::cerr << "Read Input File error, " << status << std::endl;
++      MS_LOG(ERROR) << "Read Input File error, " << status;
++      return status;
++    }
++  }
++  return RET_OK;
++}
++
++int NetTrainBase::RunNetTrain() {
++  auto file_name = flags_->model_file_.substr(flags_->model_file_.find_last_of(DELIM_SLASH) + 1);
++  bool is_train = (file_name.find("train") != std::string::npos) || !flags_->bb_model_file_.empty();
++  auto status = CreateAndRunNetwork(flags_->model_file_, flags_->bb_model_file_, is_train, flags_->epochs_);
++  if (status != RET_OK) {
++    MS_LOG(ERROR) << "CreateAndRunNetwork failed for model " << flags_->model_file_ << ". Status is " << status;
++    std::cout << "CreateAndRunNetwork failed for model " << flags_->model_file_ << ". Status is " << status
++              << std::endl;
++    return status;
++  }
++
++  status = CheckExecutionOfSavedModels();  // re-initialize sessions according to flags
++  if (status != RET_OK) {
++    MS_LOG(ERROR) << "Run CheckExecute error: " << status;
++    std::cout << "Run CheckExecute error: " << status << std::endl;
++    return status;
++  }
++  return RET_OK;
++}
++
++int NetTrainBase::CheckExecutionOfSavedModels() {
++  int status = RET_OK;
++  if (!flags_->export_file_.empty()) {
++    status = CreateAndRunNetwork(flags_->export_file_, flags_->bb_model_file_, true, 0);
++    if (status != RET_OK) {
++      MS_LOG(ERROR) << "Run Exported model " << flags_->export_file_ << " error: " << status;
++      std::cout << "Run Exported model " << flags_->export_file_ << " error: " << status << std::endl;
++      return status;
++    }
++    if (flags_->bb_model_file_.empty()) {
++      status = CreateAndRunNetwork(flags_->export_file_ + "_qt", "", true, 0, false);
++      if (status != RET_OK) {
++        MS_LOG(ERROR) << "Run Exported model " << flags_->export_file_ << "_qt.ms error: " << status;
++        std::cout << "Run Exported model " << flags_->export_file_ << "_qt.ms error: " << status << std::endl;
++        return status;
++      }
++    }
++  }
++  if (!flags_->inference_file_.empty()) {
++    status = CreateAndRunNetwork(flags_->inference_file_, "", false, 0);
++    if (status != RET_OK) {
++      MS_LOG(ERROR) << "Running saved model " << flags_->inference_file_ << ".ms error: " << status;
++      std::cout << "Running saved model " << flags_->inference_file_ << ".ms error: " << status << std::endl;
++      return status;
++    }
++    status = CreateAndRunNetwork(flags_->inference_file_ + "_qt", "", false, 0, false);
++    if (status != RET_OK) {
++      MS_LOG(ERROR) << "Running saved model " << flags_->inference_file_ << "_qt.ms error: " << status;
++      std::cout << "Running saved model " << flags_->inference_file_ << "_qt.ms error: " << status << std::endl;
++      return status;
++    }
++  }
++  return status;
++}
++
++void NetTrainBase::CheckSum(MSTensor *tensor, const std::string &node_type, int id, const std::string &in_out) {
++  if (tensor == nullptr) {
++    MS_LOG(ERROR) << "input tensor is nullptr.";
++    return;
++  }
++  int tensor_size = tensor->ElementNum();
++  void *data = tensor->MutableData();
++  auto *fdata = reinterpret_cast<float *>(tensor->MutableData());
++  auto type = tensor->DataType();
++  std::cout << node_type << " " << in_out << id << " shape=" << tensor->Shape() << " sum=";
++  switch (type) {
++    case mindspore::DataType::kNumberTypeFloat32:
++      TensorNan(reinterpret_cast<float *>(data), tensor_size);
++      std::cout << TensorSum<float>(data, tensor_size) << std::endl;
++      std::cout << "tensor name: " << tensor->Name() << std::endl;
++      std::cout << "data: ";
++      for (int i = 0; i <= kPrintOffset && i < tensor_size; i++) {
++        std::cout << static_cast<float>(fdata[i]) << ", ";
++      }
++      std::cout << std::endl;
++      break;
++    case mindspore::DataType::kNumberTypeInt32:
++      std::cout << TensorSum<int>(data, tensor_size) << std::endl;
++      break;
++#ifdef ENABLE_FP16
++    case mindspore::DataType::kNumberTypeFloat16:
++      std::cout << TensorSum<float16_t>(data, tensor_size) << std::endl;
++      TensorNan(reinterpret_cast<float16_t *>(data), tensor_size);
++      break;
++#endif
++    default:
++      std::cout << "unsupported type:" << static_cast<int>(type) << std::endl;
++      break;
++  }
++}
++
++std::string NetTrainBase::GenerateOutputFileName(mindspore::MSTensor *tensor, const std::string &op_name,
++                                   const std::string &file_type, const size_t &idx) {
++  std::string file_name = op_name;
++  auto pos = file_name.find_first_of('/');
++  while (pos != std::string::npos) {
++    file_name.replace(pos, 1, ".");
++    pos = file_name.find_first_of('/');
++  }
++  file_name += "_" + file_type + "_" + std::to_string(idx) + "_shape_";
++  for (const auto &dim : tensor->Shape()) {
++    file_name += std::to_string(dim) + "_";
++  }
++  if (kTypeIdMap.find(static_cast<int>(tensor->DataType())) != kTypeIdMap.end()) {
++    file_name += kTypeIdMap.at(static_cast<int>(tensor->DataType()));
++  }
++  auto tensor_format = tensor->format();
++  if (kTensorFormatMap.find(tensor_format) != kTensorFormatMap.end()) {
++    file_name += "_" + kTensorFormatMap.at(tensor_format) + ".bin";
++  }
++
++  file_name += ".bin";
++  return file_name;
++}
++
++int NetTrainBase::InitCallbackParameter() {
++  int ret = RET_OK;
++  if (flags_->dump_tensor_data_) {
++    ret = InitDumpTensorDataCallbackParameter();
++  } else if (flags_->time_profiling_) {
++    ret = InitTimeProfilingCallbackParameter();
++  }
++  return ret;
++}
++
++void NetTrainFlags::InitResizeDimsList() {
++  std::string content = this->resize_dims_in_;
++  if (content.empty()) {
++    return;
++  }
++  std::vector<int> shape;
++  auto shape_strs = StrSplit(content, std::string(DELIM_COLON));
++  for (const auto &shape_str : shape_strs) {
++    shape.clear();
++    auto dim_strs = StrSplit(shape_str, std::string(DELIM_COMMA));
++    std::cout << "Resize Dims: ";
++    for (const auto &dim_str : dim_strs) {
++      std::cout << dim_str << " ";
++      shape.emplace_back(static_cast<int>(std::stoi(dim_str)));
++    }
++    std::cout << std::endl;
++    this->resize_dims_.emplace_back(shape);
++  }
++}
++
++int NetTrainBase::Init() {
++  if (this->flags_ == nullptr) {
++    return 1;
++  }
++  MS_LOG(INFO) << "ModelPath = " << this->flags_->model_file_;
++  MS_LOG(INFO) << "InDataPath = " << this->flags_->in_data_file_;
++  MS_LOG(INFO) << "InDataType = " << this->flags_->in_data_type_in_;
++  MS_LOG(INFO) << "Epochs = " << this->flags_->epochs_;
++  MS_LOG(INFO) << "AccuracyThreshold = " << this->flags_->accuracy_threshold_;
++  MS_LOG(INFO) << "WarmUpLoopCount = " << this->flags_->warm_up_loop_count_;
++  MS_LOG(INFO) << "NumThreads = " << this->flags_->num_threads_;
++  MS_LOG(INFO) << "expectedDataFile = " << this->flags_->data_file_;
++  MS_LOG(INFO) << "exportDataFile = " << this->flags_->export_file_;
++  MS_LOG(INFO) << "enableFp16 = " << this->flags_->enable_fp16_;
++  MS_LOG(INFO) << "virtualBatch = " << this->flags_->virtual_batch_;
++
++  if (this->flags_->epochs_ < 0) {
++    MS_LOG(ERROR) << "epochs:" << this->flags_->epochs_ << " must be equal/greater than 0";
++    std::cerr << "epochs:" << this->flags_->epochs_ << " must be equal/greater than 0" << std::endl;
++    return RET_ERROR;
++  }
++
++  if (this->flags_->num_threads_ < 1) {
++    MS_LOG(ERROR) << "numThreads:" << this->flags_->num_threads_ << " must be greater than 0";
++    std::cerr << "numThreads:" << this->flags_->num_threads_ << " must be greater than 0" << std::endl;
++    return RET_ERROR;
++  }
++
++  this->flags_->in_data_type_ = this->flags_->in_data_type_in_ == "img" ? kImage : kBinary;
++
++  if (flags_->in_data_file_.empty() && !flags_->data_file_.empty()) {
++    MS_LOG(ERROR) << "expectedDataFile not supported in case that inDataFile is not provided";
++    std::cerr << "expectedDataFile is not supported in case that inDataFile is not provided" << std::endl;
++    return RET_ERROR;
++  }
++
++  if (flags_->in_data_file_.empty() && !flags_->export_file_.empty()) {
++    MS_LOG(ERROR) << "exportDataFile not supported in case that inDataFile is not provided";
++    std::cerr << "exportDataFile is not supported in case that inDataFile is not provided" << std::endl;
++    return RET_ERROR;
++  }
++
++  if (flags_->model_file_.empty()) {
++    MS_LOG(ERROR) << "modelPath is required";
++    std::cerr << "modelPath is required" << std::endl;
++    return 1;
++  }
++
++  // get dump data output path
++  auto dump_cfg_path = std::getenv(dump::kConfigPath);
++  if (dump_cfg_path != nullptr) {
++    flags_->dump_tensor_data_ = true;
++    if (InitDumpConfigFromJson(dump_cfg_path) != RET_OK) {
++      MS_LOG(ERROR) << "parse dump config file failed.";
++      return RET_ERROR;
++    }
++  } else {
++    MS_LOG(INFO) << "No MINDSPORE_DUMP_CONFIG in env, don't need to dump data";
++  }
++
++  auto status = InitCallbackParameter();
++  if (status != RET_OK) {
++    MS_LOG(ERROR) << "Init callback Parameter failed.";
++    std::cerr << "Init callback Parameter failed." << std::endl;
++    return RET_ERROR;
++  }
++
++  flags_->InitResizeDimsList();
++  if (!flags_->resize_dims_.empty() && !flags_->input_data_list_.empty() &&
++      flags_->resize_dims_.size() != flags_->input_data_list_.size()) {
++    MS_LOG(ERROR) << "Size of input resizeDims should be equal to size of input inDataPath";
++    std::cerr << "Size of input resizeDims should be equal to size of input inDataPath" << std::endl;
++    return RET_ERROR;
++  }
++  return RET_OK;
++}
++
++int NetTrainBase::InitDumpConfigFromJson(char *path) {
++  auto real_path = RealPath(path);
++  std::ifstream ifs(real_path);
++  if (!ifs.good()) {
++    MS_LOG(ERROR) << "file: " << real_path << " is not exist";
++    return RET_ERROR;
++  }
++  if (!ifs.is_open()) {
++    MS_LOG(ERROR) << "file: " << real_path << " open failed";
++    return RET_ERROR;
++  }
++
++  try {
++    dump_cfg_json_ = nlohmann::json::parse(ifs);
++  } catch (const nlohmann::json::parse_error &error) {
++    MS_LOG(ERROR) << "parse json file failed, please check your file.";
++    return RET_ERROR;
++  }
++  if (dump_cfg_json_[dump::kSettings] == nullptr) {
++    MS_LOG(ERROR) << "\"common_dump_settings\" is required.";
++    return RET_ERROR;
++  }
++  if (dump_cfg_json_[dump::kSettings][dump::kMode] == nullptr) {
++    MS_LOG(ERROR) << "\"dump_mode\" is required.";
++    return RET_ERROR;
++  }
++  if (dump_cfg_json_[dump::kSettings][dump::kPath] == nullptr) {
++    MS_LOG(ERROR) << "\"path\" is required.";
++    return RET_ERROR;
++  }
++  if (dump_cfg_json_[dump::kSettings][dump::kNetName] == nullptr) {
++    dump_cfg_json_[dump::kSettings][dump::kNetName] = "default";
++  }
++  if (dump_cfg_json_[dump::kSettings][dump::kInputOutput] == nullptr) {
++    dump_cfg_json_[dump::kSettings][dump::kInputOutput] = 0;
++  }
++  if (dump_cfg_json_[dump::kSettings][dump::kKernels] != nullptr &&
++      !dump_cfg_json_[dump::kSettings][dump::kKernels].empty()) {
++    if (dump_cfg_json_[dump::kSettings][dump::kMode] == 0) {
++      MS_LOG(ERROR) << R"("dump_mode" should be 1 when "kernels" isn't empty.)";
++      return RET_ERROR;
++    }
++  }
++
++  auto abs_path = dump_cfg_json_[dump::kSettings][dump::kPath].get<std::string>();
++  auto net_name = dump_cfg_json_[dump::kSettings][dump::kNetName].get<std::string>();
++  if (abs_path.back() == '\\' || abs_path.back() == '/') {
++    dump_file_output_dir_ = abs_path + net_name;
++  } else {
++#ifdef _WIN32
++    dump_file_output_dir_ = abs_path + "\\" + net_name;
++#else
++    dump_file_output_dir_ = abs_path + "/" + net_name;
++#endif
++  }
++
++  auto status = CreateOutputDir(&dump_file_output_dir_);
++  if (status != RET_OK) {
++    MS_LOG(ERROR) << "create data output directory failed.";
++    return RET_ERROR;
++  }
++  return RET_OK;
++}
++
++NetTrainBase:: ~NetTrainBase() {
++}
++}  // namespace lite
++}  // namespace mindspore
+diff --git a/mindspore/lite/tools/benchmark_train/net_train_base.h b/mindspore/lite/tools/benchmark_train/net_train_base.h
+new file mode 100644
+index 00000000..14fe27dc
+--- /dev/null
++++ b/mindspore/lite/tools/benchmark_train/net_train_base.h
+@@ -0,0 +1,285 @@
++/**
++ * Copyright 2020-2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_TOOLS_BENCHMARK_TRAIN_NET_TRAIN_BASE_H_
++#define MINDSPORE_LITE_TOOLS_BENCHMARK_TRAIN_NET_TRAIN_BASE_H_
++
++#include <getopt.h>
++#include <csignal>
++#include <unordered_map>
++#include <fstream>
++#include <iostream>
++#include <map>
++#include <cmath>
++#include <string>
++#include <vector>
++#include <memory>
++#include <cfloat>
++#include <utility>
++#include <algorithm>
++#include <nlohmann/json.hpp>
++#include "include/api/model.h"
++#include "include/api/types.h"
++#include "include/api/context.h"
++#include "include/api/cfg.h"
++
++#ifdef ENABLE_FP16
++#include <arm_neon.h>
++#endif
++#include "tools/common/flag_parser.h"
++#include "src/common/file_utils.h"
++#include "src/common/utils.h"
++
++#ifdef ENABLE_FP16
++static __attribute__((always_inline)) inline bool MS_ISNAN_FP16(float16_t var) {
++  volatile float16_t d = var;
++  return d != d;
++}
++#endif
++
++namespace mindspore::lite {
++enum MS_API DataType { kImage = 0, kBinary = 1 };
++
++constexpr float relativeTolerance = 1e-5;
++constexpr float absoluteTolerance = 1e-8;
++extern const std::unordered_map<int, std::string> kTypeIdMap;
++extern const std::unordered_map<mindspore::Format, std::string> kTensorFormatMap;
++
++constexpr const char *DELIM_SLASH = "/";
++constexpr const char *DELIM_COLON = ":";
++constexpr const char *DELIM_COMMA = ",";
++
++constexpr int RET_TOO_BIG = -9;
++constexpr int kFieldsToPrint = 5;
++constexpr int kPrintOffset = 4;
++constexpr int kDumpInputsAndOutputs = 0;
++constexpr int kDumpOutputs = 2;
++constexpr int kTHOUSAND = 1000;
++
++namespace dump {
++constexpr auto kConfigPath = "MINDSPORE_DUMP_CONFIG";
++constexpr auto kSettings = "common_dump_settings";
++constexpr auto kMode = "dump_mode";
++constexpr auto kPath = "path";
++constexpr auto kNetName = "net_name";
++constexpr auto kInputOutput = "input_output";
++constexpr auto kKernels = "kernels";
++}  // namespace dump
++
++template <typename T>
++float TensorSum(const void *data, int size) {
++  const T *typed_data = reinterpret_cast<const T *>(data);
++  float sum = 0.f;
++  for (int i = 0; i < size; i++) {
++    sum += static_cast<float>(typed_data[i]);
++  }
++  return sum;
++}
++
++class MS_API NetTrainFlags : public virtual FlagParser {
++ public:
++  NetTrainFlags() {
++    // common
++    AddFlag(&NetTrainFlags::model_file_, "modelFile", "Input model file", "");
++    AddFlag(&NetTrainFlags::bb_model_file_, "bbModelFile", "Backboine model for transfer session", "");
++    AddFlag(&NetTrainFlags::in_data_file_, "inDataFile", "Input data file, if not set, use random input", "");
++    // MarkPerformance
++    AddFlag(&NetTrainFlags::warm_up_loop_count_, "warmUpLoopCount", "Run warm up loop", 0);
++    AddFlag(&NetTrainFlags::time_profiling_, "timeProfiling", "Run time profiling", false);
++    AddFlag(&NetTrainFlags::epochs_, "epochs", "Number of training epochs to run", 1);
++    AddFlag(&NetTrainFlags::num_threads_, "numThreads", "Run threads number", 1);
++    // MarkAccuracy
++    AddFlag(&NetTrainFlags::data_file_, "expectedDataFile", "Expected results data file path", "");
++    AddFlag(&NetTrainFlags::export_file_, "exportFile", "MS File to export trained model into", "");
++    AddFlag(&NetTrainFlags::accuracy_threshold_, "accuracyThreshold", "Threshold of accuracy", 0.5);
++    AddFlag(&NetTrainFlags::layer_checksum_, "layerCheckSum", "layer output checksum print (debug)", false);
++    AddFlag(&NetTrainFlags::enable_fp16_, "enableFp16", "Enable float16", false);
++    AddFlag(&NetTrainFlags::loss_name_, "lossName", "loss layer name", "");
++    AddFlag(&NetTrainFlags::inference_file_, "inferenceFile", "MS file to export inference model", "");
++    AddFlag(&NetTrainFlags::virtual_batch_, "virtualBatch", "use virtual batch", false);
++    AddFlag(&NetTrainFlags::resize_dims_in_, "inputShapes",
++            "Shape of input data, the format should be NHWC. e.g. 1,32,32,32:1,1,32,32,1", "");
++    AddFlag(&NetTrainFlags::unified_api_, "unifiedApi", "do unified api test", false);
++  }
++
++  ~NetTrainFlags() override = default;
++  void InitResizeDimsList();
++
++ public:
++  // common
++  std::string model_file_;
++  std::string in_data_file_;
++  std::string bb_model_file_;
++  std::vector<std::string> input_data_list_;
++  DataType in_data_type_;
++  std::string in_data_type_in_ = "bin";
++  int cpu_bind_mode_ = 1;
++  bool enable_fp16_ = false;
++  bool virtual_batch_ = false;
++  // MarkPerformance
++  int num_threads_ = 1;
++  int warm_up_loop_count_ = 0;
++  bool time_profiling_;
++  int epochs_ = 1;
++  // MarkAccuracy
++  std::string data_file_;
++  std::string data_type_ = "FLOAT";
++  float accuracy_threshold_;
++  // Resize
++  std::string export_file_ = "";
++  std::string resize_dims_in_ = "";
++  bool layer_checksum_ = false;
++  std::vector<std::vector<int>> resize_dims_;
++  std::string loss_name_ = "";
++  std::string inference_file_ = "";
++  bool unified_api_ = false;
++  bool dump_tensor_data_ = false;
++};
++
++class MS_API NetTrainBase {
++ public:
++  explicit NetTrainBase(NetTrainFlags *flags) : flags_(flags) {}
++  virtual ~NetTrainBase();
++
++  int Init();
++  int RunNetTrain();
++  static float *ReadFileBuf(const std::string file, size_t *size);
++  static int SetNr(std::function<int(NetTrainFlags *)> param);
++  static int RunNr(NetTrainFlags *flags) {
++    if (nr_cb_ != nullptr) {
++      return nr_cb_(flags);
++    }
++    MS_LOG(WARNING) << "unified api was not tested";
++    std::cout << "unified api was not tested";
++    return RET_OK;
++  }
++  // tensorData need to be converter first
++  template <typename T>
++  static float CompareData(const float *refOutput, int size, const T *msTensorData) {
++    size_t errorCount = 0;
++    float meanError = 0;
++    std::cout << "Out tensor size is: " << size << std::endl;
++    std::cout << "Data of model output: ";
++    for (int j = 0; j < std::min(50, size); j++) {
++      std::cout << static_cast<float>(msTensorData[j]) << " ";
++    }
++    std::cout << std::endl;
++    std::cout << "Data of Ref output  : ";
++    for (int j = 0; j < std::min(50, size); j++) {
++      std::cout << refOutput[j] << " ";
++    }
++    std::cout << std::endl;
++    for (int j = 0; j < size; j++) {
++      if (std::isnan(msTensorData[j]) || std::isinf(msTensorData[j])) {
++        std::cerr << "Output tensor has nan or inf data, compare fail" << std::endl;
++        MS_LOG(ERROR) << "Output tensor has nan or inf data, compare fail";
++        return RET_ERROR;
++      }
++
++      auto tolerance = absoluteTolerance + relativeTolerance * fabs(refOutput[j]);
++      auto absoluteError = std::fabs(static_cast<float>(msTensorData[j]) - refOutput[j]);
++      if (absoluteError > tolerance) {
++        if (fabs(refOutput[j]) == 0) {
++          if (absoluteError > 1e-5) {
++            meanError += absoluteError;
++            errorCount++;
++          } else {
++            continue;
++          }
++        } else {
++          // just assume that atol = rtol
++          meanError += absoluteError / (fabs(refOutput[j]) + FLT_MIN);
++          errorCount++;
++        }
++      }
++    }
++    std::cout << std::endl;
++    if (meanError > 0.0f) {
++      meanError /= errorCount;
++    }
++
++    if (meanError <= 0.0000001) {
++      std::cout << "Mean bias of tensor: 0%" << std::endl;
++    } else {
++      std::cout << "Mean bias of tensor: " << meanError * 100 << "%" << std::endl;
++    }
++    return meanError;
++  }
++  int InitDumpConfigFromJson(char *path);
++
++ protected:
++  // call GenerateInputData or ReadInputFile to init inputTensors
++  int LoadInput();
++  void CheckSum(MSTensor *tensor, const std::string &node_type, int id, const std::string &in_out);
++  // call GenerateRandomData to fill inputTensors
++  virtual int GenerateInputData() = 0;
++
++  int GenerateRandomData(mindspore::MSTensor *tensor);
++
++  std::string GenerateOutputFileName(mindspore::MSTensor *tensor, const std::string &op_name,
++                                     const std::string &file_type, const size_t &idx);
++  virtual int ReadInputFile() = 0;
++
++  virtual int CreateAndRunNetwork(const std::string &filename, const std::string &bb_filename, bool is_train, int epochs,
++                          bool check_accuracy = true) = 0;
++
++  int InitCallbackParameter();
++
++  virtual int InitDumpTensorDataCallbackParameter() = 0;
++
++  virtual int InitTimeProfilingCallbackParameter() = 0;
++
++  virtual int PrintResult(const std::vector<std::string> &title, const std::map<std::string, std::pair<int, float>> &result) = 0;
++
++  template <typename T>
++  std::vector<int64_t> ConverterToInt64Vector(const std::vector<T> &srcDims) {
++    std::vector<int64_t> dims;
++    for (auto shape : srcDims) {
++      dims.push_back(static_cast<int64_t>(shape));
++    }
++    return dims;
++  }
++  virtual int MarkPerformance() = 0;
++  virtual int MarkAccuracy(bool enforce_accuracy = true) = 0;
++  virtual int CompareOutput() = 0;
++  virtual int SaveModels() = 0;
++  int CheckExecutionOfSavedModels();
++  void TensorNan(const float *data, int size) {
++    for (int i = 0; i < size; i++) {
++      if (std::isnan(data[i])) {
++        std::cout << "nan value of index=" << i << ", " << data[i] << std::endl;
++        break;
++      }
++    }
++  }
++#ifdef ENABLE_FP16
++  void TensorNan(float16_t *data, int size) {
++    for (int i = 0; i < size; i++) {
++      if (MS_ISNAN_FP16(data[i]) || std::isinf(data[i])) {
++        std::cout << "nan or inf value of index=" << i << ", " << data[i] << std::endl;
++        break;
++      }
++    }
++  }
++#endif
++  NetTrainFlags *flags_{nullptr};
++  static std::function<int(NetTrainFlags *)> nr_cb_;
++
++  nlohmann::json dump_cfg_json_;
++  std::string dump_file_output_dir_;
++};
++}  // namespace mindspore::lite
++#endif  // MINDSPORE_LITE_TOOLS_BENCHMARK_TRAIN_NET_TRAIN_BASE_H_
+diff --git a/mindspore/lite/tools/benchmark_train/net_train_c_api.cc b/mindspore/lite/tools/benchmark_train/net_train_c_api.cc
+new file mode 100644
+index 00000000..2ab38d0a
+--- /dev/null
++++ b/mindspore/lite/tools/benchmark_train/net_train_c_api.cc
+@@ -0,0 +1,634 @@
++/**
++ * Copyright 2023-2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "net_train_c_api.h"
++
++namespace mindspore {
++namespace lite {
++uint64_t g_op_begin_ = 0;
++int g_op_call_times_total_ = 0;
++float g_op_cost_total_ = 0.0f;
++
++int NetTrainCApi::GenerateInputData() {
++  for (size_t i = 0; i < ms_inputs_for_api_.handle_num; i++) {
++    OH_AI_TensorHandle tensor = ms_inputs_for_api_.handle_list[i];
++    auto data_type = OH_AI_TensorGetDataType(tensor);
++    if (data_type == OH_AI_DATATYPE_OBJECTTYPE_STRING) {
++      MS_LOG(ERROR) << "Unsupported OH_AI_DATATYPE_OBJECTTYPE_STRING";
++      return RET_ERROR;
++    } else {
++      (void)GenerateRandomData(static_cast<mindspore::MSTensor *>(tensor));
++    }
++  }
++  return RET_OK;
++}
++
++int NetTrainCApi::SaveModels() {
++  if (!flags_->export_file_.empty()) {
++    if (flags_->bb_model_file_.empty()) {
++      auto status = OH_AI_ExportModel(ms_model_, OH_AI_MODELTYPE_MINDIR, (flags_->export_file_ + "_qt").c_str(), OH_AI_WEIGHT_QUANT, false,
++                        nullptr, 0);
++      if (status != OH_AI_STATUS_SUCCESS) {
++        MS_LOG(ERROR) << "Export quantized model error " << flags_->export_file_ + "_qt";
++        std::cout << "Export quantized model error " << flags_->export_file_ + "_qt" << std::endl;
++        return RET_ERROR;
++      }
++    }
++    auto status = OH_AI_ExportModel(ms_model_, OH_AI_MODELTYPE_MINDIR, (flags_->export_file_).c_str(), OH_AI_NO_QUANT, false,
++                                    nullptr, 0);
++
++    if (status != OH_AI_STATUS_SUCCESS) {
++      MS_LOG(ERROR) << "Export non quantized model error " << flags_->export_file_;
++      std::cout << "Export non quantized model error " << flags_->export_file_ << std::endl;
++      return RET_ERROR;
++    }
++  }
++  if (!flags_->inference_file_.empty()) {
++    auto status = OH_AI_ExportModel(ms_model_, OH_AI_MODELTYPE_MINDIR, (flags_->inference_file_ + "_qt").c_str(), OH_AI_WEIGHT_QUANT, true,
++                                    nullptr, 0);
++    if (status != OH_AI_STATUS_SUCCESS) {
++      MS_LOG(ERROR) << "Export quantized inference model error " << flags_->inference_file_ + "_qt";
++      std::cout << "Export quantized inference model error " << flags_->inference_file_ + "_qt" << std::endl;
++      return RET_ERROR;
++    }
++
++    auto tick = GetTimeUs();
++    status = OH_AI_ExportModel(ms_model_, OH_AI_MODELTYPE_MINDIR, (flags_->inference_file_).c_str(), OH_AI_NO_QUANT, true,
++                                    nullptr, 0);
++    if (status != OH_AI_STATUS_SUCCESS) {
++      MS_LOG(ERROR) << "Export non quantized inference model error " << flags_->inference_file_;
++      std::cout << "Export non quantized inference model error " << flags_->inference_file_ << std::endl;
++      return RET_ERROR;
++    }
++    std::cout << "ExportInference() execution time is " << GetTimeUs() - tick << "us\n";
++  }
++  return RET_OK;
++}
++
++int NetTrainCApi::ReadInputFile() {
++  if (this->flags_->in_data_type_ == lite::kImage) {
++    MS_LOG(ERROR) << "Unsupported image input";
++    return RET_ERROR;
++  } else {
++    for (size_t i = 0; i < ms_inputs_for_api_.handle_num; i++) {
++      OH_AI_TensorHandle tensor = ms_inputs_for_api_.handle_list[i];
++      size_t size;
++      std::string file_name = flags_->in_data_file_ + std::to_string(i + 1) + ".bin";
++      auto bin_buf = lite::ReadFile(file_name.c_str(), &size);
++      if (bin_buf == nullptr) {
++        MS_LOG(ERROR) << "ReadFile failed";
++        return RET_ERROR;
++      }
++      if (OH_AI_TensorGetDataType(tensor) == OH_AI_DATATYPE_OBJECTTYPE_STRING) {
++        MS_LOG(ERROR) << "Unsupported OH_AI_DATATYPE_OBJECTTYPE_STRING";
++        return RET_ERROR;
++      } else {
++        auto tensor_data_size = OH_AI_TensorGetDataSize(tensor);
++        if (tensor_data_size != size) {
++          MS_LOG(ERROR) << "Input file size error, required: " << tensor_data_size << ", in fact: " << size;
++          delete[] bin_buf;
++          return RET_ERROR;
++        }
++        auto input_data = OH_AI_TensorGetMutableData(tensor);
++        if (input_data == nullptr) {
++          MS_LOG(ERROR) << "OH_AI_TensorGetMutableData failed";
++          return RET_ERROR;
++        }
++        memcpy(input_data, bin_buf, size);
++      }
++      delete[] bin_buf;
++    }
++  }
++  return RET_OK;
++}
++
++int NetTrainCApi::InitDumpTensorDataCallbackParameter() {
++  MS_LOG(ERROR) << "Unsupported feature.";
++  return RET_ERROR;
++}
++
++int NetTrainCApi::InitTimeProfilingCallbackParameter() {
++  before_call_back_ = TimeProfilingBeforeCallback;
++  after_call_back_ = TimeProfilingAfterCallback;
++  return RET_OK;
++}
++
++int NetTrainCApi::InitMSContext() {
++  context_ = OH_AI_ContextCreate();
++  if (context_ == nullptr) {
++    MS_LOG(INFO) << "OH_AI_ContextCreate failed";
++    return RET_ERROR;
++  }
++  OH_AI_ContextSetThreadNum(context_, flags_->num_threads_);
++  OH_AI_ContextSetThreadAffinityMode(context_, flags_->cpu_bind_mode_);
++
++  OH_AI_DeviceInfoHandle cpu_device_info = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
++  OH_AI_DeviceInfoSetEnableFP16(cpu_device_info, flags_->enable_fp16_);
++  OH_AI_ContextAddDeviceInfo(context_, cpu_device_info);
++  return RET_OK;
++}
++
++char **NetTrainCApi::TransStrVectorToCharArrays(const std::vector<std::string> &s) {
++  char **char_arr = static_cast<char **>(malloc(s.size() * sizeof(char *)));
++  for (size_t i = 0; i < s.size(); i++) {
++    char_arr[i] = static_cast<char *>(malloc((s[i].size() + 1)));
++    strcpy(char_arr[i], s[i].c_str());
++  }
++  return char_arr;
++}
++
++std::vector<std::string> NetTrainCApi::TransCharArraysToStrVector(char **c, const size_t &num) {
++  std::vector<std::string> str;
++  for (size_t i = 0; i < num; i++) {
++    str.push_back(std::string(c[i]));
++  }
++  return str;
++}
++
++void NetTrainCApi::InitTrainCfg() {
++  if (flags_->loss_name_.empty()) {
++    return;
++  }
++
++  std::string delimiter = ",";
++  size_t pos = 0;
++  std::string token;
++  train_cfg_ = OH_AI_TrainCfgCreate();
++  size_t num = 0;
++  std::vector<std::string> train_cfg_loss_name;
++  OH_AI_TrainCfgSetLossName(train_cfg_, nullptr, train_cfg_loss_name.size());
++  while ((pos = flags_->loss_name_.find(delimiter)) != std::string::npos) {
++    token = flags_->loss_name_.substr(0, pos);
++    flags_->loss_name_.erase(0, pos + delimiter.length());  // change to delim without deletion
++    char **name = OH_AI_TrainCfgGetLossName(train_cfg_, &num);
++    train_cfg_loss_name = TransCharArraysToStrVector(name, num);
++    train_cfg_loss_name.push_back(token);
++    char **loss_name = TransStrVectorToCharArrays(train_cfg_loss_name);
++    OH_AI_TrainCfgSetLossName(train_cfg_, const_cast<const char **>(loss_name), train_cfg_loss_name.size());
++    for (size_t i = 0; i < train_cfg_loss_name.size(); i++) {
++      free(loss_name[i]);
++    }
++    free(loss_name);
++    for (size_t i = 0; i < num; i++) {
++      free(name[i]);
++    }
++    free(name);
++  }
++  if (!(flags_->loss_name_.empty())) {
++    char **name = OH_AI_TrainCfgGetLossName(train_cfg_, &num);
++    train_cfg_loss_name = TransCharArraysToStrVector(name, num);
++    train_cfg_loss_name.push_back(flags_->loss_name_);
++    char **loss_name = TransStrVectorToCharArrays(train_cfg_loss_name);
++    OH_AI_TrainCfgSetLossName(train_cfg_, const_cast<const char **>(loss_name), train_cfg_loss_name.size());
++    for (size_t i = 0; i < train_cfg_loss_name.size(); i++) {
++      free(loss_name[i]);
++    }
++    free(loss_name);
++    for (size_t i = 0; i < num; i++) {
++      free(name[i]);
++    }
++    free(name);
++  }
++}
++
++int NetTrainCApi::CreateAndRunNetworkForInference(const std::string &filename,
++                                              const OH_AI_ContextHandle &context) {
++  std::string model_name = filename.substr(filename.find_last_of(DELIM_SLASH) + 1);
++  std::string filenamems = filename;
++  if (filenamems.substr(filenamems.find_last_of('.') + 1) != "ms") {
++    filenamems = filenamems + ".ms";
++  }
++  MS_LOG(INFO) << "start reading model file " << filenamems.c_str();
++  std::cout << "start reading model file " << filenamems.c_str() << std::endl;
++  auto status = OH_AI_ModelBuildFromFile(ms_model_, filenamems.c_str(),
++                                         static_cast<OH_AI_ModelType>(mindspore::kMindIR), context);
++  if (status != OH_AI_STATUS_SUCCESS) {
++    MS_LOG(ERROR) << "ms model build failed. " << model_name;
++    return RET_ERROR;
++  }
++  return RET_OK;
++}
++
++int NetTrainCApi::CreateAndRunNetworkForTrain(const std::string &filename, const std::string &bb_filename,
++                                          const OH_AI_ContextHandle &context,
++                                          const OH_AI_TrainCfgHandle &train_cfg, int epochs) {
++  std::string model_name = filename.substr(filename.find_last_of(DELIM_SLASH) + 1);
++  OH_AI_Status status;
++  if (!bb_filename.empty()) {
++      MS_LOG(ERROR) << "build transfer learning not supported. " << model_name;
++      return RET_ERROR;
++  } else {
++    MS_LOG(INFO) << "Build mindspore model from model file" << filename.c_str();
++    std::cout << "Build mindspore model from model file" << filename.c_str() << std::endl;
++    status = OH_AI_TrainModelBuildFromFile(ms_model_, filename.c_str(), OH_AI_MODELTYPE_MINDIR, context, train_cfg);
++    if (status != OH_AI_STATUS_SUCCESS) {
++      MS_LOG(ERROR) << "build transfer learning failed. " << model_name;
++      return RET_ERROR;
++    }
++  }
++  if (epochs > 0) {
++    if (flags_->virtual_batch_) {
++      OH_AI_ModelSetupVirtualBatch(ms_model_, epochs, -1.0f, -1.0f);
++    }
++    status = OH_AI_ModelSetTrainMode(ms_model_, true);
++    if (status != OH_AI_STATUS_SUCCESS) {
++      MS_LOG(ERROR) << "set train mode failed. ";
++      return RET_ERROR;
++    }
++  }
++  return RET_OK;
++}
++
++int NetTrainCApi::CompareOutput() {
++  std::cout << "================ Comparing Forward Output data ================" << std::endl;
++  float total_bias = 0;
++  int total_size = 0;
++  bool has_error = false;
++  auto output_tensors_handle = OH_AI_ModelGetOutputs(ms_model_);
++
++  std::vector<mindspore::MSTensor> output_tensors;
++  for (size_t i = 0; i < output_tensors_handle.handle_num; i++) {
++    output_tensors.push_back(*static_cast<mindspore::MSTensor *>(output_tensors_handle.handle_list[i]));
++  }
++  if (output_tensors.empty()) {
++    MS_LOG(ERROR) << "Cannot find output tensors, get model output failed";
++    return RET_ERROR;
++  }
++  std::map<std::string, MSTensor> ordered_outputs;
++  for (const auto &output_tensor : output_tensors) {
++    ordered_outputs.insert({output_tensor.Name(), output_tensor});
++  }
++  int i = 1;
++  mindspore::MSTensor tensor;
++  for (auto &ordered_output : ordered_outputs) {
++    tensor = ordered_output.second;
++    std::cout << "output is tensor " << ordered_output.first << "\n";
++    auto outputs = tensor.MutableData();
++    size_t size;
++    std::string output_file = flags_->data_file_ + std::to_string(i) + ".bin";
++    auto bin_buf = std::unique_ptr<float[]>(ReadFileBuf(output_file.c_str(), &size));
++    if (bin_buf == nullptr) {
++      MS_LOG(ERROR) << "ReadFile return nullptr";
++      std::cout << "ReadFile return nullptr" << std::endl;
++      return RET_ERROR;
++    }
++    if (size != tensor.DataSize()) {
++      MS_LOG(ERROR) << "Output buffer and output file differ by size. Tensor size: " << tensor.DataSize()
++                    << ", read size: " << size;
++      std::cout << "Output buffer and output file differ by size. Tensor size: " << tensor.DataSize()
++                << ", read size: " << size << std::endl;
++      return RET_ERROR;
++    }
++    float bias = CompareData<float>(bin_buf.get(), tensor.ElementNum(), reinterpret_cast<float *>(outputs));
++    if (bias >= 0) {
++      total_bias += bias;
++      total_size++;
++    } else {
++      has_error = true;
++      break;
++    }
++    i++;
++  }
++
++  if (!has_error) {
++    float mean_bias;
++    if (total_size != 0) {
++      mean_bias = total_bias / total_size * 100;
++    } else {
++      mean_bias = 0;
++    }
++
++    std::cout << "Mean bias of all nodes/tensors: " << mean_bias << "%"
++              << " threshold is:" << this->flags_->accuracy_threshold_ << std::endl;
++    std::cout << "=======================================================" << std::endl << std::endl;
++
++    if (mean_bias > this->flags_->accuracy_threshold_) {
++      MS_LOG(INFO) << "Mean bias of all nodes/tensors is too big: " << mean_bias << "%";
++      std::cout << "Mean bias of all nodes/tensors is too big: " << mean_bias << "%" << std::endl;
++      return RET_TOO_BIG;
++    } else {
++      return RET_OK;
++    }
++  } else {
++    MS_LOG(ERROR) << "Error in CompareData";
++    std::cerr << "Error in CompareData" << std::endl;
++    std::cout << "=======================================================" << std::endl << std::endl;
++    return RET_ERROR;
++  }
++}
++
++int NetTrainCApi::MarkPerformance() {
++  MS_LOG(INFO) << "Running train loops...";
++  std::cout << "Running train loops..." << std::endl;
++  uint64_t time_min = 0xFFFFFFFFFFFFFFFF;
++  uint64_t time_max = 0;
++  uint64_t time_avg = 0;
++  std::vector<MSTensor> outputs;
++
++  for (int i = 0; i < flags_->epochs_; i++) {
++    auto start = GetTimeUs();
++    auto status = OH_AI_RunStep(ms_model_, before_call_back_, after_call_back_);
++    if (status != OH_AI_STATUS_SUCCESS) {
++      MS_LOG(ERROR) << "Inference error " << status;
++      std::cerr << "Inference error " << status;
++      return RET_ERROR;
++    }
++
++    auto end = GetTimeUs();
++    auto time = end - start;
++    time_min = std::min(time_min, time);
++    time_max = std::max(time_max, time);
++    time_avg += time;
++  }
++
++  if (flags_->time_profiling_) {
++    const std::vector<std::string> per_op_name = {"opName", "avg(ms)", "percent", "calledTimes", "opTotalTime"};
++    const std::vector<std::string> per_op_type = {"opType", "avg(ms)", "percent", "calledTimes", "opTotalTime"};
++    PrintResult(per_op_name, g_c_op_times_by_name_);
++    PrintResult(per_op_type, g_c_op_times_by_type_);
++  }
++
++  if (flags_->epochs_ > 0) {
++    time_avg /= static_cast<size_t>(flags_->epochs_);
++    MS_LOG(INFO) << "Model = " << flags_->model_file_.substr(flags_->model_file_.find_last_of(DELIM_SLASH) + 1).c_str()
++                 << ", NumThreads = " << flags_->num_threads_ << ", MinRunTime = " << time_min / 1000.0f
++                 << ", MaxRuntime = " << time_max / 1000.0f << ", AvgRunTime = " << time_avg / 1000.0f;
++    printf("Model = %s, NumThreads = %d, MinRunTime = %f ms, MaxRuntime = %f ms, AvgRunTime = %f ms\n",
++           flags_->model_file_.substr(flags_->model_file_.find_last_of(DELIM_SLASH) + 1).c_str(), flags_->num_threads_,
++           time_min / 1000.0f, time_max / 1000.0f, time_avg / 1000.0f);
++  }
++  return RET_OK;
++}
++
++int NetTrainCApi::MarkAccuracy(bool enforce_accuracy) {
++  MS_LOG(INFO) << "MarkAccuracy";
++  auto status = PrintInputData();
++  if (status != RET_OK) {
++    MS_LOG(ERROR) << "PrintInputData failed, ret: " << status;
++    return status;
++  }
++  status = OH_AI_RunStep(ms_model_, before_call_back_, after_call_back_);
++  if (status != OH_AI_STATUS_SUCCESS) {
++    MS_LOG(ERROR) << "Inference error " << status;
++    std::cerr << "Inference error " << status << std::endl;
++    return RET_ERROR;
++  }
++
++  auto ret = CompareOutput();
++  if (ret == RET_TOO_BIG && !enforce_accuracy) {
++    MS_LOG(INFO) << "Accuracy Error is big but not enforced";
++    std::cout << "Accuracy Error is big but not enforced" << std::endl;
++    return RET_OK;
++  }
++
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "Compare output error " << ret;
++    std::cerr << "Compare output error " << ret << std::endl;
++    return ret;
++  }
++  return RET_OK;
++}
++
++int NetTrainCApi::CreateAndRunNetwork(const std::string &filename, const std::string &bb_filename, bool is_train,
++                                  int epochs, bool check_accuracy) {
++  auto start_prepare_time = GetTimeUs();
++
++  int ret = InitMSContext();
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "InitContext failed, ret: " << ret;
++    return ret;
++  }
++
++  InitTrainCfg();
++  ms_model_ = OH_AI_ModelCreate();
++
++  if (is_train) {
++    ret = CreateAndRunNetworkForTrain(filename, bb_filename, context_ , train_cfg_, epochs);
++    if (ret != RET_OK) {
++      MS_LOG(ERROR) << "CreateAndRunNetworkForTrain failed.";
++      return RET_ERROR;
++    }
++  } else {
++    ret = CreateAndRunNetworkForInference(filename, context_);
++    if (ret != RET_OK) {
++      MS_LOG(ERROR) << "CreateAndRunNetworkForInference failed.";
++      return RET_ERROR;
++    }
++  }
++
++  ms_inputs_for_api_ = OH_AI_ModelGetInputs(ms_model_);
++  if (ms_inputs_for_api_.handle_list == nullptr) {
++    MS_LOG(ERROR) << "OH_AI_ModelGetInputs failed, ret: ";
++    return RET_ERROR;
++  }
++
++  if (!flags_->resize_dims_.empty()) {
++    std::vector<OH_AI_ShapeInfo> shape_infos;
++    std::transform(flags_->resize_dims_.begin(), flags_->resize_dims_.end(), std::back_inserter(shape_infos),
++                   [&](auto &shapes) {
++                     OH_AI_ShapeInfo shape_info;
++                     shape_info.shape_num = shapes.size();
++                     for (size_t i = 0; i < shape_info.shape_num; i++) {
++                       shape_info.shape[i] = shapes[i];
++                     }
++                     return shape_info;
++                   });
++    auto status = OH_AI_ModelResize(ms_model_, ms_inputs_for_api_, shape_infos.data(), shape_infos.size());
++    if (status != OH_AI_STATUS_SUCCESS) {
++      MS_LOG(ERROR) << "Input tensor resize failed.";
++      std::cout << "Input tensor resize failed.";
++      return RET_ERROR;
++    }
++  }
++
++  auto end_prepare_time = GetTimeUs();
++  MS_LOG(INFO) << "PrepareTime = " << ((end_prepare_time - start_prepare_time) / kTHOUSAND) << " ms";
++  std::cout << "PrepareTime = " << ((end_prepare_time - start_prepare_time) / kTHOUSAND) << " ms" << std::endl;
++  // Load input
++  MS_LOG(INFO) << "Load input data";
++  auto status = LoadInput();
++  if (status != RET_OK) {
++    MS_LOG(ERROR) << "Load input data error";
++    std::cout << "Load input data error" << std::endl;
++    return status;
++  }
++
++  if ((epochs > 0) && is_train) {
++    status = MarkPerformance();
++    if (status != RET_OK) {
++      MS_LOG(ERROR) << "Run MarkPerformance error: " << status;
++      std::cout << "Run MarkPerformance error: " << status << std::endl;
++      return status;
++    }
++    SaveModels();  // save file if flags are on
++  }
++  if (!flags_->data_file_.empty()) {
++    auto res = OH_AI_ModelSetTrainMode(ms_model_, false);
++    if (res != OH_AI_STATUS_SUCCESS) {
++      MS_LOG(ERROR) << "set eval mode failed. ";
++      return RET_ERROR;
++    }
++
++    status = MarkAccuracy(check_accuracy);
++    if (status != RET_OK) {
++      MS_LOG(ERROR) << "Run MarkAccuracy error: " << status;
++      std::cout << "Run MarkAccuracy error: " << status << std::endl;
++      return status;
++    }
++  }
++  return RET_OK;
++}
++
++int NetTrainCApi::PrintInputData() {
++  constexpr int64_t kPrintDataNum = 20;
++  for (size_t i = 0; i < ms_inputs_for_api_.handle_num; i++) {
++    auto input = ms_inputs_for_api_.handle_list[i];
++    std::cout << "InData" << i << ": ";
++    auto data_type = static_cast<TypeId>(OH_AI_TensorGetDataType(input));
++    if (data_type == TypeId::kObjectTypeString) {
++      MS_LOG(ERROR) << "Unsupported OH_AI_DATATYPE_OBJECTTYPE_STRING.";
++      return RET_ERROR;
++    }
++    auto tensor_data = OH_AI_TensorGetData(input);
++    size_t print_num = std::min(OH_AI_TensorGetElementNum(input), kPrintDataNum);
++    for (size_t j = 0; j < print_num; j++) {
++      if (data_type == TypeId::kNumberTypeFloat32 || data_type == TypeId::kNumberTypeFloat) {
++        std::cout << static_cast<const float *>(tensor_data)[j] << " ";
++      } else if (data_type == TypeId::kNumberTypeInt8) {
++        std::cout << static_cast<const int8_t *>(tensor_data)[j] << " ";
++      } else if (data_type == TypeId::kNumberTypeUInt8) {
++        std::cout << static_cast<const uint8_t *>(tensor_data)[j] << " ";
++      } else if (data_type == TypeId::kNumberTypeInt32) {
++        std::cout << static_cast<const int32_t *>(tensor_data)[j] << " ";
++      } else if (data_type == TypeId::kNumberTypeInt64) {
++        std::cout << static_cast<const int64_t *>(tensor_data)[j] << " ";
++      } else if (data_type == TypeId::kNumberTypeBool) {
++        std::cout << static_cast<const bool *>(tensor_data)[j] << " ";
++      } else {
++        MS_LOG(ERROR) << "Datatype: " << data_type << " is not supported.";
++        return RET_ERROR;
++      }
++    }
++    std::cout << std::endl;
++  }
++  return RET_OK;
++}
++
++int NetTrainCApi::PrintResult(const std::vector<std::string> &title,
++                          const std::map<std::string, std::pair<int, float>> &result) {
++  std::vector<size_t> columnLenMax(kFieldsToPrint);
++  std::vector<std::vector<std::string>> rows;
++
++  for (auto &iter : result) {
++    std::string stringBuf[kFieldsToPrint];
++    std::vector<std::string> columns;
++    size_t len = 0;
++    int index = 0;
++    len = iter.first.size();
++    if (len > columnLenMax.at(index)) {
++      columnLenMax.at(index) = len + kPrintOffset;
++    }
++    columns.push_back(iter.first);
++
++    index++;
++    if (title[0] == "opName") {
++      stringBuf[index] = std::to_string(iter.second.second / flags_->epochs_);
++    } else {
++      stringBuf[index] = std::to_string(iter.second.second / iter.second.first);
++    }
++    len = stringBuf[index].length();
++    if (len > columnLenMax.at(index)) {
++      columnLenMax.at(index) = len + kPrintOffset;
++    }
++    columns.emplace_back(stringBuf[index]);
++
++    index++;
++    stringBuf[index] = std::to_string(iter.second.second / g_op_cost_total_);
++    len = stringBuf[index].length();
++    if (len > columnLenMax.at(index)) {
++      columnLenMax.at(index) = len + kPrintOffset;
++    }
++    columns.emplace_back(stringBuf[index]);
++
++    index++;
++    stringBuf[index] = std::to_string(iter.second.first);
++    len = stringBuf[index].length();
++    if (len > columnLenMax.at(index)) {
++      columnLenMax.at(index) = len + kPrintOffset;
++    }
++    columns.emplace_back(stringBuf[index]);
++
++    index++;
++    stringBuf[index] = std::to_string(iter.second.second);
++    len = stringBuf[index].length();
++    if (len > columnLenMax.at(index)) {
++      columnLenMax.at(index) = len + kPrintOffset;
++    }
++    columns.emplace_back(stringBuf[index]);
++
++    rows.push_back(columns);
++  }
++
++  printf("-------------------------------------------------------------------------\n");
++  for (int i = 0; i < kFieldsToPrint; i++) {
++    auto printBuf = title[i];
++    if (printBuf.size() > columnLenMax.at(i)) {
++      columnLenMax.at(i) = printBuf.size();
++    }
++    printBuf.resize(columnLenMax.at(i), ' ');
++    printf("%s\t", printBuf.c_str());
++  }
++  printf("\n");
++  for (auto &row : rows) {
++    for (int j = 0; j < kFieldsToPrint; j++) {
++      auto printBuf = row[j];
++      printBuf.resize(columnLenMax.at(j), ' ');
++      printf("%s\t", printBuf.c_str());
++    }
++    printf("\n");
++  }
++  return RET_OK;
++}
++
++bool TimeProfilingBeforeCallback(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
++                                 const OH_AI_CallBackParam kernel_Info) {
++  if (g_c_op_times_by_type_.find(kernel_Info.node_type) == g_c_op_times_by_type_.end()) {
++    g_c_op_times_by_type_.insert(std::make_pair(kernel_Info.node_type, std::make_pair(0, 0.0f)));
++  }
++  if (g_c_op_times_by_name_.find(kernel_Info.node_name) == g_c_op_times_by_name_.end()) {
++    g_c_op_times_by_name_.insert(std::make_pair(kernel_Info.node_name, std::make_pair(0, 0.0f)));
++  }
++
++  g_op_call_times_total_++;
++  g_op_begin_ = mindspore::lite::GetTimeUs();
++  return true;
++}
++
++bool TimeProfilingAfterCallback(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
++                                const OH_AI_CallBackParam kernel_Info) {
++  uint64_t opEnd = mindspore::lite::GetTimeUs();
++  float cost = static_cast<float>(opEnd - g_op_begin_) / 1000.0f;
++  g_op_cost_total_ += cost;
++  g_c_op_times_by_type_[kernel_Info.node_type].first++;
++  g_c_op_times_by_type_[kernel_Info.node_type].second += cost;
++  g_c_op_times_by_name_[kernel_Info.node_name].first++;
++  g_c_op_times_by_name_[kernel_Info.node_name].second += cost;
++  return true;
++}
++}  // namespace lite
++}  // namespace mindspore
++
++
+diff --git a/mindspore/lite/tools/benchmark_train/net_train_c_api.h b/mindspore/lite/tools/benchmark_train/net_train_c_api.h
+new file mode 100644
+index 00000000..6653c9cd
+--- /dev/null
++++ b/mindspore/lite/tools/benchmark_train/net_train_c_api.h
+@@ -0,0 +1,119 @@
++/**
++ * Copyright 2023-2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_TOOLS_BENCHMARK_NET_TRAIN_C_API_H
++#define MINDSPORE_LITE_TOOLS_BENCHMARK_NET_TRAIN_C_API_H
++
++#include <getopt.h>
++#include <csignal>
++#include <unordered_map>
++#include <fstream>
++#include <iostream>
++#include <map>
++#include <cmath>
++#include <string>
++#include <vector>
++#include <memory>
++#include <cfloat>
++#include <utility>
++#include <algorithm>
++#include <nlohmann/json.hpp>
++#include "include/api/model.h"
++#include "include/api/types.h"
++#include "include/api/context.h"
++#include "include/api/cfg.h"
++
++#include "include/c_api/model_c.h"
++#include "include/c_api/context_c.h"
++
++#ifdef ENABLE_FP16
++#include <arm_neon.h>
++#endif
++#include "tools/common/flag_parser.h"
++#include "src/common/file_utils.h"
++#include "src/common/utils.h"
++#include "tools/benchmark_train/net_train_base.h"
++
++namespace mindspore::lite {
++  namespace {
++    std::map<std::string, std::pair<int, float>> g_c_op_times_by_type_;
++    std::map<std::string, std::pair<int, float>> g_c_op_times_by_name_;
++  }
++#ifdef __cplusplus
++  extern "C" {
++#endif
++  bool TimeProfilingBeforeCallback(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
++                                   const OH_AI_CallBackParam kernel_Info);
++  bool TimeProfilingAfterCallback(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
++                                  const OH_AI_CallBackParam kernel_Info);
++#ifdef __cplusplus
++  }
++#endif
++
++class MS_API NetTrainCApi : public NetTrainBase  {
++ public:
++  explicit NetTrainCApi(NetTrainFlags *flags) : NetTrainBase(flags) {}
++  virtual ~NetTrainCApi() {};
++
++ protected:
++  // call GenerateRandomData to fill inputTensors
++  int GenerateInputData() override;
++
++  int ReadInputFile() override;
++
++  int InitMSContext();
++
++  void InitTrainCfg();
++
++  char **TransStrVectorToCharArrays(const std::vector<std::string> &s);
++
++  std::vector<std::string> TransCharArraysToStrVector(char **c, const size_t &num);
++
++  int CreateAndRunNetwork(const std::string &filename, const std::string &bb_filename, bool is_train, int epochs,
++    bool check_accuracy = true) override;
++
++  int CreateAndRunNetworkForInference(const std::string &filename, const OH_AI_ContextHandle &context);
++
++  int CreateAndRunNetworkForTrain(const std::string &filename, const std::string &bb_filename,
++    const OH_AI_ContextHandle &context,
++    const OH_AI_TrainCfgHandle &train_cfg, int epochs);
++
++  int InitDumpTensorDataCallbackParameter() override;
++
++  int InitTimeProfilingCallbackParameter() override;
++
++  int PrintResult(const std::vector<std::string> &title, const std::map<std::string, std::pair<int, float>> &result) override;
++
++  int PrintInputData();
++
++  int MarkPerformance() override;
++
++  int MarkAccuracy(bool enforce_accuracy = true) override;
++
++  int CompareOutput() override;
++
++  int SaveModels() override;
++
++  OH_AI_ModelHandle ms_model_;
++  OH_AI_TensorHandleArray ms_inputs_for_api_;
++  OH_AI_ContextHandle context_ = nullptr;
++  OH_AI_TrainCfgHandle train_cfg_ = nullptr;
++  OH_AI_KernelCallBack before_call_back_{nullptr};
++  OH_AI_KernelCallBack after_call_back_{nullptr};
++};
++}  // namespace mindspore::lite
++
++#endif //MINDSPORE_LITE_TOOLS_BENCHMARK_NET_TRAIN_C_API_H
+diff --git a/mindspore/lite/tools/benchmark_train/run_net_train.cc b/mindspore/lite/tools/benchmark_train/run_net_train.cc
+new file mode 100644
+index 00000000..37a7e602
+--- /dev/null
++++ b/mindspore/lite/tools/benchmark_train/run_net_train.cc
+@@ -0,0 +1,86 @@
++/**
++ * Copyright 2020 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "tools/benchmark_train/run_net_train.h"
++#include "tools/benchmark_train/net_train.h"
++#include "tools/benchmark_train/net_train_c_api.h"
++
++namespace mindspore {
++namespace lite {
++int RunNetTrain(int argc, const char **argv) {
++  NetTrainFlags flags;
++  Option<std::string> err = flags.ParseFlags(argc, argv);
++
++  if (err.IsSome()) {
++    std::cerr << err.Get() << std::endl;
++    std::cerr << flags.Usage() << std::endl;
++    return RET_ERROR;
++  }
++
++  if (flags.help) {
++    std::cerr << flags.Usage() << std::endl;
++    return RET_OK;
++  }
++  if (flags.unified_api_) {
++    return NetTrain::RunNr(&flags);
++  }
++
++  auto api_type = std::getenv("MSLITE_API_TYPE");
++  if (api_type != nullptr) {
++    MS_LOG(INFO) << "MSLITE_API_TYPE = " << api_type;
++    std::cout << "MSLITE_API_TYPE = " << api_type << std::endl;
++  }
++
++  NetTrainBase *net_trainer = nullptr;
++  if (api_type == nullptr || std::string(api_type) == "NEW") {
++    net_trainer = new (std::nothrow) NetTrain(&flags);
++  } else if (std::string(api_type) == "C") {
++    net_trainer = new (std::nothrow) NetTrainCApi(&flags);
++  } else {
++    MS_LOG(ERROR) << "Invalid MSLITE_API_TYPE, (NEW/C, default:NEW)";
++    return RET_ERROR;
++  }
++
++  if (net_trainer == nullptr) {
++    MS_LOG(ERROR) << "new net_trainer failed.";
++    return RET_ERROR;
++  }
++  auto status = net_trainer->Init();
++  if (status != RET_OK) {
++    MS_LOG(ERROR) << "NetTrain init Error : " << status;
++    std::cerr << "NetTrain init Error : " << status << std::endl;
++    return RET_ERROR;
++  }
++
++  status = net_trainer->RunNetTrain();
++  if (status != RET_OK) {
++    MS_LOG(ERROR) << "Run NetTrain "
++                  << flags.model_file_.substr(flags.model_file_.find_last_of("/") + 1).c_str()
++                  << " Failed : " << status;
++    std::cerr << "Run NetTrain " << flags.model_file_.substr(flags.model_file_.find_last_of("/") + 1).c_str()
++              << " Failed : " << status << std::endl;
++    return RET_ERROR;
++  }
++
++  MS_LOG(INFO) << "Run NetTrain " << flags.model_file_.substr(flags.model_file_.find_last_of("/") + 1).c_str()
++               << " Success.";
++  std::cout << "Run NetTrain " << flags.model_file_.substr(flags.model_file_.find_last_of("/") + 1).c_str()
++            << " Success." << std::endl;
++  delete net_trainer;
++  return RET_OK;
++}
++}  // namespace lite
++}  // namespace mindspore
+\ No newline at end of file
+diff --git a/mindspore/lite/tools/benchmark_train/run_net_train.h b/mindspore/lite/tools/benchmark_train/run_net_train.h
+new file mode 100644
+index 00000000..9ca2d73c
+--- /dev/null
++++ b/mindspore/lite/tools/benchmark_train/run_net_train.h
+@@ -0,0 +1,22 @@
++/**
++ * Copyright 2023-2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_TOOLS_BENCHMARK_RUN_NET_TRAIN_H
++#define MINDSPORE_LITE_TOOLS_BENCHMARK_RUN_NET_TRAIN_H
++namespace mindspore::lite {
++int RunNetTrain(int argc, const char **argv);
++}  // namespace mindspore::lite
++#endif  // MINDSPORE_LITE_TOOLS_BENCHMARK_RUN_NET_TRAIN_H

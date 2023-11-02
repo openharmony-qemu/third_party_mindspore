@@ -98,6 +98,25 @@ typedef enum OH_AI_Priority {
   OH_AI_PRIORITY_HIGH = 3
 } OH_AI_Priority;
 
+typedef enum OH_AI_OptimizationLevel {
+  /** Do not change */
+  OH_AI_KO0 = 0,
+  /** Cast network to float16, keep batchnorm and loss in float32 */
+  OH_AI_KO2 = 2,
+  /** Cast network to float16, including bacthnorm */
+  OH_AI_KO3 = 3,
+  /** Choose optimization based on device */
+  OH_AI_KAUTO = 4,
+  OH_AI_KOPTIMIZATIONTYPE = 0xFFFFFFFF
+} OH_AI_OptimizationLevel;
+
+typedef enum OH_AI_QuantizationType {
+  OH_AI_NO_QUANT = 0,
+  OH_AI_WEIGHT_QUANT = 1,
+  OH_AI_FULL_QUANT = 2,
+  OH_AI_UNKNOWN_QUANT_TYPE = 0xFFFFFFFF
+} OH_AI_QuantizationType;
+
 typedef struct NNRTDeviceDesc NNRTDeviceDesc;
 #ifdef __cplusplus
 }
