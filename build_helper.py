@@ -58,11 +58,11 @@ def do_patch(patch_dir, target_dir):
         '0039-fix-double-destry-nnrt-mode.patch',
         '0040-remove-runtime-allocator.patch',
         '0041-remove-hilog-log-h-from-namespace.patch',
-        '0042-refactor-c_api-in-ohos.patch',
+        # '0042-refactor-c_api-in-ohos.patch',
         '0043-micro-bugfix-for-ohos.patch',
         '0044-support-OCR-GNN-model.patch',
         '0045-micro-feature-for-xiaoyi-shurufa.patch',
-        '0046-add-train-c_api-benchmark_train.patch',
+        # '0046-add-train-c_api-benchmark_train.patch',
     ]
 
     cwd = os.getcwd()
@@ -107,6 +107,7 @@ def main_work():
     do_patch(patch_dir, out_src_path + '/source/')
 
     create_status_file(out_src_path)
+
 
 if __name__ == "__main__":
     main_work()
