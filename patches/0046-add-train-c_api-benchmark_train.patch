@@ -1,5 +1,5 @@
 diff --git a/include/c_api/model_c.h b/include/c_api/model_c.h
-index 450601cb..f836825c 100644
+index 450601cb..758c0650 100644
 --- a/include/c_api/model_c.h
 +++ b/include/c_api/model_c.h
 @@ -26,6 +26,8 @@ extern "C" {
@@ -11,7 +11,7 @@ index 450601cb..f836825c 100644
  typedef struct OH_AI_TensorHandleArray {
    size_t handle_num;
    OH_AI_TensorHandle *handle_list;
-@@ -138,6 +140,161 @@ OH_AI_API OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHa
+@@ -138,6 +140,181 @@ OH_AI_API OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHa
  /// \return The output tensor handle with the given name, if the name is not found, an NULL is returned.
  OH_AI_API OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name);
  
@@ -87,7 +87,8 @@ index 450601cb..f836825c 100644
 +/// \param[in] after CallBack after predict.
 +///
 +/// \return OH_AI_Status.
-+OH_AI_API OH_AI_Status OH_AI_RunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after);
++OH_AI_API OH_AI_Status OH_AI_RunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallBack before,
++                                     const OH_AI_KernelCallBack after);
 +
 +/// \brief Sets the Learning Rate of the training. Only valid for Lite Train.
 +///
@@ -138,7 +139,8 @@ index 450601cb..f836825c 100644
 +/// \param[in] momentum - batch norm momentum to use for virtual batch, -1 for internal configuration.
 +///
 +/// \return OH_AI_Status.
-+OH_AI_API OH_AI_Status OH_AI_ModelSetupVirtualBatch(OH_AI_ModelHandle model, int virtual_batch_multiplier, float lr, float momentum);
++OH_AI_API OH_AI_Status OH_AI_ModelSetupVirtualBatch(OH_AI_ModelHandle model, int virtual_batch_multiplier, float lr,
++                                                    float momentum);
 +
 +/// \brief Export training model from file. Only valid for Lite Train.
 +///
@@ -156,6 +158,22 @@ index 450601cb..f836825c 100644
 +                                         OH_AI_QuantizationType quantization_type, bool export_inference_only,
 +                                         char **output_tensor_name, size_t num);
 +
++/// \brief Export training model from buffer. Only valid for Lite Train.
++///
++/// \param[in] model The model data.
++/// \param[in] model_type The model file type.
++/// \param[in] model_data The exported model buffer.
++/// \param[in] quantization_type The quantification type.
++/// \param[in] export_inference_only Whether to export a reasoning only model.
++/// \param[in] output_tensor_name The set the name of the output tensor of the exported reasoning model, default as
++/// empty, and export the complete reasoning model.
++/// \param[in] num The number of output_tensor_name.
++///
++/// \return OH_AI_Status.
++OH_AI_API OH_AI_Status OH_AI_ExportModelBuffer(OH_AI_ModelHandle model, OH_AI_ModelType model_type, char **model_data,
++                                               size_t *data_size, OH_AI_QuantizationType quantization_type,
++                                               bool export_inference_only, char **output_tensor_name, size_t num);
++
 +/// \brief Export model's weights, which can be used in micro only. Only valid for Lite Train.
 +///
 +/// \param[in] model The model data.
@@ -167,8 +185,10 @@ index 450601cb..f836825c 100644
 +/// \param[in] num The number of changeable_weights_name.
 +///
 +/// \return OH_AI_Status.
-+OH_AI_API OH_AI_Status OH_AI_ExportWeightsCollaborateWithMicro(OH_AI_ModelHandle model, OH_AI_ModelType model_type, const char *weight_file,
-+                                                               bool is_inference, bool enable_fp16, char **changeable_weights_name, size_t num);
++OH_AI_API OH_AI_Status OH_AI_ExportWeightsCollaborateWithMicro(OH_AI_ModelHandle model, OH_AI_ModelType model_type,
++                                                               const char *weight_file, bool is_inference,
++                                                               bool enable_fp16, char **changeable_weights_name,
++                                                               size_t num);
 +
  #ifdef __cplusplus
  }
@@ -249,10 +269,10 @@ index c7615c6b..d1617ec0 100644
    return provider_device;
  }
 diff --git a/mindspore/lite/src/runtime/c_api/model_c.cc b/mindspore/lite/src/runtime/c_api/model_c.cc
-index 6f28b2ae..02462fb2 100644
+index 6f28b2ae..c111df78 100644
 --- a/mindspore/lite/src/runtime/c_api/model_c.cc
 +++ b/mindspore/lite/src/runtime/c_api/model_c.cc
-@@ -34,6 +34,9 @@ class ModelC {
+@@ -34,16 +34,22 @@ class ModelC {
        for (auto out : outputs_) {
          delete out;
        }
@@ -262,8 +282,10 @@ index 6f28b2ae..02462fb2 100644
      }
  
      MSTensor **GetInputs(size_t *input_num);
-@@ -42,8 +45,10 @@ class ModelC {
+     MSTensor **GetOutputs(size_t *output_num);
+     mindspore::MSKernelCallBack TransCallBack(const OH_AI_KernelCallBack &oh_callback);
      std::shared_ptr<Model> model_;
++    std::shared_ptr<Context> context_;
  
  private:
 +    MSTensor **GetOutputsTensor(size_t *output_num, std::vector<MSTensor *> *vec_tensors);
@@ -273,7 +295,23 @@ index 6f28b2ae..02462fb2 100644
  };
  
  MSTensor **ModelC::GetInputs(size_t *input_num) {
-@@ -72,28 +77,36 @@ MSTensor **ModelC::GetInputs(size_t *input_num) {
+@@ -58,42 +64,38 @@ MSTensor **ModelC::GetInputs(size_t *input_num) {
+ 
+   auto inputs = model_->GetInputs();
+   *input_num = inputs.size();
+-  if (inputs_.capacity() < inputs.size()) {
+-    inputs_.reserve(inputs.size());
+-  }
+-  for (auto in : inputs_) {
+-    delete in;
+-  }
+-  inputs_.clear();
++  inputs_.resize(inputs.size(), nullptr);
+   for (size_t i = 0; i < inputs.size(); i++) {
+-    inputs_.push_back(new MSTensor(inputs[i].impl()));
++    inputs_[i] = new MSTensor(inputs[i].impl());
+   }
+   return inputs_.data();
  }
  
  MSTensor **ModelC::GetOutputs(size_t *output_num) {
@@ -301,25 +339,22 @@ index 6f28b2ae..02462fb2 100644
    *output_num = outputs.size();
 -  if (outputs_.capacity() < outputs.size()) {
 -    outputs_.reserve(outputs.size());
-+  if (vec_tensors->capacity() < outputs.size()) {
-+    vec_tensors->reserve(outputs.size());
-   }
+-  }
 -  for (auto out : outputs_) {
-+  for (auto out : (*vec_tensors)) {
-     delete out;
-   }
+-    delete out;
+-  }
 -  outputs_.clear();
-+  vec_tensors->clear();
++  vec_tensors->resize(outputs.size(), nullptr);
    for (size_t i = 0; i < outputs.size(); i++) {
 -    outputs_.push_back(new MSTensor(outputs[i].impl()));
-+    vec_tensors->push_back(new MSTensor(outputs[i].impl()));
++    (*vec_tensors)[i] = new MSTensor(outputs[i].impl());
    }
 -  return outputs_.data();
 +  return vec_tensors->data();
  }
  
  mindspore::MSKernelCallBack ModelC::TransCallBack(const OH_AI_KernelCallBack &oh_callback) {
-@@ -128,11 +141,11 @@ mindspore::MSKernelCallBack ModelC::TransCallBack(const OH_AI_KernelCallBack &oh
+@@ -128,11 +130,16 @@ mindspore::MSKernelCallBack ModelC::TransCallBack(const OH_AI_KernelCallBack &oh
  
  OH_AI_ModelHandle OH_AI_ModelCreate() {
    auto impl = new (std::nothrow) mindspore::ModelC();
@@ -329,10 +364,39 @@ index 6f28b2ae..02462fb2 100644
      return nullptr;
    }
 +  impl->model_ = std::make_shared<mindspore::Model>();
++  if (impl->model_ == nullptr) {
++    MS_LOG(ERROR) << "model_ is null.";
++    delete impl;
++    return nullptr;
++  }
    return static_cast<OH_AI_ModelHandle>(impl);
  }
  
-@@ -282,4 +295,262 @@ OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle mode
+@@ -161,7 +168,10 @@ OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, s
+   }
+   mindspore::Context *context = static_cast<mindspore::Context *>(model_context);
+   auto impl = static_cast<mindspore::ModelC *>(model);
+-  auto ret = impl->model_->Build(model_data, data_size, static_cast<mindspore::ModelType>(model_type), static_cast<const std::shared_ptr<mindspore::Context>>(context));
++  if (impl->context_.get() != context) {
++    impl->context_.reset(context);
++  }
++  auto ret = impl->model_->Build(model_data, data_size, static_cast<mindspore::ModelType>(model_type), impl->context_);
+   return static_cast<OH_AI_Status>(ret.StatusCode());
+ }
+ 
+@@ -177,7 +187,10 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
+   }
+   mindspore::Context *context = static_cast<mindspore::Context *>(model_context);
+   auto impl = static_cast<mindspore::ModelC *>(model);
+-  auto ret = impl->model_->Build(model_path, static_cast<mindspore::ModelType>(model_type), static_cast<const std::shared_ptr<mindspore::Context>>(context));
++  if (impl->context_.get() != context) {
++    impl->context_.reset(context);
++  }
++  auto ret = impl->model_->Build(model_path, static_cast<mindspore::ModelType>(model_type), impl->context_);
+   return static_cast<OH_AI_Status>(ret.StatusCode());
+ }
+ 
+@@ -282,4 +295,295 @@ OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle mode
    }
    MS_LOG(ERROR) << "tensor is not exist.";
    return nullptr;
@@ -427,8 +491,10 @@ index 6f28b2ae..02462fb2 100644
 +  }
 +  auto context = static_cast<mindspore::Context *>(model_context);
 +  auto build_train_cfg = static_cast<mindspore::TrainCfg *>(train_cfg);
-+  auto ret = impl->model_->Build(static_cast<mindspore::GraphCell>(graph),
-+                                 static_cast<const std::shared_ptr<mindspore::Context>>(context),
++  if (impl->context_.get() != context) {
++    impl->context_.reset(context);
++  }
++  auto ret = impl->model_->Build(static_cast<mindspore::GraphCell>(graph), impl->context_,
 +                                 std::shared_ptr<mindspore::TrainCfg>(build_train_cfg));
 +  if (ret != mindspore::kSuccess) {
 +    MS_LOG(ERROR) << "Load and compile failed";
@@ -457,8 +523,10 @@ index 6f28b2ae..02462fb2 100644
 +  }
 +  auto context = static_cast<mindspore::Context *>(model_context);
 +  auto build_train_cfg = static_cast<mindspore::TrainCfg *>(train_cfg);
-+  auto ret = impl->model_->Build(static_cast<mindspore::GraphCell>(graph),
-+                                 static_cast<const std::shared_ptr<mindspore::Context>>(context),
++  if (impl->context_.get() != context) {
++    impl->context_.reset(context);
++  }
++  auto ret = impl->model_->Build(static_cast<mindspore::GraphCell>(graph), impl->context_,
 +                                 std::shared_ptr<mindspore::TrainCfg>(build_train_cfg));
 +  if (ret != mindspore::kSuccess) {
 +    MS_LOG(ERROR) << "Load and compile failed";
@@ -571,7 +639,36 @@ index 6f28b2ae..02462fb2 100644
 +  for (size_t i = 0; i < num; i++) {
 +    tensor_name.push_back(output_tensor_name[i]);
 +  }
-+  auto ret = mindspore::Serialization::ExportModel(*(impl->model_.get()), static_cast<mindspore::ModelType>(model_type), model_file, static_cast<mindspore::QuantizationType>(quantization_type), export_inference_only, tensor_name);
++  auto ret = mindspore::Serialization::ExportModel(*(impl->model_.get()), static_cast<mindspore::ModelType>(model_type),
++                                                   model_file,
++                                                   static_cast<mindspore::QuantizationType>(quantization_type),
++                                                   export_inference_only, tensor_name);
++  if (!ret.IsOk()) {
++    MS_LOG(ERROR) << "export model fail, ret :" << ret;
++  }
++  return static_cast<OH_AI_Status>(ret.StatusCode());
++}
++
++OH_AI_Status OH_AI_ExportModelBuffer(OH_AI_ModelHandle model, OH_AI_ModelType model_type, char **model_data,
++                                     size_t *data_size, OH_AI_QuantizationType quantization_type,
++                                     bool export_inference_only, char **output_tensor_name, size_t num) {
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  auto impl = static_cast<mindspore::ModelC *>(model);
++  std::vector<std::string> tensor_name;
++  for (size_t i = 0; i < num; i++) {
++    tensor_name.push_back(output_tensor_name[i]);
++  }
++  mindspore::Buffer buffer;
++  auto ret = mindspore::Serialization::ExportModel(*(impl->model_.get()), static_cast<mindspore::ModelType>(model_type),
++                                                   &buffer, static_cast<mindspore::QuantizationType>(quantization_type),
++                                                   export_inference_only, tensor_name);
++  auto data = static_cast<char *>(buffer.MutableData());
++  *model_data = (char *) malloc(buffer.DataSize());
++  *data_size = buffer.DataSize();
++  memcpy(*model_data, data, buffer.DataSize());
 +  if (!ret.IsOk()) {
 +    MS_LOG(ERROR) << "export model fail, ret :" << ret;
 +  }
