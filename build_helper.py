@@ -63,6 +63,7 @@ def do_patch(patch_dir, target_dir):
         '0044-support-OCR-GNN-model.patch',
         '0045-micro-feature-for-xiaoyi-shurufa.patch',
         '0046-add-train-c_api-benchmark_train.patch',
+        '0047-micro-dynamic-shape-config-modify.patch',
     ]
 
     cwd = os.getcwd()
