@@ -337,6 +337,7 @@ OH_AI_API OH_AI_Status OH_AI_ExportModel(OH_AI_ModelHandle model, OH_AI_ModelTyp
  * @param model The model data.
  * @param model_type The model file type.
  * @param model_data The exported model buffer.
+ * @param data_size The exported model buffer size.
  * @param quantization_type The quantification type.
  * @param export_inference_only Whether to export a reasoning only model.
  * @param output_tensor_name The set the name of the output tensor of the exported reasoning model, default as
