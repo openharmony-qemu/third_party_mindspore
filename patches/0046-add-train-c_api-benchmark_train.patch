@@ -223,6 +223,45 @@ index d612eb97..e520e336 100644
  typedef struct NNRTDeviceDesc NNRTDeviceDesc;
  #ifdef __cplusplus
  }
+diff --git a/mindspore/core/mindrt/src/thread/actor_threadpool.cc b/mindspore/core/mindrt/src/thread/actor_threadpool.cc
+index e53aaedc..eb733500 100644
+--- a/mindspore/core/mindrt/src/thread/actor_threadpool.cc
++++ b/mindspore/core/mindrt/src/thread/actor_threadpool.cc
+@@ -29,7 +29,7 @@ void ActorWorker::RunWithSpin() {
+   SetAffinity();
+ #if !defined(__APPLE__) && !defined(SUPPORT_MSVC)
+   static std::atomic_int index = {0};
+-  (void)pthread_setname_np(pthread_self(), ("ActorThread_" + std::to_string(index++)).c_str());
++  (void)pthread_setname_np(pthread_self(), ("OS_ActorThread_" + std::to_string(index++)).c_str());
+ #endif
+ #ifdef PLATFORM_86
+   // Some CPU kernels need set the flush zero mode to improve performance.
+diff --git a/mindspore/core/mindrt/src/thread/parallel_threadpool.cc b/mindspore/core/mindrt/src/thread/parallel_threadpool.cc
+index b6ffe913..2e8c0fa5 100644
+--- a/mindspore/core/mindrt/src/thread/parallel_threadpool.cc
++++ b/mindspore/core/mindrt/src/thread/parallel_threadpool.cc
+@@ -28,7 +28,7 @@ void ParallelWorker::CreateThread() { thread_ = std::thread(&ParallelWorker::Run
+ void ParallelWorker::Run() {
+   SetAffinity();
+ #if !defined(__APPLE__) && !defined(SUPPORT_MSVC)
+-  (void)pthread_setname_np(pthread_self(), ("ParallelThread_" + std::to_string(worker_id_)).c_str());
++  (void)pthread_setname_np(pthread_self(), ("OS_ParallelThread_" + std::to_string(worker_id_)).c_str());
+ #endif
+ #ifdef PLATFORM_86
+   // Some CPU kernels need set the flush zero mode to improve performance.
+diff --git a/mindspore/core/mindrt/src/thread/threadpool.cc b/mindspore/core/mindrt/src/thread/threadpool.cc
+index 55392f85..0770c41c 100644
+--- a/mindspore/core/mindrt/src/thread/threadpool.cc
++++ b/mindspore/core/mindrt/src/thread/threadpool.cc
+@@ -96,7 +96,7 @@ void Worker::Run() {
+   SetAffinity();
+ #if !defined(__APPLE__) && !defined(SUPPORT_MSVC)
+   static std::atomic_int index = {0};
+-  (void)pthread_setname_np(pthread_self(), ("KernelThread_" + std::to_string(index++)).c_str());
++  (void)pthread_setname_np(pthread_self(), ("OS_KernelThread_" + std::to_string(index++)).c_str());
+ #endif
+ #ifdef PLATFORM_86
+   // Some CPU kernels need set the flush zero mode to improve performance.
 diff --git a/mindspore/lite/src/runtime/c_api/context_c.cc b/mindspore/lite/src/runtime/c_api/context_c.cc
 index c7615c6b..d1617ec0 100644
 --- a/mindspore/lite/src/runtime/c_api/context_c.cc
@@ -708,6 +747,37 @@ index a1814488..9105423a 100644
    return impl;
  }
  
+diff --git a/mindspore/lite/src/runtime/kernel/cpu/int8/matmul_base_int8.cc b/mindspore/lite/src/runtime/kernel/cpu/int8/matmul_base_int8.cc
+index 74bed48c..96612101 100644
+--- a/mindspore/lite/src/runtime/kernel/cpu/int8/matmul_base_int8.cc
++++ b/mindspore/lite/src/runtime/kernel/cpu/int8/matmul_base_int8.cc
+@@ -151,6 +151,12 @@ MatmulBaseInt8CPUKernel::~MatmulBaseInt8CPUKernel() {
+   FreeQuantParam();
+ 
+   FreeTmpBuffer();
++
++  // bias_ptr_ malloc memory initially only once, not belonging to FreeTmpBuffer()
++  if (bias_ptr_ != nullptr) {
++    free(bias_ptr_);
++    bias_ptr_ = nullptr;
++  }
+ }
+ 
+ void MatmulBaseInt8CPUKernel::FreeQuantParam() {
+@@ -401,7 +407,12 @@ int MatmulBaseInt8CPUKernel::InitTmpBuffer() {
+ int MatmulBaseInt8CPUKernel::InitBias() {
+   if (in_tensors_.size() == kInputSize2) {
+     auto bias_tensor = in_tensors_[kBiasIndex];
+-    bias_ptr_ = reinterpret_cast<int *>(bias_tensor->data());
++    if (bias_tensor->data_type() != kNumberTypeInt32) {
++      MS_LOG(ERROR) << "Invalid bias tensor type.";
++      FreeTmpBuffer();
++      return RET_MEMORY_FAILED;
++    }
++    bias_ptr_ = reinterpret_cast<int *>(malloc(bias_tensor->ElementsNum() * sizeof(int)));
+     if (bias_ptr_ == nullptr) {
+       MS_LOG(ERROR) << "Memory allocation failed";
+       FreeTmpBuffer();
 diff --git a/mindspore/lite/tools/benchmark_train/CMakeLists.txt b/mindspore/lite/tools/benchmark_train/CMakeLists.txt
 index 986ffac5..c5f2834d 100644
 --- a/mindspore/lite/tools/benchmark_train/CMakeLists.txt
