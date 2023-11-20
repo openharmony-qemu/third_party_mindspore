@@ -10,60 +10,18 @@ def extract_source(in_zip_path, out_src_path):
     print('Extracting zipped release package...')
     f = zipfile.ZipFile(in_zip_path, "r")
     f.extractall(path=out_src_path)
-    old_src_dir = out_src_path + "/mindspore-v1.8.1/"
+    old_src_dir = out_src_path + "/mindspore-v2.1.0/"
     new_src_dir = out_src_path + "/source/"
     os.rename(old_src_dir, new_src_dir)
     print("Done extraction.")
 
 def do_patch(patch_dir, target_dir):
     patches = [
-        '0001-generate-schema-headers-manually.patch',
-        '0002-generate-nnacl-simd-headers-manually.patch',
-        '0003-implement-mindir-module-and-support-nnrt-delegate.patch',
-        '0004-adapt-build-gn-and-provide-C-API-for-OHOS.patch',
-        '0005-mindir-add-custom-op.patch',
-        '0006-Support-converting-THIRDPARTY-model-in-MSLite.patch',
-        '0007-support-third-party-model-in-mslite-runtime.patch',
-        '0008-add-js-api.patch',
-        '0009-adapt-nnrt-v2_0.patch',
-        '0010-nnrt-delegate-supports-heterogeneous-predition.patch',
-        '0011-replace-memcpy-with-memcpy_s-in-mindir.patch',
-        '0012-add-secure-option.patch',
-        '0013-train-0001.patch',
-        '0014-train-0002.patch',
-        '0015-train-0003.patch',
-        '0016-fix-train-bug.patch',
-        '0017-support-build-training-lib.patch',
-        '0018-mindir-MaxPoolFusion-add-roundMode.patch',
-        '0019-change-nnrt-as-external_dep-in-mindir.patch',
-        '0020-add-ohos-js-callback-api-and-bugfix.patch',
-        '0021-js-namespace-bugfix.patch',
-        '0022-support-cross-compile-with-ohos-ndk.patch',
-        '0023-js-info-bugfix.patch',
-        '0024-js-info2-bugfix.patch',
-        '0025-js-callback-bugfix.patch',
-        '0026-js-buffer-add-bugfix.patch',
-        '0027-js-buffer-leakage-bugfix.patch',
-        '0028-modify-ext_dep-hilog.patch',
-        '0029-change-subsystem-name-to-thirdparty.patch',
-        '0030-fix-core-binding-in-ohos.patch',
-        '0031-backport-CVE-2023-2970.patch',
-        '0032-js-enable-enum.patch',
-        '0033-support-fp16-for-arm64-arch.patch',
-        '0034-splite-ndk-so.patch',
-        '0035-nnrt-delegate-support-metagraph.patch',
-        '0036-new-dynamic-quant-algorigthm-and-init-packed.patch',
-        '0037-npu-support-custom-model.patch',
-        '0038-adapt-nnrt-ext-deps.patch',
-        '0039-fix-double-destry-nnrt-mode.patch',
-        '0040-remove-runtime-allocator.patch',
-        '0041-remove-hilog-log-h-from-namespace.patch',
-        '0042-refactor-c_api-in-ohos.patch',
-        '0043-micro-bugfix-for-ohos.patch',
-        '0044-support-OCR-GNN-model.patch',
-        '0045-micro-feature-for-xiaoyi-shurufa.patch',
-        '0046-add-train-c_api-benchmark_train.patch',
-        '0047-micro-dynamic-shape-config-modify.patch',
+        '0001-build-gn-c-api-for-OHOS.patch',
+        '0002-train-and-build.patch',
+        '0003-add-js-api.patch',
+        '0004-cross-compile-ndkso-fp16-nnrt-train_capi.patch',
+        '0005-micro-for-ohos.patch',
     ]
 
     cwd = os.getcwd()
@@ -85,6 +43,7 @@ def create_status_file(out_src_path):
     f = open(out_src_path + '/.status', 'w')
     f.write('ok')
     f.close
+
 
 def main_work():
     parser = argparse.ArgumentParser(description="mindspore build helper")
