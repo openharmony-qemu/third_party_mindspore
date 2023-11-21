@@ -1896,6 +1896,70 @@ index 2d72b200..4bc92599 100644
  };
  
  /// \brief ConverterParameters defined read-only converter parameters used by users in ModelParser.
+diff --git a/mindspore/lite/mindir/include/mindir.h b/mindspore/lite/mindir/include/mindir.h
+index ca811dce..f47cad8c 100644
+--- a/mindspore/lite/mindir/include/mindir.h
++++ b/mindspore/lite/mindir/include/mindir.h
+@@ -151,6 +151,8 @@ int64_t MindIR_Conv2DFusion_GetOutChannel(ConstPrimitivePtr primitive);
+ void MindIR_Conv2DFusion_SetOutChannel(PrimitivePtr *primitive, int64_t out_channel);
+ ActivationType MindIR_Conv2DFusion_GetActivationType(ConstPrimitivePtr primitive);
+ void MindIR_Conv2DFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type);
++Format MindIR_Conv2DFusion_GetFormat(ConstPrimitivePtr primitive);
++void MindIR_Conv2DFusion_SetFormat(PrimitivePtr *primitive, Format format);
+ 
+ // ********** Conv2dTransposeFusion **********
+ PrimitivePtr MindIR_Conv2dTransposeFusion_CreatePrimitive(
+diff --git a/mindspore/lite/mindir/src/mindir.cc b/mindspore/lite/mindir/src/mindir.cc
+index 7fc9c00e..374bbef5 100644
+--- a/mindspore/lite/mindir/src/mindir.cc
++++ b/mindspore/lite/mindir/src/mindir.cc
+@@ -1215,6 +1215,46 @@ void MindIR_Conv2DFusion_SetActivationType(PrimitivePtr *primitive, ActivationTy
+   }
+ }
+ 
++Format MindIR_Conv2DFusion_GetFormat(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_Conv2DFusion();
++    if (prim != nullptr && value != nullptr) {
++      return static_cast<Format>(value->format());
++    } else {
++      Format en = static_cast<Format>(0);
++      return en;
++    }
++  } else {
++    Format en = static_cast<Format>(0);
++    return en;
++  }
++}
++
++void MindIR_Conv2DFusion_SetFormat(PrimitivePtr *primitive, Format format) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_Conv2DFusion();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateConv2DFusion(
++        fbb, static_cast<schema::Format>(format),
++        fbb.CreateVector(value->kernel_size()->data(), value->kernel_size()->size()),
++        fbb.CreateVector(value->stride()->data(), value->stride()->size()),
++        fbb.CreateVector(value->dilation()->data(), value->dilation()->size()),
++        static_cast<schema::PadMode>(value->pad_mode()),
++        fbb.CreateVector(value->pad_list()->data(), value->pad_list()->size()), 0, value->group(), value->in_channel(),
++        value->out_channel(), static_cast<schema::ActivationType>(value->activation_type()));
++      auto prim_offset =
++        schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CONV2D_FUSION), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      *primitive = ret_value;
++    }
++  }
++}
++
+ // ********** Conv2dTransposeFusion **********
+ PrimitivePtr MindIR_Conv2dTransposeFusion_CreatePrimitive(
+   const std::vector<int64_t> &kernel_size, const std::vector<int64_t> &stride, const std::vector<int64_t> &dilation,
 diff --git a/mindspore/lite/mindir/src/mindir_tensor.cc b/mindspore/lite/mindir/src/mindir_tensor.cc
 index 9ec2d0e4..2db4ce8b 100644
 --- a/mindspore/lite/mindir/src/mindir_tensor.cc
@@ -2758,10 +2822,10 @@ index 076f4d1f..dc88b8a4 100644
 -}  // namespace mindspore
  #endif  // MINDSPORE_LITE_SRC_RUNTIME_C_API_CONTEXT_C_H_
 diff --git a/mindspore/lite/src/litert/c_api/model_c.cc b/mindspore/lite/src/litert/c_api/model_c.cc
-index 802df6b1..047404a9 100644
+index 802df6b1..9da52d76 100644
 --- a/mindspore/lite/src/litert/c_api/model_c.cc
 +++ b/mindspore/lite/src/litert/c_api/model_c.cc
-@@ -17,314 +17,114 @@
+@@ -17,321 +17,135 @@
  #include <vector>
  #include <cstdint>
  #include "include/api/context.h"
@@ -2874,24 +2938,24 @@ index 802df6b1..047404a9 100644
 -  if (session_ == nullptr) {
 -    MS_LOG(ERROR) << "create session failed";
 -    return kLiteNullptr;
-+MSTensor **ModelC::GetInputs(size_t *input_num) {
-+  if (model_ == nullptr) {
-+    MS_LOG(ERROR) << "model_impl is null.";
-+    return nullptr;
-   }
+-  }
 -  auto ret = session_->Init(ContextUtils::Convert(model_context));
 -  if (ret != mindspore::lite::RET_OK) {
 -    MS_LOG(ERROR) << "init session failed";
 -    return static_cast<StatusCode>(ret);
-+  if (!inputs_.empty()) {
-+    *input_num = inputs_.size();
-+    return inputs_.data();
++MSTensor **ModelC::GetInputs(size_t *input_num) {
++  if (model_ == nullptr) {
++    MS_LOG(ERROR) << "model_ is nullptr.";
++    return nullptr;
    }
 -  ret = session_->LoadModelAndCompileByPath(model_path, model_type);
 -  if (ret != RET_OK) {
 -    MS_LOG(ERROR) << "Load and compile failed";
 -    return static_cast<StatusCode>(ret);
--  }
++  if (!inputs_.empty()) {
++    *input_num = inputs_.size();
++    return inputs_.data();
+   }
 -  is_already_built = true;
 -  return static_cast<StatusCode>(kSuccess);
 -}
@@ -2904,9 +2968,17 @@ index 802df6b1..047404a9 100644
 -    if (input == nullptr || input->lite_tensor() == nullptr) {
 -      MS_LOG(ERROR) << "Input tensor is null.";
 -      return kLiteInputTensorError;
--    }
++  auto inputs = model_->GetInputs();
++  *input_num = inputs.size();
++  inputs_.resize(inputs.size(), nullptr);
++  for (size_t i = 0; i < inputs.size(); i++) {
++    inputs_[i] = new (std::nothrow) MSTensor(inputs[i].impl());
++    if (inputs_[i] == nullptr) {
++      inputs_.clear();
++      return nullptr;
+     }
 -    inner_input.push_back(input->lite_tensor());
--  }
+   }
 -  size_t shape_num = shapes.size();
 -  std::vector<std::vector<int32_t>> inner_shapes(shape_num);
 -  for (size_t i = 0; i < shape_num; i++) {
@@ -2916,12 +2988,7 @@ index 802df6b1..047404a9 100644
 -  if (session_ == nullptr) {
 -    MS_LOG(ERROR) << "Session implement is null.";
 -    return kLiteNullptr;
-+  auto inputs = model_->GetInputs();
-+  *input_num = inputs.size();
-+  inputs_.resize(inputs.size(), nullptr);
-+  for (size_t i = 0; i < inputs.size(); i++) {
-+    inputs_[i] = new MSTensor(inputs[i].impl());
-   }
+-  }
 -  auto ret = session_->Resize(inner_input, inner_shapes);
 -  return static_cast<StatusCode>(ret);
 +  return inputs_.data();
@@ -2945,7 +3012,7 @@ index 802df6b1..047404a9 100644
 -    return kLiteError;
 +MSTensor **ModelC::GetOutputsTensor(size_t *output_num, std::vector<MSTensor *> *vec_tensors) {
 +  if (model_ == nullptr) {
-+    MS_LOG(ERROR) << "model_impl is null.";
++    MS_LOG(ERROR) << "model_ is nullptr.";
 +    return nullptr;
    }
 -  auto model_inputs = session_->GetInputs();
@@ -3081,14 +3148,16 @@ index 802df6b1..047404a9 100644
 -    impl = new (std::nothrow) LiteTensorImpl(tensor);
 -    if (impl == nullptr || impl->lite_tensor() == nullptr) {
 -      MS_LOG(ERROR) << "Create tensor failed.";
--      return nullptr;
--    }
--    tensor_map_[tensor] = impl;
 +  auto outputs = model_->GetOutputs();
 +  *output_num = outputs.size();
 +  vec_tensors->resize(outputs.size(), nullptr);
 +  for (size_t i = 0; i < outputs.size(); i++) {
-+    (*vec_tensors)[i] = new MSTensor(outputs[i].impl());
++    (*vec_tensors)[i] = new (std::nothrow) MSTensor(outputs[i].impl());
++    if ((*vec_tensors)[i] == nullptr) {
++      vec_tensors->clear();
+       return nullptr;
+     }
+-    tensor_map_[tensor] = impl;
    }
 -  return impl;
 +  return vec_tensors->data();
@@ -3154,21 +3223,31 @@ index 802df6b1..047404a9 100644
  }
  }  // namespace mindspore
  
-@@ -334,6 +134,12 @@ OH_AI_ModelHandle OH_AI_ModelCreate() {
-     MS_LOG(ERROR) << "Model implement is null.";
-     return nullptr;
-   }
-+  impl->model_ = std::make_shared<mindspore::Model>();
-+  if (impl->model_ == nullptr) {
-+    MS_LOG(ERROR) << "model_ is null.";
-+    delete impl;
+ OH_AI_ModelHandle OH_AI_ModelCreate() {
+   auto impl = new (std::nothrow) mindspore::ModelC();
+   if (impl == nullptr) {
+-    MS_LOG(ERROR) << "Model implement is null.";
++    MS_LOG(ERROR) << "Model implement is nullptr.";
 +    return nullptr;
 +  }
++  impl->model_ = std::make_shared<mindspore::Model>();
++  if (impl->model_ == nullptr) {
++    MS_LOG(ERROR) << "model_ is nullptr.";
++    delete impl;
+     return nullptr;
+   }
    return static_cast<OH_AI_ModelHandle>(impl);
- }
- 
-@@ -365,9 +171,12 @@ OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, s
-     MS_LOG(ERROR) << "param is invalid.";
+@@ -358,55 +172,59 @@ size_t OH_AI_ModelCalcWorkspaceSize(OH_AI_ModelHandle model) {
+ OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size,
+                               OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context) {
+   if (model == nullptr || model_data == nullptr || model_context == nullptr) {
+-    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model/model_data/model_context is nullptr.";
+     return OH_AI_STATUS_LITE_NULLPTR;
+   }
+   if (model_type == OH_AI_MODELTYPE_INVALID) {
+-    MS_LOG(ERROR) << "param is invalid.";
++    MS_LOG(ERROR) << "model_type is invalid.";
      return OH_AI_STATUS_LITE_PARAM_INVALID;
    }
 -  mindspore::ContextC *context = static_cast<mindspore::ContextC *>(model_context);
@@ -3182,8 +3261,16 @@ index 802df6b1..047404a9 100644
    return static_cast<OH_AI_Status>(ret.StatusCode());
  }
  
-@@ -381,9 +190,12 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
-     MS_LOG(ERROR) << "param is invalid.";
+ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path, OH_AI_ModelType model_type,
+                                       const OH_AI_ContextHandle model_context) {
+   if (model == nullptr || model_path == nullptr || model_context == nullptr) {
+-    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model/model_path/model_context is nullptr.";
+     return OH_AI_STATUS_LITE_NULLPTR;
+   }
+   if (model_type == OH_AI_MODELTYPE_INVALID) {
+-    MS_LOG(ERROR) << "param is invalid.";
++    MS_LOG(ERROR) << "model_type is invalid.";
      return OH_AI_STATUS_LITE_PARAM_INVALID;
    }
 -  mindspore::ContextC *context = static_cast<mindspore::ContextC *>(model_context);
@@ -3197,8 +3284,11 @@ index 802df6b1..047404a9 100644
    return static_cast<OH_AI_Status>(ret.StatusCode());
  }
  
-@@ -393,20 +205,18 @@ OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandle
-     MS_LOG(ERROR) << "param is nullptr.";
+ OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
+                                OH_AI_ShapeInfo *shape_infos, size_t shape_info_num) {
+   if (model == nullptr || shape_infos == nullptr) {
+-    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model/shape_infos is nullptr.";
      return OH_AI_STATUS_LITE_NULLPTR;
    }
 -  std::vector<mindspore::LiteTensorImpl *> vec_inputs;
@@ -3224,8 +3314,12 @@ index 802df6b1..047404a9 100644
    return static_cast<OH_AI_Status>(ret.StatusCode());
  }
  
-@@ -417,12 +227,22 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
-     MS_LOG(ERROR) << "param is nullptr.";
+@@ -414,15 +232,25 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+                                 OH_AI_TensorHandleArray *outputs, const OH_AI_KernelCallBack before,
+                                 const OH_AI_KernelCallBack after) {
+   if (model == nullptr) {
+-    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
      return OH_AI_STATUS_LITE_NULLPTR;
    }
 +  std::vector<mindspore::MSTensor> ms_tensor_inputs;
@@ -3249,7 +3343,7 @@ index 802df6b1..047404a9 100644
    return static_cast<OH_AI_Status>(ret.StatusCode());
  }
  
-@@ -431,11 +251,6 @@ OH_AI_Status OH_AI_ModelRunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallB
+@@ -431,11 +259,6 @@ OH_AI_Status OH_AI_ModelRunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallB
    return OH_AI_STATUS_LITE_NOT_SUPPORT;
  }
  
@@ -3261,14 +3355,51 @@ index 802df6b1..047404a9 100644
  OH_AI_Status OH_AI_ModelExportWeight(const OH_AI_ModelHandle model, const char *export_path) {
    MS_LOG(ERROR) << "Unsupported Feature.";
    return OH_AI_STATUS_LITE_NOT_SUPPORT;
-@@ -480,6 +295,296 @@ OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHandle model
+@@ -443,7 +266,7 @@ OH_AI_Status OH_AI_ModelExportWeight(const OH_AI_ModelHandle model, const char *
+ 
+ OH_AI_TensorHandleArray OH_AI_ModelGetInputs(const OH_AI_ModelHandle model) {
+   if (model == nullptr) {
+-    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
+     return {0, nullptr};
+   }
+   auto impl = static_cast<mindspore::ModelC *>(model);
+@@ -454,7 +277,7 @@ OH_AI_TensorHandleArray OH_AI_ModelGetInputs(const OH_AI_ModelHandle model) {
+ 
+ OH_AI_TensorHandleArray OH_AI_ModelGetOutputs(const OH_AI_ModelHandle model) {
+   if (model == nullptr) {
+-    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
+     return {0, nullptr};
+   }
+   auto impl = static_cast<mindspore::ModelC *>(model);
+@@ -465,7 +288,7 @@ OH_AI_TensorHandleArray OH_AI_ModelGetOutputs(const OH_AI_ModelHandle model) {
+ 
+ OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name) {
+   if (model == nullptr || tensor_name == nullptr) {
+-    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model/tensor_name is nullptr.";
+     return nullptr;
+   }
+   auto impl = static_cast<mindspore::ModelC *>(model);
+@@ -482,7 +305,7 @@ OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHandle model
+ 
+ OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name) {
+   if (model == nullptr || tensor_name == nullptr) {
+-    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model/tensor_name is nullptr.";
+     return nullptr;
+   }
+   auto impl = static_cast<mindspore::ModelC *>(model);
+@@ -496,3 +319,294 @@ OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle mode
+   MS_LOG(ERROR) << "tensor is not exist.";
    return nullptr;
  }
- 
++
 +OH_AI_TrainCfgHandle OH_AI_TrainCfgCreate() {
 +  auto impl = new (std::nothrow) mindspore::TrainCfg();
 +  if (impl == nullptr) {
-+    MS_LOG(ERROR) << "TrainCfg implement is null.";
++    MS_LOG(ERROR) << "TrainCfg implement is nullptr.";
 +    return nullptr;
 +  }
 +  return static_cast<OH_AI_TrainCfgHandle>(impl);
@@ -3284,7 +3415,7 @@ index 802df6b1..047404a9 100644
 +
 +char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_t *num) {
 +  if (train_cfg == nullptr || num == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "train_cfg/num is nullptr.";
 +    return nullptr;
 +  }
 +  auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
@@ -3304,7 +3435,7 @@ index 802df6b1..047404a9 100644
 +
 +void OH_AI_TrainCfgSetLossName(OH_AI_TrainCfgHandle train_cfg, const char **loss_name, size_t num) {
 +  if (train_cfg == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "train_cfg is nullptr.";
 +    return;
 +  }
 +  auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
@@ -3317,7 +3448,7 @@ index 802df6b1..047404a9 100644
 +
 +OH_AI_OptimizationLevel OH_AI_TrainCfgGetOptimizationLevel(OH_AI_TrainCfgHandle train_cfg) {
 +  if (train_cfg == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "train_cfg is nullptr.";
 +    return OH_AI_KO0;
 +  }
 +  auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
@@ -3326,7 +3457,7 @@ index 802df6b1..047404a9 100644
 +
 +void OH_AI_TrainCfgSetOptimizationLevel(OH_AI_TrainCfgHandle train_cfg, OH_AI_OptimizationLevel level) {
 +  if (train_cfg == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "train_cfg is nullptr.";
 +    return;
 +  }
 +  auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
@@ -3337,11 +3468,11 @@ index 802df6b1..047404a9 100644
 +                                   OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context,
 +                                   const OH_AI_TrainCfgHandle train_cfg) {
 +  if (model == nullptr || model_data == nullptr || model_context == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model/model_data/model_context is nullptr.";
 +    return OH_AI_STATUS_LITE_NULLPTR;
 +  }
 +  if (model_type == OH_AI_MODELTYPE_INVALID) {
-+    MS_LOG(ERROR) << "param is invalid.";
++    MS_LOG(ERROR) << "model_type is invalid.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3369,11 +3500,11 @@ index 802df6b1..047404a9 100644
 +                                           OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context,
 +                                           const OH_AI_TrainCfgHandle train_cfg) {
 +  if (model == nullptr || model_path == nullptr || model_context == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model/model_path/model_context is nullptr.";
 +    return OH_AI_STATUS_LITE_NULLPTR;
 +  }
 +  if (model_type == OH_AI_MODELTYPE_INVALID) {
-+    MS_LOG(ERROR) << "param is invalid.";
++    MS_LOG(ERROR) << "model_type is invalid.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3399,7 +3530,7 @@ index 802df6b1..047404a9 100644
 +
 +OH_AI_Status OH_AI_ModelSetLearningRate(OH_AI_ModelHandle model, float learning_rate) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3409,7 +3540,7 @@ index 802df6b1..047404a9 100644
 +
 +float OH_AI_ModelGetLearningRate(OH_AI_ModelHandle model) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3418,7 +3549,7 @@ index 802df6b1..047404a9 100644
 +
 +OH_AI_Status OH_AI_RunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3428,7 +3559,7 @@ index 802df6b1..047404a9 100644
 +
 +OH_AI_TensorHandleArray OH_AI_ModelGetWeights(OH_AI_ModelHandle model) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return {0, nullptr};
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3449,7 +3580,7 @@ index 802df6b1..047404a9 100644
 +
 +OH_AI_Status OH_AI_ModelUpdateWeights(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray new_weights) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3457,13 +3588,13 @@ index 802df6b1..047404a9 100644
 +  for (size_t i = 0; i < new_weights.handle_num; i++) {
 +    weights.push_back(*static_cast<mindspore::MSTensor *>(new_weights.handle_list[i]));
 +  }
-+  auto ret = impl->model_->UpdateFeatureMaps(weights);
++  auto ret = impl->model_->UpdateWeights(weights);
 +  return static_cast<OH_AI_Status>(ret.StatusCode());
 +}
 +
 +bool OH_AI_ModelGetTrainMode(OH_AI_ModelHandle model) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return false;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3472,7 +3603,7 @@ index 802df6b1..047404a9 100644
 +
 +OH_AI_Status OH_AI_ModelSetTrainMode(OH_AI_ModelHandle model, bool train) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3482,7 +3613,7 @@ index 802df6b1..047404a9 100644
 +
 +OH_AI_Status OH_AI_ModelSetupVirtualBatch(OH_AI_ModelHandle model, int virtual_batch_multiplier, float lr, float momentum) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3494,7 +3625,7 @@ index 802df6b1..047404a9 100644
 +                               OH_AI_QuantizationType quantization_type, bool export_inference_only,
 +                               char **output_tensor_name, size_t num) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3516,7 +3647,7 @@ index 802df6b1..047404a9 100644
 +                                     size_t *data_size, OH_AI_QuantizationType quantization_type,
 +                                     bool export_inference_only, char **output_tensor_name, size_t num) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3541,7 +3672,7 @@ index 802df6b1..047404a9 100644
 +OH_AI_Status OH_AI_ExportWeightsCollaborateWithMicro(OH_AI_ModelHandle model, OH_AI_ModelType model_type, const char *weight_file,
 +  bool is_inference, bool enable_fp16, char **changeable_weights_name, size_t num) {
 +  if (model == nullptr) {
-+    MS_LOG(ERROR) << "param is nullptr.";
++    MS_LOG(ERROR) << "model is nullptr.";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
 +  auto impl = static_cast<mindspore::ModelC *>(model);
@@ -3555,9 +3686,6 @@ index 802df6b1..047404a9 100644
 +  }
 +  return static_cast<OH_AI_Status>(ret.StatusCode());
 +}
- OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name) {
-   if (model == nullptr || tensor_name == nullptr) {
-     MS_LOG(ERROR) << "param is nullptr.";
 diff --git a/mindspore/lite/src/litert/c_api/tensor_c.cc b/mindspore/lite/src/litert/c_api/tensor_c.cc
 index 7b5c4c2f..4b1e6aff 100644
 --- a/mindspore/lite/src/litert/c_api/tensor_c.cc
