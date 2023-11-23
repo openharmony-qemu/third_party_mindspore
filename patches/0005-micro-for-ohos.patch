@@ -1,3 +1,280 @@
+From 5ef675579f1e5e9246816f91cc30f0b40b7e8a55 Mon Sep 17 00:00:00 2001
+From: zhangyanhui <zhangyanhui17@huawei.com>
+Date: Thu, 23 Nov 2023 10:18:52 +0800
+Subject: [PATCH] auto-apply 0005-micro-for-ohos.patch
+
+---
+ cmake/package_lite.cmake                      |    2 +-
+ .../ccsrc/backend/common/optimizer/pass.h     |   48 +
+ .../cpu/kernel/mkldnn/lstm_cpu_kernel.cc      |   45 +-
+ .../cpu/kernel/mkldnn/lstm_cpu_kernel.h       |   22 +-
+ .../cpu/kernel/mkldnn/lstm_grad_cpu_kernel.cc |   72 +-
+ .../cpu/kernel/mkldnn/lstm_grad_cpu_kernel.h  |   10 +
+ .../device/cpu/kernel/mkldnn/mkl_cpu_kernel.h |   16 +
+ .../plugin/device/cpu/kernel/nnacl/BUILD.gn   |    2 +
+ .../nnacl/assembly/fp16/MatmulFp16OptV2.S     | 2966 +++++++++++++++++
+ .../nnacl/custom_gather_d_grad_v2_parameter.h |   28 +
+ .../cpu/kernel/nnacl/fp16/custom_gru_fp16.c   |    4 +-
+ .../device/cpu/kernel/nnacl/fp16/lstm_fp16.c  |  139 +-
+ .../device/cpu/kernel/nnacl/fp16/lstm_fp16.h  |   12 +-
+ .../cpu/kernel/nnacl/fp16/matmul_fp16.c       |  241 +-
+ .../cpu/kernel/nnacl/fp16/matmul_fp16.h       |   17 +-
+ .../device/cpu/kernel/nnacl/fp32/lstm_fp32.c  |   45 +-
+ .../device/cpu/kernel/nnacl/fp32/lstm_fp32.h  |    8 +-
+ .../cpu/kernel/nnacl/fp32/matmul_fp32.c       |    4 +-
+ .../infer/custom_gather_d_grad_v2_infer.c     |   36 +
+ .../infer/custom_gather_d_grad_v2_infer.h     |   30 +
+ .../cpu/kernel/nnacl/infer/lstm_infer.c       |  120 +-
+ .../cpu/kernel/nnacl/infer/reshape_infer.c    |    6 +-
+ .../nnacl/intrinsics/ms_simd_instructions.h   |   13 +-
+ .../intrinsics/ms_simd_instructions_fp16.h    |    4 +
+ .../intrinsics/ms_simd_neon_instructions.h    |   29 +-
+ .../device/cpu/kernel/nnacl/lstm_parameter.h  |    3 +
+ .../plugin/device/cpu/kernel/nnacl/op_base.h  |    1 +
+ .../core/mindrt/src/thread/threadpool.cc      |    2 +-
+ mindspore/core/ops/base_operator.h            |    2 +-
+ mindspore/core/ops/grad/gather_d_grad_v2.cc   |    5 +
+ mindspore/core/ops/grad/gather_d_grad_v2.h    |    1 +
+ mindspore/core/ops/grad/lstm_grad.cc          |   11 +-
+ mindspore/core/ops/grad/lstm_grad.h           |    4 +-
+ mindspore/core/ops/grad/lstm_grad_data.cc     |   10 +-
+ mindspore/core/ops/grad/lstm_grad_data.h      |    4 +-
+ mindspore/core/ops/grad/lstm_grad_weight.cc   |   10 +-
+ mindspore/core/ops/grad/lstm_grad_weight.h    |    4 +-
+ mindspore/core/ops/lstm.cc                    |    9 +-
+ mindspore/core/ops/lstm.h                     |    6 +
+ mindspore/core/ops/op_name.h                  |    1 +
+ mindspore/lite/BUILD.gn                       |    3 +
+ mindspore/lite/CMakeLists.txt                 |    2 +-
+ mindspore/lite/schema/inner/ops_generated.h   |   23 +-
+ mindspore/lite/schema/ops.fbs                 |    1 +
+ mindspore/lite/schema/ops_generated.h         |   14 +-
+ mindspore/lite/src/CMakeLists.txt             |    2 +
+ mindspore/lite/src/common/ops/ops_def.cc      |    1 +
+ .../common/ops/populate/custom_populate.cc    |   30 +
+ .../src/common/ops/populate/lstm_populate.cc  |    4 +
+ mindspore/lite/src/litert/kernel/cpu/BUILD.gn |    6 +
+ .../src/litert/kernel/cpu/fp16/gru_fp16.cc    |   16 +-
+ .../src/litert/kernel/cpu/fp16/lstm_fp16.cc   |  415 +--
+ .../litert/kernel/cpu/fp16/lstm_fp16_base.cc  |  270 ++
+ .../litert/kernel/cpu/fp16/lstm_fp16_base.h   |   68 +
+ .../kernel/cpu/fp16/lstm_mindir_fp16.cc       |   35 +
+ .../litert/kernel/cpu/fp16/lstm_mindir_fp16.h |   56 +
+ .../kernel/cpu/fp16/lstm_non_mindir_fp16.cc   |  194 ++
+ .../kernel/cpu/fp16/lstm_non_mindir_fp16.h    |   59 +
+ .../kernel/cpu/fp16/matmul_base_fp16.cc       |    4 +-
+ .../src/litert/kernel/cpu/fp32/lstm_fp32.cc   |  682 +---
+ .../litert/kernel/cpu/fp32/lstm_fp32_base.cc  |  398 +++
+ .../litert/kernel/cpu/fp32/lstm_fp32_base.h   |   78 +
+ .../kernel/cpu/fp32/lstm_mindir_fp32.cc       |  266 ++
+ .../litert/kernel/cpu/fp32/lstm_mindir_fp32.h |   63 +
+ .../kernel/cpu/fp32/lstm_non_mindir_fp32.cc   |  173 +
+ .../kernel/cpu/fp32/lstm_non_mindir_fp32.h    |   61 +
+ .../fp32_grad/custom_gather_d_grad_v2_fp32.cc |  147 +
+ .../fp32_grad/custom_gather_d_grad_v2_fp32.h  |   42 +
+ mindspore/lite/src/train/graph_fusion.cc      |    4 +
+ .../fusion/matmul_add_fusion_pass.cc          |  127 +
+ .../optimizer/fusion/matmul_add_fusion_pass.h |   37 +
+ .../fusion/matmul_matmul_add_fusion_pass.cc   |  163 +
+ .../fusion/matmul_matmul_add_fusion_pass.h    |   43 +
+ mindspore/lite/src/train/train_export.cc      |   39 +-
+ mindspore/lite/src/train/train_export.h       |   11 +-
+ mindspore/lite/src/train/train_session.cc     |   93 +-
+ mindspore/lite/src/train/train_session.h      |    3 +
+ mindspore/lite/src/train/train_utils.cc       |   15 +
+ mindspore/lite/src/train/train_utils.h        |    1 +
+ mindspore/lite/src/train/transfer_session.cc  |    4 +-
+ mindspore/lite/tools/common/string_util.cc    |    4 +
+ mindspore/lite/tools/common/string_util.h     |    2 +
+ .../lite/tools/converter/anf_transform.cc     |    4 +-
+ .../config_parser/config_file_parser.cc       |  118 +-
+ .../config_parser/config_file_parser.h        |   12 +-
+ .../config_parser/micro_param_parser.cc       |   89 +-
+ .../config_parser/micro_param_parser.h        |    3 +
+ mindspore/lite/tools/converter/converter.cc   |   62 +-
+ .../converter/import/mindspore_importer.cc    |    8 +
+ .../converter/import/to_custom_op_pass.cc     |   86 +
+ .../converter/import/to_custom_op_pass.h      |   68 +
+ .../legacy_optimizer/fusion/fusion_pass.cc    |    1 -
+ .../legacy_optimizer/graph/infershape_pass.cc |    4 +-
+ .../converter/micro/cmake/file_list.cmake     |   53 +-
+ .../lite/tools/converter/micro/coder/coder.cc |   53 +-
+ .../lite/tools/converter/micro/coder/coder.h  |    6 +-
+ .../lite/tools/converter/micro/coder/config.h |   34 +
+ .../tools/converter/micro/coder/context.cc    |   13 +
+ .../tools/converter/micro/coder/context.h     |   15 +
+ .../micro/coder/dynamic_mem_manager.cc        |  116 +
+ .../micro/coder/dynamic_mem_manager.h         |   53 +
+ .../generator/component/cmake_component.cc    |   28 +-
+ .../generator/component/common_component.cc   |  496 ++-
+ .../generator/component/common_component.h    |    4 +-
+ .../coder/generator/component/component.cc    |    6 +
+ .../coder/generator/component/component.h     |    3 +-
+ .../component/const_blocks/benchmark.cc       |  116 +-
+ .../component/const_blocks/calib_output.cc    |   42 +-
+ .../component/const_blocks/cmake_lists.cc     |   12 +-
+ .../component/const_blocks/load_input.cc      |    4 +-
+ .../component/const_blocks/mcontext.cc        |   36 +-
+ .../component/const_blocks/msession.cc        |   23 +-
+ .../component/const_blocks/mtensor.cc         |   80 +-
+ .../generator/component/weight_component.cc   |    2 +
+ .../micro/coder/generator/generator.cc        |   84 +-
+ .../base/reshape_dynamic_base_coder.cc        |  116 +
+ .../base/reshape_dynamic_base_coder.h         |   38 +
+ .../base/strided_slice_dynamic_base_coder.cc  |  115 +
+ .../base/strided_slice_dynamic_base_coder.h   |   45 +
+ .../arithmetic_dynamic_parameter.h            |   43 +
+ .../conv_dynamic_parameter.h                  |   26 +
+ .../dynamic_lstm_parameter.h                  |   28 +
+ .../matmul_dynamic_parameter.h                |   25 +
+ .../pooling_dynamic_parameter.h               |   33 +
+ .../scale_dynamic_parameter.h                 |   26 +
+ .../slice_dynamic_parameter.h                 |   27 +
+ .../softmax_dynamic_parameter.h               |   26 +
+ .../split_dynamic_parameter.h                 |   26 +
+ .../strided_slice_dynamic_parameter.h         |   25 +
+ .../transpose_dynamic_parameter.h             |   28 +
+ .../fp16/activation_dynamic_fp16_coder.cc     |   93 +
+ .../fp16/activation_dynamic_fp16_coder.h      |   37 +
+ .../fp16/arithmetic_dynamic_fp16_coder.cc     |  369 ++
+ .../fp16/arithmetic_dynamic_fp16_coder.h      |  132 +
+ .../nnacl/fp16/concat_dynamic_fp16_coder.cc   |   92 +
+ .../nnacl/fp16/concat_dynamic_fp16_coder.h    |   40 +
+ .../conv2d_delegate_dynamic_fp16_coder.cc     |  199 ++
+ .../fp16/conv2d_delegate_dynamic_fp16_coder.h |   62 +
+ .../convolution_1x1_dynamic_fp16_coder.cc     |  252 ++
+ .../fp16/convolution_1x1_dynamic_fp16_coder.h |   68 +
+ .../fp16/convolution_dynamic_fp16_coder.cc    |  172 +
+ .../fp16/convolution_dynamic_fp16_coder.h     |   59 +
+ .../fp16/lstm_mindir_dynamic_fp16_coder.cc    |  366 ++
+ .../fp16/lstm_mindir_dynamic_fp16_coder.h     |   66 +
+ .../fp16/matmul_dynamic_fp16_base_coder.cc    |  228 ++
+ .../fp16/matmul_dynamic_fp16_base_coder.h     |   73 +
+ .../nnacl/fp16/matmul_dynamic_fp16_coder.cc   |  100 +
+ .../nnacl/fp16/matmul_dynamic_fp16_coder.h    |   44 +
+ .../nnacl/fp16/matmul_fp16_base_coder.cc      |    9 +-
+ .../nnacl/fp16/pooling_dynamic_fp16_coder.cc  |   89 +
+ .../nnacl/fp16/pooling_dynamic_fp16_coder.h   |   44 +
+ .../nnacl/fp16/scale_dynamic_fp16_coder.cc    |  128 +
+ .../nnacl/fp16/scale_dynamic_fp16_coder.h     |   46 +
+ .../nnacl/fp16/slice_dynamic_fp16_coder.cc    |  160 +
+ .../nnacl/fp16/slice_dynamic_fp16_coder.h     |   51 +
+ .../nnacl/fp16/softmax_dynamic_fp16_coder.cc  |  137 +
+ .../nnacl/fp16/softmax_dynamic_fp16_coder.h   |   50 +
+ .../fp16/transpose_dynamic_fp16_coder.cc      |   76 +
+ .../nnacl/fp16/transpose_dynamic_fp16_coder.h |   37 +
+ .../fp32/activation_dynamic_fp32_coder.cc     |  112 +
+ .../fp32/activation_dynamic_fp32_coder.h      |   46 +
+ .../fp32/convolution_winograd_fp32_coder.cc   |    1 -
+ .../nnacl/fp32/gather_dynamic_fp32_coder.cc   |  106 +
+ .../nnacl/fp32/gather_dynamic_fp32_coder.h    |   42 +
+ .../nnacl/fp32/split_dynamic_fp32_coder.cc    |   94 +
+ .../nnacl/fp32/split_dynamic_fp32_coder.h     |   42 +
+ .../fp32/transpose_dynamic_fp32_coder.cc      |  171 +
+ .../nnacl/fp32/transpose_dynamic_fp32_coder.h |   49 +
+ .../converter/micro/coder/opcoders/op_coder.h |   12 +
+ .../micro/coder/opcoders/op_coder_builder.cc  |    7 +-
+ .../micro/coder/opcoders/op_coder_builder.h   |    4 +
+ .../micro/coder/opcoders/op_coder_register.cc |   25 +-
+ .../micro/coder/opcoders/op_coder_register.h  |   24 +-
+ .../nnacl_serializer/nnacl_fp32_serializer.cc |  100 +-
+ .../nnacl_serializer/nnacl_fp32_serializer.h  |   28 +
+ .../tools/converter/micro/coder/session.cc    |   37 +-
+ .../tools/converter/micro/coder/session.h     |    4 +
+ .../micro/coder/shape_info_container.cc       |  131 +
+ .../micro/coder/shape_info_container.h        |   59 +
+ .../micro/coder/utils/coder_utils.cc          |   35 +-
+ .../converter/micro/coder/utils/coder_utils.h |    5 +
+ .../converter/micro/coder/utils/type_cast.cc  |   28 +-
+ .../third_party/third_party_model_parser.cc   |    2 +-
+ .../optimizer/fusion/tile_matmul_fusion.cc    |  120 +
+ .../optimizer/fusion/tile_matmul_fusion.h     |   37 +
+ .../mindspore/ops/operations/_grad_ops.py     |   43 +-
+ .../python/mindspore/ops/operations/nn_ops.py |   30 +-
+ 187 files changed, 12835 insertions(+), 1850 deletions(-)
+ create mode 100644 mindspore/ccsrc/backend/common/optimizer/pass.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16OptV2.S
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/custom_gather_d_grad_v2_parameter.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/custom_gather_d_grad_v2_infer.c
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/custom_gather_d_grad_v2_infer.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_fp16_base.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_fp16_base.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_mindir_fp16.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_mindir_fp16.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_non_mindir_fp16.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_non_mindir_fp16.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_fp32_base.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_fp32_base.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_mindir_fp32.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_mindir_fp32.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_non_mindir_fp32.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_non_mindir_fp32.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32_grad/custom_gather_d_grad_v2_fp32.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32_grad/custom_gather_d_grad_v2_fp32.h
+ create mode 100644 mindspore/lite/src/train/optimizer/fusion/matmul_add_fusion_pass.cc
+ create mode 100644 mindspore/lite/src/train/optimizer/fusion/matmul_add_fusion_pass.h
+ create mode 100644 mindspore/lite/src/train/optimizer/fusion/matmul_matmul_add_fusion_pass.cc
+ create mode 100644 mindspore/lite/src/train/optimizer/fusion/matmul_matmul_add_fusion_pass.h
+ create mode 100644 mindspore/lite/tools/converter/import/to_custom_op_pass.cc
+ create mode 100644 mindspore/lite/tools/converter/import/to_custom_op_pass.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/dynamic_mem_manager.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/dynamic_mem_manager.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/base/reshape_dynamic_base_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/base/reshape_dynamic_base_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/base/strided_slice_dynamic_base_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/base/strided_slice_dynamic_base_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/arithmetic_dynamic_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/conv_dynamic_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/dynamic_lstm_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/matmul_dynamic_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/pooling_dynamic_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/scale_dynamic_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/slice_dynamic_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/softmax_dynamic_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/split_dynamic_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/strided_slice_dynamic_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/transpose_dynamic_parameter.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/activation_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/activation_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/arithmetic_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/arithmetic_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/concat_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/concat_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/conv2d_delegate_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/conv2d_delegate_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/convolution_1x1_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/convolution_1x1_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/convolution_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/convolution_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/lstm_mindir_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/lstm_mindir_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_dynamic_fp16_base_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_dynamic_fp16_base_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/pooling_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/pooling_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/scale_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/scale_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/slice_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/slice_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/softmax_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/softmax_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/transpose_dynamic_fp16_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/transpose_dynamic_fp16_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/activation_dynamic_fp32_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/activation_dynamic_fp32_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/gather_dynamic_fp32_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/gather_dynamic_fp32_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/split_dynamic_fp32_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/split_dynamic_fp32_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/transpose_dynamic_fp32_coder.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/transpose_dynamic_fp32_coder.h
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/shape_info_container.cc
+ create mode 100644 mindspore/lite/tools/converter/micro/coder/shape_info_container.h
+ create mode 100644 mindspore/lite/tools/optimizer/fusion/tile_matmul_fusion.cc
+ create mode 100644 mindspore/lite/tools/optimizer/fusion/tile_matmul_fusion.h
+
 diff --git a/cmake/package_lite.cmake b/cmake/package_lite.cmake
 index 2254c2a7..f15724f1 100644
 --- a/cmake/package_lite.cmake
@@ -11,6 +288,60 @@ index 2254c2a7..f15724f1 100644
          __install_micro_wrapper()
      endif()
      if(MSLITE_ENABLE_RUNTIME_GLOG)
+diff --git a/mindspore/ccsrc/backend/common/optimizer/pass.h b/mindspore/ccsrc/backend/common/optimizer/pass.h
+new file mode 100644
+index 00000000..8d396164
+--- /dev/null
++++ b/mindspore/ccsrc/backend/common/optimizer/pass.h
+@@ -0,0 +1,48 @@
++/**
++ * Copyright 2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_PASS_H_
++#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_PASS_H_
++#include <memory>
++#include <string>
++#include "ir/anf.h"
++#include "mindspore/core/ops/array_ops.h"
++#include "mindspore/core/ops/lite_ops.h"
++#include "utils/trace_base.h"
++
++namespace mindspore {
++namespace opt {
++class CacheManager;
++using CacheManagerPtr = std::shared_ptr<CacheManager>;
++
++// @brief ANF Graph level optimization base pass
++class Pass {
++public:
++  explicit Pass(const std::string &name = "pass") : name_(name) {}
++  virtual ~Pass() = default;
++  virtual bool Run(const FuncGraphPtr &fun_graph) = 0;
++  const std::string &name() const { return name_;}
++  void SetCacheManager(const CacheManagerPtr &cm) { cache_manager_ = cm;}
++  const CacheManagerPtr &GetCacheManager() const {return cache_manager_;}
++
++private:
++  const std::string name_;
++  CacheManagerPtr cache_manager_;
++};
++using PassPtr = std::shared_ptr<Pass>;
++}  // namespace opt
++}  // namespace mindspore
++
++#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_PASS_H_
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/mkldnn/lstm_cpu_kernel.cc b/mindspore/ccsrc/plugin/device/cpu/kernel/mkldnn/lstm_cpu_kernel.cc
 index 55bbddac..378ef00c 100644
 --- a/mindspore/ccsrc/plugin/device/cpu/kernel/mkldnn/lstm_cpu_kernel.cc
@@ -4577,6 +4908,27 @@ index 9892ef0b..391e2522 100644
      SetShapeArray(outputs[FIFTH_INPUT], state_shape, state_shape_size);
    }
  
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/reshape_infer.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/reshape_infer.c
+index 287e9de3..3c192df7 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/reshape_infer.c
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/reshape_infer.c
+@@ -33,12 +33,14 @@ int CalShape(const int *data, const TensorC *const *inputs, int *out_shape, size
+     }
+     ShapePush(out_shape, out_shape_size, data[i]);
+   }
+-
++  if (size == 0) {
++    return NNACL_ERR;
++  }
+   if ((int)(data[index]) == -1) {
+     if (index >= MAX_SHAPE_SIZE) {
+       return NNACL_ERR;
+     }
+-    out_shape[index] = size == 0 ? 0 : input_count / size;
++    out_shape[index] = input_count / size;
+   }
+   return NNACL_OK;
+ }
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/intrinsics/ms_simd_instructions.h b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/intrinsics/ms_simd_instructions.h
 index 377993cd..6a933785 100644
 --- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/intrinsics/ms_simd_instructions.h
@@ -4747,6 +5099,47 @@ index 2301be8c..342ffb7f 100644
    if (cond_var_ != nullptr) {
      (void)cond_var_.release();
      cond_var_ = std::make_unique<std::condition_variable>();
+diff --git a/mindspore/core/ops/base_operator.h b/mindspore/core/ops/base_operator.h
+index 811a6000..23652e8e 100644
+--- a/mindspore/core/ops/base_operator.h
++++ b/mindspore/core/ops/base_operator.h
+@@ -75,7 +75,7 @@ class MIND_API OperatorRegisterHelper {
+  public:
+   OperatorRegisterHelper(const std::string &kname, const OperatorDefineFunc &fn) {
+     OperatorRegister::GetInstance().SetOperatorMap(kname, fn);
+-    (void)id_;  // make compiler happy on macos
++    //    (void)id_;  // make compiler happy on macos
+   }
+ 
+   ~OperatorRegisterHelper() = default;
+diff --git a/mindspore/core/ops/grad/gather_d_grad_v2.cc b/mindspore/core/ops/grad/gather_d_grad_v2.cc
+index 3ce5f887..c999ca88 100644
+--- a/mindspore/core/ops/grad/gather_d_grad_v2.cc
++++ b/mindspore/core/ops/grad/gather_d_grad_v2.cc
+@@ -75,6 +75,11 @@ TypePtr GatherDGradV2InferType(const PrimitivePtr &prim, const std::vector<Abstr
+ }
+ }  // namespace
+ 
++int64_t GatherDGradV2::get_dim() const {
++  auto value_ptr = this->GetAttr(kDim);
++  return GetValue<int64_t>(value_ptr);
++}
++
+ AbstractBasePtr GatherDGradV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                    const std::vector<AbstractBasePtr> &input_args) {
+   auto infer_type = GatherDGradV2InferType(primitive, input_args);
+diff --git a/mindspore/core/ops/grad/gather_d_grad_v2.h b/mindspore/core/ops/grad/gather_d_grad_v2.h
+index 94274e3b..40a6e412 100644
+--- a/mindspore/core/ops/grad/gather_d_grad_v2.h
++++ b/mindspore/core/ops/grad/gather_d_grad_v2.h
+@@ -25,6 +25,7 @@ class MIND_API GatherDGradV2 : public BaseOperator {
+  public:
+   MIND_API_BASE_MEMBER(GatherDGradV2);
+   GatherDGradV2() : BaseOperator(kNameGatherDGradV2) { InitIOName({"x", "dim", "index", "grad"}, {"output"}); }
++  int64_t get_dim() const;
+ };
+ MIND_API abstract::AbstractBasePtr GatherDGradV2Infer(const abstract::AnalysisEnginePtr &,
+                                                       const PrimitivePtr &primitive,
 diff --git a/mindspore/core/ops/grad/lstm_grad.cc b/mindspore/core/ops/grad/lstm_grad.cc
 index d51c4882..c25e0379 100644
 --- a/mindspore/core/ops/grad/lstm_grad.cc
@@ -4964,10 +5357,10 @@ index ce68079f..ad9066e7 100644
  constexpr auto kSlope = "slope";
  constexpr auto kBase = "base";
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index 8eb53d79..ae9cd07d 100644
+index 69ea44ea..a01dcfcd 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
-@@ -607,6 +607,8 @@ all_train_sources = [
+@@ -608,6 +608,8 @@ all_train_sources = [
    "src/train/optimizer/fusion/matmul_activation_fusion_pass.cc",
    "src/train/optimizer/fusion/reshape_gather_reshape_fusion_pass.cc",
    "src/train/optimizer/fusion/gru_fusion_pass.cc",
@@ -4976,7 +5369,7 @@ index 8eb53d79..ae9cd07d 100644
    "src/common/storage.cc",
    "tools/converter/optimizer.cc",
    "tools/converter/legacy_optimizer/fusion/fusion_pass.cc",
-@@ -651,6 +653,7 @@ fp32_train_kernel_sources = [
+@@ -652,6 +654,7 @@ fp32_train_kernel_sources = [
    "src/litert/kernel/cpu/fp32_grad/convolution.cc",
    "src/litert/kernel/cpu/fp32_grad/convolution_grad_filter.cc",
    "src/litert/kernel/cpu/fp32_grad/convolution_grad_input.cc",
@@ -5180,7 +5573,7 @@ index e5c7f5ca..baa2497a 100644
  
  OP_SCHEMA_DEF(LSTMGrad)
 diff --git a/mindspore/lite/src/common/ops/populate/custom_populate.cc b/mindspore/lite/src/common/ops/populate/custom_populate.cc
-index 13957ed7..13097c7a 100644
+index 13957ed7..6c490130 100644
 --- a/mindspore/lite/src/common/ops/populate/custom_populate.cc
 +++ b/mindspore/lite/src/common/ops/populate/custom_populate.cc
 @@ -22,6 +22,7 @@
@@ -5225,6 +5618,15 @@ index 13957ed7..13097c7a 100644
  OpParameter *PopulateCustomParameter(const void *prim) {
    MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
    auto primitive = static_cast<const schema::Primitive *>(prim);
+@@ -167,6 +195,8 @@ OpParameter *PopulateCustomParameter(const void *prim) {
+     return CreateCustomGruParameter();
+   } else if (type == "CastGatherReduceFusion") {
+     return CreateParam(PrimType_Inner_CastGatherReduceFusion);
++  } else if (type == "GatherDGradV2") {
++    return CreateCustomGatherDGradV2Parameter(value);
+   } else if (type == "ThirdPartyModel") {
+     auto *param = static_cast<CustomParameter *>(malloc(sizeof(CustomParameter)));
+     if (param == nullptr) {
 diff --git a/mindspore/lite/src/common/ops/populate/lstm_populate.cc b/mindspore/lite/src/common/ops/populate/lstm_populate.cc
 index 522da7ad..b3a85b64 100644
 --- a/mindspore/lite/src/common/ops/populate/lstm_populate.cc
@@ -9269,30 +9671,10 @@ index 48191b4f..b1cb7b3e 100644
    }
    if (status != RET_OK) {
 diff --git a/mindspore/lite/tools/common/string_util.cc b/mindspore/lite/tools/common/string_util.cc
-index 8d7076e5..431c9c64 100644
+index 8d7076e5..13cddb3a 100644
 --- a/mindspore/lite/tools/common/string_util.cc
 +++ b/mindspore/lite/tools/common/string_util.cc
-@@ -50,19 +50,6 @@ bool EraseQuotes(std::string *input_string) {
-   return true;
- }
- 
--bool FindAndReplaceAll(std::string *input_str, const std::string &search, const std::string &replace) {
--  if (input_str == nullptr) {
--    MS_LOG(ERROR) << "input_str is nullptr";
--    return false;
--  }
--  auto pos = input_str->find(search);
--  while (pos != std::string::npos) {
--    input_str->replace(pos, search.size(), replace);
--    pos = input_str->find(search, pos + replace.size());
--  }
--  return true;
--}
--
- std::vector<std::string> SplitStringToVector(const std::string &raw_str, const char &delimiter) {
-   if (raw_str.empty()) {
-     MS_LOG(ERROR) << "input string is empty.";
-@@ -199,5 +186,9 @@ size_t Hex2ByteArray(const std::string &hex_str, unsigned char *byte_array, size
+@@ -199,5 +199,9 @@ size_t Hex2ByteArray(const std::string &hex_str, unsigned char *byte_array, size
    }
    return byte_len;
  }
@@ -9666,7 +10048,7 @@ index b6efb4c7..eb95c571 100644
  }  // namespace lite
  }  // namespace mindspore
 diff --git a/mindspore/lite/tools/converter/converter.cc b/mindspore/lite/tools/converter/converter.cc
-index a61bd51c..f35babda 100644
+index a61bd51c..4703e889 100644
 --- a/mindspore/lite/tools/converter/converter.cc
 +++ b/mindspore/lite/tools/converter/converter.cc
 @@ -56,6 +56,7 @@
@@ -9747,7 +10129,24 @@ index a61bd51c..f35babda 100644
      if (ret != RET_OK) {
        MS_LOG(ERROR) << "Parse acl option param failed.";
        return ret;
-@@ -515,7 +496,7 @@ int ConverterImpl::ParseParam(lite::ConfigFileParser *config_parser, const std::
+@@ -498,14 +479,14 @@ int ConverterImpl::ParseParam(lite::ConfigFileParser *config_parser, const std::
+     // parse ascend_context in config file, the priority is higher
+     if (maps.find("ascend_context") != maps.end()) {
+       auto map = maps.at("ascend_context");
+-      config_parser->SetParamByConfigfile(param, map);
++      config_parser.SetParamByConfigfile(param, map);
+     }
+     if (!param->config_file.empty()) {
+       (void)CheckOfflineParallelConfig(param->config_file, &param->parallel_split_config);
+     }
+ 
+     lite::CpuOptionParamParser cpu_param_parser;
+-    ret = cpu_param_parser.ParseCpuOptionCfg(config_parser->GetCpuOptionCfgString(), &param->cpuOptionCfgParam);
++    ret = cpu_param_parser.ParseCpuOptionCfg(config_parser.GetCpuOptionCfgString(), &param->cpuOptionCfgParam);
+     if (ret != RET_OK) {
+       MS_LOG(ERROR) << "Parse cpu option param failed.";
+       return ret;
+@@ -515,29 +496,29 @@ int ConverterImpl::ParseParam(lite::ConfigFileParser *config_parser, const std::
      << "If there are multi models, only support micro_param and model_param, other configure can not take effect";
  
    lite::MicroParamParser micro_param_parser;
@@ -9755,6 +10154,32 @@ index a61bd51c..f35babda 100644
 +  ret = micro_param_parser.ParseMicroParam(config_parser.GetMicroParamString(), &param->microParam);
    if (ret != RET_OK) {
      MS_LOG(ERROR) << "Parse micro param failed.";
+     return ret;
+   }
+   ret =
+-    lite::QuantParamParser::ParseTransformQuant(config_parser->GetTransformQuantString(), &param->transformQuantParam);
++    lite::QuantParamParser::ParseTransformQuant(config_parser.GetTransformQuantString(), &param->transformQuantParam);
+   if (ret != RET_OK) {
+     MS_LOG(ERROR) << "Parse transform quant param failed.";
+     return ret;
+   }
+-  ret = lite::QuantParamParser::ParseAscendQuant(config_parser->GetAscendQuantString(), &param->ascendQuantParam);
++  ret = lite::QuantParamParser::ParseAscendQuant(config_parser.GetAscendQuantString(), &param->ascendQuantParam);
+   if (ret != RET_OK) {
+     MS_LOG(ERROR) << "Parse ascend quant param failed.";
+     return ret;
+   }
+-  ret = lite::QuantParamParser::ParseDynamicQuant(config_parser->GetDynamicQuantString(), &param->dynamicQuantParam);
++  ret = lite::QuantParamParser::ParseDynamicQuant(config_parser.GetDynamicQuantString(), &param->dynamicQuantParam);
+   if (ret != RET_OK) {
+     MS_LOG(ERROR) << "Parse dynamic quant param failed.";
+     return ret;
+   }
+   lite::GraphKernelParamParser graph_kernel_parser;
+-  ret = graph_kernel_parser.ParseGraphKernelCfg(config_parser->GetGraphKernelString(), &param->graphKernelParam);
++  ret = graph_kernel_parser.ParseGraphKernelCfg(config_parser.GetGraphKernelString(), &param->graphKernelParam);
+   if (ret != RET_OK) {
+     MS_LOG(ERROR) << "Parse graph kernel param failed.";
      return ret;
 @@ -708,9 +689,9 @@ int CheckFmkType(const std::shared_ptr<ConverterPara> &param) {
    if (param != nullptr) {
@@ -10024,7 +10449,7 @@ index 371e93fb..ff99f1f4 100644
      }
    }
 diff --git a/mindspore/lite/tools/converter/micro/cmake/file_list.cmake b/mindspore/lite/tools/converter/micro/cmake/file_list.cmake
-index c132460e..2f65b75b 100644
+index c132460e..5dcf0bb7 100644
 --- a/mindspore/lite/tools/converter/micro/cmake/file_list.cmake
 +++ b/mindspore/lite/tools/converter/micro/cmake/file_list.cmake
 @@ -4,6 +4,8 @@ set(CODER_SRC
@@ -10053,7 +10478,24 @@ index c132460e..2f65b75b 100644
          #### cmsis int8 coder
          ${MICRO_DIR}/coder/opcoders/cmsis-nn/int8/add_int8_coder.cc
          ${MICRO_DIR}/coder/opcoders/cmsis-nn/int8/conv2d_base_coder.cc
-@@ -88,16 +93,20 @@ set(CODER_OPCODERS_SRC
+@@ -81,23 +86,37 @@ set(CODER_OPCODERS_SRC
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp16/arithmetic_fp16_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp16/avg_pooling_fp16_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp16/concat_fp16_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp16/conv2d_delegate_fp16_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp16/conv_depthwise_3x3_fp16_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp16/conv_depthwise_fp16_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp16/conv_depthwise_sw_fp16_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp16/convolution_1x1_fp16_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp16/convolution_fp16_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp16/convolution_winograd_fp16_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp16/custom_gru_fp16_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp16/deconv2d_fp16_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp16/lstm_fp16_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp16/matmul_fp16_base_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp16/matmul_fp16_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp16/resize_fp16_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp16/transpose_fp16_coder.cc
          ${MICRO_DIR}/coder/opcoders/nnacl/fp16/layernorm_fp16_coder.cc
          ${MICRO_DIR}/coder/opcoders/nnacl/fp16/reduce_fp16_coder.cc
          ${MICRO_DIR}/coder/opcoders/nnacl/fp16/resize_fp16_coder.cc
@@ -10084,7 +10526,19 @@ index c132460e..2f65b75b 100644
          #### nnacl fp32 coder
          ${MICRO_DIR}/coder/opcoders/nnacl/fp32/activation_fp32_coder.cc
          ${MICRO_DIR}/coder/opcoders/nnacl/fp32/addn_fp32_coder.cc
-@@ -136,14 +145,10 @@ set(CODER_OPCODERS_SRC
+@@ -122,6 +141,7 @@ set(CODER_OPCODERS_SRC
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp32/lstm_fp32_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp32/matmul_fp32_base_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp32/matmul_fp32_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp32/ones_like_fp32_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp32/pad_fp32_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp32/pooling_fp32_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp32/power_fp32_coder.cc
+@@ -133,17 +153,14 @@ set(CODER_OPCODERS_SRC
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp32/transpose_fp32_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp32/splice_fp32_coder.cc
+         ${MICRO_DIR}/coder/opcoders/nnacl/fp32/exp_fp32_coder.cc
++        ${MICRO_DIR}/coder/opcoders/nnacl/fp32/fill_fp32_coder.cc
          ${MICRO_DIR}/coder/opcoders/nnacl/fp32/deconv2d_fp32_coder.cc
          ${MICRO_DIR}/coder/opcoders/nnacl/fp32/prelu_fp32_coder.cc
          ${MICRO_DIR}/coder/opcoders/nnacl/fp32/layernorm_fp32_coder.cc
@@ -10527,7 +10981,7 @@ index 00000000..6db7cff5
 +}  // namespace mindspore::lite::micro
 +#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_MICRO_CODER_DYNAMIC_MEM_MANAGER_H_
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/cmake_component.cc b/mindspore/lite/tools/converter/micro/coder/generator/component/cmake_component.cc
-index 643cf50b..40b6c10b 100644
+index 643cf50b..831d4259 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/component/cmake_component.cc
 +++ b/mindspore/lite/tools/converter/micro/coder/generator/component/cmake_component.cc
 @@ -5,7 +5,7 @@
@@ -10557,11 +11011,12 @@ index 643cf50b..40b6c10b 100644
 -  ofs << "    model.c.o\n"
 -      << "    context.c.o\n"
 -      << "    tensor.c.o\n";
+-  if (config->target() != kCortex_M) {
+-    ofs << "    allocator.c.o\n";
 +  ofs << "    model.c.obj\n"
 +      << "    context.c.obj\n"
 +      << "    tensor.c.obj\n";
-   if (config->target() != kCortex_M) {
--    ofs << "    allocator.c.o\n";
++  if (config->target() != kCortex_M && !config->dynamic_shape()) {
 +    ofs << "    allocator.c.obj\n";
    }
    if (config->debug_mode()) {
@@ -10585,7 +11040,7 @@ index 643cf50b..40b6c10b 100644
      ofs << ")\n"
          << "set_property(SOURCE ${ASSEMBLY_SRC} PROPERTY LANGUAGE C)\n"
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc b/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc
-index 774e8353..f4b1b16d 100644
+index 774e8353..035f2314 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc
 +++ b/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc
 @@ -16,6 +16,7 @@
@@ -10802,15 +11257,20 @@ index 774e8353..f4b1b16d 100644
      ofs << kAlignedString << prefix << "_tensors[" << index << "]->ndim = " << tensor->shape().size() << ";\n";
      size_t shape_size = tensor->shape().size();
      for (size_t i = 0; i < shape_size; i++) {
-@@ -240,26 +264,31 @@ void CodeMSTensorHandleArrayDestroyState(std::ofstream &ofs, const Configurator
-   }
+@@ -234,32 +258,31 @@ void CodeCortexSetWorkspace(std::ofstream &ofs, const std::unique_ptr<CoderConte
+   ofs << "}\n";
+ }
+ 
+-void CodeMSTensorHandleArrayDestroyState(std::ofstream &ofs, const Configurator &config) {
+-  if (config.target() != kCortex_M) {
+-    ofs << handle_array_destroy_state;
+-  }
++void CodeMSModelCreateDefault(std::ofstream &ofs) {
++  ofs << "OH_AI_ModelHandle OH_AI_ModelCreate() { return model0; }\n";
  }
  
 -void CodeMSModelCreateDefault(std::ofstream &ofs) { ofs << "MSModelHandle MSModelCreate() { return model0; }\n"; }
-+void CodeMSModelCreateDefault(std::ofstream &ofs) {
-+  ofs << "OH_AI_ModelHandle OH_AI_ModelCreate() { return model0; }\n";
-+}
- 
+-
  void CodeMSModelCreate(std::ofstream &ofs, const std::unique_ptr<CoderContext> &ctx, const Configurator &config) {
    if (config.target() != kCortex_M) {
 -    ofs << "MSStatus MSModelCreate" << ctx->GetCurModelIndex() << "(MicroModel *micro_model) {";
@@ -10847,7 +11307,7 @@ index 774e8353..f4b1b16d 100644
      if (config.code_mode() == CodeMode::Inference) {
        ofs << "  micro_model->train_mode = false;\n";
      } else if (config.code_mode() == CodeMode::Train) {
-@@ -269,7 +298,7 @@ void CodeMSModelCreate(std::ofstream &ofs, const std::unique_ptr<CoderContext> &
+@@ -269,7 +292,7 @@ void CodeMSModelCreate(std::ofstream &ofs, const std::unique_ptr<CoderContext> &
        ofs << kAlignedString << prefix << "_tensors[" << index << "] = malloc(sizeof(MicroTensor));\n";
        ofs << kAlignedString << prefix << "_tensors[" << index << "]->type = " << EnumNameMSDataType(tensor->data_type())
            << ";\n";
@@ -10856,7 +11316,7 @@ index 774e8353..f4b1b16d 100644
        ofs << kAlignedString << prefix << "_tensors[" << index << "]->ndim = " << tensor->shape().size() << ";\n";
        size_t shape_size = tensor->shape().size();
        ofs << kAlignedString << prefix << "_tensors[" << index << "]->shape = "
-@@ -289,30 +318,30 @@ void CodeMSModelCreate(std::ofstream &ofs, const std::unique_ptr<CoderContext> &
+@@ -289,30 +312,30 @@ void CodeMSModelCreate(std::ofstream &ofs, const std::unique_ptr<CoderContext> &
        outputs = ctx->graph_train_outputs();
      }
      size_t inputs_size = inputs.size();
@@ -10894,7 +11354,7 @@ index 774e8353..f4b1b16d 100644
    }
    ofs << "}\n\n";
  }
-@@ -324,20 +353,20 @@ void CodeMSModelBuildCommon(std::ofstream &ofs, const Configurator &config) {
+@@ -324,20 +347,20 @@ void CodeMSModelBuildCommon(std::ofstream &ofs, const Configurator &config) {
    ofs << R"RAW(
    MicroModel *micro_model = (MicroModel *)model;
    if (micro_model == NULL) {
@@ -10921,7 +11381,7 @@ index 774e8353..f4b1b16d 100644
    }
    return ret;
  }
-@@ -345,23 +374,23 @@ void CodeMSModelBuildCommon(std::ofstream &ofs, const Configurator &config) {
+@@ -345,23 +368,23 @@ void CodeMSModelBuildCommon(std::ofstream &ofs, const Configurator &config) {
  }
  
  void CodeMSModelBuild(std::ofstream &ofs, const int model_index, const size_t weight_size, const Configurator &config) {
@@ -10952,7 +11412,7 @@ index 774e8353..f4b1b16d 100644
           "    return ret;\n"
           "  }\n";
    if (config.target() != kCortex_M) {
-@@ -372,7 +401,7 @@ void CodeMSModelBuild(std::ofstream &ofs, const int model_index, const size_t we
+@@ -372,7 +395,7 @@ void CodeMSModelBuild(std::ofstream &ofs, const int model_index, const size_t we
    if (config.support_parallel()) {
      ofs << "  MicroContext *micro_context = (MicroContext *)model_context;\n"
             "  if (micro_context == NULL) {\n"
@@ -10961,7 +11421,7 @@ index 774e8353..f4b1b16d 100644
             "  }\n"
             "  ret = CreateThreadPool(micro_context->thread_num_);\n"
             "  if(ret != RET_OK) {\n"
-@@ -384,35 +413,172 @@ void CodeMSModelBuild(std::ofstream &ofs, const int model_index, const size_t we
+@@ -384,35 +407,172 @@ void CodeMSModelBuild(std::ofstream &ofs, const int model_index, const size_t we
    ofs << "}\n";
  }
  
@@ -11153,7 +11613,7 @@ index 774e8353..f4b1b16d 100644
    ofs << "}\n";
  }
  
-@@ -420,14 +586,14 @@ void CodeMSModelPredictState(std::ofstream &ofs) { ofs << micro_model_predict_st
+@@ -420,14 +580,14 @@ void CodeMSModelPredictState(std::ofstream &ofs) { ofs << micro_model_predict_st
  
  void CodeMSModelPredictCommon(std::ofstream &ofs) {
    ofs << R"RAW(
@@ -11172,7 +11632,7 @@ index 774e8353..f4b1b16d 100644
    }
    return micro_model->predict(model, inputs, outputs, before, after);
  }
-@@ -438,35 +604,35 @@ MSStatus MSModelPredict(MSModelHandle model, const MSTensorHandleArray inputs, M
+@@ -438,35 +598,35 @@ MSStatus MSModelPredict(MSModelHandle model, const MSTensorHandleArray inputs, M
  void CodeMSModelPredict(std::ofstream &ofs, const std::unique_ptr<CoderContext> &ctx, const Configurator &config) {
    auto inputs_num = ctx->graph_inputs().size();
    auto outputs_num = ctx->graph_outputs().size();
@@ -11219,7 +11679,7 @@ index 774e8353..f4b1b16d 100644
          << "      }\n"
          << "    }\n"
          << "  }\n";
-@@ -495,8 +661,7 @@ void CodeMSModelPredict(std::ofstream &ofs, const std::unique_ptr<CoderContext>
+@@ -495,8 +655,7 @@ void CodeMSModelPredict(std::ofstream &ofs, const std::unique_ptr<CoderContext>
    ofs << "    }\n";
    ofs << "  }\n";
    ofs << "\n";
@@ -11229,7 +11689,7 @@ index 774e8353..f4b1b16d 100644
    for (size_t i = 0; i < outputs_num; ++i) {
      ofs << ctx->graph_outputs().at(i)->data_type() << ", ";
    }
-@@ -506,21 +671,18 @@ void CodeMSModelPredict(std::ofstream &ofs, const std::unique_ptr<CoderContext>
+@@ -506,21 +665,18 @@ void CodeMSModelPredict(std::ofstream &ofs, const std::unique_ptr<CoderContext>
      ofs << "false, ";
    }
    ofs << "};\n";
@@ -11257,7 +11717,7 @@ index 774e8353..f4b1b16d 100644
  }
  
  void CodeCopyOutputsImplement(std::ofstream &ofs, const std::unique_ptr<CoderContext> &ctx) {
-@@ -528,56 +690,60 @@ void CodeCopyOutputsImplement(std::ofstream &ofs, const std::unique_ptr<CoderCon
+@@ -528,56 +684,60 @@ void CodeCopyOutputsImplement(std::ofstream &ofs, const std::unique_ptr<CoderCon
    std::vector<Tensor *> outputs = ctx->graph_outputs();
    size_t outputs_size = outputs.size();
  
@@ -11348,16 +11808,7 @@ index 774e8353..f4b1b16d 100644
           "}\n\n";
  }
  
-@@ -587,7 +753,7 @@ void CodeGlobalCodeBlocks(std::ofstream &ofs, const std::unique_ptr<CoderContext
-   }
- }
- 
--void CodeInputState(std::ofstream &ofs, const int model_index) {
-+void CodeInputState(std::ofstream &ofs, const int model_index, const Configurator &config) {
-   ofs << "/**\n"
-       << "  * set input tensors\n"
-       << "  * @param inputs, the input data ptr's array of the model, the tensors' count of input may be greater than "
-@@ -688,6 +854,16 @@ void CodeInitResourceImplement(std::ofstream &ofs, const std::unique_ptr<CoderCo
+@@ -688,6 +848,16 @@ void CodeInitResourceImplement(std::ofstream &ofs, const std::unique_ptr<CoderCo
           "}\n";
  }
  
@@ -11375,10 +11826,16 @@ index 774e8353..f4b1b16d 100644
  
  void CodeFreeResourceImplement(std::ofstream &ofs, const std::unique_ptr<CoderContext> &ctx,
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.h b/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.h
-index 56209f05..0a0c0066 100644
+index 56209f05..6f0c7736 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.h
 +++ b/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.h
-@@ -38,6 +38,8 @@ void CodeMSModelCreate(std::ofstream &ofs, const std::unique_ptr<CoderContext> &
+@@ -32,12 +32,13 @@ void CodeMSModelCalcWorkspaceSize(std::ofstream &ofs, const std::unique_ptr<Code
+ void CodeCortexCalcWorkspaceSize(std::ofstream &ofs, const std::unique_ptr<CoderContext> &ctx);
+ void CodeMSModelSetWorkspace(std::ofstream &ofs, const std::unique_ptr<CoderContext> &ctx, const Configurator &config);
+ void CodeCortexSetWorkspace(std::ofstream &ofs, const std::unique_ptr<CoderContext> &ctx);
+-void CodeMSTensorHandleArrayDestroyState(std::ofstream &ofs, const Configurator &config);
+ void CodeMSModelCreateDefault(std::ofstream &ofs);
+ void CodeMSModelCreate(std::ofstream &ofs, const std::unique_ptr<CoderContext> &ctx, const Configurator &config);
  void CodeMSModelBuildState(std::ofstream &ofs);
  void CodeMSModelBuildCommon(std::ofstream &ofs, const Configurator &config);
  void CodeMSModelBuild(std::ofstream &ofs, const int model_index, const size_t weight_size, const Configurator &config);
@@ -11387,7 +11844,7 @@ index 56209f05..0a0c0066 100644
  void CodeMSModelDestory(std::ofstream &ofs, const Configurator *config);
  void CodeMSModelPredictState(std::ofstream &ofs);
  void CodeMSModelPredictCommon(std::ofstream &ofs);
-@@ -57,6 +59,7 @@ void CodeGraphQuantArgsImplement(std::ofstream &ofs, const std::unique_ptr<Coder
+@@ -57,6 +58,7 @@ void CodeGraphQuantArgsImplement(std::ofstream &ofs, const std::unique_ptr<Coder
  void CodeManageResourceState(std::ofstream &ofs, const int model_index);
  void CodeInitResourceImplement(std::ofstream &ofs, const std::unique_ptr<CoderContext> &ctx);
  
@@ -11447,7 +11904,7 @@ index 0e943317..e084d692 100644
  void InitGlobalVariable(int model_index);
  
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/benchmark.cc b/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/benchmark.cc
-index 91f2ca89..c204ffa5 100644
+index 91f2ca89..ad638276 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/benchmark.cc
 +++ b/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/benchmark.cc
 @@ -53,7 +53,7 @@ const char benchmark_source[] = R"RAW(/**
@@ -11578,8 +12035,12 @@ index 91f2ca89..c204ffa5 100644
  
    void *model_buffer = NULL;
    int model_size = 0;
-@@ -177,11 +177,11 @@ int main(int argc, const char **argv) {
-       return kMSStatusLiteParamInvalid;
+@@ -174,14 +174,14 @@ int main(int argc, const char **argv) {
+     model_buffer = ReadInputData(argv[2], &model_size);
+     if (model_buffer == NULL) {
+       printf("Read model file failed.");
+-      return kMSStatusLiteParamInvalid;
++      return OH_AI_STATUS_LITE_PARAM_INVALID;
      }
    }
 -  MSModelHandle model_handle = MSModelCreate();
@@ -11723,6 +12184,24 @@ index 91f2ca89..c204ffa5 100644
  }
  )RAW";
  
+@@ -385,7 +385,7 @@ int benchmark() {
+     return kMSStatusLiteError;
+   }
+   MSModelSetWorkspace(model_handle, g_WorkSpace, WORK_SPACE_SIZE);
+-  ret = MSModelBuild(model_handle, NULL, 0, kMSModelTypeMindIR, NULL);
++  ret = OH_AI_ModelBuild(model_handle, NULL, 0, kMSModelTypeMindIR, NULL);
+   if (ret != kMSStatusSuccess) {
+     printf("MSModelBuildFromFile failed, ret : %d.\n", ret);
+     MSModelDestroy(&model_handle);
+@@ -424,7 +424,7 @@ int benchmark() {
+   }
+ 
+   printf("========Infer start=======\n");
+-  ret = MSModelPredict(model_handle, inputs_handle, &outputs_handle, NULL, NULL);
++  ret = OH_AI_ModelPredict(model_handle, inputs_handle, &outputs_handle, NULL, NULL);
+   if (ret != kMSStatusSuccess) {
+     MSModelDestroy(&model_handle);
+     return ret;
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/calib_output.cc b/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/calib_output.cc
 index 71ca2287..66af9069 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/calib_output.cc
@@ -11874,7 +12353,7 @@ index 71ca2287..66af9069 100644
    Tensor *calib_tensors = tensor_array->tensors_;
    if (calib_tensors == NULL) {
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/cmake_lists.cc b/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/cmake_lists.cc
-index 79bfc485..91069744 100644
+index 79bfc485..f63e6f9e 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/cmake_lists.cc
 +++ b/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/cmake_lists.cc
 @@ -127,9 +127,9 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
@@ -11901,6 +12380,20 @@ index 79bfc485..91069744 100644
      -Wno-deprecated-declarations -Wno-missing-braces -Wno-overloaded-virtual ${CMAKE_CXX_FLAGS}")
      string(REPLACE "-g" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
      string(REPLACE "-g" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+@@ -241,11 +241,11 @@ function(create_library)
+     endforeach()
+     add_custom_command(TARGET net
+             POST_BUILD
+-            COMMAND ar cr ${library_name} *.o
++            COMMAND ar cr ${library_name} *.obj
+             COMMAND ranlib ${library_name}
+             COMMAND echo "new static library ${library_name} size:"
+             COMMAND ls -lh ${library_name}
+-            COMMAND rm -rf tmp && rm -rf *.o
++            COMMAND rm -rf tmp && rm -rf *.obj
+             COMMENT "generate specified static library ${library_name}"
+             )
+ endfunction(create_library)
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/load_input.cc b/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/load_input.cc
 index 9a2aeaa7..669cd8c1 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/load_input.cc
@@ -12116,7 +12609,7 @@ index 44273071..5cbe4507 100644
  
  )RAW";
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/mtensor.cc b/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/mtensor.cc
-index b125b31d..aa38f49e 100644
+index b125b31d..e4581829 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/mtensor.cc
 +++ b/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/mtensor.cc
 @@ -46,8 +46,8 @@ const char tensor_header[] = R"RAW(
@@ -12261,7 +12754,7 @@ index b125b31d..aa38f49e 100644
  }
  
 -const int64_t *MSTensorGetShape(const MSTensorHandle tensor, size_t *shape_num) {
-+const int64_t *OH_AI_TensorSetShape(const OH_AI_TensorHandle tensor, size_t *shape_num) {
++const int64_t *OH_AI_TensorGetShape(const OH_AI_TensorHandle tensor, size_t *shape_num) {
    MicroTensor* micro_tensor = (MicroTensor*)(tensor);
    *shape_num =  micro_tensor->ndim;
    return micro_tensor->shape;
@@ -12359,24 +12852,60 @@ index ac958750..6a131b52 100644
           "  RET_OK = 0,\n"
           "  RET_ERROR = 1,\n"
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/generator.cc b/mindspore/lite/tools/converter/micro/coder/generator/generator.cc
-index dd66c333..39be4b89 100644
+index dd66c333..23009e17 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/generator.cc
 +++ b/mindspore/lite/tools/converter/micro/coder/generator/generator.cc
-@@ -59,6 +59,13 @@ const char calc_workspace_state[] = R"RAW(
- typedef size_t (*ModelCalcWorkspaceSize)(MSModelHandle model);
+@@ -43,20 +43,28 @@ const char micro_model_define_source[] = R"RAW(
+ typedef struct {
+   void *runtime_buffer;
+   bool train_mode;  // true: train mode, false: eval mode
+-  MSTensorHandleArray inputs;
+-  MSTensorHandleArray outputs;
++  OH_AI_TensorHandleArray inputs;
++  OH_AI_TensorHandleArray outputs;
+   ModelBuild build;
++  ModelResize resize;
+   ModelSetWorkspace set_work_space;
+   ModelCalcWorkspaceSize calc_work_space;
+   FreeResource free_resource;
  )RAW";
  
+ const char set_workspace_state[] = R"RAW(
+-typedef void (*ModelSetWorkspace)(MSModelHandle model, void *workspace, size_t workspace_size);
++typedef void (*ModelSetWorkspace)(OH_AI_ModelHandle model, void *workspace, size_t workspace_size);
+ )RAW";
+ 
+ const char calc_workspace_state[] = R"RAW(
+-typedef size_t (*ModelCalcWorkspaceSize)(MSModelHandle model);
++typedef size_t (*ModelCalcWorkspaceSize)(OH_AI_ModelHandle model);
++)RAW";
++
 +const char model_resize[] = R"RAW(
 +typedef OH_AI_Status (*ModelResize)(OH_AI_ModelHandle model,
 +                                const OH_AI_TensorHandleArray inputs,
 +                                OH_AI_ShapeInfo *shape_infos,
 +                                size_t shape_info_num);
-+)RAW";
-+
+ )RAW";
+ 
  int WriteContentToFile(const std::string &file, const std::string &content) {
-   std::ofstream of(file);
-   if (of.bad()) {
-@@ -340,7 +347,7 @@ int Generator::CodeCommonModelFile() {
+@@ -311,6 +319,7 @@ int Generator::CodeCommonModelFile() {
+   CodeFreeResourceState(hofs);
+   hofs << set_workspace_state;
+   hofs << calc_workspace_state;
++  hofs << model_resize;
+   hofs << micro_model_define_source;
+   if (config_->code_mode() == CodeMode::Inference) {
+     hofs << "  ModelPredict predict;\n";
+@@ -321,7 +330,7 @@ int Generator::CodeCommonModelFile() {
+   }
+   hofs << "} MicroModel;\n";
+ 
+-  hofs << "void MSTensorHandleArrayDestroy(MSTensorHandleArray inputs);\n";
++  hofs << "void MSTensorHandleArrayDestroy(OH_AI_TensorHandleArray inputs);\n";
+   hofs << "#endif // MINDSPORE_LITE_MICRO_LIBRARY_SOURCE_MODEL_H_\n\n";
+ 
+   // model source file
+@@ -340,7 +349,7 @@ int Generator::CodeCommonModelFile() {
    if (config_->support_parallel()) {
      cofs << "#include \"" << kThreadWrapper << "\"\n";
    }
@@ -12385,7 +12914,16 @@ index dd66c333..39be4b89 100644
      cofs << "#include \"src/allocator.h\"\n";
    }
    CodeMSModelCalcWorkspaceSize(cofs, ctx_, *config_);
-@@ -386,7 +393,7 @@ int Generator::CodeMSModelImplement() {
+@@ -369,7 +378,7 @@ int Generator::CodeModelHandleHFile() {
+          "#define MINDSPORE_LITE_MICRO_LIBRARY_INCLUDE_MODEL_HANDLE_H_\n\n"
+       << "#include \"c_api/model_c.h\"\n\n";
+   for (int i = 0; i <= ctx_->GetCurModelIndex(); ++i) {
+-    ofs << "extern MSModelHandle model" << std::to_string(i) << "; // " << ctx_->model_name() << "\n";
++    ofs << "extern OH_AI_ModelHandle model" << std::to_string(i) << "; // " << ctx_->model_name() << "\n";
+   }
+   ofs << "\n#endif  // MINDSPORE_LITE_MICRO_LIBRARY_INCLUDE_MODEL_HANDLE_H_\n";
+   return RET_OK;
+@@ -386,7 +395,7 @@ int Generator::CodeMSModelImplement() {
    ofs << "#include \"c_api/model_c.h\"\n";
    ofs << "#include \"src/model.h\"\n";
    ofs << "#include \"src/model" << ctx_->GetCurModelIndex() << "/" << net_inc_hfile_ << "\"\n";
@@ -12394,32 +12932,72 @@ index dd66c333..39be4b89 100644
      ofs << "#include \"src/allocator.h\"\n";
    }
    if (config_->support_parallel()) {
-@@ -416,6 +423,7 @@ int Generator::CodeMSModelImplement() {
-     ofs << "MSStatus MSModelExportWeight" << ctx_->GetCurModelIndex()
-         << "(MSModelHandle model, const char *export_path);\n";
+@@ -399,33 +408,37 @@ int Generator::CodeMSModelImplement() {
+     ofs << "#define GRAPH_OUTPUTS_SIZE " << ctx_->graph_outputs().size() << "\n";
+     ofs << "#define WEIGHT_BUF_SIZE " << ctx_->weight_buffer_size() << "\n";
    }
+-  ofs << "MSStatus MSModelBuild" << ctx_->GetCurModelIndex() << "(MSModelHandle model, const void *model_data,\n"
+-      << "                       size_t data_size, const MSContextHandle model_context);\n";
++  ofs << "OH_AI_Status OH_AI_ModelBuild" << ctx_->GetCurModelIndex() << "(OH_AI_ModelHandle model, const void *model_data,\n"
++      << "                       size_t data_size, const OH_AI_ContextHandle model_context);\n";
++  ofs << "OH_AI_Status OH_AI_ModelResize" << ctx_->GetCurModelIndex() << "(OH_AI_ModelHandle model, \n"
++      << "                       const OH_AI_TensorHandleArray inputs, OH_AI_ShapeInfo *shape_infos, size_t shape_info_num);\n";
+   if (config_->code_mode() == CodeMode::Inference) {
+-    ofs << "MSStatus MSModelPredict" << ctx_->GetCurModelIndex()
+-        << "(MSModelHandle model, const MSTensorHandleArray inputs,\n"
+-        << "                         MSTensorHandleArray *output,\n"
+-        << "                         const MSKernelCallBackC before,\n"
+-        << "                         const MSKernelCallBackC after);\n";
++    ofs << "OH_AI_Status OH_AI_ModelPredict" << ctx_->GetCurModelIndex()
++        << "(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,\n"
++        << "                         OH_AI_TensorHandleArray *output,\n"
++        << "                         const OH_AI_KernelCallBack before,\n"
++        << "                         const OH_AI_KernelCallBack after);\n";
+   } else {
+-    ofs << "MSStatus MSModelRunStep" << ctx_->GetCurModelIndex()
+-        << "(MSModelHandle model,\n"
+-           "                       const MSKernelCallBackC before,\n"
+-           "                       const MSKernelCallBackC after);\n";
+-    ofs << "MSStatus MSModelSetTrainMode" << ctx_->GetCurModelIndex() << "(MSModelHandle model, bool train);\n";
+-    ofs << "MSStatus MSModelExportWeight" << ctx_->GetCurModelIndex()
+-        << "(MSModelHandle model, const char *export_path);\n";
+-  }
++    ofs << "OH_AI_Status MSModelRunStep" << ctx_->GetCurModelIndex()
++        << "(OH_AI_ModelHandle model,\n"
++           "                       const OH_AI_KernelCallBack before,\n"
++           "                       const OH_AI_KernelCallBack after);\n";
++    ofs << "OH_AI_Status MSModelSetTrainMode" << ctx_->GetCurModelIndex() << "(OH_AI_ModelHandle model, bool train);\n";
++    ofs << "OH_AI_Status MSModelExportWeight" << ctx_->GetCurModelIndex()
++        << "(OH_AI_ModelHandle model, const char *export_path);\n";
++  }
 +  ofs << "void Reset" << ctx_->GetCurModelIndex() << "();\n";
    ofs << "void MSModelSetWorkspace" << ctx_->GetCurModelIndex()
-       << "(MSModelHandle model, void *workspace, size_t workspace_size);\n";
-   ofs << "size_t MSModelCalcWorkspaceSize" << ctx_->GetCurModelIndex() << "(MSModelHandle model);\n";
-@@ -423,7 +431,8 @@ int Generator::CodeMSModelImplement() {
+-      << "(MSModelHandle model, void *workspace, size_t workspace_size);\n";
+-  ofs << "size_t MSModelCalcWorkspaceSize" << ctx_->GetCurModelIndex() << "(MSModelHandle model);\n";
++      << "(OH_AI_ModelHandle model, void *workspace, size_t workspace_size);\n";
++  ofs << "size_t MSModelCalcWorkspaceSize" << ctx_->GetCurModelIndex() << "(OH_AI_ModelHandle model);\n";
+   ofs << "static MicroModel gModel" << ctx_->GetCurModelIndex() << " = {.runtime_buffer = NULL,\n"
        << "                             .train_mode = false,\n"
        << "                             .inputs = {" << ctx_->graph_inputs().size() << ", NULL},\n"
        << "                             .outputs = {" << ctx_->graph_outputs().size() << ", NULL},\n"
 -      << "                             .build = MSModelBuild" << ctx_->GetCurModelIndex() << ",\n";
-+      << "                             .build = MSModelBuild" << ctx_->GetCurModelIndex() << ",\n"
++      << "                             .build = OH_AI_ModelBuild" << ctx_->GetCurModelIndex() << ",\n"
 +      << "                             .resize = OH_AI_ModelResize" << ctx_->GetCurModelIndex() << ",\n";
    if (config_->code_mode() == CodeMode::Inference) {
-     ofs << "                             .predict = MSModelPredict" << ctx_->GetCurModelIndex() << ",\n";
+-    ofs << "                             .predict = MSModelPredict" << ctx_->GetCurModelIndex() << ",\n";
++    ofs << "                             .predict = OH_AI_ModelPredict" << ctx_->GetCurModelIndex() << ",\n";
    } else {
-@@ -439,11 +448,16 @@ int Generator::CodeMSModelImplement() {
+     ofs << "                             .run_step = MSModelRunStep" << ctx_->GetCurModelIndex() << ",\n"
+         << "                             .set_train_mode = MSModelSetTrainMode" << ctx_->GetCurModelIndex() << ",\n"
+@@ -439,11 +452,16 @@ int Generator::CodeMSModelImplement() {
      ofs << "                             .set_work_space = NULL,\n"
          << "                             .calc_work_space = NULL,\n";
    }
 -  ofs << "                             .free_resource = FreeResource" << ctx_->GetCurModelIndex() << "};\n";
-+  ofs << "                             .free_resource = Reset" << ctx_->GetCurModelIndex() << "};\n";
-   ofs << "MSModelHandle model" << ctx_->GetCurModelIndex() << " = &gModel" << ctx_->GetCurModelIndex() << ";\n\n";
+-  ofs << "MSModelHandle model" << ctx_->GetCurModelIndex() << " = &gModel" << ctx_->GetCurModelIndex() << ";\n\n";
 -
++  ofs << "                             .free_resource = Reset" << ctx_->GetCurModelIndex() << "};\n";
++  ofs << "OH_AI_ModelHandle model" << ctx_->GetCurModelIndex() << " = &gModel" << ctx_->GetCurModelIndex() << ";\n\n";
 +  auto &dynamic_symbols = config_->dynamic_symbols();
 +  for (size_t i = 0; i < dynamic_symbols.size(); ++i) {
 +    ofs << "static int store" << ctx_->GetCurModelIndex() << "_" << i << " = -1;\n";
@@ -12431,7 +13009,16 @@ index dd66c333..39be4b89 100644
    CodeCopyOutputsImplement(ofs, ctx_);
    if (config_->target() == kCortex_M) {
      CodeCortexCalcWorkspaceSize(ofs, ctx_);
-@@ -598,8 +612,10 @@ int Generator::CreateCommonFiles() {
+@@ -483,6 +501,8 @@ int Generator::CodeWeightFile() {
+   if (config_->target() != kCortex_M) {
+     cofs << "unsigned char *" << ctx_->buffer_name() << " = 0; \n";
+     cofs << "unsigned char *" << ctx_->weight_name() << " = 0; \n";
++    cofs << "int *" << kShapePrefixName << " = 0; \n";
++    cofs << "int *" << kOffsetPrefixName << " = 0; \n";
+     std::string net_file = model_dir_ + "net" + std::to_string(ctx_->GetCurModelIndex()) + ".bin";
+     SaveDataToNet(ctx_, net_file, config_->keep_original_weight(), &weight_size_);
+   } else {
+@@ -598,8 +618,10 @@ int Generator::CreateCommonFiles() {
    MS_CHECK_RET_CODE(CodeStaticContent(), "code static content failed.");
    MS_CHECK_RET_CODE(CodeModelHandleHFile(), "code model_handle h file failed.");
    MS_CHECK_RET_CODE(CodeCommonModelFile(), "code common model file failed.");
@@ -13680,7 +14267,7 @@ index 00000000..7050b8b0
 +}  // namespace mindspore::lite::micro::nnacl
 diff --git a/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/arithmetic_dynamic_fp16_coder.h b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/arithmetic_dynamic_fp16_coder.h
 new file mode 100644
-index 00000000..d39e21ad
+index 00000000..87e43687
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/arithmetic_dynamic_fp16_coder.h
 @@ -0,0 +1,132 @@
@@ -13707,7 +14294,7 @@ index 00000000..d39e21ad
 +#include <string>
 +#include "coder/opcoders/op_coder.h"
 +#include "nnacl/base/cast_base.h"
-+#include "nnacl/arithmetic.h"
++#include "nnacl/arithmetic_parameter.h"
 +#include "coder/opcoders/serializers/nnacl_serializer/nnacl_fp32_serializer.h"
 +#include "coder/opcoders/nnacl/dynamic_parameter/arithmetic_dynamic_parameter.h"
 +#include "nnacl/broadcast_to_parameter.h"
@@ -15722,10 +16309,10 @@ index 00000000..1a16798c
 +}  // namespace mindspore::lite::micro::nnacl
 +#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_MICRO_CODER_OPCODERS_NNACL_FP16_MATMUL_DYNAMIC_FP16_CODER_H_
 diff --git a/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_fp16_base_coder.cc b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_fp16_base_coder.cc
-index 67f633fe..bcdd6a4a 100644
+index 67f633fe..415e912d 100644
 --- a/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_fp16_base_coder.cc
 +++ b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_fp16_base_coder.cc
-@@ -102,7 +102,8 @@ std::string MatMulFP16BaseCoder::InitMatrixA(NNaclFp32Serializer *const code, NN
+@@ -102,14 +102,15 @@ std::string MatMulFP16BaseCoder::InitMatrixA(NNaclFp32Serializer *const code, NN
    if (a_batch_ == 1) {
      if (params_.a_transpose_) {
        if (target_ == kARM64) {
@@ -15735,7 +16322,15 @@ index 67f633fe..bcdd6a4a 100644
        } else {
          pack_code.CodeFunction("RowMajor2Row12MajorFp16", input_a_str, input_a_pack_str, params_.deep_, params_.row_,
                                 false);
-@@ -122,7 +123,7 @@ std::string MatMulFP16BaseCoder::InitMatrixA(NNaclFp32Serializer *const code, NN
+       }
+     } else {
+       if (target_ == kARM64) {
+-        pack_code.CodeFunction("RowMajor2ColNMajorFp16", input_a_str, input_a_pack_str, params_.row_, params_.deep_);
++        pack_code.CodeFunction("RowMajor2ColNMajorFp16", input_a_str, input_a_pack_str, params_.row_, params_.deep_, false);
+       } else {
+         pack_code.CodeFunction("RowMajor2Col12MajorFp16", input_a_str, input_a_pack_str, params_.row_, params_.deep_,
+                                false);
+@@ -122,13 +123,13 @@ std::string MatMulFP16BaseCoder::InitMatrixA(NNaclFp32Serializer *const code, NN
                << ";\n";
      if (params_.a_transpose_) {
        if (target_ == kARM64) {
@@ -15744,12 +16339,19 @@ index 67f633fe..bcdd6a4a 100644
        } else {
          pack_code << "    RowMajor2Row12MajorFp16(src, dst, " << params_.deep_ << ", " << params_.row_ << ", false);\n";
        }
+     } else {
+       if (target_ == kARM64) {
+-        pack_code << "    RowMajor2ColNMajorFp16(src, dst, " << params_.row_ << ", " << params_.deep_ << ");\n";
++        pack_code << "    RowMajor2ColNMajorFp16(src, dst, " << params_.row_ << ", " << params_.deep_ << ", false);\n";
+       } else {
+         pack_code << "    RowMajor2Col12MajorFp16(src, dst, " << params_.row_ << ", " << params_.deep_ << ", false);\n";
+       }
 diff --git a/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/pooling_dynamic_fp16_coder.cc b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/pooling_dynamic_fp16_coder.cc
 new file mode 100644
-index 00000000..528b9d51
+index 00000000..c565f5b2
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/pooling_dynamic_fp16_coder.cc
-@@ -0,0 +1,107 @@
+@@ -0,0 +1,89 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -15811,24 +16413,6 @@ index 00000000..528b9d51
 +  NNaclFp32Serializer code;
 +  code.CodeStruct("pooling_parameter", *param_);
 +  code.CodeStruct("pooling_compute", compute_, dynamic_param_);
-+  float minf = -FLT16_MAX;
-+  float maxf = FLT16_MAX;
-+
-+  switch (param_->act_type_) {
-+    case ActType_Relu: {
-+      minf = 0.f;
-+      break;
-+    }
-+    case ActType_Relu6: {
-+      minf = 0.f;
-+      maxf = 6.f;
-+      break;
-+    }
-+    default: {
-+      MS_LOG(INFO) << "Pooling has no actType";
-+      break;
-+    }
-+  }
 +
 +  auto input_data =
 +    "(float16_t *)(" + GetTensorAddr(input_tensor_, input_tensor_->IsConst(), dynamic_mem_manager_, allocator_) + ")";
@@ -16517,7 +17101,7 @@ index 00000000..913f5ad4
 +#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_MICRO_CODER_OPCODERS_NNACL_FP16_SOFTMAX_DYNAMIC_FP16_CODER_H_
 diff --git a/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/transpose_dynamic_fp16_coder.cc b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/transpose_dynamic_fp16_coder.cc
 new file mode 100644
-index 00000000..b0b1501b
+index 00000000..59c8d8b8
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/transpose_dynamic_fp16_coder.cc
 @@ -0,0 +1,76 @@
@@ -16573,7 +17157,7 @@ index 00000000..b0b1501b
 +
 +  NNaclFp32Serializer code;
 +  dims_ = static_cast<int>(out_shapes_.size());
-+  code << "const int32_t output_shape = [" << dims_ << "] = {";
++  code << "const int32_t output_shape[" << dims_ << "] = {";
 +  for (size_t i = 0; i < out_shapes_.size(); ++i) {
 +    code << out_shapes_[i] << ", ";
 +  }
@@ -16599,10 +17183,10 @@ index 00000000..b0b1501b
 +}  // namespace mindspore::lite::micro::nnacl
 diff --git a/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/transpose_dynamic_fp16_coder.h b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/transpose_dynamic_fp16_coder.h
 new file mode 100644
-index 00000000..2e1725be
+index 00000000..e008a794
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/transpose_dynamic_fp16_coder.h
-@@ -0,0 +1,38 @@
+@@ -0,0 +1,37 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -16624,7 +17208,6 @@ index 00000000..2e1725be
 +#include <vector>
 +#include <string>
 +#include "coder/opcoders/nnacl/fp32/transpose_dynamic_fp32_coder.h"
-+#include "nnacl/transpose.h"
 +
 +namespace mindspore::lite::micro::nnacl {
 +class TransposeDynamicFp16Coder : public TransposeDynamicFp32Coder {
@@ -17133,7 +17716,7 @@ index 00000000..e3e64cb3
 +#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_MICRO_CODER_OPCODERS_NNACL_FP32_SPLIT_DYNAMIC_FP32_CODER_H_
 diff --git a/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/transpose_dynamic_fp32_coder.cc b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/transpose_dynamic_fp32_coder.cc
 new file mode 100644
-index 00000000..70fde70e
+index 00000000..7fb160d5
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/transpose_dynamic_fp32_coder.cc
 @@ -0,0 +1,171 @@
@@ -17191,7 +17774,7 @@ index 00000000..70fde70e
 +
 +  NNaclFp32Serializer code;
 +  dims_ = static_cast<int>(out_shapes_.size());
-+  code << "const int32_t output_shape = [" << dims_ << "] = {";
++  code << "const int32_t output_shape[" << dims_ << "] = {";
 +  for (size_t i = 0; i < out_shapes_.size(); ++i) {
 +    code << out_shapes_[i] << ", ";
 +  }
@@ -17773,7 +18356,7 @@ index d1435dea..2b1536c6 100644
    void CodeArrayStruct(const std::string &name, TensorC *tensorC, std::vector<Tensor *> tensor);
  
 diff --git a/mindspore/lite/tools/converter/micro/coder/session.cc b/mindspore/lite/tools/converter/micro/coder/session.cc
-index 55df7a22..c266265c 100644
+index 55df7a22..374f662d 100644
 --- a/mindspore/lite/tools/converter/micro/coder/session.cc
 +++ b/mindspore/lite/tools/converter/micro/coder/session.cc
 @@ -75,7 +75,10 @@ int CoderSession::PassArgsToContext(const std::string &model_name) {
@@ -17815,12 +18398,10 @@ index 55df7a22..c266265c 100644
  }
  
  int CoderSession::GenerateCode() {
-@@ -160,7 +172,10 @@ int CoderSession::Init(const void *content, int size, const int model_index, boo
-   InitThread(model_index);
+@@ -161,6 +173,9 @@ int CoderSession::Init(const void *content, int size, const int model_index, boo
    context_ = std::make_unique<CoderContext>(model_index);
    context_->set_end_flag(end_flag);
--  enable_fp16_ = enable_fp16;
-+  enableFp16_ = enable_fp16;
+   enable_fp16_ = enable_fp16;
 +  Configurator *config = Configurator::GetInstance();
 +  MS_CHECK_TRUE_MSG(config != nullptr, RET_NULL_PTR, "Config is a nullptr.");
 +  dynamic_ = !config->graph_inputs_shape_infos().empty();
@@ -18217,10 +18798,10 @@ index 652db4af..a82feb07 100644
      return RET_ERROR;
 diff --git a/mindspore/lite/tools/optimizer/fusion/tile_matmul_fusion.cc b/mindspore/lite/tools/optimizer/fusion/tile_matmul_fusion.cc
 new file mode 100644
-index 00000000..d0c46676
+index 00000000..4caef237
 --- /dev/null
 +++ b/mindspore/lite/tools/optimizer/fusion/tile_matmul_fusion.cc
-@@ -0,0 +1,119 @@
+@@ -0,0 +1,120 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -18244,6 +18825,7 @@ index 00000000..d0c46676
 +#include "nnacl/op_base.h"
 +#include "tools/lite_exporter/fetch_content.h"
 +#include "ops/op_utils.h"
++#include "ops/lite_ops.h"
 +#include "ops/fusion/tile_fusion.h"
 +#include "ops/fusion/mat_mul_fusion.h"
 +
@@ -18504,3 +19086,6 @@ index 3a0eb3d6..8ae747be 100644
  
  class SigmoidCrossEntropyWithLogits(Primitive):
      r"""
+-- 
+2.25.1
+
