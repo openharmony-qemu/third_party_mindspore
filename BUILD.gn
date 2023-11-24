@@ -50,3 +50,12 @@ ohos_group("mindir") {
 ohos_group("mindspore-ndk") {
   deps = [ "mindspore-src/source/mindspore/lite/:mindspore_ndk" ]
 }
+
+group("mindspore-test") {
+  testonly = true
+  deps = [
+    "test:mindspore_fuzz_test",
+    "test:mindspore_system_test",
+    "test:mindspore_unit_test",
+  ]
+}
