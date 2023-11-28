@@ -20,7 +20,7 @@ config("module_private_config") {
 }
 
 ohos_fuzztest("MindSporeFuzzTest") {
-  module_out_path = module_output_path + "/mindspore_fuzz"
+  module_out_path = module_output_path + "/mindspore"
   fuzz_config_file = "./mindspore_fuzzer"
   resource_config_file = "../resource/ohos_test.xml"
 

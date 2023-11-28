@@ -4964,10 +4964,10 @@ index ce68079f..ad9066e7 100644
  constexpr auto kSlope = "slope";
  constexpr auto kBase = "base";
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index 8eb53d79..ae9cd07d 100644
+index 69ea44ea..a01dcfcd 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
-@@ -607,6 +607,8 @@ all_train_sources = [
+@@ -608,6 +608,8 @@ all_train_sources = [
    "src/train/optimizer/fusion/matmul_activation_fusion_pass.cc",
    "src/train/optimizer/fusion/reshape_gather_reshape_fusion_pass.cc",
    "src/train/optimizer/fusion/gru_fusion_pass.cc",
@@ -4976,7 +4976,7 @@ index 8eb53d79..ae9cd07d 100644
    "src/common/storage.cc",
    "tools/converter/optimizer.cc",
    "tools/converter/legacy_optimizer/fusion/fusion_pass.cc",
-@@ -651,6 +653,7 @@ fp32_train_kernel_sources = [
+@@ -652,6 +654,7 @@ fp32_train_kernel_sources = [
    "src/litert/kernel/cpu/fp32_grad/convolution.cc",
    "src/litert/kernel/cpu/fp32_grad/convolution_grad_filter.cc",
    "src/litert/kernel/cpu/fp32_grad/convolution_grad_input.cc",
@@ -5242,6 +5242,41 @@ index 522da7ad..b3a85b64 100644
    return reinterpret_cast<OpParameter *>(param);
  }
  
+diff --git a/mindspore/lite/src/common/prim_util.cc b/mindspore/lite/src/common/prim_util.cc
+index 5ded05e9..7263775a 100644
+--- a/mindspore/lite/src/common/prim_util.cc
++++ b/mindspore/lite/src/common/prim_util.cc
+@@ -29,11 +29,25 @@ static std::set<schema::PrimitiveType> kTensorListOps = {
+   schema::PrimitiveType_TensorListReserve, schema::PrimitiveType_TensorListSetItem,
+   schema::PrimitiveType_TensorListStack};
+ 
+-static const char *const kInnerOpNames[C10NUM] = {"Inner_ToFormat",         "Inner_GltextureToOpencl",
+-                                                  "Inner_Identity",         "Inner_ShapeFusion",
+-                                                  "Inner_GraphKernel",      "Inner_SplitReduceConcatFusion",
+-                                                  "Inner_EncoderLayer",     "Inner_DecoderLayer",
+-                                                  "Inner_UsePastEmbedding", "Inner_CustomGru"};
++static const char *const kInnerOpNames[C20NUM] = {"Inner_ToFormat",
++                                                  "Inner_GltextureToOpencl",
++                                                  "Inner_Identity",
++                                                  "Inner_ShapeFusion",
++                                                  "Inner_GraphKernel",
++                                                  "Inner_SplitReduceConcatFusion",
++                                                  "Inner_EncoderLayer",
++                                                  "PrimType_Inner_FseDecode",
++                                                  "Inner_DecoderLayer",
++                                                  "Inner_UsePastEmbedding",
++                                                  "Inner_CustomGru",
++                                                  "PrimType_Inner_CastGatherReduceFusion",
++                                                  "PrimType_Inner_ReduceConcatFusion",
++                                                  "PrimType_Inner_ThirdPartyModel",
++                                                  "PrimType_Inner_CustomMaskedFill",
++                                                  "PrimType_Inner_CustomTensorScatterMax",
++                                                  "PrimType_Inner_CustomIsInf",
++                                                  "PrimType_Inner_CustomGatherDGradV2"};
++
+ int GetPrimitiveType(const void *primitive, int schema_version) {
+   if (primitive == nullptr) {
+     return -1;
 diff --git a/mindspore/lite/src/litert/kernel/cpu/BUILD.gn b/mindspore/lite/src/litert/kernel/cpu/BUILD.gn
 index 65065b5b..7b813314 100644
 --- a/mindspore/lite/src/litert/kernel/cpu/BUILD.gn
