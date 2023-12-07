@@ -1733,7 +1733,7 @@ index a774b58c..69ea44ea 100644
      ]
 -    external_deps += [ "neural_network_runtime:nnrt_target" ]
 +    if (mindspore_feature_nnrt_metagraph) {
-+        external_deps += [ "hiai_foundation:nnrt_ext_target" ]
++        external_deps += [ "neural_network_runtime_ext:nnrt_ext_target" ]
 +    } else {
 +        external_deps += [ "neural_network_runtime:nnrt_target" ]
 +    }
@@ -1787,7 +1787,7 @@ index a774b58c..69ea44ea 100644
 +  ]
 +
 +  if (mindspore_feature_nnrt_metagraph) {
-+      external_deps = [ "hiai_foundation:nnrt_ext_target" ]
++      external_deps = [ "neural_network_runtime_ext:nnrt_ext_target" ]
 +  } else {
 +      external_deps = [ "neural_network_runtime:nnrt_target" ]
 +  }
