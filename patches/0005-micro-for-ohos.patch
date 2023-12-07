@@ -1,6 +1,6 @@
-From 5ef675579f1e5e9246816f91cc30f0b40b7e8a55 Mon Sep 17 00:00:00 2001
+From 3c49837eab91b3e52ef6d746d52b3264595ad48a Mon Sep 17 00:00:00 2001
 From: zhangyanhui <zhangyanhui17@huawei.com>
-Date: Thu, 23 Nov 2023 10:18:52 +0800
+Date: Thu, 7 Dec 2023 15:49:14 +0800
 Subject: [PATCH] auto-apply 0005-micro-for-ohos.patch
 
 ---
@@ -53,6 +53,7 @@ Subject: [PATCH] auto-apply 0005-micro-for-ohos.patch
  mindspore/lite/src/common/ops/ops_def.cc      |    1 +
  .../common/ops/populate/custom_populate.cc    |   30 +
  .../src/common/ops/populate/lstm_populate.cc  |    4 +
+ mindspore/lite/src/common/prim_util.cc        |   24 +-
  mindspore/lite/src/litert/kernel/cpu/BUILD.gn |    6 +
  .../src/litert/kernel/cpu/fp16/gru_fp16.cc    |   16 +-
  .../src/litert/kernel/cpu/fp16/lstm_fp16.cc   |  415 +--
@@ -140,8 +141,8 @@ Subject: [PATCH] auto-apply 0005-micro-for-ohos.patch
  .../fp16/arithmetic_dynamic_fp16_coder.h      |  132 +
  .../nnacl/fp16/concat_dynamic_fp16_coder.cc   |   92 +
  .../nnacl/fp16/concat_dynamic_fp16_coder.h    |   40 +
- .../conv2d_delegate_dynamic_fp16_coder.cc     |  199 ++
- .../fp16/conv2d_delegate_dynamic_fp16_coder.h |   62 +
+ .../conv2d_delegate_dynamic_fp16_coder.cc     |  155 +
+ .../fp16/conv2d_delegate_dynamic_fp16_coder.h |   56 +
  .../convolution_1x1_dynamic_fp16_coder.cc     |  252 ++
  .../fp16/convolution_1x1_dynamic_fp16_coder.h |   68 +
  .../fp16/convolution_dynamic_fp16_coder.cc    |  172 +
@@ -191,7 +192,7 @@ Subject: [PATCH] auto-apply 0005-micro-for-ohos.patch
  .../optimizer/fusion/tile_matmul_fusion.h     |   37 +
  .../mindspore/ops/operations/_grad_ops.py     |   43 +-
  .../python/mindspore/ops/operations/nn_ops.py |   30 +-
- 187 files changed, 12835 insertions(+), 1850 deletions(-)
+ 188 files changed, 12804 insertions(+), 1855 deletions(-)
  create mode 100644 mindspore/ccsrc/backend/common/optimizer/pass.h
  create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16OptV2.S
  create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/custom_gather_d_grad_v2_parameter.h
@@ -5357,7 +5358,7 @@ index ce68079f..ad9066e7 100644
  constexpr auto kSlope = "slope";
  constexpr auto kBase = "base";
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index 69ea44ea..a01dcfcd 100644
+index 2bbe0c9c..cef7d78a 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
 @@ -608,6 +608,8 @@ all_train_sources = [
@@ -14584,10 +14585,10 @@ index 00000000..bd1b7ff6
 +#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_MICRO_CODER_OPCODERS_NNACL_FP16_CONCAT_DYNAMIC_FP16_CODER_H_
 diff --git a/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/conv2d_delegate_dynamic_fp16_coder.cc b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/conv2d_delegate_dynamic_fp16_coder.cc
 new file mode 100644
-index 00000000..04691392
+index 00000000..2f4e42e7
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/conv2d_delegate_dynamic_fp16_coder.cc
-@@ -0,0 +1,199 @@
+@@ -0,0 +1,155 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -14632,7 +14633,7 @@ index 00000000..04691392
 +  if (conv_coder_ == nullptr) {
 +    // need to select actual execute coder here
 +    conv_coder_ =
-+      CPUConvolutionFP16CoderSelect(input_tensors_, output_tensors_, node_, node_index(), target_, schema_version_);
++      CPUConvFP16DynamicCoderSelect(input_tensors_, output_tensors_, node_, node_index(), target_, schema_version_);
 +    MS_CHECK_PTR(conv_coder_);
 +    ConvParameter *op_parameter = static_cast<ConvParameter *>(malloc(sizeof(ConvParameter)));
 +    if (op_parameter == nullptr) {
@@ -14668,52 +14669,8 @@ index 00000000..04691392
 +  conv_param->output_channel_ = output->Channel();
 +}
 +
-+int SelectOutUnit(const ConvParameter *conv_param) {
-+  int kernel_h = conv_param->kernel_h_;
-+  int kernel_w = conv_param->kernel_w_;
-+  int in_c = conv_param->input_channel_;
-+  int out_w = conv_param->output_w_;
-+  int out_h = conv_param->output_h_;
-+  int out_c = conv_param->output_channel_;
-+  if (conv_param->op_parameter_.thread_num_ == 0) {
-+    return NNACL_PARAM_INVALID;
-+  }
-+  int unit2 = UP_DIV(out_w * out_h, C12NUM * conv_param->op_parameter_.thread_num_);
-+  int max_out_unit = static_cast<int>(sqrtf(static_cast<float>(unit2)));
-+  max_out_unit = max_out_unit < C8NUM ? max_out_unit : C8NUM;
-+  max_out_unit = max_out_unit > C2NUM ? max_out_unit : C2NUM;
-+
-+  int unit = 0;
-+  float max_rate = 0.0f;
-+  float common_cost = static_cast<float>(out_h * out_w * in_c * out_c * kernel_h * kernel_w);
-+
-+  for (int i = C2NUM; i <= max_out_unit; ++i) {
-+    int input_unit = i + kernel_w - 1;
-+    if (input_unit != C4NUM && input_unit != C6NUM && input_unit != C8NUM) {
-+      continue;
-+    }
-+    if ((i >= input_unit) || (i < C2NUM)) {
-+      continue;
-+    }
-+    float penalty = (static_cast<float>(input_unit) * input_unit) / (static_cast<float>(kernel_h) * kernel_w) * 0.12f;
-+    float wino_cost = ((2 + out_c) * static_cast<float>(input_unit) * input_unit * in_c +
-+                       (static_cast<float>(input_unit) + i) * i * out_c) *
-+                      UP_DIV(out_w, i) * UP_DIV(out_h, i);
-+    float reduce_rate = common_cost / wino_cost - penalty;
-+    if (reduce_rate > max_rate) {
-+      max_rate = reduce_rate;
-+      unit = i;
-+    }
-+  }
-+  if (max_rate < 1.0f) {
-+    unit = 1;
-+  }
-+  // If output_unit is 1, then it is conventional convolution
-+  return unit;
-+}
-+
-+std::unique_ptr<OperatorCoder> CPUConvolutionFP16CoderSelect(const std::vector<Tensor *> &in_tensors,
-+                                                             const std::vector<Tensor *> &out_tensors,
++std::unique_ptr<OperatorCoder> CPUConvFP16DynamicCoderSelect(const std::vector<lite::Tensor *> &in_tensors,
++                                                             const std::vector<lite::Tensor *> &out_tensors,
 +                                                             const LiteGraph::Node *node, size_t node_index,
 +                                                             Target target, int schema_version) {
 +  const void *primitive = node->primitive_;
@@ -14748,16 +14705,16 @@ index 00000000..04691392
 +  return coder;
 +}
 +
-+std::unique_ptr<OperatorCoder> CreateDelegateFp16Conv(const std::vector<Tensor *> &in_tensors,
-+                                                      const std::vector<Tensor *> &out_tensors,
++std::unique_ptr<OperatorCoder> CreateConvDelegateFp16(const std::vector<lite::Tensor *> &in_tensors,
++                                                      const std::vector<lite::Tensor *> &out_tensors,
 +                                                      const LiteGraph::Node *node, size_t node_index, Target target,
 +                                                      int schema_version) {
 +  return CPUOpCoderCreator<ConvDelegateDynamicFP16Coder>(in_tensors, out_tensors, node, node_index, target,
 +                                                         schema_version);
 +}
 +
-+std::unique_ptr<OperatorCoder> CPUConv2DFusionDynamicFP16CoderCreator(const std::vector<Tensor *> &in_tensors,
-+                                                                      const std::vector<Tensor *> &out_tensors,
++std::unique_ptr<OperatorCoder> CPUConv2DFusionDynamicFP16CoderCreator(const std::vector<lite::Tensor *> &in_tensors,
++                                                                      const std::vector<lite::Tensor *> &out_tensors,
 +                                                                      const LiteGraph::Node *node, size_t node_index,
 +                                                                      Target target, int schema_version) {
 +  const void *primitive = node->primitive_;
@@ -14773,7 +14730,7 @@ index 00000000..04691392
 +  auto conv_param = reinterpret_cast<ConvParameter *>(param_gen(node->primitive_));
 +  std::unique_ptr<OperatorCoder> coder;
 +  if (conv_param->group_ == 1) {
-+    coder = CreateDelegateFp16Conv(in_tensors, out_tensors, node, node_index, target, schema_version);
++    coder = CreateConvDelegateFp16(in_tensors, out_tensors, node, node_index, target, schema_version);
 +  } else {
 +    // GroupConv
 +    MS_LOG(ERROR) << "currently, only support conv_param->group_ == 1 in dynamic coder scene";
@@ -14789,10 +14746,10 @@ index 00000000..04691392
 +}  // namespace mindspore::lite::micro::nnacl
 diff --git a/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/conv2d_delegate_dynamic_fp16_coder.h b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/conv2d_delegate_dynamic_fp16_coder.h
 new file mode 100644
-index 00000000..04ea92a5
+index 00000000..c352c469
 --- /dev/null
 +++ b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/conv2d_delegate_dynamic_fp16_coder.h
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,56 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -14836,23 +14793,17 @@ index 00000000..04ea92a5
 + private:
 +  void SetInputOutputShapeInfo(ConvParameter *conv_param, ConvDynamicParameter &dynamic_param,
 +                               const lite::Tensor *input, const lite::Tensor *output);
-+  int SelectOutUnit(const ConvParameter *conv_param);
 +};
 +
-+std::unique_ptr<OperatorCoder> CPUConvolutionFP16CoderSelect(const std::vector<Tensor *> &in_tensors,
-+                                                             const std::vector<Tensor *> &out_tensors,
++std::unique_ptr<OperatorCoder> CPUConvFP16DynamicCoderSelect(const std::vector<lite::Tensor *> &in_tensors,
++                                                             const std::vector<lite::Tensor *> &out_tensors,
 +                                                             const LiteGraph::Node *node, size_t node_index,
 +                                                             Target target, int schema_version);
 +
-+std::unique_ptr<OperatorCoder> CreateDelegateFp16Conv(const std::vector<Tensor *> &in_tensors,
-+                                                      const std::vector<Tensor *> &out_tensors,
-+                                                      const LiteGraph::Node *node, size_t node_index, Target target,
-+                                                      int schema_version);
-+
-+std::unique_ptr<OperatorCoder> CPUConv2DFusionFP16CoderCreator(const std::vector<Tensor *> &in_tensors,
-+                                                               const std::vector<Tensor *> &out_tensors,
-+                                                               const LiteGraph::Node *node, size_t node_index,
-+                                                               Target target, int schema_version);
++std::unique_ptr<OperatorCoder> CPUConv2DFusionDynamicFP16CoderCreator(const std::vector<lite::Tensor *> &in_tensors,
++                                                                      const std::vector<lite::Tensor *> &out_tensors,
++                                                                      const LiteGraph::Node *node, size_t node_index,
++                                                                      Target target, int schema_version);
 +}  // namespace mindspore::lite::micro::nnacl
 +#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_MICRO_CODER_OPCODERS_NNACL_FP16_CONV2D_DELEGATE_DYNAMIC_FP16_CODER_H_
 diff --git a/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/convolution_1x1_dynamic_fp16_coder.cc b/mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/convolution_1x1_dynamic_fp16_coder.cc
