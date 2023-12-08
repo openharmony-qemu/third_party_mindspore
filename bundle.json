@@ -28,7 +28,7 @@
           "hdf_core",
           "ipc",
           "neural_network_runtime",
-          "neural_network_runtime_ext",
+          "hiai_foundation",
           "drivers_interface_nnrt",
           "ability_runtime",
           "napi",
