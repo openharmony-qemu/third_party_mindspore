@@ -2246,7 +2246,7 @@ index 5e1878b9..13957ed7 100644
      MS_LOG(ERROR) << "Unsupported custom type: " << type;
    }
 diff --git a/mindspore/lite/src/litert/c_api/context_c.cc b/mindspore/lite/src/litert/c_api/context_c.cc
-index f614ef09..a44cb389 100644
+index f614ef09..c5f825aa 100644
 --- a/mindspore/lite/src/litert/c_api/context_c.cc
 +++ b/mindspore/lite/src/litert/c_api/context_c.cc
 @@ -14,12 +14,17 @@
@@ -2259,7 +2259,7 @@ index f614ef09..a44cb389 100644
 +#include "src/litert/c_api/type_c_private.h"
  #include "src/common/log_adapter.h"
 +#ifdef SUPPORT_NNRT
-+#include "interfaces/kits/c/neural_network_runtime.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
 +#endif
  
  // ================ Context ================
@@ -4194,10 +4194,10 @@ index 4df7e477..6b191c8e 100644
          MS_LOG(WARNING) << "No primitive type :" << (int)(type);
          return mindspore::kLiteSuccessExit;
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
-index 34897331..b84cc222 100644
+index 34897331..9f012e76 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
-@@ -13,144 +13,636 @@
+@@ -13,144 +13,637 @@
   * See the License for the specific language governing permissions and
   * limitations under the License.
   */
@@ -4207,7 +4207,8 @@ index 34897331..b84cc222 100644
  #include "nnrt_delegate.h"
  #include "checker/primitive_check.h"
  #include "src/common/log_adapter.h"
- #include "interfaces/kits/c/neural_network_runtime.h"
+-#include "interfaces/kits/c/neural_network_runtime.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
  #include "interfaces/innerkits/c/neural_network_runtime_inner.h"
  #include "nnrt_model_kernel.h"
 +#include "schema/model_generated.h"
@@ -4396,7 +4397,6 @@ index 34897331..b84cc222 100644
 +    return kLiteError;
    }
 -  MS_LOG(INFO) << "NNRTDelegate creates NNCompilation success.";
-+  OH_NNModel_Destroy(&nn_model);
 +  MS_LOG(DEBUG) << "NNRTDelegate creates NNCompilation success.";
  
 -  const size_t *allDevicesID = nullptr;
@@ -4410,9 +4410,11 @@ index 34897331..b84cc222 100644
 +  auto ret_code = InitNNCompilation(nn_compilation);
 +  if (ret_code != kSuccess) {
 +    MS_LOG(ERROR) << "Init NNCompilation failed";
++    OH_NNModel_Destroy(&nn_model);
 +    OH_NNCompilation_Destroy(&nn_compilation);
 +    return kLiteError;
    }
++  OH_NNModel_Destroy(&nn_model);
  
 -  if (device_count <= 0) {
 -    MS_LOG(WARNING) << "No NNRt Device found, fall back to CPU. ";
@@ -4934,7 +4936,7 @@ index 34897331..b84cc222 100644
    auto input_tensors = model->inputs();
    for (size_t i = 0; i < input_tensors.size(); i++) {
      auto tensor = input_tensors[i];
-@@ -161,10 +653,10 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
+@@ -161,10 +654,10 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
      std::vector<double> scale;
      std::vector<int32_t> zero_point;
      if (!tmp_quant_param.empty()) {
@@ -4947,7 +4949,7 @@ index 34897331..b84cc222 100644
        }
        for (auto qparam : tmp_quant_param) {
          bit_num.emplace_back(qparam.bit_num);
-@@ -176,12 +668,12 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
+@@ -176,12 +669,12 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
        quant_param->scale = scale.data();
        quant_param->zeroPoint = zero_point.data();
      }
@@ -4963,7 +4965,7 @@ index 34897331..b84cc222 100644
      oprend->dimensionCount = tensor_shape.size();
  
      std::vector<int32_t> dimensions_list;
-@@ -191,14 +683,14 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
+@@ -191,14 +684,14 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
        } else {
          MS_LOG(ERROR) << "NNExecutor SetInput failed,tensor dimension is is too large, max dim = " << INT32_MAX
                        << ", but get dimension = " << shape;
@@ -4980,7 +4982,7 @@ index 34897331..b84cc222 100644
      delete (oprend);
  
      if (!tmp_quant_param.empty()) {
-@@ -209,70 +701,41 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
+@@ -209,70 +702,41 @@ mindspore::Status mindspore::NNRTDelegate::PrepareInputs(DelegateModel<schema::P
      if (ret_code != OH_NN_SUCCESS) {
        MS_LOG(ERROR) << "NNExecutor SetInput failed, current input tensor is" << tensor.Name()
                      << "OH_NN_ReturnCode = " << ret_code;
@@ -5080,7 +5082,7 @@ index 34897331..b84cc222 100644
    auto output_tensors = model->outputs();
    for (size_t i = 0; i < output_tensors.size(); i++) {
      auto tensor = output_tensors[i];
-@@ -280,17 +743,17 @@ mindspore::Status mindspore::NNRTDelegate::PrepareOutputs(DelegateModel<schema::
+@@ -280,17 +744,17 @@ mindspore::Status mindspore::NNRTDelegate::PrepareOutputs(DelegateModel<schema::
      if (ret_code != OH_NN_SUCCESS) {
        MS_LOG(ERROR) << "NNExecutor SetOutput failed, current out tensor is" << tensor.Name()
                      << ", OH_NN_ReturnCode = " << ret_code;
@@ -5102,7 +5104,7 @@ index 34897331..b84cc222 100644
        MS_LOG(ERROR) << " primitive supported check failed.";
        return;
      }
-@@ -299,7 +762,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
+@@ -299,7 +763,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
    node_list.reserve(lite_graph.all_nodes_.size());
    // copy node
    for (auto node : lite_graph.all_nodes_) {
@@ -5111,7 +5113,7 @@ index 34897331..b84cc222 100644
      if (new_node == nullptr) {
        MS_LOG(ERROR) << " new LiteGraph::Node failed.";
        return;
-@@ -318,7 +781,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
+@@ -318,7 +782,7 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
    // copy subgraph
    std::vector<LiteGraph::SubGraph *> subgraph_list;
    for (auto subgraph : lite_graph.sub_graphs_) {
@@ -5120,7 +5122,7 @@ index 34897331..b84cc222 100644
      if (new_subgraph == nullptr) {
        MS_LOG(ERROR) << "new LiteGraph::Subgraph failed.";
        return;
-@@ -331,30 +794,32 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
+@@ -331,30 +795,32 @@ void mindspore::NNRTDelegate::ShallowCopyLiteGraph(const mindspore::lite::LiteGr
    }
    for (auto tensor : lite_graph.all_tensors_) {
      ret = lite::CheckTensorSupported(static_cast<const schema::Tensor *>(tensor));
@@ -5167,7 +5169,7 @@ index 34897331..b84cc222 100644
 +}  // namespace lite
 +}  // namespace mindspore
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
-index c2847704..2458e0c3 100644
+index c2847704..52626339 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
 @@ -15,37 +15,81 @@
@@ -5179,12 +5181,13 @@ index c2847704..2458e0c3 100644
  #include <map>
  #include "include/api/delegate.h"
  #include "include/model.h"
+-#include "interfaces/kits/c/neural_network_runtime_type.h"
+-namespace mindspore {
 +#include "src/litert/inner_context.h"
 +#include "nnrt_model_kernel.h"
 +#include "schema/model_generated.h"
- #include "interfaces/kits/c/neural_network_runtime_type.h"
--namespace mindspore {
-+#include "interfaces/kits/c/neural_network_runtime.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime_type.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
 +#include "interfaces/innerkits/c/neural_network_runtime_inner.h"
  
 -using namespace lite;
@@ -5287,9 +5290,22 @@ index 5acf2e9a..67443e08 100644
      OH_NN_ReturnCode ret_code =
        OH_NNExecutor_SetInput(oh_nn_executor, i, oprend, tensor.MutableData(), tensor.DataSize());
      delete (oprend);
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
+index cf9481df..ea15f7ca 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
+@@ -20,7 +20,7 @@
+ #include <map>
+ #include <utility>
+ #include "include/api/kernel.h"
+-#include "interfaces/kits/c/neural_network_runtime.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
+ #include "src/common/log_adapter.h"
+ #include "include/errorcode.h"
+ 
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_stub.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_stub.cc
 new file mode 100644
-index 00000000..f2bee949
+index 00000000..8ac283af
 --- /dev/null
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_stub.cc
 @@ -0,0 +1,99 @@
@@ -5309,7 +5325,7 @@ index 00000000..f2bee949
 +* limitations under the License.
 +*/
 +
-+#include "interfaces/kits/c/neural_network_runtime.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
 +#include "interfaces/innerkits/c/neural_network_runtime_inner.h"
 +
 +OH_NNModel *OH_NNModel_Construct(void) {
