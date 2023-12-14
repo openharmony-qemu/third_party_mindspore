@@ -1,0 +1,41 @@
+diff --git a/mindspore/lite/src/runtime/js_api/BUILD.gn b/mindspore/lite/src/runtime/js_api/BUILD.gn
+index b105bb77..d52044fc 100644
+--- a/mindspore/lite/src/runtime/js_api/BUILD.gn
++++ b/mindspore/lite/src/runtime/js_api/BUILD.gn
+@@ -38,6 +38,7 @@ ohos_shared_library("mindsporelite_napi") {
+ 
+   deps = [
+     "../../../:mindspore_lib",
++    "../../../:mindspore_ndk",
+   ]
+   external_deps = [
+     "ability_runtime:abilitykit_native",
+diff --git a/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc b/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc
+index e477f253..7f3d2a34 100644
+--- a/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc
++++ b/mindspore/lite/src/runtime/js_api/mslite_model_napi.cc
+@@ -30,6 +30,8 @@
+ #include "include/js_api/ms_parameters_napi.h"
+ #include "include/js_api/ms_errors.h"
+ #include "include/js_api/mslite_model_callback_napi.h"
++#include "include/c_api/context_c.h"
++#include "include/c_api/types_c.h"
+ #include "src/common/log.h"
+ 
+ namespace mindspore {
+@@ -355,6 +357,15 @@ int32_t MSLiteModelNapi::GetDeviceInfoContext(ContextInfo *context_ptr,
+           MS_LOG(ERROR) << "Failed to new NNRT deviceInfo.";
+           return ERR_INVALID_OPERATION;
+         }
++        size_t num = 0;
++        auto desc = OH_AI_GetAllNNRTDeviceDescs(&num);
++        if ((desc == nullptr) && (num == 0)) {
++          MS_LOG(WARNING) << "Failed to get nnrt device id, skip adding nnrt device info";
++          break;
++        }
++        auto id = OH_AI_GetDeviceIdFromNNRTDeviceDesc(desc);
++        OH_AI_DestroyAllNNRTDeviceDescs(&desc);
++        nnrt_device->SetDeviceID(id);
+         device_infos.push_back(nnrt_device);
+         break;
+       }
