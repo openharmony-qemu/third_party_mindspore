@@ -235,7 +235,7 @@ index 3c192df7..37aaa410 100644
          SetShapeArray(output, out_shape, out_shape_size);
          return NNACL_OK;
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index 9318d54e..0b756c99 100644
+index 9318d54e..d7fe4f55 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
 @@ -99,7 +99,6 @@ cxx_api_sources = [
@@ -297,7 +297,15 @@ index 9318d54e..0b756c99 100644
  all_train_sources = [
    # ${API_TRAIN_SRC} is empty.
    # ${TRAIN_SRC_WITH_MD} is empty.
-@@ -616,8 +571,6 @@ all_train_sources = [
+@@ -604,6 +559,7 @@ all_train_sources = [
+   "src/train/optimizer/fusion/gru_fusion_pass.cc",
+   "src/train/optimizer/fusion/matmul_add_fusion_pass.cc",
+   "src/train/optimizer/fusion/matmul_matmul_add_fusion_pass.cc",
++  "src/train/optimizer/fusion/remove_redundant_tensor.cc",
+   "src/common/storage.cc",
+   "tools/converter/optimizer.cc",
+   "tools/converter/legacy_optimizer/fusion/fusion_pass.cc",
+@@ -616,8 +572,6 @@ all_train_sources = [
    "tools/converter/legacy_optimizer/graph/subgraph_node_pass.cc",
  ]
  
@@ -307,7 +315,7 @@ index 9318d54e..0b756c99 100644
    "src/litert/kernel/cpu/fp16_grad/activation_fp16_grad.cc",
    "src/litert/kernel/cpu/fp16_grad/arithmetic_fp16_grad.cc",
 diff --git a/mindspore/lite/src/CMakeLists.txt b/mindspore/lite/src/CMakeLists.txt
-index 469bcb6b..b9d8224b 100644
+index 469bcb6b..47033473 100644
 --- a/mindspore/lite/src/CMakeLists.txt
 +++ b/mindspore/lite/src/CMakeLists.txt
 @@ -289,33 +289,9 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
@@ -344,7 +352,15 @@ index 469bcb6b..b9d8224b 100644
          ${CMAKE_CURRENT_SOURCE_DIR}/litert/cxx_api/metrics/accuracy.cc
          ${CMAKE_CURRENT_SOURCE_DIR}/litert/cxx_api/train/model_build.cc
          ${CMAKE_CURRENT_SOURCE_DIR}/litert/cxx_api/train/model_build_impl.cc
-@@ -399,13 +375,6 @@ if(NOT MSLITE_ENABLE_COREML)
+@@ -340,6 +316,7 @@ set(TRAIN_SRC
+         ${CMAKE_CURRENT_SOURCE_DIR}/train/optimizer/fusion/matmul_add_fusion_pass.cc
+         ${CMAKE_CURRENT_SOURCE_DIR}/train/optimizer/fusion/matmul_matmul_add_fusion_pass.cc
+         ${CMAKE_CURRENT_SOURCE_DIR}/train/optimizer/fusion/reshape_gather_reshape_fusion_pass.cc
++        ${CMAKE_CURRENT_SOURCE_DIR}/train/optimizer/fusion/remove_redundant_tensor.cc
+         ${TOOLS_DIR}/converter/optimizer.cc
+         ${TOOLS_DIR}/converter/legacy_optimizer/fusion/fusion_pass.cc
+         ${TOOLS_DIR}/converter/legacy_optimizer/fusion/fusion_pattern.cc
+@@ -399,13 +376,6 @@ if(NOT MSLITE_ENABLE_COREML)
          ${CMAKE_CURRENT_SOURCE_DIR}/litert/delegate/coreml/stub/coreml_delegate_stub.cc)
  endif()
  
@@ -3915,49 +3931,6 @@ index c6aee153..00000000
 -}  // namespace NN
 -}  // namespace lite
 -}  // namespace mindspore
-diff --git a/mindspore/lite/src/expression/ops/depend.h b/mindspore/lite/src/expression/ops/depend.h
-deleted file mode 100644
-index 0995e664..00000000
---- a/mindspore/lite/src/expression/ops/depend.h
-+++ /dev/null
-@@ -1,37 +0,0 @@
--/**
-- * Copyright 2022 Huawei Technologies Co., Ltd
-- *
-- * Licensed under the Apache License, Version 2.0 (the "License");
-- * you may not use this file except in compliance with the License.
-- * You may obtain a copy of the License at
-- *
-- * http://www.apache.org/licenses/LICENSE-2.0
-- *
-- * Unless required by applicable law or agreed to in writing, software
-- * distributed under the License is distributed on an "AS IS" BASIS,
-- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-- * See the License for the specific language governing permissions and
-- * limitations under the License.
-- */
--
--#ifndef MINDSPORE_LITE_SRC_EXPRESSION_OPS_DEPEND_H_
--#define MINDSPORE_LITE_SRC_EXPRESSION_OPS_DEPEND_H_
--
--#include <vector>
--#include "src/expression/node.h"
--#include "src/expression/ops.h"
--#include "inner/model_generated.h"
--
--namespace mindspore {
--namespace lite {
--class DependM : public Node {
-- public:
--  DependM();
--};
--
--namespace NN {
--Node *Depend();
--};
--}  // namespace lite
--}  // namespace mindspore
--#endif  // MINDSPORE_LITE_SRC_EXPRESSION_OPS_DEPEND_H_
 diff --git a/mindspore/lite/src/expression/ops/dropout.cc b/mindspore/lite/src/expression/ops/dropout.cc
 deleted file mode 100644
 index e49bf07a..00000000
@@ -6923,6 +6896,314 @@ index e2fe7a82..726b0585 100644
  #include "src/litert/cxx_api/converters.h"
  #include "src/litert/cxx_api/metrics/metrics_adapter.h"
  #include "src/litert/cxx_api/metrics/metrics_impl.h"
+diff --git a/mindspore/lite/src/train/graph_fusion.cc b/mindspore/lite/src/train/graph_fusion.cc
+index 7982f818..980b2baa 100644
+--- a/mindspore/lite/src/train/graph_fusion.cc
++++ b/mindspore/lite/src/train/graph_fusion.cc
+@@ -27,6 +27,7 @@
+ #include "tools/converter/legacy_optimizer/graph/subgraph_node_pass.h"
+ #include "src/train/optimizer/fusion/matmul_add_fusion_pass.h"
+ #include "src/train/optimizer/fusion/matmul_matmul_add_fusion_pass.h"
++#include "src/train/optimizer/fusion/remove_redundant_tensor.h"
+ 
+ namespace mindspore {
+ namespace lite {
+@@ -64,6 +65,12 @@ STATUS GraphFusion::Run(schema::MetaGraphT *graph) {
+     MS_LOG(ERROR) << "graph fusion failed.";
+     return RET_ERROR;
+   }
++  auto opt_tensor = new (std::nothrow) RemoveRedundantTensor();
++  MS_CHECK_TRUE_MSG(opt_tensor != nullptr, RET_NULL_PTR, "Create RemoveRedundantTensor failed.");
++  if (opt_tensor->Run(graph) != RET_OK) {
++    MS_LOG(ERROR) << "Do RemoveRedundantTensor failed.";
++    return RET_ERROR;
++  }
+   return RET_OK;
+ }
+ }  // namespace lite
+diff --git a/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.cc b/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.cc
+new file mode 100644
+index 00000000..e74e78e2
+--- /dev/null
++++ b/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.cc
+@@ -0,0 +1,89 @@
++/**
++ * Copyright 2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "src/train/optimizer/fusion/remove_redundant_tensor.h"
++#include <map>
++#include "src/common/log_adapter.h"
++#include "nnacl/op_base.h"
++
++namespace mindspore {
++namespace lite {
++STATUS RemoveRedundantTensor::Run(schema::MetaGraphT *graph) {
++  if (graph == nullptr) {
++    MS_LOG(ERROR) << "The graph is a nullptr.";
++    return RET_NULL_PTR;
++  }
++  std::map<uint32_t, uint32_t> index_map;
++  uint32_t index = 0;
++  auto graph_input_index = graph->inputIndex;
++  graph->inputIndex.clear();
++  for (auto input_index : graph_input_index) {
++    if (index_map.find(input_index) == index_map.end()) {
++      index_map[input_index] = index;
++      ++index;
++    }
++    graph->inputIndex.push_back(index_map[input_index]);
++  }
++  for (auto &node : graph->nodes) {
++    auto node_in_index = node->inputIndex;
++    node->inputIndex.clear();
++    for (auto in_index : node_in_index) {
++      if (index_map.find(in_index) == index_map.end()) {
++        index_map[in_index] = index;
++        ++index;
++      }
++      node->inputIndex.push_back(index_map[in_index]);
++    }
++    auto node_out_index = node->outputIndex;
++    node->outputIndex.clear();
++    for (auto out_index : node_out_index) {
++      if (index_map.find(out_index) == index_map.end()) {
++        index_map[out_index] = index;
++        ++index;
++      }
++      node->outputIndex.push_back(index_map[out_index]);
++    }
++  }
++  auto graph_output_index = graph->outputIndex;
++  graph->outputIndex.clear();
++  for (auto output_index : graph_output_index) {
++    if (index_map.find(output_index) == index_map.end()) {
++      index_map[output_index] = index;
++      ++index;
++    }
++    graph->outputIndex.push_back(index_map[output_index]);
++  }
++  std::vector<std::unique_ptr<mindspore::schema::TensorT>> old_tensors;
++  old_tensors.swap(graph->allTensors);
++  graph->allTensors.resize(index_map.size());
++  for (size_t i = 0; i < old_tensors.size(); ++i) {
++    if (index_map.find(i) == index_map.end()) {
++      continue;
++    }
++    graph->allTensors[index_map[i]].swap(old_tensors[i]);
++  }
++  if (!graph->subGraph.empty()) {
++    graph->subGraph[0]->inputIndices = graph->inputIndex;
++    graph->subGraph[0]->outputIndices = graph->outputIndex;
++    graph->subGraph[0]->tensorIndices = {};
++    for (uint32_t i = 0; i < index; ++i) {
++      graph->subGraph[0]->tensorIndices.push_back(i);
++    }
++  }
++  return RET_OK;
++}
++}  // namespace lite
++}  // namespace mindspore
+diff --git a/mindspore/lite/src/expression/ops/depend.h b/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.h
+similarity index 55%
+rename from mindspore/lite/src/expression/ops/depend.h
+rename to mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.h
+index 0995e664..8da58dc5 100644
+--- a/mindspore/lite/src/expression/ops/depend.h
++++ b/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.h
+@@ -1,5 +1,5 @@
+ /**
+- * Copyright 2022 Huawei Technologies Co., Ltd
++ * Copyright 2023 Huawei Technologies Co., Ltd
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -14,24 +14,23 @@
+  * limitations under the License.
+  */
+ 
+-#ifndef MINDSPORE_LITE_SRC_EXPRESSION_OPS_DEPEND_H_
+-#define MINDSPORE_LITE_SRC_EXPRESSION_OPS_DEPEND_H_
++#ifndef MINDSPORE_LITE_TOOLS_CONVERTER_LEGACY_OPTIMIZER_FUSION_REMOVE_REDUNDANT_TENSOR_H_
++#define MINDSPORE_LITE_TOOLS_CONVERTER_LEGACY_OPTIMIZER_FUSION_REMOVE_REDUNDANT_TENSOR_H_
+ 
+-#include <vector>
+-#include "src/expression/node.h"
+-#include "src/expression/ops.h"
+-#include "inner/model_generated.h"
++#include "include/errorcode.h"
++#include "schema/inner/model_generated.h"
+ 
+ namespace mindspore {
+ namespace lite {
+-class DependM : public Node {
++class RemoveRedundantTensor {
+  public:
+-  DependM();
+-};
++  RemoveRedundantTensor() = default;
++
++  ~RemoveRedundantTensor() = default;
+ 
+-namespace NN {
+-Node *Depend();
++  STATUS Run(schema::MetaGraphT *graph);
+ };
+ }  // namespace lite
+ }  // namespace mindspore
+-#endif  // MINDSPORE_LITE_SRC_EXPRESSION_OPS_DEPEND_H_
++
++#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_LEGACY_OPTIMIZER_FUSION_REMOVE_REDUNDANT_TENSOR_H_
+diff --git a/mindspore/lite/src/train/train_session.cc b/mindspore/lite/src/train/train_session.cc
+index c123cba8..cfa869e2 100644
+--- a/mindspore/lite/src/train/train_session.cc
++++ b/mindspore/lite/src/train/train_session.cc
+@@ -1248,38 +1248,46 @@ int TrainSession::FindExportKernels(std::vector<kernel::KernelExec *> *export_ke
+ }
+ 
+ template <typename DestType>
+-int TrainSession::ExportByDifferentType(DestType destination, ModelType model_type, QuantizationType quant_type,
+-                                        bool orig_train_state, std::vector<std::string> output_tensor_name) {
++int TrainSession::ExportInner(DestType destination, ModelType model_type, QuantizationType quant_type,
++                              FormatType format, std::vector<std::string> out_put_tensor_name) {
++  if constexpr (std::is_same_v<DestType, const std::string &>) {
++    MS_CHECK_FALSE_MSG(destination.empty(), RET_ERROR, "File name cannot be empty");
++  } else if constexpr (std::is_same_v<DestType, Buffer *>) {
++    MS_CHECK_FALSE_MSG(destination == nullptr, RET_ERROR, "model buffer cannot be nullptr");
++  } else {
++    MS_LOG(ERROR) << "Unsupported destination.";
++    return RET_ERROR;
++  }
++  MS_CHECK_FALSE_MSG(model_type > mindspore::lite::MT_INFERENCE || model_type < mindspore::lite::MT_TRAIN, RET_ERROR,
++                     "Export model type parameter error");
++  MS_CHECK_FALSE_MSG(quant_type < mindspore::lite::QT_DEFAULT || quant_type > mindspore::lite::QT_WEIGHT, RET_ERROR,
++                     "Export quant type parameter error");
++  MS_CHECK_FALSE_MSG(format != FT_FLATBUFFERS, RET_ERROR, "File name cannot be empty");
++
++  bool orig_train_state = IsTrain();
+   TrainExport texport(destination);
+   int status = texport.ExportInit(model_.get()->graph_.name_, model_.get()->graph_.version_);
+   TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Fail to init export");
+-  if (!output_tensor_name.empty() && model_type == MT_INFERENCE) {
++
++  if (!out_put_tensor_name.empty() && model_type == MT_INFERENCE) {
+     std::vector<kernel::KernelExec *> export_kernels = {};
+-    status = FindExportKernels(&export_kernels, output_tensor_name, const_fold_kernels_);
++    status = FindExportKernels(&export_kernels, out_put_tensor_name, const_fold_kernels_);
+     TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "FindExportKernels failed.");
+     status =
+-      texport.ExportNet(export_kernels, tensors_, const_output_tensors_, output_tensor_name, model_.get(), quant_type);
++        texport.ExportNet(export_kernels, tensors_, const_output_tensors_, out_put_tensor_name, model_.get(), quant_type);
+   } else {
+-    if (!output_tensor_name.empty() && model_type == MT_TRAIN) {
+-      MS_LOG(WARNING) << "Train model does not support to export selected output tensor, and all of the train kernels "
+-                         "tensors will be exported";
+-    }
+     if ((!model_buff_changed_) && (quant_type == QT_NONE) && (model_type == MT_TRAIN) &&
+         std::all_of(model_->graph_.all_nodes_.begin(), model_->graph_.all_nodes_.end(), [](const LiteGraph::Node *n) {
+           return n->quant_type_ == schema::QuantType::QuantType_QUANT_NONE;
+         })) {
+       status = texport.SaveModel(model_.get(), destination);
+-      TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Failed to save model");
+-      if (orig_train_state) {
+-        status = Train();
+-        TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Train failed.");
+-      }
++      if (orig_train_state) Train();
+       return status;
+     } else {
+       if (quant_type == QT_NONE) {
+         status = texport.ExportNet(
+-          (model_type == MT_TRAIN) ? train_kernels_ : const_fold_kernels_, tensors_, const_output_tensors_,
+-          (model_type == MT_TRAIN) ? train_output_tensor_names_ : eval_output_tensor_names_, model_.get(), quant_type);
++            (model_type == MT_TRAIN) ? train_kernels_ : const_fold_kernels_, tensors_, const_output_tensors_,
++            (model_type == MT_TRAIN) ? train_output_tensor_names_ : eval_output_tensor_names_, model_.get(), quant_type);
+       } else {
+         status = texport.ExportNet((model_type == MT_TRAIN) ? train_kernels_ : inference_kernels_, tensors_, {},
+                                    (model_type == MT_TRAIN) ? train_output_tensor_names_ : eval_output_tensor_names_,
+@@ -1288,6 +1296,7 @@ int TrainSession::ExportByDifferentType(DestType destination, ModelType model_ty
+     }
+   }
+   TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Fail to export Network.");
++
+   if (model_type == MT_INFERENCE) {
+     status = texport.TrainModelDrop();
+     TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "TrainModelDrop failed.");
+@@ -1304,46 +1313,8 @@ int TrainSession::ExportByDifferentType(DestType destination, ModelType model_ty
+     status = texport.SaveToBuffer();
+     TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "fail to save to model buffer.");
+   }
+-  return RET_OK;
+-}
+-
+-template <typename DestType>
+-int TrainSession::ExportInner(DestType destination, ModelType model_type, QuantizationType quant_type,
+-                              FormatType format, std::vector<std::string> out_put_tensor_name) {
+-  if constexpr (std::is_same_v<DestType, const std::string &>) {
+-    MS_CHECK_FALSE_MSG(destination.empty(), RET_ERROR, "File name cannot be empty");
+-    struct stat path_type;
+-    if (stat(destination.c_str(), &path_type) == RET_OK) {
+-      if (path_type.st_mode & S_IFDIR) {
+-        MS_LOG(ERROR) << "Destination must be path, now is a directory";
+-        return RET_ERROR;
+-      }
+-    }
+-  } else if constexpr (std::is_same_v<DestType, Buffer *>) {
+-    MS_CHECK_FALSE_MSG(destination == nullptr, RET_ERROR, "model buffer cannot be nullptr");
+-  } else {
+-    MS_LOG(ERROR) << "Unsupported destination.";
+-    return RET_ERROR;
+-  }
+-  MS_CHECK_FALSE_MSG(model_type > mindspore::lite::MT_INFERENCE || model_type < mindspore::lite::MT_TRAIN, RET_ERROR,
+-                     "Export model type parameter error");
+-  MS_CHECK_FALSE_MSG(quant_type < mindspore::lite::QT_DEFAULT || quant_type > mindspore::lite::QT_WEIGHT, RET_ERROR,
+-                     "Export quant type parameter error");
+-  MS_CHECK_FALSE_MSG(format != FT_FLATBUFFERS, RET_ERROR, "File name cannot be empty");
+-
+-  bool orig_train_state = IsTrain();
+-  int status = Eval();
+-  TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Eval failed");
+-  status = ExportByDifferentType<DestType>(destination, model_type, quant_type, orig_train_state, out_put_tensor_name);
+-  if (status != RET_OK) {
+-    MS_LOG(ERROR) << "Fail to export by different type";
+-    return status;
+-  }
+-  if (orig_train_state) {
+-    status = Train();
+-    TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Train failed");
+-  }
+-  return RET_OK;
++  if (orig_train_state) Train();
++  return status;
+ }
+ 
+ int TrainSession::Export(const std::string &file_name, ModelType model_type, QuantizationType quant_type,
+diff --git a/mindspore/lite/src/train/train_session.h b/mindspore/lite/src/train/train_session.h
+index 0bd14b21..0a65f64e 100644
+--- a/mindspore/lite/src/train/train_session.h
++++ b/mindspore/lite/src/train/train_session.h
+@@ -175,9 +175,6 @@ class TrainSession : virtual public lite::LiteSession {
+                                 const std::unordered_map<lite::Tensor *, size_t> &offset_map,
+                                 std::unordered_map<lite::Tensor *, int> *ref_count, uint32_t input_idx);
+   template <typename DestType>
+-  int ExportByDifferentType(DestType destination, ModelType model_type, QuantizationType quant_type,
+-                            bool orig_train_state, std::vector<std::string> output_tensor_name = {});
+-  template <typename DestType>
+   int ExportInner(DestType destination, ModelType model_type, QuantizationType quant_type, FormatType,
+                   std::vector<std::string> out_put_tensor_name = {});
+   std::map<Tensor *, Tensor *> restored_origin_tensors_;
 diff --git a/mindspore/lite/test/config_level0/models_ms_train.cfg b/mindspore/lite/test/config_level0/models_ms_train.cfg
 index 645a31c4..7a6b9702 100644
 --- a/mindspore/lite/test/config_level0/models_ms_train.cfg
