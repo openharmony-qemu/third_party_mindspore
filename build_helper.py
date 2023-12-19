@@ -56,6 +56,8 @@ def do_patch(patch_dir, target_dir):
         '0037-npu-support-custom-model.patch',
         '0038-adapt-nnrt-ext-deps.patch',
         '0039-fix-double-destry-nnrt-mode.patch',
+
+        '0041-fix-int8-bug.patch',
     ]
 
     cwd = os.getcwd()
