@@ -1,281 +1,3 @@
-From 3c49837eab91b3e52ef6d746d52b3264595ad48a Mon Sep 17 00:00:00 2001
-From: zhangyanhui <zhangyanhui17@huawei.com>
-Date: Thu, 7 Dec 2023 15:49:14 +0800
-Subject: [PATCH] auto-apply 0005-micro-for-ohos.patch
-
----
- cmake/package_lite.cmake                      |    2 +-
- .../ccsrc/backend/common/optimizer/pass.h     |   48 +
- .../cpu/kernel/mkldnn/lstm_cpu_kernel.cc      |   45 +-
- .../cpu/kernel/mkldnn/lstm_cpu_kernel.h       |   22 +-
- .../cpu/kernel/mkldnn/lstm_grad_cpu_kernel.cc |   72 +-
- .../cpu/kernel/mkldnn/lstm_grad_cpu_kernel.h  |   10 +
- .../device/cpu/kernel/mkldnn/mkl_cpu_kernel.h |   16 +
- .../plugin/device/cpu/kernel/nnacl/BUILD.gn   |    2 +
- .../nnacl/assembly/fp16/MatmulFp16OptV2.S     | 2966 +++++++++++++++++
- .../nnacl/custom_gather_d_grad_v2_parameter.h |   28 +
- .../cpu/kernel/nnacl/fp16/custom_gru_fp16.c   |    4 +-
- .../device/cpu/kernel/nnacl/fp16/lstm_fp16.c  |  139 +-
- .../device/cpu/kernel/nnacl/fp16/lstm_fp16.h  |   12 +-
- .../cpu/kernel/nnacl/fp16/matmul_fp16.c       |  241 +-
- .../cpu/kernel/nnacl/fp16/matmul_fp16.h       |   17 +-
- .../device/cpu/kernel/nnacl/fp32/lstm_fp32.c  |   45 +-
- .../device/cpu/kernel/nnacl/fp32/lstm_fp32.h  |    8 +-
- .../cpu/kernel/nnacl/fp32/matmul_fp32.c       |    4 +-
- .../infer/custom_gather_d_grad_v2_infer.c     |   36 +
- .../infer/custom_gather_d_grad_v2_infer.h     |   30 +
- .../cpu/kernel/nnacl/infer/lstm_infer.c       |  120 +-
- .../cpu/kernel/nnacl/infer/reshape_infer.c    |    6 +-
- .../nnacl/intrinsics/ms_simd_instructions.h   |   13 +-
- .../intrinsics/ms_simd_instructions_fp16.h    |    4 +
- .../intrinsics/ms_simd_neon_instructions.h    |   29 +-
- .../device/cpu/kernel/nnacl/lstm_parameter.h  |    3 +
- .../plugin/device/cpu/kernel/nnacl/op_base.h  |    1 +
- .../core/mindrt/src/thread/threadpool.cc      |    2 +-
- mindspore/core/ops/base_operator.h            |    2 +-
- mindspore/core/ops/grad/gather_d_grad_v2.cc   |    5 +
- mindspore/core/ops/grad/gather_d_grad_v2.h    |    1 +
- mindspore/core/ops/grad/lstm_grad.cc          |   11 +-
- mindspore/core/ops/grad/lstm_grad.h           |    4 +-
- mindspore/core/ops/grad/lstm_grad_data.cc     |   10 +-
- mindspore/core/ops/grad/lstm_grad_data.h      |    4 +-
- mindspore/core/ops/grad/lstm_grad_weight.cc   |   10 +-
- mindspore/core/ops/grad/lstm_grad_weight.h    |    4 +-
- mindspore/core/ops/lstm.cc                    |    9 +-
- mindspore/core/ops/lstm.h                     |    6 +
- mindspore/core/ops/op_name.h                  |    1 +
- mindspore/lite/BUILD.gn                       |    3 +
- mindspore/lite/CMakeLists.txt                 |    2 +-
- mindspore/lite/schema/inner/ops_generated.h   |   23 +-
- mindspore/lite/schema/ops.fbs                 |    1 +
- mindspore/lite/schema/ops_generated.h         |   14 +-
- mindspore/lite/src/CMakeLists.txt             |    2 +
- mindspore/lite/src/common/ops/ops_def.cc      |    1 +
- .../common/ops/populate/custom_populate.cc    |   30 +
- .../src/common/ops/populate/lstm_populate.cc  |    4 +
- mindspore/lite/src/common/prim_util.cc        |   24 +-
- mindspore/lite/src/litert/kernel/cpu/BUILD.gn |    6 +
- .../src/litert/kernel/cpu/fp16/gru_fp16.cc    |   16 +-
- .../src/litert/kernel/cpu/fp16/lstm_fp16.cc   |  415 +--
- .../litert/kernel/cpu/fp16/lstm_fp16_base.cc  |  270 ++
- .../litert/kernel/cpu/fp16/lstm_fp16_base.h   |   68 +
- .../kernel/cpu/fp16/lstm_mindir_fp16.cc       |   35 +
- .../litert/kernel/cpu/fp16/lstm_mindir_fp16.h |   56 +
- .../kernel/cpu/fp16/lstm_non_mindir_fp16.cc   |  194 ++
- .../kernel/cpu/fp16/lstm_non_mindir_fp16.h    |   59 +
- .../kernel/cpu/fp16/matmul_base_fp16.cc       |    4 +-
- .../src/litert/kernel/cpu/fp32/lstm_fp32.cc   |  682 +---
- .../litert/kernel/cpu/fp32/lstm_fp32_base.cc  |  398 +++
- .../litert/kernel/cpu/fp32/lstm_fp32_base.h   |   78 +
- .../kernel/cpu/fp32/lstm_mindir_fp32.cc       |  266 ++
- .../litert/kernel/cpu/fp32/lstm_mindir_fp32.h |   63 +
- .../kernel/cpu/fp32/lstm_non_mindir_fp32.cc   |  173 +
- .../kernel/cpu/fp32/lstm_non_mindir_fp32.h    |   61 +
- .../fp32_grad/custom_gather_d_grad_v2_fp32.cc |  147 +
- .../fp32_grad/custom_gather_d_grad_v2_fp32.h  |   42 +
- mindspore/lite/src/train/graph_fusion.cc      |    4 +
- .../fusion/matmul_add_fusion_pass.cc          |  127 +
- .../optimizer/fusion/matmul_add_fusion_pass.h |   37 +
- .../fusion/matmul_matmul_add_fusion_pass.cc   |  163 +
- .../fusion/matmul_matmul_add_fusion_pass.h    |   43 +
- mindspore/lite/src/train/train_export.cc      |   39 +-
- mindspore/lite/src/train/train_export.h       |   11 +-
- mindspore/lite/src/train/train_session.cc     |   93 +-
- mindspore/lite/src/train/train_session.h      |    3 +
- mindspore/lite/src/train/train_utils.cc       |   15 +
- mindspore/lite/src/train/train_utils.h        |    1 +
- mindspore/lite/src/train/transfer_session.cc  |    4 +-
- mindspore/lite/tools/common/string_util.cc    |    4 +
- mindspore/lite/tools/common/string_util.h     |    2 +
- .../lite/tools/converter/anf_transform.cc     |    4 +-
- .../config_parser/config_file_parser.cc       |  118 +-
- .../config_parser/config_file_parser.h        |   12 +-
- .../config_parser/micro_param_parser.cc       |   89 +-
- .../config_parser/micro_param_parser.h        |    3 +
- mindspore/lite/tools/converter/converter.cc   |   62 +-
- .../converter/import/mindspore_importer.cc    |    8 +
- .../converter/import/to_custom_op_pass.cc     |   86 +
- .../converter/import/to_custom_op_pass.h      |   68 +
- .../legacy_optimizer/fusion/fusion_pass.cc    |    1 -
- .../legacy_optimizer/graph/infershape_pass.cc |    4 +-
- .../converter/micro/cmake/file_list.cmake     |   53 +-
- .../lite/tools/converter/micro/coder/coder.cc |   53 +-
- .../lite/tools/converter/micro/coder/coder.h  |    6 +-
- .../lite/tools/converter/micro/coder/config.h |   34 +
- .../tools/converter/micro/coder/context.cc    |   13 +
- .../tools/converter/micro/coder/context.h     |   15 +
- .../micro/coder/dynamic_mem_manager.cc        |  116 +
- .../micro/coder/dynamic_mem_manager.h         |   53 +
- .../generator/component/cmake_component.cc    |   28 +-
- .../generator/component/common_component.cc   |  496 ++-
- .../generator/component/common_component.h    |    4 +-
- .../coder/generator/component/component.cc    |    6 +
- .../coder/generator/component/component.h     |    3 +-
- .../component/const_blocks/benchmark.cc       |  116 +-
- .../component/const_blocks/calib_output.cc    |   42 +-
- .../component/const_blocks/cmake_lists.cc     |   12 +-
- .../component/const_blocks/load_input.cc      |    4 +-
- .../component/const_blocks/mcontext.cc        |   36 +-
- .../component/const_blocks/msession.cc        |   23 +-
- .../component/const_blocks/mtensor.cc         |   80 +-
- .../generator/component/weight_component.cc   |    2 +
- .../micro/coder/generator/generator.cc        |   84 +-
- .../base/reshape_dynamic_base_coder.cc        |  116 +
- .../base/reshape_dynamic_base_coder.h         |   38 +
- .../base/strided_slice_dynamic_base_coder.cc  |  115 +
- .../base/strided_slice_dynamic_base_coder.h   |   45 +
- .../arithmetic_dynamic_parameter.h            |   43 +
- .../conv_dynamic_parameter.h                  |   26 +
- .../dynamic_lstm_parameter.h                  |   28 +
- .../matmul_dynamic_parameter.h                |   25 +
- .../pooling_dynamic_parameter.h               |   33 +
- .../scale_dynamic_parameter.h                 |   26 +
- .../slice_dynamic_parameter.h                 |   27 +
- .../softmax_dynamic_parameter.h               |   26 +
- .../split_dynamic_parameter.h                 |   26 +
- .../strided_slice_dynamic_parameter.h         |   25 +
- .../transpose_dynamic_parameter.h             |   28 +
- .../fp16/activation_dynamic_fp16_coder.cc     |   93 +
- .../fp16/activation_dynamic_fp16_coder.h      |   37 +
- .../fp16/arithmetic_dynamic_fp16_coder.cc     |  369 ++
- .../fp16/arithmetic_dynamic_fp16_coder.h      |  132 +
- .../nnacl/fp16/concat_dynamic_fp16_coder.cc   |   92 +
- .../nnacl/fp16/concat_dynamic_fp16_coder.h    |   40 +
- .../conv2d_delegate_dynamic_fp16_coder.cc     |  155 +
- .../fp16/conv2d_delegate_dynamic_fp16_coder.h |   56 +
- .../convolution_1x1_dynamic_fp16_coder.cc     |  252 ++
- .../fp16/convolution_1x1_dynamic_fp16_coder.h |   68 +
- .../fp16/convolution_dynamic_fp16_coder.cc    |  172 +
- .../fp16/convolution_dynamic_fp16_coder.h     |   59 +
- .../fp16/lstm_mindir_dynamic_fp16_coder.cc    |  366 ++
- .../fp16/lstm_mindir_dynamic_fp16_coder.h     |   66 +
- .../fp16/matmul_dynamic_fp16_base_coder.cc    |  228 ++
- .../fp16/matmul_dynamic_fp16_base_coder.h     |   73 +
- .../nnacl/fp16/matmul_dynamic_fp16_coder.cc   |  100 +
- .../nnacl/fp16/matmul_dynamic_fp16_coder.h    |   44 +
- .../nnacl/fp16/matmul_fp16_base_coder.cc      |    9 +-
- .../nnacl/fp16/pooling_dynamic_fp16_coder.cc  |   89 +
- .../nnacl/fp16/pooling_dynamic_fp16_coder.h   |   44 +
- .../nnacl/fp16/scale_dynamic_fp16_coder.cc    |  128 +
- .../nnacl/fp16/scale_dynamic_fp16_coder.h     |   46 +
- .../nnacl/fp16/slice_dynamic_fp16_coder.cc    |  160 +
- .../nnacl/fp16/slice_dynamic_fp16_coder.h     |   51 +
- .../nnacl/fp16/softmax_dynamic_fp16_coder.cc  |  137 +
- .../nnacl/fp16/softmax_dynamic_fp16_coder.h   |   50 +
- .../fp16/transpose_dynamic_fp16_coder.cc      |   76 +
- .../nnacl/fp16/transpose_dynamic_fp16_coder.h |   37 +
- .../fp32/activation_dynamic_fp32_coder.cc     |  112 +
- .../fp32/activation_dynamic_fp32_coder.h      |   46 +
- .../fp32/convolution_winograd_fp32_coder.cc   |    1 -
- .../nnacl/fp32/gather_dynamic_fp32_coder.cc   |  106 +
- .../nnacl/fp32/gather_dynamic_fp32_coder.h    |   42 +
- .../nnacl/fp32/split_dynamic_fp32_coder.cc    |   94 +
- .../nnacl/fp32/split_dynamic_fp32_coder.h     |   42 +
- .../fp32/transpose_dynamic_fp32_coder.cc      |  171 +
- .../nnacl/fp32/transpose_dynamic_fp32_coder.h |   49 +
- .../converter/micro/coder/opcoders/op_coder.h |   12 +
- .../micro/coder/opcoders/op_coder_builder.cc  |    7 +-
- .../micro/coder/opcoders/op_coder_builder.h   |    4 +
- .../micro/coder/opcoders/op_coder_register.cc |   25 +-
- .../micro/coder/opcoders/op_coder_register.h  |   24 +-
- .../nnacl_serializer/nnacl_fp32_serializer.cc |  100 +-
- .../nnacl_serializer/nnacl_fp32_serializer.h  |   28 +
- .../tools/converter/micro/coder/session.cc    |   37 +-
- .../tools/converter/micro/coder/session.h     |    4 +
- .../micro/coder/shape_info_container.cc       |  131 +
- .../micro/coder/shape_info_container.h        |   59 +
- .../micro/coder/utils/coder_utils.cc          |   35 +-
- .../converter/micro/coder/utils/coder_utils.h |    5 +
- .../converter/micro/coder/utils/type_cast.cc  |   28 +-
- .../third_party/third_party_model_parser.cc   |    2 +-
- .../optimizer/fusion/tile_matmul_fusion.cc    |  120 +
- .../optimizer/fusion/tile_matmul_fusion.h     |   37 +
- .../mindspore/ops/operations/_grad_ops.py     |   43 +-
- .../python/mindspore/ops/operations/nn_ops.py |   30 +-
- 188 files changed, 12804 insertions(+), 1855 deletions(-)
- create mode 100644 mindspore/ccsrc/backend/common/optimizer/pass.h
- create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16OptV2.S
- create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/custom_gather_d_grad_v2_parameter.h
- create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/custom_gather_d_grad_v2_infer.c
- create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/custom_gather_d_grad_v2_infer.h
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_fp16_base.cc
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_fp16_base.h
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_mindir_fp16.cc
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_mindir_fp16.h
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_non_mindir_fp16.cc
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp16/lstm_non_mindir_fp16.h
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_fp32_base.cc
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_fp32_base.h
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_mindir_fp32.cc
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_mindir_fp32.h
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_non_mindir_fp32.cc
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/lstm_non_mindir_fp32.h
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32_grad/custom_gather_d_grad_v2_fp32.cc
- create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32_grad/custom_gather_d_grad_v2_fp32.h
- create mode 100644 mindspore/lite/src/train/optimizer/fusion/matmul_add_fusion_pass.cc
- create mode 100644 mindspore/lite/src/train/optimizer/fusion/matmul_add_fusion_pass.h
- create mode 100644 mindspore/lite/src/train/optimizer/fusion/matmul_matmul_add_fusion_pass.cc
- create mode 100644 mindspore/lite/src/train/optimizer/fusion/matmul_matmul_add_fusion_pass.h
- create mode 100644 mindspore/lite/tools/converter/import/to_custom_op_pass.cc
- create mode 100644 mindspore/lite/tools/converter/import/to_custom_op_pass.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/dynamic_mem_manager.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/dynamic_mem_manager.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/base/reshape_dynamic_base_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/base/reshape_dynamic_base_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/base/strided_slice_dynamic_base_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/base/strided_slice_dynamic_base_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/arithmetic_dynamic_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/conv_dynamic_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/dynamic_lstm_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/matmul_dynamic_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/pooling_dynamic_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/scale_dynamic_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/slice_dynamic_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/softmax_dynamic_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/split_dynamic_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/strided_slice_dynamic_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/dynamic_parameter/transpose_dynamic_parameter.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/activation_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/activation_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/arithmetic_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/arithmetic_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/concat_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/concat_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/conv2d_delegate_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/conv2d_delegate_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/convolution_1x1_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/convolution_1x1_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/convolution_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/convolution_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/lstm_mindir_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/lstm_mindir_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_dynamic_fp16_base_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_dynamic_fp16_base_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/matmul_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/pooling_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/pooling_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/scale_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/scale_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/slice_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/slice_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/softmax_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/softmax_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/transpose_dynamic_fp16_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp16/transpose_dynamic_fp16_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/activation_dynamic_fp32_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/activation_dynamic_fp32_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/gather_dynamic_fp32_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/gather_dynamic_fp32_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/split_dynamic_fp32_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/split_dynamic_fp32_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/transpose_dynamic_fp32_coder.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/opcoders/nnacl/fp32/transpose_dynamic_fp32_coder.h
- create mode 100644 mindspore/lite/tools/converter/micro/coder/shape_info_container.cc
- create mode 100644 mindspore/lite/tools/converter/micro/coder/shape_info_container.h
- create mode 100644 mindspore/lite/tools/optimizer/fusion/tile_matmul_fusion.cc
- create mode 100644 mindspore/lite/tools/optimizer/fusion/tile_matmul_fusion.h
-
 diff --git a/cmake/package_lite.cmake b/cmake/package_lite.cmake
 index 2254c2a7..f15724f1 100644
 --- a/cmake/package_lite.cmake
@@ -3842,6 +3564,23 @@ index 6e754569..72391811 100644
        for (int j = 0; j < C3NUM; ++j) {
          MatmulBaseFp16Neon(buffer[C2NUM], weight_hidden + j * weight_hidden_offset, hidden_gate + j * output_size,
                             bias_hidden + j * col_align, ActType_No, hidden_size, batch_size, hidden_size, hidden_size,
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp16/exp_fp16.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp16/exp_fp16.c
+index d1555953..93f005c8 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp16/exp_fp16.c
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp16/exp_fp16.c
+@@ -20,8 +20,10 @@
+ 
+ #if defined(ENABLE_NEON)
+ static inline void simd_exp_fp16(float16x8_t input, float16_t *dst) {
+-  static float16x8_t maxv = {88.0f, 88.0f, 88.0f, 88.0f, 88.0f, 88.0f, 88.0f, 88.0f};
+-  static float16x8_t minv = {-88.0f, -88.0f, -88.0f, -88.0f, -88.0f, -88.0f, -88.0f, -88.0f};
++  static float16x8_t maxv = {88.72283935546875f, 88.72283935546875f, 88.72283935546875f, 88.72283935546875f,
++                             88.72283935546875f, 88.72283935546875f, 88.72283935546875f, 88.72283935546875f};
++  static float16x8_t minv = {-87.3365478515625f, -87.3365478515625f, -87.3365478515625f, -87.3365478515625f,
++                             -87.3365478515625f, -87.3365478515625f, -87.3365478515625f, -87.3365478515625f};
+   input = vmaxq_f16(minv, vminq_f16(input, maxv));
+   vst1q_f16(dst, VexpFp16(input));
+ }
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp16/lstm_fp16.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp16/lstm_fp16.c
 index 813237fa..614842a1 100644
 --- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp16/lstm_fp16.c
@@ -5358,10 +5097,10 @@ index ce68079f..ad9066e7 100644
  constexpr auto kSlope = "slope";
  constexpr auto kBase = "base";
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index 2bbe0c9c..cef7d78a 100644
+index f7e465e2..9318d54e 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
-@@ -608,6 +608,8 @@ all_train_sources = [
+@@ -602,6 +602,8 @@ all_train_sources = [
    "src/train/optimizer/fusion/matmul_activation_fusion_pass.cc",
    "src/train/optimizer/fusion/reshape_gather_reshape_fusion_pass.cc",
    "src/train/optimizer/fusion/gru_fusion_pass.cc",
@@ -5370,7 +5109,7 @@ index 2bbe0c9c..cef7d78a 100644
    "src/common/storage.cc",
    "tools/converter/optimizer.cc",
    "tools/converter/legacy_optimizer/fusion/fusion_pass.cc",
-@@ -652,6 +654,7 @@ fp32_train_kernel_sources = [
+@@ -646,6 +648,7 @@ fp32_train_kernel_sources = [
    "src/litert/kernel/cpu/fp32_grad/convolution.cc",
    "src/litert/kernel/cpu/fp32_grad/convolution_grad_filter.cc",
    "src/litert/kernel/cpu/fp32_grad/convolution_grad_input.cc",
@@ -11076,7 +10815,7 @@ index 643cf50b..831d4259 100644
      ofs << ")\n"
          << "set_property(SOURCE ${ASSEMBLY_SRC} PROPERTY LANGUAGE C)\n"
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc b/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc
-index 774e8353..035f2314 100644
+index 774e8353..62c2f668 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc
 +++ b/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc
 @@ -16,6 +16,7 @@
@@ -11413,7 +11152,7 @@ index 774e8353..035f2314 100644
 -  if (ret != kMSStatusSuccess) {
 -    MSModelDestroy(model);
 +  if (ret != OH_AI_STATUS_SUCCESS) {
-+    OH_AI_ModelDestroy(model);
++    OH_AI_ModelDestroy(&model);
    }
    return ret;
  }
@@ -19072,6 +18811,3 @@ index 3a0eb3d6..8ae747be 100644
  
  class SigmoidCrossEntropyWithLogits(Primitive):
      r"""
--- 
-2.25.1
-

@@ -23,7 +23,11 @@ ohos_unittest("MindSporeUnitTest") {
   module_out_path = module_output_path
   resource_config_file = "../resource/ohos_test.xml"
 
-  sources = [ "./mindspore_unit_test.cpp" ]
+  sources = [
+    "../utils/common.cpp",
+    "../utils/model_utils.cpp",
+    "./mindspore_unit_test.cpp",
+  ]
 
   configs = [ ":module_private_config" ]
 

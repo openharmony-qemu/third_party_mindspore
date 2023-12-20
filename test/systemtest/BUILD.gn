@@ -25,6 +25,7 @@ ohos_systemtest("MindSporeSystemTest") {
 
   sources = [
     "../utils/common.cpp",
+    "../utils/model_utils.cpp",
     "./mindspore_system_test.cpp",
   ]
 
