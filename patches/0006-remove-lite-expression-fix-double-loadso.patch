@@ -7067,10 +7067,10 @@ index 0995e664..8da58dc5 100644
 +
 +#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_LEGACY_OPTIMIZER_FUSION_REMOVE_REDUNDANT_TENSOR_H_
 diff --git a/mindspore/lite/src/train/train_session.cc b/mindspore/lite/src/train/train_session.cc
-index c123cba8..cfa869e2 100644
+index c123cba8..fa7625cb 100644
 --- a/mindspore/lite/src/train/train_session.cc
 +++ b/mindspore/lite/src/train/train_session.cc
-@@ -1248,38 +1248,46 @@ int TrainSession::FindExportKernels(std::vector<kernel::KernelExec *> *export_ke
+@@ -1248,38 +1248,53 @@ int TrainSession::FindExportKernels(std::vector<kernel::KernelExec *> *export_ke
  }
  
  template <typename DestType>
@@ -7080,6 +7080,13 @@ index c123cba8..cfa869e2 100644
 +                              FormatType format, std::vector<std::string> out_put_tensor_name) {
 +  if constexpr (std::is_same_v<DestType, const std::string &>) {
 +    MS_CHECK_FALSE_MSG(destination.empty(), RET_ERROR, "File name cannot be empty");
++    struct stat path_type;
++    if (stat(destination.c_str(), &path_type) == RET_OK) {
++      if (path_type.st_mode & S_IFDIR) {
++        MS_LOG(ERROR) << "Destination must be path, now is a directory";
++        return RET_ERROR;
++      }
++    }
 +  } else if constexpr (std::is_same_v<DestType, Buffer *>) {
 +    MS_CHECK_FALSE_MSG(destination == nullptr, RET_ERROR, "model buffer cannot be nullptr");
 +  } else {
@@ -7133,7 +7140,7 @@ index c123cba8..cfa869e2 100644
        } else {
          status = texport.ExportNet((model_type == MT_TRAIN) ? train_kernels_ : inference_kernels_, tensors_, {},
                                     (model_type == MT_TRAIN) ? train_output_tensor_names_ : eval_output_tensor_names_,
-@@ -1288,6 +1296,7 @@ int TrainSession::ExportByDifferentType(DestType destination, ModelType model_ty
+@@ -1288,6 +1303,7 @@ int TrainSession::ExportByDifferentType(DestType destination, ModelType model_ty
      }
    }
    TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Fail to export Network.");
@@ -7141,7 +7148,7 @@ index c123cba8..cfa869e2 100644
    if (model_type == MT_INFERENCE) {
      status = texport.TrainModelDrop();
      TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "TrainModelDrop failed.");
-@@ -1304,46 +1313,8 @@ int TrainSession::ExportByDifferentType(DestType destination, ModelType model_ty
+@@ -1304,46 +1320,8 @@ int TrainSession::ExportByDifferentType(DestType destination, ModelType model_ty
      status = texport.SaveToBuffer();
      TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "fail to save to model buffer.");
    }
