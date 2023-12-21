@@ -425,3 +425,20 @@ void PackNCHWToNHWCFp32(const char *src, char *dst, int batch, int plane, int ch
     }
     return;
 }
+
+char **TransStrVectorToCharArrays(const std::vector<std::string> &s) {
+    char **char_arr = static_cast<char **>(malloc(s.size() * sizeof(char *)));
+    for (size_t i = 0; i < s.size(); i++) {
+        char_arr[i] = static_cast<char *>(malloc((s[i].size() + 1)));
+        strcpy(char_arr[i], s[i].c_str());
+    }
+    return char_arr;
+}
+
+std::vector<std::string> TransCharArraysToStrVector(char **c, const size_t &num) {
+    std::vector<std::string> str;
+    for (size_t i = 0; i < num; i++) {
+        str.push_back(std::string(c[i]));
+    }
+    return str;
+}

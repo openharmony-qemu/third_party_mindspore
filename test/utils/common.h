@@ -37,5 +37,7 @@ bool compUint8WithTData(uint8_t *actualOutputData,
 void getDimInfo(FILE *fp, std::vector<int64_t>* dim_info);
 char *ReadFile(const char *file, size_t* size);
 void PackNCHWToNHWCFp32(const char *src, char *dst, int batch, int plane, int channel);
+char **TransStrVectorToCharArrays(const std::vector<std::string> &s);
+std::vector<std::string> TransCharArraysToStrVector(char **c, const size_t &num);
 
 #endif //OHOS_MINDSPORE_COMMON_H
