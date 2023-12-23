@@ -463,11 +463,16 @@ ohos_source_set("nnacl_o") {
   }
 
   cflags_c = [
-    "-march=armv8.2-a+dotprod+fp16",
     "-fomit-frame-pointer",
     "-fstrict-aliasing",
     "-ffast-math",
   ]
+
+  if (target_cpu != "riscv64") {
+    cflags_c += [ "-march=armv8.2-a+dotprod+fp16" ]
+    asmflags = [ "-march=armv8.2-a+dotprod+fp16" ]
+  }
+
   disable_android = true
   if (disable_android) {
     cflags = [
@@ -481,7 +486,6 @@ ohos_source_set("nnacl_o") {
       "-U__ANDROID_API__",
     ]
   }
-  asmflags = [ "-march=armv8.2-a+dotprod+fp16" ]
 
   part_name = "mindspore"
 }
