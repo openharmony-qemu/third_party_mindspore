@@ -16,6 +16,7 @@
 #include "common.h"
 #include <numeric>
 #include <inttypes.h>
+#include <securec.h>
 
 /*
  * getDimInfo: get dim info from data file(int64_t)
@@ -427,12 +428,16 @@ void PackNCHWToNHWCFp32(const char *src, char *dst, int batch, int plane, int ch
 }
 
 char **TransStrVectorToCharArrays(const std::vector<std::string> &s) {
-    char **char_arr = static_cast<char **>(malloc(s.size() * sizeof(char *)));
+    char **charArr = static_cast<char **>(malloc(s.size() * sizeof(char *)));
     for (size_t i = 0; i < s.size(); i++) {
-        char_arr[i] = static_cast<char *>(malloc((s[i].size() + 1)));
-        strcpy(char_arr[i], s[i].c_str());
+        charArr[i] = static_cast<char *>(malloc((s[i].size() + 1)));
+        errno_t ret = memcpy_s(charArr[i], s[i].size(), s[i].c_str(), s[i].size());
+        if (ret != EOK) {
+            printf("memcpy_s failed, ret: %d\n", ret);
+        }
+        *(charArr[i] + s[i].size()) = '\0';
     }
-    return char_arr;
+    return charArr;
 }
 
 std::vector<std::string> TransCharArraysToStrVector(char **c, const size_t &num) {

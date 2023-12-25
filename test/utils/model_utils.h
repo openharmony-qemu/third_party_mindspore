@@ -26,22 +26,23 @@
 
 // function before callback
 bool PrintBeforeCallback(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
-                         const OH_AI_CallBackParam kernel_Info);
+                         const OH_AI_CallBackParam kernelInfo);
 // function after callback
 bool PrintAfterCallback(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
-                        const OH_AI_CallBackParam kernel_Info);
+                        const OH_AI_CallBackParam kernelInfo);
 // add cpu device info
 void AddContextDeviceCPU(OH_AI_ContextHandle context);
+bool IsNPU();
 // add nnrt device info
 void AddContextDeviceNNRT(OH_AI_ContextHandle context);
 // fill data to inputs tensor
-void FillInputsData(OH_AI_TensorHandleArray inputs, std::string model_name, bool is_transpose);
+void FillInputsData(OH_AI_TensorHandleArray inputs, std::string modelName, bool isTranspose);
 // compare result after predict
-void CompareResult(OH_AI_TensorHandleArray outputs, std::string model_name, float atol = 0.01, float rtol = 0.01);
+void CompareResult(OH_AI_TensorHandleArray outputs, std::string modelName, float atol = 0.01, float rtol = 0.01);
 // model build and predict
-void ModelPredict(OH_AI_ModelHandle model, OH_AI_ContextHandle context, std::string model_name,
-                  OH_AI_ShapeInfo shape_infos, bool build_by_graph, bool is_transpose, bool is_callback);
-void ModelTrain(OH_AI_ModelHandle model, OH_AI_ContextHandle context, std::string model_name,
-                OH_AI_ShapeInfo shape_infos, bool build_by_graph, bool is_transpose, bool is_callback);
+void ModelPredict(OH_AI_ModelHandle model, OH_AI_ContextHandle context, std::string modelName,
+                  OH_AI_ShapeInfo shapeInfos, bool buildByGraph, bool isTranspose, bool isCallback);
+void ModelTrain(OH_AI_ModelHandle model, OH_AI_ContextHandle context, std::string modelName,
+                OH_AI_ShapeInfo shapeInfos, bool buildByGraph, bool isTranspose, bool isCallback);
 
 #endif //OHOS_MINDSPORE_TEST_MODEL_UTILS_H
