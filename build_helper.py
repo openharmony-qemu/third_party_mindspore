@@ -23,6 +23,7 @@ def do_patch(patch_dir, target_dir):
         '0004-cross-compile-ndkso-fp16-nnrt-train_capi.patch',
         '0005-micro-for-ohos.patch',
         '0006-remove-lite-expression-fix-double-loadso.patch',
+        '0007-deobfuscator.patch',
     ]
 
     cwd = os.getcwd()

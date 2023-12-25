@@ -51,6 +51,10 @@ ohos_group("mindspore-ndk") {
   deps = [ "mindspore-src/source/mindspore/lite/:mindspore_ndk" ]
 }
 
+ohos_group("mindspore-lib") {
+  deps = [ "mindspore-src/source/mindspore/lite/:mindspore_lib" ]
+}
+
 group("mindspore-test") {
   testonly = true
   deps = [

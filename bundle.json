@@ -69,6 +69,13 @@
               ],
               "header_base": "//third_party/mindspore/mindspore-src/source/include/c_api"
             }
+          },
+          {
+            "name": "//third_party/mindspore/:mindspore-lib",
+            "header": {
+              "header_files": [],
+              "header_base": "//third_party/mindspore/mindspore-src/source/include/c_api"
+            }
           }
         ],
         "test": [
