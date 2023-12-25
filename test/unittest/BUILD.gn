@@ -27,6 +27,7 @@ ohos_unittest("MindSporeUnitTest") {
     "../utils/common.cpp",
     "../utils/model_utils.cpp",
     "./mindspore_unit_test.cpp",
+    "./nnrt_delegate_unit_test.cpp",
   ]
 
   configs = [ ":module_private_config" ]

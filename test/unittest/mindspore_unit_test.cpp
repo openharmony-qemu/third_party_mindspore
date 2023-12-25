@@ -35,7 +35,7 @@ class MSLiteTest: public testing::Test {
     virtual void TearDown() {}
 };
 
-std::string TEST_FILES_DIR = "/data/test/resource/";
+std::string g_testFilesDir = "/data/test/resource/";
 
 /*
  * @tc.name: Context_Create
@@ -110,16 +110,16 @@ HWTEST(MSLiteTest, Context_Thread_Affinity_Corelist, testing::ext::TestSize.Leve
     printf("==========thread_num: %d\n", thread_num);
     ASSERT_EQ(thread_num, 4);
 
-    constexpr size_t core_num = 4;
-    int32_t core_list[core_num] = {0, 1, 2, 3};
-    OH_AI_ContextSetThreadAffinityCoreList(context, core_list, core_num);
-    size_t ret_core_num;
-    const int32_t *ret_core_list = nullptr;
-    ret_core_list = OH_AI_ContextGetThreadAffinityCoreList(context, &ret_core_num);
-    ASSERT_EQ(ret_core_num, core_num);
-    for (size_t i = 0; i < ret_core_num; i++) {
-        printf("==========ret_core_list:%d\n", ret_core_list[i]);
-        ASSERT_EQ(ret_core_list[i], core_list[i]);
+    constexpr size_t coreNum = 4;
+    int32_t coreList[coreNum] = {0, 1, 2, 3};
+    OH_AI_ContextSetThreadAffinityCoreList(context, coreList, coreNum);
+    size_t retCoreNum;
+    const int32_t *retCoreList = nullptr;
+    retCoreList = OH_AI_ContextGetThreadAffinityCoreList(context, &retCoreNum);
+    ASSERT_EQ(retCoreNum, coreNum);
+    for (size_t i = 0; i < retCoreNum; i++) {
+        printf("==========retCoreList:%d\n", retCoreList[i]);
+        ASSERT_EQ(retCoreList[i], coreList[i]);
     }
 }
 
@@ -138,9 +138,9 @@ HWTEST(MSLiteTest, Context_Enable_Parallel, testing::ext::TestSize.Level0) {
     ASSERT_EQ(thread_num, 4);
 
     OH_AI_ContextSetEnableParallel(context, true);
-    bool is_parallel = OH_AI_ContextGetEnableParallel(context);
-    printf("==========is_parallel:%d\n", is_parallel);
-    ASSERT_EQ(is_parallel, true);
+    bool isParallel = OH_AI_ContextGetEnableParallel(context);
+    printf("==========isParallel:%d\n", isParallel);
+    ASSERT_EQ(isParallel, true);
 
     AddContextDeviceCPU(context);
     printf("==========Create model==========\n");
@@ -162,9 +162,9 @@ HWTEST(MSLiteTest, Context_Enable_FP16, testing::ext::TestSize.Level0) {
     OH_AI_DeviceInfoHandle cpu_device_info = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
     ASSERT_NE(cpu_device_info, nullptr);
     OH_AI_DeviceInfoSetEnableFP16(cpu_device_info, true);
-    bool is_fp16 = OH_AI_DeviceInfoGetEnableFP16(cpu_device_info);
-    printf("==========is_fp16:%d\n", is_fp16);
-    ASSERT_EQ(is_fp16, true);
+    bool isFp16 = OH_AI_DeviceInfoGetEnableFP16(cpu_device_info);
+    printf("==========isFp16:%d\n", isFp16);
+    ASSERT_EQ(isFp16, true);
 
     OH_AI_ContextAddDeviceInfo(context, cpu_device_info);
 
@@ -295,7 +295,7 @@ HWTEST(MSLiteTest, Model_GetOutputs, testing::ext::TestSize.Level0) {
     printf("==========Model Predict==========\n");
     OH_AI_TensorHandleArray inputs = OH_AI_ModelGetInputs(model);
     OH_AI_TensorHandleArray output;
-    FillInputsData(inputs,"ml_face_isface",false);
+    FillInputsData(inputs, "ml_face_isface", false);
     OH_AI_Status ret = OH_AI_ModelPredict(model, inputs, &output, nullptr, nullptr);
     ASSERT_EQ(ret, OH_AI_STATUS_SUCCESS);
 
@@ -303,17 +303,18 @@ HWTEST(MSLiteTest, Model_GetOutputs, testing::ext::TestSize.Level0) {
     OH_AI_TensorHandleArray outputs = OH_AI_ModelGetOutputs(model);
     for (size_t i = 0; i < outputs.handle_num; ++i) {
         OH_AI_TensorHandle tensor = outputs.handle_list[i];
-        int64_t element_num = OH_AI_TensorGetElementNum(tensor);
-        printf("Tensor name: %s, elements num: %" PRId64 ".\n", OH_AI_TensorGetName(tensor), element_num);
-        float *output_data = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(tensor));
+        int64_t elementNum = OH_AI_TensorGetElementNum(tensor);
+        printf("Tensor name: %s, elements num: %" PRId64 ".\n", OH_AI_TensorGetName(tensor), elementNum);
+        float *outputData = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(tensor));
         printf("output data is:");
-        for (int j = 0; j < element_num && j <= 20; ++j) {
-            printf("%f ", output_data[j]);
+        constexpr int printNum = 20;
+        for (int j = 0; j < elementNum && j <= printNum; ++j) {
+            printf("%f ", outputData[j]);
         }
         printf("\n");
         printf("==========compFp32WithTData==========\n");
-        std::string expectedDataFile = TEST_FILES_DIR + "ml_face_isface" + std::to_string(i) + ".output";
-        bool result = compFp32WithTData(output_data, expectedDataFile, 0.01, 0.01, false);
+        std::string expectedDataFile = g_testFilesDir + "ml_face_isface" + std::to_string(i) + ".output";
+        bool result = compFp32WithTData(outputData, expectedDataFile, 0.01, 0.01, false);
         EXPECT_EQ(result, true);
     }
 }
@@ -343,9 +344,9 @@ HWTEST(MSLiteTest, Model_Resize, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Model_GetInputByTensorName, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
 
     printf("==========Init Context==========\n");
@@ -356,26 +357,31 @@ HWTEST(MSLiteTest, Model_GetInputByTensorName, testing::ext::TestSize.Level0) {
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     ASSERT_NE(model, nullptr);
     printf("==========Build model==========\n");
-    OH_AI_Status ret = OH_AI_ModelBuildFromFile(model, "/data/test/resource/ml_face_isface.ms", OH_AI_MODELTYPE_MINDIR, context);
+    OH_AI_Status ret = OH_AI_ModelBuildFromFile(model, "/data/test/resource/ml_face_isface.ms", OH_AI_MODELTYPE_MINDIR,
+                                                context);
     printf("==========build model return code:%d\n", ret);
     ASSERT_EQ(ret, OH_AI_STATUS_SUCCESS);
 
     printf("==========GetInputs==========\n");
     OH_AI_TensorHandle tensor = OH_AI_ModelGetInputByTensorName(model, "data");
     ASSERT_NE(tensor, nullptr);
-    int64_t element_num = OH_AI_TensorGetElementNum(tensor);
-    printf("Tensor name: %s, elements num: %" PRId64 ".\n", OH_AI_TensorGetName(tensor), element_num);
-    float *input_data = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(tensor));
-    ASSERT_NE(input_data, nullptr);
+    int64_t elementNum = OH_AI_TensorGetElementNum(tensor);
+    printf("Tensor name: %s, elements num: %" PRId64 ".\n", OH_AI_TensorGetName(tensor), elementNum);
+    float *inputData = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(tensor));
+    ASSERT_NE(inputData, nullptr);
     printf("==========Transpose==========\n");
-    size_t shape_num;
-    const int64_t *shape = OH_AI_TensorGetShape(tensor, &shape_num);
-    auto imageBuf_nhwc = new char[size1];
-    PackNCHWToNHWCFp32(imageBuf, imageBuf_nhwc, shape[0], shape[1] * shape[2], shape[3]);
-    memcpy_s(input_data, size1, imageBuf_nhwc, size1);
+    size_t shapeNum;
+    const int64_t *shape = OH_AI_TensorGetShape(tensor, &shapeNum);
+    auto imageBufNhwc = new char[size1];
+    PackNCHWToNHWCFp32(imageBuf, imageBufNhwc, shape[0], shape[1] * shape[2], shape[3]);
+    errno_t mRet = memcpy_s(inputData, size1, imageBufNhwc, size1);
+    if (mRet != EOK) {
+        printf("memcpy_s failed, ret: %d\n", mRet);
+    }
     printf("input data is:");
-    for (int j = 0; j < element_num && j <= 20; ++j) {
-        printf("%f ", input_data[j]);
+    constexpr int printNum = 20;
+    for (int j = 0; j < elementNum && j <= printNum; ++j) {
+        printf("%f ", inputData[j]);
     }
     printf("\n");
 
@@ -404,7 +410,8 @@ HWTEST(MSLiteTest, Model_GetOutputByTensorName, testing::ext::TestSize.Level0) {
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     ASSERT_NE(model, nullptr);
     printf("==========Build model==========\n");
-    OH_AI_Status ret = OH_AI_ModelBuildFromFile(model, "/data/test/resource/ml_face_isface.ms", OH_AI_MODELTYPE_MINDIR, context);
+    OH_AI_Status ret = OH_AI_ModelBuildFromFile(model, "/data/test/resource/ml_face_isface.ms", OH_AI_MODELTYPE_MINDIR,
+                                                context);
     printf("==========build model return code:%d\n", ret);
     ASSERT_EQ(ret, OH_AI_STATUS_SUCCESS);
 
@@ -420,16 +427,17 @@ HWTEST(MSLiteTest, Model_GetOutputByTensorName, testing::ext::TestSize.Level0) {
     printf("==========GetOutput==========\n");
     OH_AI_TensorHandle tensor = OH_AI_ModelGetOutputByTensorName(model, "prob");
     ASSERT_NE(tensor, nullptr);
-    int64_t element_num = OH_AI_TensorGetElementNum(tensor);
-    printf("Tensor name: %s, elements num: %" PRId64 ".\n", OH_AI_TensorGetName(tensor), element_num);
-    float *output_data = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(tensor));
+    int64_t elementNum = OH_AI_TensorGetElementNum(tensor);
+    printf("Tensor name: %s, elements num: %" PRId64 ".\n", OH_AI_TensorGetName(tensor), elementNum);
+    float *outputData = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(tensor));
     printf("output data is:");
-    for (int j = 0; j < element_num && j <= 20; ++j) {
-        printf("%f ", output_data[j]);
+    constexpr int printNum = 20;
+    for (int j = 0; j < elementNum && j <= printNum; ++j) {
+        printf("%f ", outputData[j]);
     }
     printf("\n");
     printf("==========compFp32WithTData==========\n");
-    bool result = compFp32WithTData(output_data, TEST_FILES_DIR + "ml_face_isface0.output", 0.01, 0.01, false);
+    bool result = compFp32WithTData(outputData, g_testFilesDir + "ml_face_isface0.output", 0.01, 0.01, false);
     EXPECT_EQ(result, true);
     OH_AI_ModelDestroy(&model);
 }
@@ -456,24 +464,24 @@ HWTEST(MSLiteTest, TrainCfg_LossName, testing::ext::TestSize.Level0) {
     OH_AI_TrainCfgHandle trainCfg = OH_AI_TrainCfgCreate();
     ASSERT_NE(trainCfg, nullptr);
     std::vector<std::string> set_train_cfg_loss_name = {"loss_fct"};
-    char **set_loss_name = TransStrVectorToCharArrays(set_train_cfg_loss_name);
-    OH_AI_TrainCfgSetLossName(trainCfg, const_cast<const char **>(set_loss_name), set_train_cfg_loss_name.size());
+    char **setLossName = TransStrVectorToCharArrays(set_train_cfg_loss_name);
+    OH_AI_TrainCfgSetLossName(trainCfg, const_cast<const char **>(setLossName), set_train_cfg_loss_name.size());
 
-    size_t get_num = 0;
-    char **get_loss_name = OH_AI_TrainCfgGetLossName(trainCfg, &get_num);
+    size_t getNum = 0;
+    char **getLossName = OH_AI_TrainCfgGetLossName(trainCfg, &getNum);
     printf("trainCfg loss name: ");
-    for (size_t i = 0; i < get_num; i++) {
-        printf("%s ", get_loss_name[i]);
+    for (size_t i = 0; i < getNum; i++) {
+        printf("%s ", getLossName[i]);
     }
     printf("\n");
-    ASSERT_EQ(strcmp(get_loss_name[0], "loss_fct"), 0);
+    ASSERT_EQ(strcmp(getLossName[0], "loss_fct"), 0);
 
-    for (size_t i = 0; i < get_num; i++) {
-        free(set_loss_name[i]);
-        free(get_loss_name[i]);
+    for (size_t i = 0; i < getNum; i++) {
+        free(setLossName[i]);
+        free(getLossName[i]);
     }
-    free(set_loss_name);
-    free(get_loss_name);
+    free(setLossName);
+    free(getLossName);
     OH_AI_TrainCfgDestroy(&trainCfg);
 }
 
@@ -512,7 +520,8 @@ HWTEST(MSLiteTest, Model_TrainModelBuild, testing::ext::TestSize.Level0) {
     printf("==========OH_AI_RunStep==========\n");
     ModelTrain(model, context, "lenet_train", {}, true, false, false);
     printf("==========OH_AI_ExportModel==========\n");
-    auto status = OH_AI_ExportModel(model, OH_AI_MODELTYPE_MINDIR, "/data/test/resource/lenet_train_infer.ms", OH_AI_NO_QUANT, true, nullptr, 0);
+    auto status = OH_AI_ExportModel(model, OH_AI_MODELTYPE_MINDIR, "/data/test/resource/lenet_train_infer.ms",
+                                    OH_AI_NO_QUANT, true, nullptr, 0);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
     OH_AI_ModelDestroy(&model);
 
@@ -544,7 +553,8 @@ HWTEST(MSLiteTest, Model_LearningRate, testing::ext::TestSize.Level0) {
     OH_AI_TrainCfgHandle train_cfg = OH_AI_TrainCfgCreate();
     ASSERT_NE(train_cfg, nullptr);
     printf("==========OH_AI_TrainModelBuildFromFile==========\n");
-    auto status = OH_AI_TrainModelBuildFromFile(model, "/data/test/resource/lenet_train.ms", OH_AI_MODELTYPE_MINDIR, context, train_cfg);
+    auto status = OH_AI_TrainModelBuildFromFile(model, "/data/test/resource/lenet_train.ms", OH_AI_MODELTYPE_MINDIR,
+                                                context, train_cfg);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
 
     auto learing_rate = OH_AI_ModelGetLearningRate(model);
@@ -586,22 +596,24 @@ HWTEST(MSLiteTest, Model_UpdateWeights, testing::ext::TestSize.Level0) {
     OH_AI_TrainCfgHandle train_cfg = OH_AI_TrainCfgCreate();
     ASSERT_NE(train_cfg, nullptr);
     printf("==========OH_AI_TrainModelBuildFromFile==========\n");
-    auto status = OH_AI_TrainModelBuildFromFile(model, "/data/test/resource/lenet_train.ms", OH_AI_MODELTYPE_MINDIR, context, train_cfg);
+    auto status = OH_AI_TrainModelBuildFromFile(model, "/data/test/resource/lenet_train.ms", OH_AI_MODELTYPE_MINDIR,
+                                                context, train_cfg);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
 
-    auto GenRandomData = [](size_t size, void *data) {
+    auto genRandomData = [](size_t size, void *data) {
         auto generator = std::uniform_real_distribution<float>(0.0f, 1.0f);
-        std::mt19937 random_engine_;
-        size_t elements_num = size / sizeof(float);
-        (void)std::generate_n(static_cast<float *>(data), elements_num,
-                              [&]() { return static_cast<float>(generator(random_engine_)); });
+        std::mt19937 randomEngine;
+        size_t elementsNum = size / sizeof(float);
+        (void)std::generate_n(static_cast<float *>(data), elementsNum,
+                              [&]() { return static_cast<float>(generator(randomEngine)); });
     };
     std::vector<OH_AI_TensorHandle> vec_inputs;
-    constexpr size_t create_shape_num = 1;
-    int64_t create_shape[create_shape_num] = {10};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("fc3.bias", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape, create_shape_num, nullptr, 0);
+    constexpr size_t createShapeNum = 1;
+    int64_t createShape[createShapeNum] = {10};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("fc3.bias", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, nullptr, 0);
     ASSERT_NE(tensor, nullptr);
-    GenRandomData(OH_AI_TensorGetDataSize(tensor), OH_AI_TensorGetMutableData(tensor));
+    genRandomData(OH_AI_TensorGetDataSize(tensor), OH_AI_TensorGetMutableData(tensor));
     vec_inputs.push_back(tensor);
 
     OH_AI_TensorHandleArray update_weights = {1, vec_inputs.data()};
@@ -637,29 +649,31 @@ HWTEST(MSLiteTest, Model_GetWeights, testing::ext::TestSize.Level0) {
     OH_AI_TrainCfgHandle train_cfg = OH_AI_TrainCfgCreate();
     ASSERT_NE(train_cfg, nullptr);
     printf("==========OH_AI_TrainModelBuildFromFile==========\n");
-    auto status = OH_AI_TrainModelBuildFromFile(model, "/data/test/resource/lenet_train.ms", OH_AI_MODELTYPE_MINDIR, context, train_cfg);
+    auto status = OH_AI_TrainModelBuildFromFile(model, "/data/test/resource/lenet_train.ms", OH_AI_MODELTYPE_MINDIR,
+                                                context, train_cfg);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
     OH_AI_TensorHandleArray get_update_weights = OH_AI_ModelGetWeights(model);
     for (size_t i = 0; i < get_update_weights.handle_num; ++i) {
         OH_AI_TensorHandle weights_tensor = get_update_weights.handle_list[i];
-        if (strcmp(OH_AI_TensorGetName(weights_tensor), "fc3.bias") == 0){
-            float *input_data = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(weights_tensor));
-            printf("fc3.bias: %f", input_data[0]);
+        if (strcmp(OH_AI_TensorGetName(weights_tensor), "fc3.bias") == 0) {
+            float *inputData = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(weights_tensor));
+            printf("fc3.bias: %f", inputData[0]);
         }
     }
-    auto GenRandomData = [](size_t size, void *data) {
+    auto genRandomData = [](size_t size, void *data) {
         auto generator = std::uniform_real_distribution<float>(0.0f, 1.0f);
-        std::mt19937 random_engine_;
-        size_t elements_num = size / sizeof(float);
-        (void)std::generate_n(static_cast<float *>(data), elements_num,
-                              [&]() { return static_cast<float>(generator(random_engine_)); });
+        std::mt19937 randomEngine;
+        size_t elementsNum = size / sizeof(float);
+        (void)std::generate_n(static_cast<float *>(data), elementsNum,
+                              [&]() { return static_cast<float>(generator(randomEngine)); });
     };
     std::vector<OH_AI_TensorHandle> vec_inputs;
-    constexpr size_t create_shape_num = 1;
-    int64_t create_shape[create_shape_num] = {10};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("fc3.bias", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape, create_shape_num, nullptr, 0);
+    constexpr size_t createShapeNum = 1;
+    int64_t createShape[createShapeNum] = {10};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("fc3.bias", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, nullptr, 0);
     ASSERT_NE(tensor, nullptr);
-    GenRandomData(OH_AI_TensorGetDataSize(tensor), OH_AI_TensorGetMutableData(tensor));
+    genRandomData(OH_AI_TensorGetDataSize(tensor), OH_AI_TensorGetMutableData(tensor));
     vec_inputs.push_back(tensor);
     OH_AI_TensorHandleArray update_weights = {1, vec_inputs.data()};
     status = OH_AI_ModelUpdateWeights(model, update_weights);
@@ -674,14 +688,15 @@ HWTEST(MSLiteTest, Model_GetWeights, testing::ext::TestSize.Level0) {
     status = OH_AI_RunStep(model, nullptr, nullptr);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
     printf("==========OH_AI_ExportModel==========\n");
-    status = OH_AI_ExportModel(model, OH_AI_MODELTYPE_MINDIR, "/data/test/resource/lenet_train_infer.ms", OH_AI_NO_QUANT, true, nullptr, 0);
+    status = OH_AI_ExportModel(model, OH_AI_MODELTYPE_MINDIR, "/data/test/resource/lenet_train_infer.ms",
+                               OH_AI_NO_QUANT, true, nullptr, 0);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
     OH_AI_TensorHandleArray export_update_weights = OH_AI_ModelGetWeights(model);
     for (size_t i = 0; i < export_update_weights.handle_num; ++i) {
         OH_AI_TensorHandle weights_tensor = export_update_weights.handle_list[i];
-        if (strcmp(OH_AI_TensorGetName(weights_tensor), "fc3.bias") == 0){
-            float *input_data = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(weights_tensor));
-            printf("fc3.bias: %f", input_data[0]);
+        if (strcmp(OH_AI_TensorGetName(weights_tensor), "fc3.bias") == 0) {
+            float *inputData = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(weights_tensor));
+            printf("fc3.bias: %f", inputData[0]);
         }
     }
 
@@ -706,7 +721,8 @@ HWTEST(MSLiteTest, Model_SetupVirtualBatch, testing::ext::TestSize.Level0) {
     ASSERT_NE(train_cfg, nullptr);
 
     printf("==========OH_AI_TrainModelBuildFromFile==========\n");
-    auto status = OH_AI_TrainModelBuildFromFile(model, "/data/test/resource/lenet_train.ms", OH_AI_MODELTYPE_MINDIR, context, train_cfg);
+    auto status = OH_AI_TrainModelBuildFromFile(model, "/data/test/resource/lenet_train.ms", OH_AI_MODELTYPE_MINDIR,
+                                                context, train_cfg);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
     status = OH_AI_ModelSetupVirtualBatch(model, 2, -1.0f, -1.0f);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
@@ -716,9 +732,9 @@ HWTEST(MSLiteTest, Model_SetupVirtualBatch, testing::ext::TestSize.Level0) {
     FillInputsData(inputs, "lenet_train", false);
     status = OH_AI_ModelSetTrainMode(model, true);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
-    bool train_mode = OH_AI_ModelGetTrainMode(model);
-    printf("get train mode: %d\n", train_mode);
-    ASSERT_EQ(train_mode, true);
+    bool trainMode = OH_AI_ModelGetTrainMode(model);
+    printf("get train mode: %d\n", trainMode);
+    ASSERT_EQ(trainMode, true);
 
     printf("==========Model RunStep==========\n");
     status = OH_AI_RunStep(model, nullptr, nullptr);
@@ -726,7 +742,8 @@ HWTEST(MSLiteTest, Model_SetupVirtualBatch, testing::ext::TestSize.Level0) {
     printf("==========OH_AI_ExportModelBuffer==========\n");
     char *modelBuffer;
     size_t modelSize = 0;
-    status = OH_AI_ExportModelBuffer(model, OH_AI_MODELTYPE_MINDIR, &modelBuffer, &modelSize, OH_AI_NO_QUANT, true, nullptr, 0);
+    status = OH_AI_ExportModelBuffer(model, OH_AI_MODELTYPE_MINDIR, &modelBuffer, &modelSize, OH_AI_NO_QUANT, true,
+                                     nullptr, 0);
     printf("export model buffer size: %zu\n", modelSize);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
     ASSERT_NE(modelBuffer, nullptr);
@@ -753,14 +770,20 @@ HWTEST(MSLiteTest, Model_ExportWeights, testing::ext::TestSize.Level0) {
     ASSERT_NE(train_cfg, nullptr);
 
     printf("==========OH_AI_TrainModelBuildFromFile==========\n");
-    auto status = OH_AI_TrainModelBuildFromFile(model, "/data/test/resource/xiaoyi_train_codegen.ms", OH_AI_MODELTYPE_MINDIR, context, train_cfg);
+    auto status = OH_AI_TrainModelBuildFromFile(model, "/data/test/resource/xiaoyi_train_codegen.ms",
+                                                OH_AI_MODELTYPE_MINDIR, context, train_cfg);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
     printf("==========OH_AI_ExportModel==========\n");
-    status = OH_AI_ExportModel(model, OH_AI_MODELTYPE_MINDIR, "/data/test/resource/xiaoyi_train_codegen_gru_model1.ms", OH_AI_NO_QUANT, true, nullptr, 0);
+    status = OH_AI_ExportModel(model, OH_AI_MODELTYPE_MINDIR, "/data/test/resource/xiaoyi_train_codegen_gru_model1.ms",
+                               OH_AI_NO_QUANT, true, nullptr, 0);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
-    status = OH_AI_ExportWeightsCollaborateWithMicro(model, OH_AI_MODELTYPE_MINDIR, "/data/test/resource/xiaoyi_train_codegen_net1.bin", true, true, nullptr, 0);
+    status = OH_AI_ExportWeightsCollaborateWithMicro(model, OH_AI_MODELTYPE_MINDIR,
+                                                     "/data/test/resource/xiaoyi_train_codegen_net1.bin", true, true,
+                                                     nullptr, 0);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
-    status = OH_AI_ExportWeightsCollaborateWithMicro(model, OH_AI_MODELTYPE_MINDIR, "/data/test/resource/xiaoyi_train_codegen_net1_fp32.bin", true, false, nullptr, 0);
+    status = OH_AI_ExportWeightsCollaborateWithMicro(model, OH_AI_MODELTYPE_MINDIR,
+                                                     "/data/test/resource/xiaoyi_train_codegen_net1_fp32.bin", true,
+                                                     false, nullptr, 0);
     ASSERT_EQ(status, OH_AI_STATUS_SUCCESS);
 
     OH_AI_ModelDestroy(&model);
@@ -780,14 +803,15 @@ HWTEST(MSLiteTest, Tensor_Create, testing::ext::TestSize.Level0) {
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     ASSERT_NE(model, nullptr);
     printf("==========Build model==========\n");
-    OH_AI_Status ret = OH_AI_ModelBuildFromFile(model, "/data/test/resource/ml_face_isface.ms", OH_AI_MODELTYPE_MINDIR, context);
+    OH_AI_Status ret = OH_AI_ModelBuildFromFile(model, "/data/test/resource/ml_face_isface.ms", OH_AI_MODELTYPE_MINDIR,
+                                                context);
     printf("==========build model return code:%d\n", ret);
     ASSERT_EQ(ret, OH_AI_STATUS_SUCCESS);
     printf("==========GetInputs==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, nullptr, 0);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, nullptr, 0);
     ASSERT_NE(tensor, nullptr);
     OH_AI_TensorHandleArray inputs = OH_AI_ModelGetInputs(model);
     inputs.handle_list[0] = tensor;
@@ -808,15 +832,15 @@ HWTEST(MSLiteTest, Tensor_Create, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_Destroy, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
     delete[] imageBuf;
     OH_AI_TensorDestroy(&tensor);
@@ -831,15 +855,15 @@ HWTEST(MSLiteTest, Tensor_Destroy, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_Clone, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
     OH_AI_TensorHandle clone = OH_AI_TensorClone(tensor);
     ASSERT_NE(clone, nullptr);
@@ -857,18 +881,18 @@ HWTEST(MSLiteTest, Tensor_Clone, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_GetName, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
-    const char *tensor_name = OH_AI_TensorGetName(tensor);
-    ASSERT_EQ(strcmp(tensor_name, "data"), 0);
+    const char *tensorName = OH_AI_TensorGetName(tensor);
+    ASSERT_EQ(strcmp(tensorName, "data"), 0);
     delete[] imageBuf;
     OH_AI_TensorDestroy(&tensor);
 }
@@ -881,19 +905,19 @@ HWTEST(MSLiteTest, Tensor_GetName, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_SetName, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
     OH_AI_TensorSetName(tensor, "new_data");
-    const char *tensor_name = OH_AI_TensorGetName(tensor);
-    ASSERT_EQ(strcmp(tensor_name, "new_data"), 0);
+    const char *tensorName = OH_AI_TensorGetName(tensor);
+    ASSERT_EQ(strcmp(tensorName, "new_data"), 0);
     delete[] imageBuf;
     OH_AI_TensorDestroy(&tensor);
 }
@@ -906,15 +930,15 @@ HWTEST(MSLiteTest, Tensor_SetName, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_GetDataType, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
     OH_AI_DataType data_type = OH_AI_TensorGetDataType(tensor);
     ASSERT_EQ(data_type, OH_AI_DATATYPE_NUMBERTYPE_FLOAT32);
@@ -930,15 +954,15 @@ HWTEST(MSLiteTest, Tensor_GetDataType, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_SetDataType, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
     OH_AI_TensorSetDataType(tensor, OH_AI_DATATYPE_NUMBERTYPE_FLOAT16);
     OH_AI_DataType data_type = OH_AI_TensorGetDataType(tensor);
@@ -955,21 +979,21 @@ HWTEST(MSLiteTest, Tensor_SetDataType, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_GetShape, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
-    size_t ret_shape_num;
-    const int64_t *ret_shape = OH_AI_TensorGetShape(tensor, &ret_shape_num);
-    ASSERT_EQ(ret_shape_num, create_shape_num);
-    for (size_t i = 0; i < ret_shape_num; i++) {
-        ASSERT_EQ(ret_shape[i], create_shape[i]);
+    size_t retShapeNum;
+    const int64_t *retShape = OH_AI_TensorGetShape(tensor, &retShapeNum);
+    ASSERT_EQ(retShapeNum, createShapeNum);
+    for (size_t i = 0; i < retShapeNum; i++) {
+        ASSERT_EQ(retShape[i], createShape[i]);
     }
     delete[] imageBuf;
     OH_AI_TensorDestroy(&tensor);
@@ -983,30 +1007,30 @@ HWTEST(MSLiteTest, Tensor_GetShape, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_SetShape, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
-    size_t ret_shape_num;
-    const int64_t *ret_shape = OH_AI_TensorGetShape(tensor, &ret_shape_num);
-    ASSERT_EQ(ret_shape_num, create_shape_num);
-    for (size_t i = 0; i < ret_shape_num; i++) {
-        ASSERT_EQ(ret_shape[i], create_shape[i]);
+    size_t retShapeNum;
+    const int64_t *retShape = OH_AI_TensorGetShape(tensor, &retShapeNum);
+    ASSERT_EQ(retShapeNum, createShapeNum);
+    for (size_t i = 0; i < retShapeNum; i++) {
+        ASSERT_EQ(retShape[i], createShape[i]);
     }
-    constexpr size_t new_shape_num = 4;
-    int64_t new_shape[new_shape_num] = {1, 32, 32, 1};
-    OH_AI_TensorSetShape(tensor, new_shape, new_shape_num);
-    size_t new_ret_shape_num;
-    const int64_t *new_ret_shape = OH_AI_TensorGetShape(tensor, &new_ret_shape_num);
-    ASSERT_EQ(new_ret_shape_num, new_shape_num);
-    for (size_t i = 0; i < new_ret_shape_num; i++) {
-        ASSERT_EQ(new_ret_shape[i], new_shape[i]);
+    constexpr size_t newShapeNum = 4;
+    int64_t newShape[newShapeNum] = {1, 32, 32, 1};
+    OH_AI_TensorSetShape(tensor, newShape, newShapeNum);
+    size_t newRetShapeNum;
+    const int64_t *newRetShape = OH_AI_TensorGetShape(tensor, &newRetShapeNum);
+    ASSERT_EQ(newRetShapeNum, newShapeNum);
+    for (size_t i = 0; i < newRetShapeNum; i++) {
+        ASSERT_EQ(newRetShape[i], newShape[i]);
     }
     delete[] imageBuf;
     OH_AI_TensorDestroy(&tensor);
@@ -1020,15 +1044,15 @@ HWTEST(MSLiteTest, Tensor_SetShape, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_GetFormat, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
     OH_AI_Format data_format = OH_AI_TensorGetFormat(tensor);
     ASSERT_EQ(data_format, OH_AI_FORMAT_NHWC);
@@ -1044,15 +1068,15 @@ HWTEST(MSLiteTest, Tensor_GetFormat, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_SetFormat, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
     OH_AI_TensorSetFormat(tensor, OH_AI_FORMAT_NCHW);
     OH_AI_Format data_format = OH_AI_TensorGetFormat(tensor);
@@ -1069,21 +1093,22 @@ HWTEST(MSLiteTest, Tensor_SetFormat, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_GetData, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
-    const float *ret_data = static_cast<const float *>(OH_AI_TensorGetData(tensor));
-    ASSERT_NE(ret_data, nullptr);
+    const float *retData = static_cast<const float *>(OH_AI_TensorGetData(tensor));
+    ASSERT_NE(retData, nullptr);
     printf("return data is: ");
-    for (int i = 0; i < 20; ++i) {
-        printf("%f ", ret_data[i]);
+    constexpr int printNum = 20;
+    for (int i = 0; i < printNum; ++i) {
+        printf("%f ", retData[i]);
     }
     printf("\n");
     delete[] imageBuf;
@@ -1098,25 +1123,25 @@ HWTEST(MSLiteTest, Tensor_GetData, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_SetData, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
-    constexpr size_t data_len = 6;
-    float data[data_len] = {1, 2, 3, 4, 5, 6};
+    constexpr size_t dataLen = 6;
+    float data[dataLen] = {1, 2, 3, 4, 5, 6};
     OH_AI_TensorSetData(tensor, data);
-    const float *ret_data = static_cast<const float *>(OH_AI_TensorGetData(tensor));
-    ASSERT_NE(ret_data, nullptr);
+    const float *retData = static_cast<const float *>(OH_AI_TensorGetData(tensor));
+    ASSERT_NE(retData, nullptr);
     printf("return data is:");
-    for (size_t i = 0; i < data_len; i++) {
-        ASSERT_EQ(ret_data[i], data[i]);
-        printf("%f ", ret_data[i]);
+    for (size_t i = 0; i < dataLen; i++) {
+        ASSERT_EQ(retData[i], data[i]);
+        printf("%f ", retData[i]);
     }
     printf("\n");
     delete[] imageBuf;
@@ -1131,30 +1156,30 @@ HWTEST(MSLiteTest, Tensor_SetData, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_SetUserData, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
-    float *input_data = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(tensor));
-    constexpr size_t data_len = 6;
-    float data[data_len] = {1, 2, 3, 4, 5, 6};
-    for (size_t i = 0; i < data_len; i++) {
-        input_data[i] = data[i];
+    float *inputData = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(tensor));
+    constexpr size_t dataLen = 6;
+    float data[dataLen] = {1, 2, 3, 4, 5, 6};
+    for (size_t i = 0; i < dataLen; i++) {
+        inputData[i] = data[i];
     }
 
-    OH_AI_TensorSetUserData(tensor, input_data, size1);
-    const float *ret_data = static_cast<const float *>(OH_AI_TensorGetData(tensor));
-    ASSERT_NE(ret_data, nullptr);
+    OH_AI_TensorSetUserData(tensor, inputData, size1);
+    const float *retData = static_cast<const float *>(OH_AI_TensorGetData(tensor));
+    ASSERT_NE(retData, nullptr);
     printf("return data is:");
-    for (size_t i = 0; i < data_len; i++) {
-        ASSERT_EQ(ret_data[i], data[i]);
-        printf("%f ", ret_data[i]);
+    for (size_t i = 0; i < dataLen; i++) {
+        ASSERT_EQ(retData[i], data[i]);
+        printf("%f ", retData[i]);
     }
     printf("\n");
     delete[] imageBuf;
@@ -1169,19 +1194,19 @@ HWTEST(MSLiteTest, Tensor_SetUserData, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_GetElementNum, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
-    int64_t element_num = OH_AI_TensorGetElementNum(tensor);
-    printf("Tensor name: %s, elements num: %" PRId64 ".\n", OH_AI_TensorGetName(tensor), element_num);
-    ASSERT_EQ(element_num, 6912);
+    int64_t elementNum = OH_AI_TensorGetElementNum(tensor);
+    printf("Tensor name: %s, elements num: %" PRId64 ".\n", OH_AI_TensorGetName(tensor), elementNum);
+    ASSERT_EQ(elementNum, 6912);
     delete[] imageBuf;
     OH_AI_TensorDestroy(&tensor);
 }
@@ -1194,19 +1219,19 @@ HWTEST(MSLiteTest, Tensor_GetElementNum, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_GetDataSize, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
-    size_t data_size = OH_AI_TensorGetDataSize(tensor);
-    printf("Tensor data size: %zu.\n", data_size);
-    ASSERT_EQ(data_size, 6912 * sizeof(float));
+    size_t dataSize = OH_AI_TensorGetDataSize(tensor);
+    printf("Tensor data size: %zu.\n", dataSize);
+    ASSERT_EQ(dataSize, 6912 * sizeof(float));
     delete[] imageBuf;
     OH_AI_TensorDestroy(&tensor);
 }
@@ -1219,18 +1244,18 @@ HWTEST(MSLiteTest, Tensor_GetDataSize, testing::ext::TestSize.Level0) {
 HWTEST(MSLiteTest, Tensor_GetMutableData, testing::ext::TestSize.Level0) {
     printf("==========ReadFile==========\n");
     size_t size1;
-    size_t *ptr_size1 = &size1;
+    size_t *ptrSize1 = &size1;
     const char *imagePath = "/data/test/resource/ml_face_isface.input";
-    char *imageBuf = ReadFile(imagePath, ptr_size1);
+    char *imageBuf = ReadFile(imagePath, ptrSize1);
     ASSERT_NE(imageBuf, nullptr);
     printf("==========OH_AI_TensorCreate==========\n");
-    constexpr size_t create_shape_num = 4;
-    int64_t create_shape[create_shape_num] = {1, 48, 48, 3};
-    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, create_shape,
-                                                   create_shape_num, imageBuf, size1);
+    constexpr size_t createShapeNum = 4;
+    int64_t createShape[createShapeNum] = {1, 48, 48, 3};
+    OH_AI_TensorHandle tensor = OH_AI_TensorCreate("data", OH_AI_DATATYPE_NUMBERTYPE_FLOAT32, createShape,
+                                                   createShapeNum, imageBuf, size1);
     ASSERT_NE(tensor, nullptr);
-    float *input_data = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(tensor));
-    ASSERT_NE(input_data, nullptr);
+    float *inputData = reinterpret_cast<float *>(OH_AI_TensorGetMutableData(tensor));
+    ASSERT_NE(inputData, nullptr);
     delete[] imageBuf;
     OH_AI_TensorDestroy(&tensor);
 }

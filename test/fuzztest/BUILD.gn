@@ -24,11 +24,17 @@ ohos_fuzztest("MindSporeFuzzTest") {
   fuzz_config_file = "./mindspore_fuzzer"
   resource_config_file = "../resource/ohos_test.xml"
 
-  sources = [ "mindspore_fuzzer/mindspore_fuzzer.cpp" ]
+  sources = [
+    "../utils/common.cpp",
+    "../utils/model_utils.cpp",
+    "mindspore_fuzzer/context_c_fuzzer.cpp",
+    "mindspore_fuzzer/mindspore_fuzzer.cpp",
+  ]
 
   configs = [ ":module_private_config" ]
 
   deps = [
+    "//third_party/googletest:gtest",
     "//third_party/mindspore/mindspore-src/source/mindspore/lite:mindspore_ndk",
   ]
 
