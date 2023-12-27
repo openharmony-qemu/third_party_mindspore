@@ -1,7 +1,7 @@
-From ed0287de64e9f80542d1027f96e19de68509e9d3 Mon Sep 17 00:00:00 2001
+From 26c2506d7c686bd738d2d88af8306d3bffa914ab Mon Sep 17 00:00:00 2001
 From: qinzheng4 <qinzheng4@huawei.com>
 Date: Mon, 20 Nov 2023 16:35:48 +0800
-Subject: [PATCH] 0003-add-js-api.patch
+Subject: [PATCH] fix
 
 ---
  include/js_api/@ohos.ai.mindSporeLite.d.ts    |  867 ++++++
@@ -16,12 +16,12 @@ Subject: [PATCH] 0003-add-js-api.patch
  include/js_api/nnrt_device_desc_napi.h        |   45 +
  mindspore/lite/BUILD.gn                       |    1 +
  mindspore/lite/src/litert/js_api/BUILD.gn     |   56 +
- .../lite/src/litert/js_api/common_napi.cc     |  274 ++
- .../src/litert/js_api/mslite_model_napi.cc    | 2388 +++++++++++++++++
+ .../lite/src/litert/js_api/common_napi.cc     |  303 +++
+ .../src/litert/js_api/mslite_model_napi.cc    | 2390 +++++++++++++++++
  .../lite/src/litert/js_api/mstensor_napi.cc   |  416 +++
  .../litert/js_api/native_module_ohos_ms.cc    |   48 +
  .../src/litert/js_api/nnrt_device_desc.cc     |  216 ++
- 17 files changed, 4930 insertions(+)
+ 17 files changed, 4961 insertions(+)
  create mode 100644 include/js_api/@ohos.ai.mindSporeLite.d.ts
  create mode 100644 include/js_api/common_napi.h
  create mode 100644 include/js_api/ms_errors.h
@@ -914,7 +914,7 @@ index 00000000..6b9aa822
 +export default mindSporeLite;
 diff --git a/include/js_api/common_napi.h b/include/js_api/common_napi.h
 new file mode 100644
-index 00000000..a63aa639
+index 00000000..b5df88db
 --- /dev/null
 +++ b/include/js_api/common_napi.h
 @@ -0,0 +1,196 @@
@@ -955,6 +955,8 @@ index 00000000..a63aa639
 +  static int32_t GetPropertyString(napi_env env, napi_value config_obj, const std::string &type, std::string &result);
 +  static int32_t GetPropertyInt32Array(napi_env env, napi_value config_obj, const std::string &type,
 +                                       std::vector<int32_t> &result);
++  static int32_t GetPropertyBigIntUint64(napi_env env, napi_value config_obj, const std::string &type,
++                                         uint64_t &result);
 +  static int32_t GetPropertyStringArray(napi_env env, napi_value config_obj, const std::string &type,
 +                                        std::vector<std::string> &result);
 +  static int32_t GetStringArray(napi_env env, napi_value value, std::vector<std::string> &result);
@@ -970,34 +972,34 @@ index 00000000..a63aa639
 +};
 +
 +enum ContextThreadAffinityMode : int32_t {
-+    CONTEXT_AFFINITY_MODE = 0,
-+    CONTEXT_BIG_CORES_FIRST,
-+    CONTEXT_LITTLE_CORES_FIRST
++  CONTEXT_AFFINITY_MODE = 0,
++  CONTEXT_BIG_CORES_FIRST,
++  CONTEXT_LITTLE_CORES_FIRST
 +};
 +
 +enum TensorFormat : int32_t {
-+    TENSOR_DEFAULT_FORMAT = -1,
-+    TENSOR_NCHW,
-+    TENSOR_NHWC,
-+    TENSOR_NHWC4,
-+    TENSOR_HWKC,
-+    TENSOR_HWCK,
-+    TENSOR_KCHW
++  TENSOR_DEFAULT_FORMAT = -1,
++  TENSOR_NCHW,
++  TENSOR_NHWC,
++  TENSOR_NHWC4,
++  TENSOR_HWKC,
++  TENSOR_HWCK,
++  TENSOR_KCHW
 +};
 +
 +enum TensorDataType : int32_t {
-+    TENSOR_UNKNOWN = 0,
-+    TENSOR_INT8 = 32,
-+    TENSOR_INT16 = 33,
-+    TENSOR_INT32 = 34,
-+    TENSOR_INT64 = 35,
-+    TENSOR_UINT8 = 37,
-+    TENSOR_UINT16 = 38,
-+    TENSOR_UINT32 = 39,
-+    TENSOR_UINT64 = 40,
-+    TENSOR_FLOAT16 = 42,
-+    TENSOR_FLOAT32 = 43,
-+    TENSOR_FLOAT64 = 44
++  TENSOR_UNKNOWN = 0,
++  TENSOR_INT8 = 32,
++  TENSOR_INT16 = 33,
++  TENSOR_INT32 = 34,
++  TENSOR_INT64 = 35,
++  TENSOR_UINT8 = 37,
++  TENSOR_UINT16 = 38,
++  TENSOR_UINT32 = 39,
++  TENSOR_UINT64 = 40,
++  TENSOR_FLOAT16 = 42,
++  TENSOR_FLOAT32 = 43,
++  TENSOR_FLOAT64 = 44
 +};
 +
 +enum ModelMode : int32_t {
@@ -1068,18 +1070,16 @@ index 00000000..a63aa639
 +struct NnrtDeviceDesc {
 +  std::string name;
 +  ContextNnrtDeviceType type;
-+  int id;
++  size_t id;
 +};
 +
 +struct NNRTDevice {
-+  int device_id;
-+  int performance_mode;
-+  int priority;
++  size_t device_id;
++  int performance_mode{-1};
++  int priority{-1};
 +  NNRTDevice(){};
 +  NNRTDevice(int device_id, int performance_mode, int priority)
-+      : device_id(device_id),
-+        performance_mode(performance_mode),
-+        priority(priority) {};
++      : device_id(device_id), performance_mode(performance_mode), priority(priority){};
 +};
 +
 +struct TrainConfig {
@@ -1715,10 +1715,10 @@ index 00000000..f12e4db4
 +}
 diff --git a/mindspore/lite/src/litert/js_api/common_napi.cc b/mindspore/lite/src/litert/js_api/common_napi.cc
 new file mode 100644
-index 00000000..be0c1632
+index 00000000..5d86f32d
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/common_napi.cc
-@@ -0,0 +1,274 @@
+@@ -0,0 +1,303 @@
 +/*
 + * Copyright (C) 2023 Huawei Device Co., Ltd.
 + * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1825,6 +1825,35 @@ index 00000000..be0c1632
 +    return ERR_INVALID_PARAM;
 +  }
 +  result = std::string(buffer);
++  return SUCCESS;
++}
++
++int32_t CommonNapi::GetPropertyBigIntUint64(napi_env env, napi_value config_obj, const std::string &type,
++                                uint64_t &result) {
++  napi_value item = nullptr;
++  bool exist = false;
++  napi_status status = napi_has_named_property(env, config_obj, type.c_str(), &exist);
++
++  if (status != napi_ok || !exist) {
++    MS_LOG(WARNING) << "can not find " << type.c_str() << "will set default value";
++    return ERR_NOT_EXISTED_PARAM;
++  }
++
++  if (napi_get_named_property(env, config_obj, type.c_str(), &item) != napi_ok) {
++    MS_LOG(WARNING) << "fail to get property: " << type.c_str();
++    return ERR_INVALID_PARAM;
++  }
++
++  bool lossless = false;
++  if (napi_get_value_bigint_uint64(env, item, &result, &lossless) != napi_ok) {
++    MS_LOG(WARNING) << "fail to get property value " << type.c_str();
++    return ERR_INVALID_PARAM;
++  }
++
++  if (!lossless) {
++    MS_LOG(WARNING) << "get uint64_t loss precision !";
++    return ERR_INVALID_PARAM;
++  }
 +  return SUCCESS;
 +}
 +
@@ -1996,10 +2025,10 @@ index 00000000..be0c1632
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/js_api/mslite_model_napi.cc b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..c2397cba
+index 00000000..b3d3d200
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
-@@ -0,0 +1,2388 @@
+@@ -0,0 +1,2390 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -2431,7 +2460,8 @@ index 00000000..c2397cba
 +    NnrtDeviceDesc nnrt_device;
 +    NNRTDeviceDesc *nnrt_device_desc = OH_AI_GetElementOfNNRTDeviceDescs(devices, i);
 +    nnrt_device.name.assign(OH_AI_GetNameFromNNRTDeviceDesc(nnrt_device_desc));
-+    nnrt_device.id = OH_AI_GetDeviceIdFromNNRTDeviceDesc(nnrt_device_desc);
++    size_t id = OH_AI_GetDeviceIdFromNNRTDeviceDesc(nnrt_device_desc);
++    nnrt_device.id = id;
 +    nnrt_device.type = static_cast<ContextNnrtDeviceType>(OH_AI_GetTypeFromNNRTDeviceDesc(nnrt_device_desc));
 +    auto status = napi_set_element(env, jsResult, i, NnrtDeviceDescNapi::NewInstance(env, nnrt_device));
 +    if (status != napi_ok) {
@@ -2673,8 +2703,12 @@ index 00000000..c2397cba
 +          return ERR_INVALID_OPERATION;
 +        }
 +        nnrt_device->SetDeviceID(context_ptr->nnrt_device.device_id);
-+        nnrt_device->SetPerformanceMode(context_ptr->nnrt_device.performance_mode);
-+        nnrt_device->SetPriority(context_ptr->nnrt_device.priority);
++        if (context_ptr->nnrt_device.performance_mode != -1) {
++          nnrt_device->SetPerformanceMode(context_ptr->nnrt_device.performance_mode);
++        }
++        if (context_ptr->nnrt_device.priority != -1) {
++          nnrt_device->SetPriority(context_ptr->nnrt_device.priority);
++        }
 +        // ignore extensions
 +        device_infos.push_back(nnrt_device);
 +        break;
@@ -3427,13 +3461,10 @@ index 00000000..c2397cba
 +  std::string str_value = "";
 +  std::vector<int32_t> affinity_cores;
 +
-+  if (CommonNapi::GetPropertyInt32(env, config_item, "deviceID", int_value) == SUCCESS) {
-+    MS_LOG(DEBUG) << "deviceID: " << int_value;
-+    if (int_value < 0) {
-+      MS_LOG(ERROR) << "deviceID value is set: " << int_value << ", is out of limition";
-+      return ERR_INVALID_OPERATION;
-+    }
-+    context.nnrt_device.device_id = int_value;
++  uint64_t device_id;
++  if (CommonNapi::GetPropertyBigIntUint64(env, config_item, "deviceID", device_id) == SUCCESS) {
++    MS_LOG(DEBUG) << "deviceID: " << device_id;
++    context.nnrt_device.device_id = static_cast<size_t>(device_id);
 +  } else {
 +    context.nnrt_device.device_id = PARAM0; // default zero device id
 +  }
@@ -3446,7 +3477,7 @@ index 00000000..c2397cba
 +    }
 +    context.nnrt_device.performance_mode = int_value;
 +  } else {
-+    context.nnrt_device.performance_mode = PARAM0; // default PERFORMANCE_NONE
++    context.nnrt_device.performance_mode = -1; // default PERFORMANCE_NONE
 +  }
 +
 +  if (CommonNapi::GetPropertyInt32(env, config_item, "priority", int_value) == SUCCESS) {
@@ -3457,7 +3488,7 @@ index 00000000..c2397cba
 +    }
 +    context.nnrt_device.priority = int_value;
 +  } else {
-+    context.nnrt_device.priority = PARAM0; // default PRIORITY_NONE
++    context.nnrt_device.priority = -1; // default PRIORITY_NONE
 +  }
 +
 +  // ignore extensions for now
@@ -4867,7 +4898,7 @@ index 00000000..7a381c1e
 +}
 diff --git a/mindspore/lite/src/litert/js_api/nnrt_device_desc.cc b/mindspore/lite/src/litert/js_api/nnrt_device_desc.cc
 new file mode 100644
-index 00000000..a5dc45b4
+index 00000000..45f9ce6f
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/nnrt_device_desc.cc
 @@ -0,0 +1,216 @@
@@ -5046,8 +5077,8 @@ index 00000000..a5dc45b4
 +   return undefinedResult;
 + }
 +
-+ auto id = desc->nativeNnrtDeviceDesc_->id;
-+ status = napi_create_int32(env, id, &jsResult);
++ auto id = static_cast<uint64_t>(desc->nativeNnrtDeviceDesc_->id);
++ status = napi_create_bigint_uint64(env, id, &jsResult);
 + if (status != napi_ok) {
 +   MS_LOG(ERROR) << "napi_create_int32 error";
 +   return undefinedResult;
