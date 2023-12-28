@@ -1,6 +1,6 @@
-From bcea24452c4a1aa7852d21585dd41f52df709e2f Mon Sep 17 00:00:00 2001
+From 637f120a3a732b591810982052679ea2ace275b6 Mon Sep 17 00:00:00 2001
 From: qinzheng4 <qinzheng4@huawei.com>
-Date: Thu, 28 Dec 2023 19:25:38 +0800
+Date: Thu, 28 Dec 2023 22:23:50 +0800
 Subject: [PATCH] 0006-remove-lite-expression-fix-double-loadso
 
 ---
@@ -85,6 +85,7 @@ Subject: [PATCH] 0006-remove-lite-expression-fix-double-loadso
  .../src/litert/cxx_api/train/model_build.cc   |  28 --
  .../litert/cxx_api/train/model_build_impl.cc  |  28 --
  .../src/litert/cxx_api/train/model_impl.cc    |   1 -
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc |  19 +
  mindspore/lite/src/train/graph_fusion.cc      |   7 +
  .../fusion/remove_redundant_tensor.cc         |  89 +++++
  .../fusion/remove_redundant_tensor.h}         |  25 +-
@@ -95,7 +96,7 @@ Subject: [PATCH] 0006-remove-lite-expression-fix-double-loadso
  .../lite/tools/benchmark_train/net_runner.cc  | 371 ------------------
  .../lite/tools/benchmark_train/net_runner.h   |  81 ----
  .../lite/tools/benchmark_train/net_train.cc   |   1 -
- 91 files changed, 162 insertions(+), 6776 deletions(-)
+ 92 files changed, 181 insertions(+), 6776 deletions(-)
  delete mode 100644 include/api/net.h
  delete mode 100644 mindspore/lite/src/expression/cfg.h
  delete mode 100644 mindspore/lite/src/expression/export.cc
@@ -7095,6 +7096,36 @@ index e2fe7a82..726b0585 100644
  #include "src/litert/cxx_api/converters.h"
  #include "src/litert/cxx_api/metrics/metrics_adapter.h"
  #include "src/litert/cxx_api/metrics/metrics_impl.h"
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+index 9f012e76..5cfa6c9a 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+@@ -26,6 +26,25 @@
+ #include "schema/ops_generated.h"
+ #include "flatbuffers/flatbuffers.h"
+ #include "litert/tensor_category.h"
++#include <dlfcn.h>
++
++namespace {
++void* g_libHandle = nullptr;
++__attribute__((constructor()))
++static void OpenLib(void) {
++    MS_LOG(INFO) << "dlopen libneural_network_runtime_ext.so";
++    g_libHandle = dlopen("libneural_network_runtime_ext.so", RTLD_NOW | RTLD_GLOBAL);
++}
++
++__attribute__((destructor()))
++static void CloseLib(void) {
++    MS_LOG(INFO) << "dlclose libneural_network_runtime_ext.so";
++    if (g_libHandle != nullptr) {
++        dlclose(g_libHandle);
++    }
++}
++}
++
+ 
+ namespace mindspore {
+ namespace lite {
 diff --git a/mindspore/lite/src/train/graph_fusion.cc b/mindspore/lite/src/train/graph_fusion.cc
 index 7982f818..980b2baa 100644
 --- a/mindspore/lite/src/train/graph_fusion.cc
