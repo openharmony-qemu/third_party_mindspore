@@ -1,3 +1,172 @@
+From bcea24452c4a1aa7852d21585dd41f52df709e2f Mon Sep 17 00:00:00 2001
+From: qinzheng4 <qinzheng4@huawei.com>
+Date: Thu, 28 Dec 2023 19:25:38 +0800
+Subject: [PATCH] 0006-remove-lite-expression-fix-double-loadso
+
+---
+ include/api/graph.h                           |  15 -
+ include/api/model.h                           |  14 -
+ include/api/net.h                             | 142 -------
+ .../cpu/kernel/nnacl/infer/reshape_infer.c    |   2 +-
+ mindspore/lite/BUILD.gn                       |  48 +--
+ mindspore/lite/src/CMakeLists.txt             |  32 +-
+ .../common/ops/populate/custom_populate.cc    |   9 +-
+ mindspore/lite/src/expression/cfg.h           |  68 ----
+ mindspore/lite/src/expression/export.cc       |  76 ----
+ mindspore/lite/src/expression/export.h        |  52 ---
+ mindspore/lite/src/expression/expr.cc         |  98 -----
+ mindspore/lite/src/expression/expr.h          |  70 ----
+ mindspore/lite/src/expression/import.cc       | 180 ---------
+ mindspore/lite/src/expression/import.h        |  61 ---
+ mindspore/lite/src/expression/net.cc          | 268 -------------
+ mindspore/lite/src/expression/net.h           | 114 ------
+ mindspore/lite/src/expression/node.cc         | 271 -------------
+ mindspore/lite/src/expression/node.h          | 156 --------
+ mindspore/lite/src/expression/ops.cc          |  66 ----
+ mindspore/lite/src/expression/ops.h           |  69 ----
+ .../lite/src/expression/ops/activation.cc     | 133 -------
+ .../lite/src/expression/ops/activation.h      |  44 ---
+ mindspore/lite/src/expression/ops/adam.cc     | 142 -------
+ mindspore/lite/src/expression/ops/adam.h      |  46 ---
+ mindspore/lite/src/expression/ops/addn.cc     |  42 --
+ mindspore/lite/src/expression/ops/addn.h      |  34 --
+ .../lite/src/expression/ops/arithmetic.cc     | 223 -----------
+ .../lite/src/expression/ops/arithmetic.h      |  75 ----
+ .../src/expression/ops/arithmetic_self.cc     |  72 ----
+ .../lite/src/expression/ops/arithmetic_self.h |  46 ---
+ mindspore/lite/src/expression/ops/assign.cc   |  60 ---
+ mindspore/lite/src/expression/ops/assign.h    |  35 --
+ .../lite/src/expression/ops/batchnorm.cc      | 135 -------
+ mindspore/lite/src/expression/ops/batchnorm.h |  43 --
+ mindspore/lite/src/expression/ops/biasadd.cc  |  93 -----
+ mindspore/lite/src/expression/ops/biasadd.h   |  44 ---
+ mindspore/lite/src/expression/ops/conv.cc     | 241 ------------
+ mindspore/lite/src/expression/ops/conv.h      |  58 ---
+ mindspore/lite/src/expression/ops/dense.cc    | 151 -------
+ mindspore/lite/src/expression/ops/dense.h     |  44 ---
+ mindspore/lite/src/expression/ops/depend.cc   |  43 --
+ mindspore/lite/src/expression/ops/dropout.cc  |  91 -----
+ mindspore/lite/src/expression/ops/dropout.h   |  42 --
+ mindspore/lite/src/expression/ops/flatten.cc  |  71 ----
+ mindspore/lite/src/expression/ops/flatten.h   |  36 --
+ mindspore/lite/src/expression/ops/pooling.cc  | 215 ----------
+ mindspore/lite/src/expression/ops/pooling.h   |  74 ----
+ mindspore/lite/src/expression/ops/reduce.cc   | 126 ------
+ mindspore/lite/src/expression/ops/reduce.h    |  42 --
+ mindspore/lite/src/expression/ops/reshape.cc  |  74 ----
+ mindspore/lite/src/expression/ops/reshape.h   |  37 --
+ mindspore/lite/src/expression/ops/softmax.cc  | 119 ------
+ mindspore/lite/src/expression/ops/softmax.h   |  39 --
+ .../lite/src/expression/ops/softmaxCE.cc      |  93 -----
+ mindspore/lite/src/expression/ops/softmaxCE.h |  47 ---
+ mindspore/lite/src/expression/ops/tile.cc     |  62 ---
+ mindspore/lite/src/expression/ops/tile.h      |  40 --
+ .../lite/src/expression/ops/transpose.cc      |  88 -----
+ mindspore/lite/src/expression/ops/transpose.h |  59 ---
+ mindspore/lite/src/expression/ops_utils.cc    | 275 -------------
+ mindspore/lite/src/expression/ops_utils.h     |  69 ----
+ mindspore/lite/src/expression/param.cc        |  70 ----
+ mindspore/lite/src/expression/param.h         |  60 ---
+ mindspore/lite/src/expression/sequential.cc   |  30 --
+ mindspore/lite/src/expression/sequential.h    |  32 --
+ .../lite/src/litert/cxx_api/expression/net.cc | 145 -------
+ .../src/litert/cxx_api/expression/net_impl.cc | 220 -----------
+ .../src/litert/cxx_api/expression/net_impl.h  |  95 -----
+ .../litert/cxx_api/expression/node_impl.cc    |  50 ---
+ .../src/litert/cxx_api/expression/node_impl.h |  71 ----
+ .../lite/src/litert/cxx_api/graph/graph.cc    |   9 -
+ .../lite/src/litert/cxx_api/graph/net_data.cc |  21 -
+ .../lite/src/litert/cxx_api/graph/net_data.h  |  35 --
+ .../lite/src/litert/cxx_api/model/model.cc    |   1 -
+ .../src/litert/cxx_api/model/model_impl.cc    |   8 -
+ .../src/litert/cxx_api/model/model_impl.h     |   4 -
+ .../lite/src/litert/cxx_api/serialization.cc  |  39 +-
+ .../lite/src/litert/cxx_api/train/model.cc    |   1 -
+ .../src/litert/cxx_api/train/model_build.cc   |  28 --
+ .../litert/cxx_api/train/model_build_impl.cc  |  28 --
+ .../src/litert/cxx_api/train/model_impl.cc    |   1 -
+ mindspore/lite/src/train/graph_fusion.cc      |   7 +
+ .../fusion/remove_redundant_tensor.cc         |  89 +++++
+ .../fusion/remove_redundant_tensor.h}         |  25 +-
+ mindspore/lite/src/train/train_session.cc     |  90 ++---
+ mindspore/lite/src/train/train_session.h      |   3 -
+ .../test/config_level0/models_ms_train.cfg    |   2 -
+ .../lite/tools/benchmark_train/CMakeLists.txt |   7 -
+ .../lite/tools/benchmark_train/net_runner.cc  | 371 ------------------
+ .../lite/tools/benchmark_train/net_runner.h   |  81 ----
+ .../lite/tools/benchmark_train/net_train.cc   |   1 -
+ 91 files changed, 162 insertions(+), 6776 deletions(-)
+ delete mode 100644 include/api/net.h
+ delete mode 100644 mindspore/lite/src/expression/cfg.h
+ delete mode 100644 mindspore/lite/src/expression/export.cc
+ delete mode 100644 mindspore/lite/src/expression/export.h
+ delete mode 100644 mindspore/lite/src/expression/expr.cc
+ delete mode 100644 mindspore/lite/src/expression/expr.h
+ delete mode 100644 mindspore/lite/src/expression/import.cc
+ delete mode 100644 mindspore/lite/src/expression/import.h
+ delete mode 100644 mindspore/lite/src/expression/net.cc
+ delete mode 100644 mindspore/lite/src/expression/net.h
+ delete mode 100644 mindspore/lite/src/expression/node.cc
+ delete mode 100644 mindspore/lite/src/expression/node.h
+ delete mode 100644 mindspore/lite/src/expression/ops.cc
+ delete mode 100644 mindspore/lite/src/expression/ops.h
+ delete mode 100644 mindspore/lite/src/expression/ops/activation.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/activation.h
+ delete mode 100644 mindspore/lite/src/expression/ops/adam.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/adam.h
+ delete mode 100644 mindspore/lite/src/expression/ops/addn.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/addn.h
+ delete mode 100644 mindspore/lite/src/expression/ops/arithmetic.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/arithmetic.h
+ delete mode 100644 mindspore/lite/src/expression/ops/arithmetic_self.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/arithmetic_self.h
+ delete mode 100644 mindspore/lite/src/expression/ops/assign.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/assign.h
+ delete mode 100644 mindspore/lite/src/expression/ops/batchnorm.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/batchnorm.h
+ delete mode 100644 mindspore/lite/src/expression/ops/biasadd.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/biasadd.h
+ delete mode 100644 mindspore/lite/src/expression/ops/conv.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/conv.h
+ delete mode 100644 mindspore/lite/src/expression/ops/dense.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/dense.h
+ delete mode 100644 mindspore/lite/src/expression/ops/depend.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/dropout.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/dropout.h
+ delete mode 100644 mindspore/lite/src/expression/ops/flatten.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/flatten.h
+ delete mode 100644 mindspore/lite/src/expression/ops/pooling.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/pooling.h
+ delete mode 100644 mindspore/lite/src/expression/ops/reduce.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/reduce.h
+ delete mode 100644 mindspore/lite/src/expression/ops/reshape.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/reshape.h
+ delete mode 100644 mindspore/lite/src/expression/ops/softmax.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/softmax.h
+ delete mode 100644 mindspore/lite/src/expression/ops/softmaxCE.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/softmaxCE.h
+ delete mode 100644 mindspore/lite/src/expression/ops/tile.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/tile.h
+ delete mode 100644 mindspore/lite/src/expression/ops/transpose.cc
+ delete mode 100644 mindspore/lite/src/expression/ops/transpose.h
+ delete mode 100644 mindspore/lite/src/expression/ops_utils.cc
+ delete mode 100644 mindspore/lite/src/expression/ops_utils.h
+ delete mode 100644 mindspore/lite/src/expression/param.cc
+ delete mode 100644 mindspore/lite/src/expression/param.h
+ delete mode 100644 mindspore/lite/src/expression/sequential.cc
+ delete mode 100644 mindspore/lite/src/expression/sequential.h
+ delete mode 100644 mindspore/lite/src/litert/cxx_api/expression/net.cc
+ delete mode 100644 mindspore/lite/src/litert/cxx_api/expression/net_impl.cc
+ delete mode 100644 mindspore/lite/src/litert/cxx_api/expression/net_impl.h
+ delete mode 100644 mindspore/lite/src/litert/cxx_api/expression/node_impl.cc
+ delete mode 100644 mindspore/lite/src/litert/cxx_api/expression/node_impl.h
+ delete mode 100644 mindspore/lite/src/litert/cxx_api/graph/net_data.cc
+ delete mode 100644 mindspore/lite/src/litert/cxx_api/graph/net_data.h
+ create mode 100644 mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.cc
+ rename mindspore/lite/src/{expression/ops/depend.h => train/optimizer/fusion/remove_redundant_tensor.h} (55%)
+ delete mode 100644 mindspore/lite/tools/benchmark_train/net_runner.cc
+ delete mode 100644 mindspore/lite/tools/benchmark_train/net_runner.h
+
 diff --git a/include/api/graph.h b/include/api/graph.h
 index 05548890..f25a6217 100644
 --- a/include/api/graph.h
@@ -373,6 +542,36 @@ index 469bcb6b..47033473 100644
 -
  add_subdirectory(litert/kernel/cpu)
  add_subdirectory(common)
+ 
+diff --git a/mindspore/lite/src/common/ops/populate/custom_populate.cc b/mindspore/lite/src/common/ops/populate/custom_populate.cc
+index 6c490130..9933f6ab 100644
+--- a/mindspore/lite/src/common/ops/populate/custom_populate.cc
++++ b/mindspore/lite/src/common/ops/populate/custom_populate.cc
+@@ -23,6 +23,7 @@
+ #include "nnacl/custom_is_inf_parameter.h"
+ #include "nnacl/custom_tensor_scatter_max_parameter.h"
+ #include "nnacl/custom_gather_d_grad_v2_parameter.h"
++#include "nnacl/scatter_nd_parameter.h"
+ using mindspore::schema::PrimitiveType_Custom;
+ 
+ namespace mindspore {
+@@ -108,13 +109,13 @@ OpParameter *CreateCustomIsInfParameter() {
+ }
+ 
+ OpParameter *CreateCustomTensorScatterMaxParameter() {
+-  auto *param = static_cast<CustomTensorScatterMaxParameter *>(malloc(sizeof(CustomTensorScatterMaxParameter)));
++  auto *param = static_cast<ScatterNDParameter *>(malloc(sizeof(ScatterNDParameter)));
+   if (param == nullptr) {
+-    MS_LOG(ERROR) << "malloc CustomTensorScatterMaxParameter failed.";
++    MS_LOG(ERROR) << "malloc ScatterNDParameter failed.";
+     return nullptr;
+   }
+-  memset(param, 0, sizeof(CustomTensorScatterMaxParameter));
+-  param->op_parameter_.type_ = PrimType_Inner_CustomTensorScatterMax;
++  memset(param, 0, sizeof(ScatterNDParameter));
++  param->op_parameter.type_ = PrimType_Inner_CustomTensorScatterMax;
+   return reinterpret_cast<OpParameter *>(param);
+ }
  
 diff --git a/mindspore/lite/src/expression/cfg.h b/mindspore/lite/src/expression/cfg.h
 deleted file mode 100644
@@ -7717,3 +7916,6 @@ index 514bba53..dd7b22a9 100644
  #include "src/common/common.h"
  #include "include/api/serialization.h"
  #include "securec/include/securec.h"
+-- 
+2.25.1
+
