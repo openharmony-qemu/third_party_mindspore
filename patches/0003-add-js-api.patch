@@ -1,7 +1,7 @@
-From 26c2506d7c686bd738d2d88af8306d3bffa914ab Mon Sep 17 00:00:00 2001
+From b20877c0466530157f88e8bb685cd3cfda5d448c Mon Sep 17 00:00:00 2001
 From: qinzheng4 <qinzheng4@huawei.com>
-Date: Mon, 20 Nov 2023 16:35:48 +0800
-Subject: [PATCH] fix
+Date: Sun, 7 Jan 2024 16:56:50 +0800
+Subject: [PATCH] auto-apply 0003-add-js-api.patch
 
 ---
  include/js_api/@ohos.ai.mindSporeLite.d.ts    |  867 ++++++
@@ -10,18 +10,18 @@ Subject: [PATCH] fix
  include/js_api/ms_info.h                      |   69 +
  include/js_api/ms_parameters_napi.h           |   24 +
  include/js_api/mslite_model_callback_napi.h   |   38 +
- include/js_api/mslite_model_napi.h            |  182 ++
+ include/js_api/mslite_model_napi.h            |  186 ++
  include/js_api/mstensor_napi.h                |   49 +
  include/js_api/native_module_ohos_ms.h        |   22 +
  include/js_api/nnrt_device_desc_napi.h        |   45 +
  mindspore/lite/BUILD.gn                       |    1 +
  mindspore/lite/src/litert/js_api/BUILD.gn     |   56 +
- .../lite/src/litert/js_api/common_napi.cc     |  303 +++
- .../src/litert/js_api/mslite_model_napi.cc    | 2390 +++++++++++++++++
+ .../lite/src/litert/js_api/common_napi.cc     |  303 ++
+ .../src/litert/js_api/mslite_model_napi.cc    | 2549 +++++++++++++++++
  .../lite/src/litert/js_api/mstensor_napi.cc   |  416 +++
  .../litert/js_api/native_module_ohos_ms.cc    |   48 +
  .../src/litert/js_api/nnrt_device_desc.cc     |  216 ++
- 17 files changed, 4961 insertions(+)
+ 17 files changed, 5124 insertions(+)
  create mode 100644 include/js_api/@ohos.ai.mindSporeLite.d.ts
  create mode 100644 include/js_api/common_napi.h
  create mode 100644 include/js_api/ms_errors.h
@@ -1315,10 +1315,10 @@ index 00000000..3b3ee595
 \ No newline at end of file
 diff --git a/include/js_api/mslite_model_napi.h b/include/js_api/mslite_model_napi.h
 new file mode 100644
-index 00000000..e1d51902
+index 00000000..1f075ba4
 --- /dev/null
 +++ b/include/js_api/mslite_model_napi.h
-@@ -0,0 +1,182 @@
+@@ -0,0 +1,186 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -1457,6 +1457,10 @@ index 00000000..e1d51902
 +  static napi_value SetupVirtualBatch(napi_env env, napi_callback_info info);
 +  static napi_value ExportModel(napi_env env, napi_callback_info info);
 +  static napi_value ExportWeightsCollaborateWithMicro(napi_env env, napi_callback_info info);
++  static napi_value GetTrainMode(napi_env env, napi_callback_info info);
++  static napi_value SetTrainMode(napi_env env, napi_callback_info info);
++  static napi_value GetLearningRate(napi_env env, napi_callback_info info);
++  static napi_value SetLearningRate(napi_env env, napi_callback_info info);
 +  static int32_t ParseModelInfo(napi_env env, napi_value root, ModelInfo &model_info);
 +  static int32_t ParseContextInfo(napi_env env, napi_value root, ContextInfo &info);
 +  static int32_t ParseTrainCfgInfo(napi_env env, napi_value root, TrainConfig &cfg);
@@ -2025,10 +2029,10 @@ index 00000000..5d86f32d
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/js_api/mslite_model_napi.cc b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..b3d3d200
+index 00000000..81eeeb7d
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
-@@ -0,0 +1,2390 @@
+@@ -0,0 +1,2549 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -2149,7 +2153,10 @@ index 00000000..b3d3d200
 +    DECLARE_NAPI_FUNCTION("updateWeights", UpdateWeights),
 +    DECLARE_NAPI_FUNCTION("setupVirtualBatch", SetupVirtualBatch),
 +    DECLARE_NAPI_FUNCTION("exportModel", ExportModel),
-+    DECLARE_NAPI_FUNCTION("exportWeightsCollaborateWithMicro", ExportWeightsCollaborateWithMicro)};
++    DECLARE_NAPI_FUNCTION("exportWeightsCollaborateWithMicro", ExportWeightsCollaborateWithMicro),
++    DECLARE_NAPI_GETTER_SETTER("trainMode", GetTrainMode, SetTrainMode),
++    DECLARE_NAPI_GETTER_SETTER("learningRate", GetLearningRate, SetLearningRate),
++    };
 +
 +  napi_property_descriptor staticProperty[] = {
 +    DECLARE_NAPI_STATIC_FUNCTION("loadModelFromFile", LoadMSLiteModelFromFile),
@@ -2586,6 +2593,17 @@ index 00000000..b3d3d200
 +    return nullptr;
 +  }
 +
++  auto train_cfg = std::make_shared<TrainCfg>();
++  std::vector<std::string> loss_names;
++  for (const auto &name : train_cfg->GetLossName()) {
++      loss_names.push_back(name);
++  }
++  for (const auto &name : context_info_ptr->train_cfg.loss_names) {
++      loss_names.push_back(name);
++  }
++  train_cfg->SetLossName(loss_names);
++  train_cfg->optimization_level_ = static_cast<OptimizationLevel>(context_info_ptr->train_cfg.optimization_level);
++
 +  switch (model_info_ptr->mode) {
 +    case kBuffer: {
 +      MS_LOG(DEBUG) << "input model buffer, model_buffer_total: " << model_info_ptr->model_buffer_total;
@@ -2605,9 +2623,6 @@ index 00000000..b3d3d200
 +        MS_LOG(ERROR) << "load ms file failed.";
 +        return nullptr;
 +      }
-+      auto train_cfg = std::make_shared<TrainCfg>();
-+      train_cfg->SetLossName(context_info_ptr->train_cfg.loss_names);
-+      train_cfg->optimization_level_ = static_cast<OptimizationLevel>(context_info_ptr->train_cfg.optimization_level);
 +      auto ret = model_ptr->Build(static_cast<mindspore::GraphCell>(graph), context, train_cfg);
 +      if (ret == mindspore::kSuccess) {
 +        MS_LOG(INFO) << "Build model from buffer success.";
@@ -2629,9 +2644,6 @@ index 00000000..b3d3d200
 +        MS_LOG(ERROR) << "load ms file failed.";
 +        return nullptr;
 +      }
-+      auto train_cfg = std::make_shared<TrainCfg>();
-+      train_cfg->SetLossName(context_info_ptr->train_cfg.loss_names);
-+      train_cfg->optimization_level_ = static_cast<OptimizationLevel>(context_info_ptr->train_cfg.optimization_level);
 +      auto ret = model_ptr->Build(static_cast<mindspore::GraphCell>(graph), context, train_cfg);
 +      if (ret == mindspore::kSuccess) {
 +        MS_LOG(INFO) << "Build model from path success.";
@@ -2655,9 +2667,6 @@ index 00000000..b3d3d200
 +        MS_LOG(ERROR) << "load ms file failed.";
 +        return nullptr;
 +      }
-+      auto train_cfg = std::make_shared<TrainCfg>();
-+      train_cfg->SetLossName(context_info_ptr->train_cfg.loss_names);
-+      train_cfg->optimization_level_ = static_cast<OptimizationLevel>(context_info_ptr->train_cfg.optimization_level);
 +      auto ret = model_ptr->Build(static_cast<mindspore::GraphCell>(graph), context, train_cfg);
 +      (void)munmap(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
 +      if (ret == mindspore::kSuccess) {
@@ -2839,7 +2848,7 @@ index 00000000..b3d3d200
 +  }
 +
 +  ret = GetNNRTDeviceInfo(env, args, context);
-+  if (ret != ERR_NOT_EXISTED_PARAM && ret != SUCCESS) {
++  if (ret != SUCCESS) {
 +    MS_LOG(ERROR) << "Get context NnrtDeviceInfo failed.";
 +    return ret;
 +  }
@@ -3466,13 +3475,13 @@ index 00000000..b3d3d200
 +    MS_LOG(DEBUG) << "deviceID: " << device_id;
 +    context.nnrt_device.device_id = static_cast<size_t>(device_id);
 +  } else {
-+    context.nnrt_device.device_id = PARAM0; // default zero device id
++    return ERR_INVALID_OPERATION;
 +  }
 +
 +  if (CommonNapi::GetPropertyInt32(env, config_item, "performanceMode", int_value) == SUCCESS) {
 +    MS_LOG(DEBUG) << "performanceMode: " << int_value;
 +    if (int_value > PARAM4 || int_value < PARAM0) {
-+      MS_LOG(ERROR) << "performanceMode value is set: " << int_value << ", is out of limition";
++      MS_LOG(ERROR) << "performanceMode value is set to: " << int_value << ", which is out of range";
 +      return ERR_INVALID_OPERATION;
 +    }
 +    context.nnrt_device.performance_mode = int_value;
@@ -3483,7 +3492,7 @@ index 00000000..b3d3d200
 +  if (CommonNapi::GetPropertyInt32(env, config_item, "priority", int_value) == SUCCESS) {
 +    MS_LOG(DEBUG) << "priority: " << int_value;
 +    if (int_value > PARAM3 || int_value < PARAM0) {
-+      MS_LOG(ERROR) << "priority value is set: " << int_value << ", is out of limition";
++      MS_LOG(ERROR) << "priority value is set to: " << int_value << ", which is out of range";
 +      return ERR_INVALID_OPERATION;
 +    }
 +    context.nnrt_device.priority = int_value;
@@ -4414,6 +4423,160 @@ index 00000000..b3d3d200
 +  status = napi_get_boolean(env, true, &jsResult);
 +  if (status != napi_ok) {
 +    MS_LOG(ERROR) << "get bool error";
++    return undefinedResult;
++  }
++  return jsResult;
++}
++napi_value MSLiteModelNapi::GetTrainMode(napi_env env, napi_callback_info info) {
++  napi_value undefinedResult = nullptr;
++
++  napi_value jsThis = nullptr;
++  napi_value jsResult = nullptr;
++  MSLiteModelNapi *modelNapi = nullptr;
++  napi_value argv[ARGS_ONE] = {0};
++  size_t argCount = ARGS_ONE;
++  auto status = napi_get_cb_info(env, info, &argCount, argv, &jsThis, nullptr);
++  if (status != napi_ok || jsThis == nullptr) {
++    MS_LOG(ERROR) << "failed to retrieve details about the callback";
++    return undefinedResult;
++  }
++  status = napi_unwrap(env, jsThis, reinterpret_cast<void **>(&modelNapi));
++  if (status != napi_ok || modelNapi == nullptr) {
++    MS_LOG(ERROR) << "get model napi error";
++    return undefinedResult;
++  }
++  if (modelNapi->native_model_ == nullptr) {
++    MS_LOG(ERROR) << "model is released(null), please create model again";
++    return undefinedResult;
++  }
++
++  auto train_mode = modelNapi->native_model_->GetTrainMode();
++
++  status = napi_get_boolean(env, train_mode, &jsResult);
++  if (status != napi_ok) {
++    MS_LOG(WARNING) << "create bool value error";
++    return undefinedResult;
++  }
++  return jsResult;
++}
++napi_value MSLiteModelNapi::SetTrainMode(napi_env env, napi_callback_info info) {
++  napi_value undefinedResult = nullptr;
++
++  napi_value jsThis = nullptr;
++  napi_value jsResult = nullptr;
++  MSLiteModelNapi *modelNapi = nullptr;
++  napi_value argv[ARGS_ONE] = {0};
++  size_t argCount = ARGS_ONE;
++  auto status = napi_get_cb_info(env, info, &argCount, argv, &jsThis, nullptr);
++  if (status != napi_ok || jsThis == nullptr) {
++    MS_LOG(ERROR) << "failed to retrieve details about the callback";
++    return undefinedResult;
++  }
++  status = napi_unwrap(env, jsThis, reinterpret_cast<void **>(&modelNapi));
++  if (status != napi_ok || modelNapi == nullptr) {
++    MS_LOG(ERROR) << "get model napi error";
++    return undefinedResult;
++  }
++  if (modelNapi->native_model_ == nullptr) {
++    MS_LOG(ERROR) << "model is released(null), please create model again";
++    return undefinedResult;
++  }
++
++  bool train_mode;
++  if (napi_get_value_bool(env, argv[PARAM0], &train_mode) != napi_ok) {
++    MS_LOG(WARNING) << "failed to get bool value from input train mode.";
++    return undefinedResult;
++  }
++  if (!model_info_->train_model) {
++    MS_LOG(WARNING) << "current model is not train model, unable to set train or eval mode";
++    return undefinedResult;
++  }
++  if (modelNapi->native_model_->SetTrainMode(train_mode) != kSuccess) {
++    MS_LOG(ERROR) << "set train mode failed";
++    return undefinedResult;
++  }
++
++  status = napi_get_boolean(env, true, &jsResult);
++  if (status != napi_ok) {
++    MS_LOG(WARNING) << "create bool value error";
++    return undefinedResult;
++  }
++  return jsResult;
++}
++napi_value MSLiteModelNapi::GetLearningRate(napi_env env, napi_callback_info info) {
++  napi_value undefinedResult = nullptr;
++
++  napi_value jsThis = nullptr;
++  napi_value jsResult = nullptr;
++  MSLiteModelNapi *modelNapi = nullptr;
++  napi_value argv[ARGS_ONE] = {0};
++  size_t argCount = ARGS_ONE;
++  auto status = napi_get_cb_info(env, info, &argCount, argv, &jsThis, nullptr);
++  if (status != napi_ok || jsThis == nullptr) {
++    MS_LOG(ERROR) << "failed to retrieve details about the callback";
++    return undefinedResult;
++  }
++  status = napi_unwrap(env, jsThis, reinterpret_cast<void **>(&modelNapi));
++  if (status != napi_ok || modelNapi == nullptr) {
++    MS_LOG(ERROR) << "get model napi error";
++    return undefinedResult;
++  }
++  if (modelNapi->native_model_ == nullptr) {
++    MS_LOG(ERROR) << "model is released(null), please create model again";
++    return undefinedResult;
++  }
++
++  auto lr = modelNapi->native_model_->GetLearningRate();
++
++  status = napi_create_double(env, lr, &jsResult);
++  if (status != napi_ok) {
++    MS_LOG(WARNING) << "create double value error";
++    return undefinedResult;
++  }
++  return jsResult;
++}
++napi_value MSLiteModelNapi::SetLearningRate(napi_env env, napi_callback_info info) {
++  napi_value undefinedResult = nullptr;
++
++  napi_value jsThis = nullptr;
++  napi_value jsResult = nullptr;
++  MSLiteModelNapi *modelNapi = nullptr;
++  napi_value argv[ARGS_ONE] = {0};
++  size_t argCount = ARGS_ONE;
++  auto status = napi_get_cb_info(env, info, &argCount, argv, &jsThis, nullptr);
++  if (status != napi_ok || jsThis == nullptr) {
++    MS_LOG(ERROR) << "failed to retrieve details about the callback";
++    return undefinedResult;
++  }
++  status = napi_unwrap(env, jsThis, reinterpret_cast<void **>(&modelNapi));
++  if (status != napi_ok || modelNapi == nullptr) {
++    MS_LOG(ERROR) << "get model napi error";
++    return undefinedResult;
++  }
++  if (modelNapi->native_model_ == nullptr) {
++    MS_LOG(ERROR) << "model is released(null), please create model again";
++    return undefinedResult;
++  }
++
++  if (!model_info_->train_model) {
++    MS_LOG(WARNING) << "current model is not train model, unable to set learning rate";
++    return undefinedResult;
++  }
++
++  double lr;
++  if (napi_get_value_double(env, argv[PARAM0], &lr) != napi_ok) {
++    MS_LOG(WARNING) << "failed to get double value.";
++    return undefinedResult;
++  }
++
++  if (modelNapi->native_model_->SetLearningRate(static_cast<float>(lr)) != kSuccess) {
++    MS_LOG(ERROR) << "set learning rate failed";
++    return undefinedResult;
++  }
++
++  status = napi_get_boolean(env, true, &jsResult);
++  if (status != napi_ok) {
++    MS_LOG(WARNING) << "create bool value error";
 +    return undefinedResult;
 +  }
 +  return jsResult;
