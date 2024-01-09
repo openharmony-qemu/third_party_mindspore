@@ -1,7 +1,7 @@
-From b20877c0466530157f88e8bb685cd3cfda5d448c Mon Sep 17 00:00:00 2001
-From: qinzheng4 <qinzheng4@huawei.com>
-Date: Sun, 7 Jan 2024 16:56:50 +0800
-Subject: [PATCH] auto-apply 0003-add-js-api.patch
+From f9b182ac30c5cbb3f0a8c72ac0ca5dcfc69ba81e Mon Sep 17 00:00:00 2001
+From: 22dimensions <waitingwind@foxmail.com>
+Date: Tue, 9 Jan 2024 00:04:39 +0800
+Subject: [PATCH] fix-auto-apply 0003-add-js-api.patch
 
 ---
  include/js_api/@ohos.ai.mindSporeLite.d.ts    |  867 ++++++
@@ -2029,7 +2029,7 @@ index 00000000..5d86f32d
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/js_api/mslite_model_napi.cc b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..81eeeb7d
+index 00000000..697d530f
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 @@ -0,0 +1,2549 @@
@@ -2848,7 +2848,7 @@ index 00000000..81eeeb7d
 +  }
 +
 +  ret = GetNNRTDeviceInfo(env, args, context);
-+  if (ret != SUCCESS) {
++  if (ret != ERR_NOT_EXISTED_PARAM && ret != SUCCESS) {
 +    MS_LOG(ERROR) << "Get context NnrtDeviceInfo failed.";
 +    return ret;
 +  }
