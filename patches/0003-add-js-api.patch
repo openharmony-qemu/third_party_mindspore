@@ -1,7 +1,7 @@
-From f9b182ac30c5cbb3f0a8c72ac0ca5dcfc69ba81e Mon Sep 17 00:00:00 2001
-From: 22dimensions <waitingwind@foxmail.com>
-Date: Tue, 9 Jan 2024 00:04:39 +0800
-Subject: [PATCH] fix-auto-apply 0003-add-js-api.patch
+From 35b86653db303bf27d2329067c1172098e436e50 Mon Sep 17 00:00:00 2001
+From: qinzheng4 <qinzheng4@huawei.com>
+Date: Wed, 10 Jan 2024 13:47:59 +0800
+Subject: [PATCH] fix
 
 ---
  include/js_api/@ohos.ai.mindSporeLite.d.ts    |  867 ++++++
@@ -17,11 +17,11 @@ Subject: [PATCH] fix-auto-apply 0003-add-js-api.patch
  mindspore/lite/BUILD.gn                       |    1 +
  mindspore/lite/src/litert/js_api/BUILD.gn     |   56 +
  .../lite/src/litert/js_api/common_napi.cc     |  303 ++
- .../src/litert/js_api/mslite_model_napi.cc    | 2549 +++++++++++++++++
+ .../src/litert/js_api/mslite_model_napi.cc    | 2551 +++++++++++++++++
  .../lite/src/litert/js_api/mstensor_napi.cc   |  416 +++
  .../litert/js_api/native_module_ohos_ms.cc    |   48 +
  .../src/litert/js_api/nnrt_device_desc.cc     |  216 ++
- 17 files changed, 5124 insertions(+)
+ 17 files changed, 5126 insertions(+)
  create mode 100644 include/js_api/@ohos.ai.mindSporeLite.d.ts
  create mode 100644 include/js_api/common_napi.h
  create mode 100644 include/js_api/ms_errors.h
@@ -914,7 +914,7 @@ index 00000000..6b9aa822
 +export default mindSporeLite;
 diff --git a/include/js_api/common_napi.h b/include/js_api/common_napi.h
 new file mode 100644
-index 00000000..b5df88db
+index 00000000..b857ac85
 --- /dev/null
 +++ b/include/js_api/common_napi.h
 @@ -0,0 +1,196 @@
@@ -1084,7 +1084,7 @@ index 00000000..b5df88db
 +
 +struct TrainConfig {
 +  std::vector<std::string> loss_names;
-+  int optimization_level = 4; // kAUTO
++  int optimization_level = kO0; // kAUTO
 +};
 +
 +struct ContextInfo {
@@ -1117,7 +1117,7 @@ index 00000000..b5df88db
 \ No newline at end of file
 diff --git a/include/js_api/ms_errors.h b/include/js_api/ms_errors.h
 new file mode 100644
-index 00000000..4a60966f
+index 00000000..0d030241
 --- /dev/null
 +++ b/include/js_api/ms_errors.h
 @@ -0,0 +1,39 @@
@@ -1157,7 +1157,7 @@ index 00000000..4a60966f
 +const int32_t ERR_NOT_EXISTED_PARAM = BASE_MSLITE_ERR_OFFSET - 3;
 +
 +/** Invalid operation */
-+const int32_t ERR_INVALID_OPERATION = BASE_MSLITE_ERR_OFFSET - 3;
++const int32_t ERR_INVALID_OPERATION = BASE_MSLITE_ERR_OFFSET - 4;
 +}  // namespace mindspore
 +#endif  // MS_ERRORS_H
 \ No newline at end of file
@@ -2029,10 +2029,10 @@ index 00000000..5d86f32d
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/js_api/mslite_model_napi.cc b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..697d530f
+index 00000000..5d7d9225
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
-@@ -0,0 +1,2549 @@
+@@ -0,0 +1,2551 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -2104,6 +2104,7 @@ index 00000000..697d530f
 +const int PARAM2 = 2;
 +const int PARAM3 = 3;
 +const int PARAM4 = 4;
++const int UNSET_VALUE = -1;
 +
 +const int SIZE = 100;
 +
@@ -2712,10 +2713,10 @@ index 00000000..697d530f
 +          return ERR_INVALID_OPERATION;
 +        }
 +        nnrt_device->SetDeviceID(context_ptr->nnrt_device.device_id);
-+        if (context_ptr->nnrt_device.performance_mode != -1) {
++        if (context_ptr->nnrt_device.performance_mode != UNSET_VALUE) {
 +          nnrt_device->SetPerformanceMode(context_ptr->nnrt_device.performance_mode);
 +        }
-+        if (context_ptr->nnrt_device.priority != -1) {
++        if (context_ptr->nnrt_device.priority != UNSET_VALUE) {
 +          nnrt_device->SetPriority(context_ptr->nnrt_device.priority);
 +        }
 +        // ignore extensions
@@ -2864,18 +2865,19 @@ index 00000000..697d530f
 +  }
 +  std::vector<std::string> str_values;
 +  auto ret = CommonNapi::GetPropertyStringArray(env, root, "lossName", str_values);
-+  if (ret != SUCCESS) {
++  if (ret != SUCCESS && ret != ERR_NOT_EXISTED_PARAM) {
 +    MS_LOG(ERROR) << "Get lossName failed.";
 +    return ret;
 +  }
 +  cfg.loss_names.assign(str_values.begin(), str_values.end());
 +
 +  int32_t int_value = 0;
-+  if (CommonNapi::GetPropertyInt32(env, root, "optimizationLevel", int_value) == SUCCESS) {
-+    MS_LOG(DEBUG) << "threadNum: " << int_value;
-+    cfg.optimization_level = int_value;
++  ret = CommonNapi::GetPropertyInt32(env, root, "optimizationLevel", int_value);
++  if (ret != SUCCESS && ret != ERR_NOT_EXISTED_PARAM) {
++    MS_LOG(ERROR) << "Get optimization level failed";
++    return ret;
 +  } else {
-+    cfg.optimization_level = PARAM0; // Do not optimize
++    cfg.optimization_level = int_value;
 +  }
 +  return SUCCESS;
 +}
@@ -3453,7 +3455,7 @@ index 00000000..697d530f
 +  napi_status status = napi_has_named_property(env, args, "nnrt", &has_nnrt_property);
 +  if (status != napi_ok) {
 +    MS_LOG(ERROR) << "can not find nnrt property";
-+    return ERR_INVALID_OPERATION;
++    return ERR_ILLEGAL_STATE;
 +  }
 +  if (!has_nnrt_property) {
 +    return ERR_NOT_EXISTED_PARAM;
@@ -3463,7 +3465,7 @@ index 00000000..697d530f
 +  status = napi_get_named_property(env, args, "nnrt", &config_item);
 +  if (status != napi_ok) {
 +    MS_LOG(ERROR) << "can not get nnrt property";
-+    return ERR_INVALID_OPERATION;
++    return ERR_INVALID_PARAM;
 +  }
 +
 +  int32_t int_value = 0;
@@ -3475,29 +3477,29 @@ index 00000000..697d530f
 +    MS_LOG(DEBUG) << "deviceID: " << device_id;
 +    context.nnrt_device.device_id = static_cast<size_t>(device_id);
 +  } else {
-+    return ERR_INVALID_OPERATION;
++    return ERR_INVALID_PARAM;
 +  }
 +
 +  if (CommonNapi::GetPropertyInt32(env, config_item, "performanceMode", int_value) == SUCCESS) {
 +    MS_LOG(DEBUG) << "performanceMode: " << int_value;
 +    if (int_value > PARAM4 || int_value < PARAM0) {
 +      MS_LOG(ERROR) << "performanceMode value is set to: " << int_value << ", which is out of range";
-+      return ERR_INVALID_OPERATION;
++      return ERR_INVALID_PARAM;
 +    }
 +    context.nnrt_device.performance_mode = int_value;
 +  } else {
-+    context.nnrt_device.performance_mode = -1; // default PERFORMANCE_NONE
++    context.nnrt_device.performance_mode = UNSET_VALUE;
 +  }
 +
 +  if (CommonNapi::GetPropertyInt32(env, config_item, "priority", int_value) == SUCCESS) {
 +    MS_LOG(DEBUG) << "priority: " << int_value;
 +    if (int_value > PARAM3 || int_value < PARAM0) {
 +      MS_LOG(ERROR) << "priority value is set to: " << int_value << ", which is out of range";
-+      return ERR_INVALID_OPERATION;
++      return ERR_INVALID_PARAM;
 +    }
 +    context.nnrt_device.priority = int_value;
 +  } else {
-+    context.nnrt_device.priority = -1; // default PRIORITY_NONE
++    context.nnrt_device.priority = UNSET_VALUE;
 +  }
 +
 +  // ignore extensions for now
