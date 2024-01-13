@@ -1,4 +1,4 @@
-From 35b86653db303bf27d2329067c1172098e436e50 Mon Sep 17 00:00:00 2001
+From e8bc30b81e6a135b73b44bea1ed7e6c4a32c071c Mon Sep 17 00:00:00 2001
 From: qinzheng4 <qinzheng4@huawei.com>
 Date: Wed, 10 Jan 2024 13:47:59 +0800
 Subject: [PATCH] fix
@@ -17,11 +17,11 @@ Subject: [PATCH] fix
  mindspore/lite/BUILD.gn                       |    1 +
  mindspore/lite/src/litert/js_api/BUILD.gn     |   56 +
  .../lite/src/litert/js_api/common_napi.cc     |  303 ++
- .../src/litert/js_api/mslite_model_napi.cc    | 2551 +++++++++++++++++
+ .../src/litert/js_api/mslite_model_napi.cc    | 2569 +++++++++++++++++
  .../lite/src/litert/js_api/mstensor_napi.cc   |  416 +++
  .../litert/js_api/native_module_ohos_ms.cc    |   48 +
  .../src/litert/js_api/nnrt_device_desc.cc     |  216 ++
- 17 files changed, 5126 insertions(+)
+ 17 files changed, 5144 insertions(+)
  create mode 100644 include/js_api/@ohos.ai.mindSporeLite.d.ts
  create mode 100644 include/js_api/common_napi.h
  create mode 100644 include/js_api/ms_errors.h
@@ -1719,7 +1719,7 @@ index 00000000..f12e4db4
 +}
 diff --git a/mindspore/lite/src/litert/js_api/common_napi.cc b/mindspore/lite/src/litert/js_api/common_napi.cc
 new file mode 100644
-index 00000000..5d86f32d
+index 00000000..85d69ff6
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/common_napi.cc
 @@ -0,0 +1,303 @@
@@ -1789,7 +1789,7 @@ index 00000000..5d86f32d
 +  napi_status status = napi_has_named_property(env, config_obj, type.c_str(), &exist);
 +
 +  if (status != napi_ok || !exist) {
-+    MS_LOG(WARNING) << "can not find " << type.c_str() << "will set default value";
++    MS_LOG(WARNING) << "can not find " << type.c_str() << " will set default value";
 +    return ERR_NOT_EXISTED_PARAM;
 +  }
 +
@@ -1839,7 +1839,7 @@ index 00000000..5d86f32d
 +  napi_status status = napi_has_named_property(env, config_obj, type.c_str(), &exist);
 +
 +  if (status != napi_ok || !exist) {
-+    MS_LOG(WARNING) << "can not find " << type.c_str() << "will set default value";
++    MS_LOG(WARNING) << "can not find " << type.c_str() << " will set default value";
 +    return ERR_NOT_EXISTED_PARAM;
 +  }
 +
@@ -2029,10 +2029,10 @@ index 00000000..5d86f32d
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/js_api/mslite_model_napi.cc b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..5d7d9225
+index 00000000..81eca8ce
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
-@@ -0,0 +1,2551 @@
+@@ -0,0 +1,2569 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -3473,33 +3473,51 @@ index 00000000..5d7d9225
 +  std::vector<int32_t> affinity_cores;
 +
 +  uint64_t device_id;
-+  if (CommonNapi::GetPropertyBigIntUint64(env, config_item, "deviceID", device_id) == SUCCESS) {
++  auto ret = CommonNapi::GetPropertyBigIntUint64(env, config_item, "deviceID", device_id);
++  if (ret == SUCCESS) {
 +    MS_LOG(DEBUG) << "deviceID: " << device_id;
 +    context.nnrt_device.device_id = static_cast<size_t>(device_id);
++  } else if (ret == ERR_NOT_EXISTED_PARAM) {
++    size_t num = 0;
++    auto *desc = OH_AI_GetAllNNRTDeviceDescs(&num);
++    if (desc == nullptr || num == 0) {
++      MS_LOG(WARNING) << "Failed to get nnrt device id, skip adding nnrt device info.";
++      return ERR_NOT_EXISTED_PARAM;
++    }
++    auto id = OH_AI_GetDeviceIdFromNNRTDeviceDesc(desc);
++    OH_AI_DestroyAllNNRTDeviceDescs(&desc);
++    MS_LOG(INFO) << "set nnrt device id to " << id;
++    context.nnrt_device.device_id = id;
 +  } else {
 +    return ERR_INVALID_PARAM;
 +  }
 +
-+  if (CommonNapi::GetPropertyInt32(env, config_item, "performanceMode", int_value) == SUCCESS) {
++  ret = CommonNapi::GetPropertyInt32(env, config_item, "performanceMode", int_value);
++  if (ret == SUCCESS) {
 +    MS_LOG(DEBUG) << "performanceMode: " << int_value;
 +    if (int_value > PARAM4 || int_value < PARAM0) {
 +      MS_LOG(ERROR) << "performanceMode value is set to: " << int_value << ", which is out of range";
 +      return ERR_INVALID_PARAM;
 +    }
 +    context.nnrt_device.performance_mode = int_value;
-+  } else {
++  } else if (ret == ERR_NOT_EXISTED_PARAM) {
 +    context.nnrt_device.performance_mode = UNSET_VALUE;
++  } else {
++    return ERR_INVALID_PARAM;
 +  }
 +
-+  if (CommonNapi::GetPropertyInt32(env, config_item, "priority", int_value) == SUCCESS) {
++  ret = CommonNapi::GetPropertyInt32(env, config_item, "priority", int_value);
++  if (ret == SUCCESS) {
 +    MS_LOG(DEBUG) << "priority: " << int_value;
 +    if (int_value > PARAM3 || int_value < PARAM0) {
 +      MS_LOG(ERROR) << "priority value is set to: " << int_value << ", which is out of range";
 +      return ERR_INVALID_PARAM;
 +    }
 +    context.nnrt_device.priority = int_value;
-+  } else {
++  } else if (ret == ERR_NOT_EXISTED_PARAM) {
 +    context.nnrt_device.priority = UNSET_VALUE;
++  } else {
++    return ERR_INVALID_PARAM;
 +  }
 +
 +  // ignore extensions for now
