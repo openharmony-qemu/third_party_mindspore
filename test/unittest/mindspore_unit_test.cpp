@@ -532,7 +532,7 @@ HWTEST(MSLiteTest, Model_TrainModelBuild, testing::ext::TestSize.Level0) {
     OH_AI_ModelHandle model2 = OH_AI_ModelCreate();
     ASSERT_NE(model2, nullptr);
     printf("==========ModelPredict==========\n");
-    ModelPredict(model2, context, "lenet_train_infer", {}, true, false, false);
+    ModelPredict(model2, context, "lenet_train_infer", {}, true, false, true);
 }
 
 /*
