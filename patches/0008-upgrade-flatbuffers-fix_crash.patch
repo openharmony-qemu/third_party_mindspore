@@ -1,14 +1,14 @@
-From eef1d62f3a57484e58c27563aac2f5ffddc1b711 Mon Sep 17 00:00:00 2001
+From c147bac7832a1d87e6e50a57fb4285670a6ca163 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Mon, 15 Jan 2024 14:33:06 +0800
-Subject: [PATCH] fix stable test crash
+Date: Wed, 24 Jan 2024 15:54:20 +0800
+Subject: [PATCH] nnrt deps mindir include change
 
 ---
- mindspore/lite/BUILD.gn                      | 5 ++++-
- mindspore/lite/mindir/BUILD.gn               | 3 +++
- mindspore/lite/src/litert/c_api/context_c.cc | 4 ++++
- mindspore/lite/src/litert/lite_model.cc      | 4 +++-
- 4 files changed, 14 insertions(+), 2 deletions(-)
+ mindspore/lite/BUILD.gn                      |  5 ++++-
+ mindspore/lite/mindir/BUILD.gn               | 12 +++++++++++-
+ mindspore/lite/src/litert/c_api/context_c.cc |  4 ++++
+ mindspore/lite/src/litert/lite_model.cc      |  4 +++-
+ 4 files changed, 22 insertions(+), 3 deletions(-)
 
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
 index d7fe4f55..4a83f498 100644
@@ -41,10 +41,29 @@ index d7fe4f55..4a83f498 100644
  
    sources = all_train_sources
 diff --git a/mindspore/lite/mindir/BUILD.gn b/mindspore/lite/mindir/BUILD.gn
-index b1435ef7..c9b23463 100644
+index b1435ef7..4c489f34 100644
 --- a/mindspore/lite/mindir/BUILD.gn
 +++ b/mindspore/lite/mindir/BUILD.gn
-@@ -49,6 +49,9 @@ ohos_shared_library("mindir_lib") {
+@@ -19,11 +19,17 @@ import("//build/ohos.gni")
+ #     "tests:mindir_test",
+ #   ]
+ # }
++
++config("mindir_config") {
++  include_dirs = [
++    "include",
++  ]
++}
++
+ ohos_shared_library("mindir_lib") {
+   include_dirs = [
+     "../",
+     "../../core",
+-    "include",
+     "inner_headers",
+     "//third_party/flatbuffers/include",
+     "//third_party/bounds_checking_function/include",
+@@ -49,10 +55,14 @@ ohos_shared_library("mindir_lib") {
      "bounds_checking_function:libsec_shared",
      "drivers_interface_nnrt:nnrt_idl_headers"
    ]
@@ -54,6 +73,11 @@ index b1435ef7..c9b23463 100644
    configs = [
      "../:disable_android",
      "../:secure_option",
+   ]
++  public_configs = [ ":mindir_config" ]
+   defines = [ "MS_COMPILE_OHOS" ]
+   output_name = "mindir"
+   innerapi_tags = [ "platformsdk_indirect" ]
 diff --git a/mindspore/lite/src/litert/c_api/context_c.cc b/mindspore/lite/src/litert/c_api/context_c.cc
 index c5f825aa..bde0460c 100644
 --- a/mindspore/lite/src/litert/c_api/context_c.cc

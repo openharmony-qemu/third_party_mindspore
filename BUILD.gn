@@ -43,8 +43,8 @@ ohos_group("mindspore-all") {
   deps = [ "mindspore-src/source/mindspore/lite/:mindspore" ]
 }
 
-ohos_group("mindir") {
-  deps = [ "mindspore-src/source/mindspore/lite/mindir:mindir_lib" ]
+group("mindir") {
+  public_deps = [ "mindspore-src/source/mindspore/lite/mindir:mindir_lib" ]
 }
 
 ohos_group("mindspore-ndk") {
