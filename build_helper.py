@@ -26,6 +26,7 @@ def do_patch(patch_dir, target_dir):
         '0007-deobfuscator.patch',
         '0008-upgrade-flatbuffers-fix_crash.patch',
         '0009-npu-zero-copy.patch',
+        '0011-micro-dynamic-shape-support-discrete-value.patch',
     ]
 
     cwd = os.getcwd()
