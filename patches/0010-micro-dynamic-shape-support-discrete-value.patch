@@ -1,10 +1,10 @@
-From 8d1d6212fa4a71df3342a149fb2d667abeef653b Mon Sep 17 00:00:00 2001
+From d13d3c3c6ddd5c9e3c3904b7abc139ad2b088e60 Mon Sep 17 00:00:00 2001
 From: zhangyanhui <zhangyanhui17@huawei.com>
-Date: Sat, 27 Jan 2024 18:15:26 +0800
-Subject: [PATCH] micro dynamic shape support discrete value shape config
+Date: Tue, 30 Jan 2024 16:23:22 +0800
+Subject: [PATCH] 0010-micro
 
 ---
- .../lite/include/registry/deobf_processor.h   |  1 -
+ .../lite/include/registry/deobf_processor.h   |  2 +-
  .../config_parser/config_file_parser.cc       |  8 +--
  .../config_parser/config_file_parser.h        |  2 +-
  .../config_parser/micro_param_parser.cc       |  8 +--
@@ -14,17 +14,18 @@ Subject: [PATCH] micro dynamic shape support discrete value shape config
  .../generator/component/common_component.cc   | 49 ++++++++++++++++---
  .../component/const_blocks/calib_output.cc    | 19 +++++++
  .../component/const_blocks/mtensor.cc         |  2 +-
- 10 files changed, 83 insertions(+), 19 deletions(-)
+ 10 files changed, 84 insertions(+), 19 deletions(-)
 
 diff --git a/mindspore/lite/include/registry/deobf_processor.h b/mindspore/lite/include/registry/deobf_processor.h
-index 5987233f..0018e377 100644
+index 5987233f..c70735b2 100644
 --- a/mindspore/lite/include/registry/deobf_processor.h
 +++ b/mindspore/lite/include/registry/deobf_processor.h
-@@ -21,7 +21,6 @@
+@@ -21,7 +21,7 @@
  #include <string>
  #include <numeric>
  #include "src/common/prim_util.h"
 -#include "src/common/log.h"
++#include "src/common/log_adapter.h"
  #include "include/model.h"
  #include "schema/inner/model_generated.h"
  
@@ -69,7 +70,7 @@ index 7b47fb8c..eed1c1ef 100644
    std::map<std::string, std::string &> parse_map{
      {"target", micro_param_string_.target},
 diff --git a/mindspore/lite/tools/converter/config_parser/config_file_parser.h b/mindspore/lite/tools/converter/config_parser/config_file_parser.h
-index 163782b7..6b0ff5aa 100644
+index 163782b7..b6267c0c 100644
 --- a/mindspore/lite/tools/converter/config_parser/config_file_parser.h
 +++ b/mindspore/lite/tools/converter/config_parser/config_file_parser.h
 @@ -110,7 +110,7 @@ struct MicroParamString {
@@ -77,7 +78,7 @@ index 163782b7..6b0ff5aa 100644
    std::string inputs_shape;
    std::string dynamic_dim_params;
 -  std::map<std::string, std::string> dynamic_symbols_map;
-+  std::map<std::string, std::vactor<int>> dynamic_symbols_map;
++  std::map<std::string, std::vector<int>> dynamic_symbols_map;
  };
  
  struct ThirdPartyModelString {
