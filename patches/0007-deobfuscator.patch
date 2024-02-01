@@ -517,7 +517,7 @@ index 13652633b8..b038831b1f 100644
  
  int LiteModel::GenerateModelByVersion() {
    if (this->buf == nullptr) {
-@@ -397,33 +401,34 @@ int LiteModel::GenerateModelByVersion() {
+@@ -397,33 +401,37 @@ int LiteModel::GenerateModelByVersion() {
    }
    MS_ASSERT(meta_graph != nullptr);
    int status = RET_ERROR;
@@ -526,12 +526,12 @@ index 13652633b8..b038831b1f 100644
 -#endif
 +  if(dlopen("libdeobfuscator_lib.z.so", RTLD_NOLOAD) == nullptr) {
 +    DeObfRegister::deobf_handle = dlopen("libdeobfuscator_lib.z.so", RTLD_NOW | RTLD_GLOBAL);
-+    if(!DeObfRegister::deobf_handle) {
++    if(DeObfRegister::deobf_handle == nullptr) {
 +      MS_LOG(WARNING) << "deobfuscator ability not apply";
 +    }
 +  }
 +  auto CreateDeObfFunc = reinterpret_cast<ObfCreateFunc>(dlsym(DeObfRegister::deobf_handle, "CreateDeObfFunc"));
-+  if (!CreateDeObfFunc) {
++  if (CreateDeObfFunc == nullptr) {
 +    MS_LOG(WARNING) << "cannot fetch CreateDeObfFunc";
 +  }
 +  else {
@@ -567,6 +567,9 @@ index 13652633b8..b038831b1f 100644
 +  if(this->deobf != nullptr) {
 +    auto deobf_ptr = reinterpret_cast<DeObfProcessor *>(this->deobf);
 +    (deobf_ptr->*DeObfRegister::DeObfuscateReg)(this);
++  }
++  if(DeObfRegister::deobf_handle != nullptr) {
++    dlclose(DeObfRegister::deobf_handle);
    }
 -#endif
    if (this->graph_.version_ != Version()) {
