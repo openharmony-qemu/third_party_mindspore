@@ -1,12 +1,12 @@
-From 525ae7731e35b467de35a3be09263aa657a941dd Mon Sep 17 00:00:00 2001
+From 409d0e43403f94c9f7bb17437726a979c1744203 Mon Sep 17 00:00:00 2001
 From: qinzheng4 <qinzheng4@huawei.com>
-Date: Mon, 15 Jan 2024 11:29:18 +0800
-Subject: [PATCH] npu zero copy
+Date: Thu, 1 Feb 2024 21:13:51 +0800
+Subject: [PATCH 1/2] npu-zero-copy
 
 ---
  include/c_api/tensor_c.h                      |  15 ++
  mindspore/lite/BUILD.gn                       |   1 +
- mindspore/lite/src/litert/c_api/model_c.cc    |  33 +++-
+ mindspore/lite/src/litert/c_api/model_c.cc    |  34 +++-
  mindspore/lite/src/litert/c_api/tensor_c.cc   |  27 +++
  .../src/litert/cxx_api/model/model_impl.cc    |  72 +++++++-
  .../litert/delegate/nnrt/nnrt_allocator.cc    | 168 ++++++++++++++++++
@@ -15,7 +15,7 @@ Subject: [PATCH] npu zero copy
  .../litert/delegate/nnrt/nnrt_model_kernel.h  |   3 +
  .../litert/kernel/cpu/nnacl/nnacl_kernel.cc   |   2 +-
  mindspore/lite/src/litert/mindrt_executor.cc  |  14 +-
- 11 files changed, 438 insertions(+), 11 deletions(-)
+ 11 files changed, 439 insertions(+), 11 deletions(-)
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
 
@@ -58,10 +58,10 @@ index 4a83f498..723df1ec 100644
      include_dirs += [
        "src/delegate/nnrt/include",
 diff --git a/mindspore/lite/src/litert/c_api/model_c.cc b/mindspore/lite/src/litert/c_api/model_c.cc
-index 9da52d76..b0b1aa0d 100644
+index 9da52d76..4620134c 100644
 --- a/mindspore/lite/src/litert/c_api/model_c.cc
 +++ b/mindspore/lite/src/litert/c_api/model_c.cc
-@@ -246,10 +246,41 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+@@ -246,10 +246,42 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
    mindspore::MSKernelCallBack after_call_back = impl->TransCallBack(after);
  
    std::vector<mindspore::MSTensor> ms_tensor_outputs;
@@ -94,6 +94,7 @@ index 9da52d76..b0b1aa0d 100644
    auto ret = impl->model_->Predict(ms_tensor_inputs, &ms_tensor_outputs, before_call_back, after_call_back);
    if (!ret.IsOk()) {
      MS_LOG(ERROR) << "Predict fail, ret :" << ret;
++    return static_cast<OH_AI_Status>(ret.StatusCode());
    }
 +
 +  if (handle_num == output_num && all_has_data) {
@@ -103,7 +104,7 @@ index 9da52d76..b0b1aa0d 100644
    outputs->handle_list = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&outputs->handle_num));
    return static_cast<OH_AI_Status>(ret.StatusCode());
  }
-@@ -345,7 +376,7 @@ char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_t *num) {
+@@ -345,7 +377,7 @@ char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_t *num) {
    auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
    auto loss_name = impl->GetLossName();
    *num = loss_name.size();
