@@ -1,4 +1,4 @@
-From d13d3c3c6ddd5c9e3c3904b7abc139ad2b088e60 Mon Sep 17 00:00:00 2001
+From 17b5a08e7c53b25a912bcc9d65cc47febb7fc835 Mon Sep 17 00:00:00 2001
 From: zhangyanhui <zhangyanhui17@huawei.com>
 Date: Tue, 30 Jan 2024 16:23:22 +0800
 Subject: [PATCH] 0010-micro
@@ -9,12 +9,13 @@ Subject: [PATCH] 0010-micro
  .../config_parser/config_file_parser.h        |  2 +-
  .../config_parser/micro_param_parser.cc       |  8 +--
  .../config_parser/micro_param_parser.h        |  3 +-
+ mindspore/lite/tools/converter/converter.cc   | 10 ++--
  .../lite/tools/converter/micro/coder/coder.cc |  1 +
  .../lite/tools/converter/micro/coder/config.h |  9 ++++
  .../generator/component/common_component.cc   | 49 ++++++++++++++++---
  .../component/const_blocks/calib_output.cc    | 19 +++++++
  .../component/const_blocks/mtensor.cc         |  2 +-
- 10 files changed, 84 insertions(+), 19 deletions(-)
+ 11 files changed, 90 insertions(+), 23 deletions(-)
 
 diff --git a/mindspore/lite/include/registry/deobf_processor.h b/mindspore/lite/include/registry/deobf_processor.h
 index 5987233f..c70735b2 100644
@@ -136,6 +137,27 @@ index eb95c571..fe818b90 100644
                                         micro::MicroParam *micro_param);
  };
  }  // namespace lite
+diff --git a/mindspore/lite/tools/converter/converter.cc b/mindspore/lite/tools/converter/converter.cc
+index 4703e889..e2a5e6a1 100644
+--- a/mindspore/lite/tools/converter/converter.cc
++++ b/mindspore/lite/tools/converter/converter.cc
+@@ -455,10 +455,12 @@ int ConverterImpl::InitConfigParam(const std::shared_ptr<ConverterPara> &param,
+       MS_LOG(ERROR) << "Parse mixed bit weight quant param failed.";
+       return ret;
+     }
+-    ret = lite::ThirdPartyParamParser::Parse(config_parser.GetThirdPartyModelString(), &param->thirdPartyModelParam);
+-    if (ret != RET_OK) {
+-      MS_LOG(ERROR) << "Parse third party param failed.";
+-      return ret;
++    if (param->fmk_type == converter::kFmkTypeThirdParty) {
++      ret = lite::ThirdPartyParamParser::Parse(config_parser.GetThirdPartyModelString(), &param->thirdPartyModelParam);
++      if (ret != RET_OK) {
++        MS_LOG(ERROR) << "Parse third party param failed.";
++        return ret;
++      }
+     }
+     ret = InitExtendedIntegrationInfo(param, config_parser);
+     if (ret != RET_OK) {
 diff --git a/mindspore/lite/tools/converter/micro/coder/coder.cc b/mindspore/lite/tools/converter/micro/coder/coder.cc
 index a502500d..065cbdfd 100644
 --- a/mindspore/lite/tools/converter/micro/coder/coder.cc
@@ -190,7 +212,7 @@ index fb90a2fc..3afea051 100644
    std::vector<std::vector<std::string>> user_graph_inputs_template_;
  };
 diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc b/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc
-index 62c2f668..652971e7 100644
+index 62c2f668..b9ab846e 100644
 --- a/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc
 +++ b/mindspore/lite/tools/converter/micro/coder/generator/component/common_component.cc
 @@ -492,6 +492,19 @@ void CodeMSModelResize(std::ofstream &ofs, const std::unique_ptr<CoderContext> &
@@ -205,7 +227,7 @@ index 62c2f668..652971e7 100644
 +        }
 +      }
 +      auto dynamic_dim_range = config.dynamic_symbols_map().at(cur_dim_symbol);
-+      ofs << "  int dim" << index << "_range" << dynamic_dim_range.size() << "] = {";
++      ofs << "  int dim" << index << "_range[" << dynamic_dim_range.size() << "] = {";
 +      for (const auto dim : dynamic_dim_range) {
 +        ofs << dim << ", ";
 +      }
