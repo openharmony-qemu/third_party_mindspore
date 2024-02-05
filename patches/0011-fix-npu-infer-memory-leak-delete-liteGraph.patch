@@ -1,0 +1,75 @@
+From 308d125998613701506a3d2b5b8eeaa9c9bbca06 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Mon, 5 Feb 2024 11:12:29 +0800
+Subject: [PATCH] fix npu infer memory leak, delete liteGraph
+
+---
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc | 32 +++++++++++++++++++
+ .../src/litert/delegate/nnrt/nnrt_delegate.h  |  1 +
+ 2 files changed, 33 insertions(+)
+
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+index 9f012e76..3835b932 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+@@ -131,6 +131,7 @@ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model)
+   } else {
+     SetKirinModelInputsAndOutputs(nn_model);
+     auto ret = OH_NNModel_BuildFromMetaGraph(nn_model, meta_graph_, extensions.data(), extensions.size());
++    FreeLiteGraph(&lite_graph_);
+     if (ret != OH_NN_SUCCESS) {
+       MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
+       OH_NNModel_Destroy(&nn_model);
+@@ -817,6 +818,37 @@ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
+   MS_LOG(INFO) << "ShallowCopyLiteGraph success.";
+ }
+ 
++void NNRTDelegate::FreeLiteGraph(lite::LiteGraph **liteGraph) {
++  if (liteGraph != nullptr && *liteGraph != nullptr) {
++    MS_LOG(INFO) << "start to free LiteGraph.";
++    auto graph = *liteGraph;
++    graph->name_.clear();
++    graph->input_indices_.clear();
++    graph->output_indices_.clear();
++    MS_LOG(INFO) << "Destroying  nodes.";
++    // node
++    for (size_t idx = 0; idx < graph->all_nodes_.size(); idx++) {
++      if (graph->all_nodes_[idx] != nullptr) {
++        delete graph->all_nodes_[idx];
++        graph->all_nodes_[idx] = nullptr;
++      }
++    }
++    MS_LOG(INFO) << "Destroying  subgraphs.";
++    // subgraph
++    for (size_t idx = 0; idx < graph->sub_graphs_.size(); idx++) {
++      if (graph->sub_graphs_[idx] != nullptr) {
++        delete graph->sub_graphs_[idx];
++        graph->sub_graphs_[idx] = nullptr;
++      }
++    }
++    // graph
++    delete graph;
++    *liteGraph = nullptr;
++  } else {
++    MS_LOG(WARNING) << "nnrt_lite_graph is nullptr, no need to free.";
++  }
++}
++
+ NNRTDelegate::~NNRTDelegate() {
+   if (lite_graph_ != nullptr) {
+     MS_LOG(ERROR) << "Delete NNRTDelegate.";
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+index 52626339..af963008 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+@@ -46,6 +46,7 @@ class NNRTDelegate : public Delegate {
+   Status Init() override { return kSuccess; }
+   Status Build(DelegateModel<schema::Primitive> *model) override;
+   void ShallowCopyLiteGraph(const lite::LiteGraph &liteGraph);
++  void FreeLiteGraph(lite::LiteGraph **liteGraph);
+   void SetMetaGraph(const void *meta_graph) {
+     meta_graph_ = meta_graph;
+   }
+-- 
+2.17.1
+
