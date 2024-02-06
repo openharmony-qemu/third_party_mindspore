@@ -44,7 +44,7 @@
         ],
         "inner_kits": [
           {
-            "name": "//third_party/mindspore/:mindir",
+            "name": "//third_party/mindspore:mindir",
             "header": {
               "header_files": [
                 "mindir_lite_graph.h",
