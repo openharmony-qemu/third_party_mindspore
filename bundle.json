@@ -5,16 +5,15 @@
     "license": "Apache License 2.0",
     "pubiishAs": "code-segment",
     "segment": {
-      "destPath": "foundation/ai/mindspore"
+      "destPath": "third_party/mindspore"
     },
     "dirs": {},
     "scripts": {},
     "component": {
       "name": "mindspore",
-      "subsystem": "ai",
+      "subsystem": "thirdparty",
       "syscap": [
-        "SystemCapability.Ai.MindSpore",
-        "SystemCapability.AI.MindSporeLite"
+        "SystemCapability.Ai.MindSpore"
       ],
       "feature": [ "mindspore_feature_nnrt_metagraph = false" ],
       "adapted_system_type": [
