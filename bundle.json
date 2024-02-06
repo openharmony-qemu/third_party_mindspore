@@ -13,7 +13,8 @@
       "name": "mindspore",
       "subsystem": "thirdparty",
       "syscap": [
-        "SystemCapability.Ai.MindSpore"
+        "SystemCapability.Ai.MindSpore",
+        "SystemCapability.AI.MindSporeLite"
       ],
       "feature": [ "mindspore_feature_nnrt_metagraph = false" ],
       "adapted_system_type": [
