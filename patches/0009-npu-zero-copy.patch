@@ -1,13 +1,14 @@
-From 409d0e43403f94c9f7bb17437726a979c1744203 Mon Sep 17 00:00:00 2001
+From 464f222815cd1fed680d91569b29da5d6b4c281c Mon Sep 17 00:00:00 2001
 From: qinzheng4 <qinzheng4@huawei.com>
-Date: Thu, 1 Feb 2024 21:13:51 +0800
-Subject: [PATCH 1/2] npu-zero-copy
+Date: Mon, 19 Feb 2024 15:22:17 +0800
+Subject: [PATCH] 0009-npu-zero-copy
 
 ---
  include/c_api/tensor_c.h                      |  15 ++
  mindspore/lite/BUILD.gn                       |   1 +
- mindspore/lite/src/litert/c_api/model_c.cc    |  34 +++-
- mindspore/lite/src/litert/c_api/tensor_c.cc   |  27 +++
+ mindspore/lite/src/litert/c_api/model_c.cc    |  40 ++++-
+ mindspore/lite/src/litert/c_api/tensor_c.cc   |  32 ++++
+ .../lite/src/litert/c_api/type_c_private.h    |   3 +
  .../src/litert/cxx_api/model/model_impl.cc    |  72 +++++++-
  .../litert/delegate/nnrt/nnrt_allocator.cc    | 168 ++++++++++++++++++
  .../src/litert/delegate/nnrt/nnrt_allocator.h |  64 +++++++
@@ -15,7 +16,7 @@ Subject: [PATCH 1/2] npu-zero-copy
  .../litert/delegate/nnrt/nnrt_model_kernel.h  |   3 +
  .../litert/kernel/cpu/nnacl/nnacl_kernel.cc   |   2 +-
  mindspore/lite/src/litert/mindrt_executor.cc  |  14 +-
- 11 files changed, 439 insertions(+), 11 deletions(-)
+ 12 files changed, 453 insertions(+), 11 deletions(-)
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
 
@@ -58,10 +59,30 @@ index 4a83f498..723df1ec 100644
      include_dirs += [
        "src/delegate/nnrt/include",
 diff --git a/mindspore/lite/src/litert/c_api/model_c.cc b/mindspore/lite/src/litert/c_api/model_c.cc
-index 9da52d76..4620134c 100644
+index 9da52d76..20e1c227 100644
 --- a/mindspore/lite/src/litert/c_api/model_c.cc
 +++ b/mindspore/lite/src/litert/c_api/model_c.cc
-@@ -246,10 +246,42 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+@@ -14,6 +14,7 @@
+  * limitations under the License.
+  */
+ #include "include/c_api/model_c.h"
++#include "type_c_private.h"
+ #include <vector>
+ #include <cstdint>
+ #include "include/api/context.h"
+@@ -37,6 +38,11 @@ public:
+     for (auto out : outputs_train_) {
+       delete out;
+     }
++
++    // In zero copy scene where user will call set or get allocator function, but when model is destroyed, the allocator
++    // table will not be freed, and its size continues to grow causing memory leak, so when ModelC is destroyed, clean
++    // allocator table.
++    CleanAllocatorTable();
+   }
+ 
+   MSTensor **GetInputs(size_t *input_num);
+@@ -246,10 +252,42 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
    mindspore::MSKernelCallBack after_call_back = impl->TransCallBack(after);
  
    std::vector<mindspore::MSTensor> ms_tensor_outputs;
@@ -104,7 +125,7 @@ index 9da52d76..4620134c 100644
    outputs->handle_list = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&outputs->handle_num));
    return static_cast<OH_AI_Status>(ret.StatusCode());
  }
-@@ -345,7 +377,7 @@ char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_t *num) {
+@@ -345,7 +383,7 @@ char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_t *num) {
    auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
    auto loss_name = impl->GetLossName();
    *num = loss_name.size();
@@ -114,10 +135,10 @@ index 9da52d76..4620134c 100644
      MS_LOG(ERROR) << "Failed to malloc loss_name.";
      return nullptr;
 diff --git a/mindspore/lite/src/litert/c_api/tensor_c.cc b/mindspore/lite/src/litert/c_api/tensor_c.cc
-index 4b1e6aff..440b2a67 100644
+index 4b1e6aff..fc3814dd 100644
 --- a/mindspore/lite/src/litert/c_api/tensor_c.cc
 +++ b/mindspore/lite/src/litert/c_api/tensor_c.cc
-@@ -13,11 +13,14 @@
+@@ -13,11 +13,18 @@
   * See the License for the specific language governing permissions and
   * limitations under the License.
   */
@@ -127,12 +148,16 @@ index 4b1e6aff..440b2a67 100644
  #include "src/tensor.h"
  #include "src/litert/cxx_api/tensor/tensor_impl.h"
  
-+static std::unordered_map<void *, std::shared_ptr<mindspore::Allocator>> allocator_table;
++static std::unordered_map<void *, std::weak_ptr<mindspore::Allocator>> allocator_table;
++
++void CleanAllocatorTable() {
++  allocator_table.clear();
++}
 +
  OH_AI_TensorHandle OH_AI_TensorCreate(const char *name, OH_AI_DataType type, const int64_t *shape, size_t shape_num,
                                        const void *data, size_t data_len) {
    if (name == nullptr || shape == nullptr) {
-@@ -208,3 +211,27 @@ size_t OH_AI_TensorGetDataSize(const OH_AI_TensorHandle tensor) {
+@@ -208,3 +215,28 @@ size_t OH_AI_TensorGetDataSize(const OH_AI_TensorHandle tensor) {
    auto impl = static_cast<mindspore::MSTensor *>(tensor);
    return impl->DataSize();
  }
@@ -147,7 +172,8 @@ index 4b1e6aff..440b2a67 100644
 +    MS_LOG(ERROR) << "the input allocator does not belong to framework";
 +    return OH_AI_STATUS_LITE_PARAM_INVALID;
 +  }
-+  impl->SetAllocator(allocator_table[allocator]);
++  std::static_pointer_cast<mindspore::LiteTensorImpl>(impl->impl())->set_own_data(true);
++  impl->SetAllocator(allocator_table[allocator].lock());
 +  return OH_AI_STATUS_SUCCESS;
 +}
 +
@@ -160,6 +186,19 @@ index 4b1e6aff..440b2a67 100644
 +  allocator_table[impl->allocator().get()] = impl->allocator();
 +  return impl->allocator().get();
 +}
+diff --git a/mindspore/lite/src/litert/c_api/type_c_private.h b/mindspore/lite/src/litert/c_api/type_c_private.h
+index 2d3b3883..1a76820d 100644
+--- a/mindspore/lite/src/litert/c_api/type_c_private.h
++++ b/mindspore/lite/src/litert/c_api/type_c_private.h
+@@ -36,5 +36,8 @@ struct NNRTDeviceDesc {
+ 
+ #ifdef __cplusplus
+ }
++
++void CleanAllocatorTable();
++
+ #endif
+ #endif  // MINDSPORE_LITE_SRC_LITERT_C_API_TYPE_C_PRIVATE_H_
 diff --git a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
 index 78b1ca67..5d1b78a2 100644
 --- a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
