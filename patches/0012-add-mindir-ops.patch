@@ -1,0 +1,350 @@
+From 7652f8f30e94803eb198e24c6b195724efdec0c3 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Mon, 26 Feb 2024 14:05:26 +0800
+Subject: [PATCH] add mindir ops second phase
+
+---
+ mindspore/lite/mindir/include/mindir.h       |  43 ++++
+ mindspore/lite/mindir/include/mindir_types.h |  13 ++
+ mindspore/lite/mindir/src/mindir.cc          | 203 +++++++++++++++++++
+ 3 files changed, 259 insertions(+)
+
+diff --git a/mindspore/lite/mindir/include/mindir.h b/mindspore/lite/mindir/include/mindir.h
+index 4f633493..cc3c81ef 100644
+--- a/mindspore/lite/mindir/include/mindir.h
++++ b/mindspore/lite/mindir/include/mindir.h
+@@ -534,6 +534,49 @@ void MindIR_Clip_SetMax(PrimitivePtr *primitive, float max);
+ float MindIR_Clip_GetMin(ConstPrimitivePtr primitive);
+ void MindIR_Clip_SetMin(PrimitivePtr *primitive, float min);
+ 
++// ********** All **********
++PrimitivePtr MindIR_All_CreatePrimitive(int64_t keep_dims);
++int64_t MindIR_All_GetKeepDims(ConstPrimitivePtr primitive);
++void MindIR_All_SetKeepDims(PrimitivePtr *primitive, int64_t keep_dims);
++
++// ********** Assert **********
++PrimitivePtr MindIR_Assert_CreatePrimitive(int64_t summarize);
++int64_t MindIR_Assert_GetSummarize(ConstPrimitivePtr primitive);
++void MindIR_Assert_SetSummarize(PrimitivePtr *primitive, int64_t summarize);
++
++// ********** LogicalAnd **********
++PrimitivePtr MindIR_LogicalAnd_CreatePrimitive();
++
++// ********** LogicalNot **********
++PrimitivePtr MindIR_LogicalNot_CreatePrimitive();
++
++// ********** Cos **********
++PrimitivePtr MindIR_Cos_CreatePrimitive();
++
++// ********** Mod **********
++PrimitivePtr MindIR_Mod_CreatePrimitive();
++
++// ********** Neg **********
++PrimitivePtr MindIR_Neg_CreatePrimitive();
++
++// ********** Reciprocal **********
++PrimitivePtr MindIR_Reciprocal_CreatePrimitive();
++
++// ********** Sin **********
++PrimitivePtr MindIR_Sin_CreatePrimitive();
++
++// ********** Where **********
++PrimitivePtr MindIR_Where_CreatePrimitive();
++
++// ********** Log **********
++PrimitivePtr MindIR_Log_CreatePrimitive();
++
++// ********** LogicalOr **********
++PrimitivePtr MindIR_LogicalOr_CreatePrimitive();
++
++// ********** SparseToDense **********
++PrimitivePtr MindIR_SparseToDense_CreatePrimitive();
++
+ // ********** Custom **********
+ std::vector<const mindspore::schema::Attribute *> MindIR_Custom_GetAttr(ConstPrimitivePtr primitive);
+ std::string MindIR_Attribute_GetName(const mindspore::schema::Attribute &attr);
+diff --git a/mindspore/lite/mindir/include/mindir_types.h b/mindspore/lite/mindir/include/mindir_types.h
+index 3ee6aca1..9dd48d79 100644
+--- a/mindspore/lite/mindir/include/mindir_types.h
++++ b/mindspore/lite/mindir/include/mindir_types.h
+@@ -56,7 +56,9 @@ enum NodeType : uint32_t {
+   NODE_TYPE_ABS = 1,
+   NODE_TYPE_ACTIVATION = 2,
+   NODE_TYPE_ADD_FUSION = 5,
++  NODE_TYPE_ALL = 9,
+   NODE_TYPE_ARGMAX_FUSION = 11,
++  NODE_TYPE_ASSERT = 13,
+   NODE_TYPE_AVG_POOL_FUSION = 17,
+   NODE_TYPE_BATCH_TO_SPACE_ND = 22,
+   NODE_TYPE_BIAS_ADD = 23,
+@@ -66,6 +68,7 @@ enum NodeType : uint32_t {
+   NODE_TYPE_CONCAT = 31,
+   NODE_TYPE_CONV2D_FUSION = 35,
+   NODE_TYPE_CONV2D_TRANSPOSE_FUSION = 36,
++  NODE_TYPE_COS = 37,
+   NODE_TYPE_CONSTANT_OF_SHAPE = 38,
+   NODE_TYPE_DEPTH_TO_SPACE = 45,
+   NODE_TYPE_DIV_FUSION = 47,
+@@ -85,11 +88,17 @@ enum NodeType : uint32_t {
+   NODE_TYPE_LEAKY_RELU = 76,
+   NODE_TYPE_LESS = 77,
+   NODE_TYPE_LESS_EQUAL = 78,
++  NODE_TYPE_LOG = 79,
++  NODE_TYPE_LOGICAL_AND = 81,
++  NODE_TYPE_LOGICAL_NOT = 82,
++  NODE_TYPE_LOGICAL_OR = 83,
+   NODE_TYPE_LSTM = 87,
+   NODE_TYPE_MATMUL_FUSION = 89,
+   NODE_TYPE_MAXIMUM = 90,
+   NODE_TYPE_MAX_POOL_FUSION = 92,
++  NODE_TYPE_MOD = 98,
+   NODE_TYPE_MUL_FUSION = 99,
++  NODE_TYPE_NEG = 101,
+   NODE_TYPE_NOT_EQUAL = 103,
+   NODE_TYPE_ONE_HOT = 105,
+   NODE_TYPE_PAD_FUSION = 107,
+@@ -97,6 +106,7 @@ enum NodeType : uint32_t {
+   NODE_TYPE_PRELU_FUSION = 112,
+   NODE_TYPE_QUANT_DTYPE_CAST = 113,
+   NODE_TYPE_RANGE = 115,
++  NODE_TYPE_RECIPROCAL = 116,
+   NODE_TYPE_REAL_DIV = 117,
+   NODE_TYPE_REDUCE_FUSION = 118,
+   NODE_TYPE_RESHAPE = 119,
+@@ -104,9 +114,11 @@ enum NodeType : uint32_t {
+   NODE_TYPE_RSQRT = 126,
+   NODE_TYPE_SCALE_FUSION = 127,
+   NODE_TYPE_SHAPE = 130,
++  NODE_TYPE_SIN = 133,
+   NODE_TYPE_SLICE_FUSION = 135,
+   NODE_TYPE_SOFTMAX = 138,
+   NODE_TYPE_SPACE_TO_BATCH_ND = 141,
++  NODE_TYPE_SPARSE_TO_DENSE = 144,
+   NODE_TYPE_SPLIT = 145,
+   NODE_TYPE_SQRT = 146,
+   NODE_TYPE_SQUEEZE = 147,
+@@ -120,6 +132,7 @@ enum NodeType : uint32_t {
+   NODE_TYPE_TRANSPOSE = 162,
+   NODE_TYPE_UNSQUEEZE = 165,
+   NODE_TYPE_UNSTACK = 166,
++  NODE_TYPE_WHERE = 168,
+   NODE_TYPE_SELECT = 170,
+   NODE_TYPE_ERF = 178,
+   NODE_TYPE_CUSTOM = 191,
+diff --git a/mindspore/lite/mindir/src/mindir.cc b/mindspore/lite/mindir/src/mindir.cc
+index 36056c59..9b527ebd 100644
+--- a/mindspore/lite/mindir/src/mindir.cc
++++ b/mindspore/lite/mindir/src/mindir.cc
+@@ -5518,6 +5518,209 @@ void MindIR_Clip_SetMin(PrimitivePtr *primitive, float min) {
+   }
+ }
+ 
++// ********** All **********
++PrimitivePtr MindIR_All_CreatePrimitive(int64_t keep_dims) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateAll(fbb, keep_dims);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ALL), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++int64_t MindIR_All_GetKeepDims(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_All();
++    if (prim != nullptr && value != nullptr) {
++      return value->keep_dims();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_All_SetKeepDims(PrimitivePtr *primitive, int64_t keep_dims) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_All();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateAll(fbb, keep_dims);
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ALL), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      *primitive = ret_value;
++    }
++  }
++}
++
++// ********** Assert **********
++PrimitivePtr MindIR_Assert_CreatePrimitive(int64_t summarize) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateAssert(fbb, summarize);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ASSERT), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++int64_t MindIR_Assert_GetSummarize(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_Assert();
++    if (prim != nullptr && value != nullptr) {
++      return value->summarize();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_Assert_SetSummarize(PrimitivePtr *primitive, int64_t summarize) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_Assert();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateAssert(fbb, summarize);
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ASSERT), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      *primitive = ret_value;
++    }
++  }
++}
++
++// ********** LogicalAnd **********
++PrimitivePtr MindIR_LogicalAnd_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateLogicalAnd(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LOGICAL_AND), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** LogicalNot **********
++PrimitivePtr MindIR_LogicalNot_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateLogicalNot(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LOGICAL_NOT), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Cos **********
++PrimitivePtr MindIR_Cos_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateCos(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_COS), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Mod **********
++PrimitivePtr MindIR_Mod_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateMod(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MOD), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Neg **********
++PrimitivePtr MindIR_Neg_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateNeg(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_NEG), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Reciprocal **********
++PrimitivePtr MindIR_Reciprocal_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateReciprocal(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RECIPROCAL), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Sin **********
++PrimitivePtr MindIR_Sin_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateSin(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SIN), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Where **********
++PrimitivePtr MindIR_Where_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateWhere(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_WHERE), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Log **********
++PrimitivePtr MindIR_Log_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateLog(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LOG), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** LogicalOr **********
++PrimitivePtr MindIR_LogicalOr_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateLogicalOr(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LOGICAL_OR), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** SparseToDense **********
++PrimitivePtr MindIR_SparseToDense_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateSparseToDense(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPARSE_TO_DENSE), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
+ // ********** Custom **********
+ std::vector<const mindspore::schema::Attribute *> MindIR_Custom_GetAttr(ConstPrimitivePtr primitive) {
+   if (primitive == nullptr) {
+-- 
+2.17.1
+
