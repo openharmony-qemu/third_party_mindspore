@@ -1,3 +1,165 @@
+From baf2daaebd70448cddd35f5011642fe585d071b5 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Tue, 5 Mar 2024 20:00:24 +0800
+Subject: [PATCH] hilog use macro definition api
+
+---
+ cmake/external_libs/flatbuffers.cmake         |   4 +-
+ include/api/context.h                         |  65 ++
+ include/c_api/context_c.h                     | 111 +++
+ include/c_api/model_c.h                       | 178 ++++
+ include/c_api/tensor_c.h                      |  14 +
+ include/c_api/types_c.h                       |  57 +-
+ include/sdk_api/context.h                     | 103 +++
+ include/sdk_api/tensor.h                      |  13 +
+ include/sdk_api/types.h                       |  38 +-
+ .../plugin/device/cpu/kernel/nnacl/BUILD.gn   |   3 +
+ .../device/cpu/kernel/nnacl/CMakeLists.txt    |   2 +-
+ .../kernel/nnacl/avx/scatter_nd_binary_avx.h  |  66 ++
+ .../nnacl/avx512/scatter_nd_binary_avx512.h   |  66 ++
+ .../cpu/kernel/nnacl/base/scatter_nd_binary.c |  28 +
+ .../cpu/kernel/nnacl/base/scatter_nd_binary.h |   3 +
+ .../nnacl/base/scatter_nd_binary_simd.h.in    |  14 +
+ .../kernel/nnacl/custom_is_inf_parameter.h    |  26 +
+ .../nnacl/custom_masked_fill_parameter.h      |  26 +
+ .../custom_tensor_scatter_max_parameter.h     |  26 +
+ .../kernel/nnacl/infer/custom_is_inf_infer.c  |  38 +
+ .../kernel/nnacl/infer/custom_is_inf_infer.h  |  31 +
+ .../nnacl/infer/custom_masked_fill_infer.c    |  37 +
+ .../nnacl/infer/custom_masked_fill_infer.h    |  31 +
+ .../infer/custom_tensor_scatter_max_infer.c   |  37 +
+ .../infer/custom_tensor_scatter_max_infer.h   |  31 +
+ .../nnacl/neon/scatter_nd_binary_neon.h       |  65 ++
+ .../plugin/device/cpu/kernel/nnacl/op_base.h  |   4 +
+ .../cpu/kernel/nnacl/scatter_nd_binary_simd.h |  36 +
+ .../kernel/nnacl/sse/scatter_nd_binary_sse.h  |  66 ++
+ mindspore/core/mindrt/BUILD.gn                |   9 +-
+ .../mindrt/src/thread/actor_threadpool.cc     |   2 +-
+ .../core/mindrt/src/thread/core_affinity.cc   |   6 +-
+ .../core/mindrt/src/thread/core_affinity.h    |   2 +-
+ .../mindrt/src/thread/parallel_threadpool.cc  |   2 +-
+ mindspore/core/mindrt/src/thread/threadlog.h  |  28 +-
+ .../core/mindrt/src/thread/threadpool.cc      |   7 +-
+ mindspore/lite/BUILD.gn                       |  82 +-
+ mindspore/lite/CMakeLists.txt                 |   5 +-
+ mindspore/lite/include/lite_types.h           |   1 +
+ mindspore/lite/include/model.h                |   4 +
+ .../lite/include/registry/converter_context.h |   4 +-
+ mindspore/lite/mindir/include/mindir.h        |   2 +
+ mindspore/lite/mindir/src/mindir.cc           |  40 +
+ mindspore/lite/mindir/src/mindir_tensor.cc    |   2 +-
+ mindspore/lite/mindir/src/utils.cc            |   2 +-
+ mindspore/lite/src/CMakeLists.txt             |   6 +-
+ mindspore/lite/src/common/context_util.cc     |  14 +-
+ mindspore/lite/src/common/log.cc              |  33 +-
+ mindspore/lite/src/common/log.h               |  50 +-
+ .../common/ops/populate/custom_populate.cc    |  53 ++
+ mindspore/lite/src/litert/c_api/context_c.cc  | 372 +++++++-
+ mindspore/lite/src/litert/c_api/context_c.h   |  23 -
+ mindspore/lite/src/litert/c_api/model_c.cc    | 724 ++++++++-------
+ mindspore/lite/src/litert/c_api/tensor_c.cc   |  78 +-
+ .../lite/src/litert/c_api/type_c_private.h    |  40 +
+ mindspore/lite/src/litert/cxx_api/context.cc  |  85 ++
+ .../lite/src/litert/cxx_api/converters.cc     |  60 +-
+ .../lite/src/litert/cxx_api/converters.h      |   4 +-
+ .../src/litert/delegate/nnrt/CMakeLists.txt   |  27 +-
+ .../delegate/nnrt/checker/primitive_check.cc  |   2 +
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc | 836 ++++++++++++++----
+ .../src/litert/delegate/nnrt/nnrt_delegate.h  |  74 +-
+ .../litert/delegate/nnrt/nnrt_model_kernel.cc |   3 +-
+ .../litert/delegate/nnrt/nnrt_model_kernel.h  |   2 +-
+ .../src/litert/delegate/nnrt/nnrt_stub.cc     |  99 +++
+ mindspore/lite/src/litert/infer_manager.cc    |   3 +-
+ mindspore/lite/src/litert/inner_context.cc    |   4 +
+ mindspore/lite/src/litert/inner_context.h     |  14 +
+ mindspore/lite/src/litert/kernel/cpu/BUILD.gn |  51 +-
+ .../src/litert/kernel/cpu/base/custom_base.cc |  46 +
+ .../src/litert/kernel/cpu/base/custom_base.h  |  43 +
+ .../litert/kernel/cpu/base/custom_is_inf.cc   |  61 ++
+ .../litert/kernel/cpu/base/custom_is_inf.h    |  38 +
+ .../kernel/cpu/base/custom_masked_fill.cc     |  84 ++
+ .../kernel/cpu/base/custom_masked_fill.h      |  35 +
+ .../kernel/cpu/base/custom_tensor_scatter.cc  |  75 ++
+ .../kernel/cpu/base/custom_tensor_scatter.h   |  36 +
+ mindspore/lite/src/litert/lite_model.cc       |  29 +
+ mindspore/lite/src/litert/lite_session.cc     |  39 +-
+ mindspore/lite/src/litert/lite_session.h      |   1 +
+ mindspore/lite/src/litert/scheduler.cc        |  17 +
+ mindspore/lite/src/litert/tensor_category.cc  |   4 +
+ mindspore/lite/src/litert/tensor_category.h   |   1 +
+ mindspore/lite/test/CMakeLists.txt            |  15 +-
+ mindspore/lite/test/runtest.sh                |   1 +
+ .../test/ut/test_data/third_party_model.cfg   |   8 +
+ .../tools/converter/api/converter_api_test.cc |  10 +
+ .../third_party_param_parser_test.cc          | 176 ++++
+ .../lite/tools/benchmark/benchmark_base.cc    |   2 +-
+ .../lite/tools/benchmark/benchmark_base.h     |   2 +-
+ .../lite/tools/benchmark/benchmark_c_api.cc   |   4 +
+ .../tools/benchmark/benchmark_unified_api.cc  |   5 +
+ .../lite/tools/benchmark_train/CMakeLists.txt |   3 +
+ mindspore/lite/tools/benchmark_train/main.cc  |   3 +-
+ .../lite/tools/benchmark_train/net_runner.cc  |  10 +-
+ .../lite/tools/benchmark_train/net_train.cc   | 418 +--------
+ .../lite/tools/benchmark_train/net_train.h    | 229 +----
+ .../tools/benchmark_train/net_train_base.cc   | 410 +++++++++
+ .../tools/benchmark_train/net_train_base.h    | 288 ++++++
+ .../tools/benchmark_train/net_train_c_api.cc  | 659 ++++++++++++++
+ .../tools/benchmark_train/net_train_c_api.h   | 121 +++
+ .../tools/benchmark_train/run_net_train.cc    |  86 ++
+ .../tools/benchmark_train/run_net_train.h     |  22 +
+ mindspore/lite/tools/converter/CMakeLists.txt |   4 +
+ .../config_parser/config_file_parser.cc       |  27 +
+ .../config_parser/config_file_parser.h        |  15 +
+ .../config_parser/third_party_param_parser.cc | 299 +++++++
+ .../config_parser/third_party_param_parser.h  |  44 +
+ mindspore/lite/tools/converter/converter.cc   |  34 +-
+ .../tools/converter/converter_funcgraph.cc    |  13 +-
+ .../converter_lite/converter_flags.cc         |   4 +-
+ .../tools/converter/cxx_api/converter_para.h  |  14 +
+ .../tools/converter/graphdef_transform.cc     |  44 +
+ .../parser/third_party/CMakeLists.txt         |   4 +
+ .../third_party/third_party_model_parser.cc   | 277 ++++++
+ .../third_party/third_party_model_parser.h    |  50 ++
+ .../registry/model_parser_registry.cc         |   4 +-
+ 117 files changed, 6456 insertions(+), 1432 deletions(-)
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/avx/scatter_nd_binary_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/avx512/scatter_nd_binary_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/custom_is_inf_parameter.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/custom_masked_fill_parameter.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/custom_tensor_scatter_max_parameter.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/custom_is_inf_infer.c
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/custom_is_inf_infer.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/custom_masked_fill_infer.c
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/custom_masked_fill_infer.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/custom_tensor_scatter_max_infer.c
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/custom_tensor_scatter_max_infer.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/neon/scatter_nd_binary_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/scatter_nd_binary_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/sse/scatter_nd_binary_sse.h
+ create mode 100644 mindspore/lite/src/litert/c_api/type_c_private.h
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_stub.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/base/custom_base.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/base/custom_base.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/base/custom_is_inf.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/base/custom_is_inf.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/base/custom_masked_fill.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/base/custom_masked_fill.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/base/custom_tensor_scatter.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/base/custom_tensor_scatter.h
+ create mode 100644 mindspore/lite/test/ut/test_data/third_party_model.cfg
+ create mode 100644 mindspore/lite/test/ut/tools/converter/config_parser/third_party_param_parser_test.cc
+ create mode 100644 mindspore/lite/tools/benchmark_train/net_train_base.cc
+ create mode 100644 mindspore/lite/tools/benchmark_train/net_train_base.h
+ create mode 100644 mindspore/lite/tools/benchmark_train/net_train_c_api.cc
+ create mode 100644 mindspore/lite/tools/benchmark_train/net_train_c_api.h
+ create mode 100644 mindspore/lite/tools/benchmark_train/run_net_train.cc
+ create mode 100644 mindspore/lite/tools/benchmark_train/run_net_train.h
+ create mode 100644 mindspore/lite/tools/converter/config_parser/third_party_param_parser.cc
+ create mode 100644 mindspore/lite/tools/converter/config_parser/third_party_param_parser.h
+ create mode 100644 mindspore/lite/tools/converter/parser/third_party/CMakeLists.txt
+ create mode 100644 mindspore/lite/tools/converter/parser/third_party/third_party_model_parser.cc
+ create mode 100644 mindspore/lite/tools/converter/parser/third_party/third_party_model_parser.h
+
 diff --git a/cmake/external_libs/flatbuffers.cmake b/cmake/external_libs/flatbuffers.cmake
 index 2fde4311..87f0425b 100644
 --- a/cmake/external_libs/flatbuffers.cmake
@@ -2036,7 +2198,7 @@ index f011e0d7..0fa4ebd0 100644
      auto device_type = device_context.device_type_;
      if (transfer_funcs.find(device_type) == transfer_funcs.end()) {
 diff --git a/mindspore/lite/src/common/log.cc b/mindspore/lite/src/common/log.cc
-index 66c0d76b..f8ba18af 100644
+index 66c0d76b..f1040662 100644
 --- a/mindspore/lite/src/common/log.cc
 +++ b/mindspore/lite/src/common/log.cc
 @@ -21,6 +21,13 @@
@@ -2044,7 +2206,7 @@ index 66c0d76b..f8ba18af 100644
  #endif
  
 +#ifdef MS_COMPILE_OHOS
-+#define LOG_DOMAIN 0x2102
++#define LOG_DOMAIN 0xD002102
 +#define LOG_TAG "MS_LITE"
 +#define FORMAT "[%{public}s:%{public}d] %{public}s# %{public}s"
 +#include "hilog/log.h"
@@ -2078,15 +2240,15 @@ index 66c0d76b..f8ba18af 100644
 +#else
 +  // When build in OHOS repo, use inner api of hilog module.
 +  if (level == LiteLogLevel::DEBUG) {
-+    (void)HiLogPrint(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, FORMAT, file, line, func, msg);
++    HILOG_DEBUG(LOG_APP, FORMAT, file, line, func, msg);
 +  } else if (level == LiteLogLevel::INFO) {
-+    (void)HiLogPrint(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, FORMAT, file, line, func, msg);
++    HILOG_INFO(LOG_APP, FORMAT, file, line, func, msg);
 +  } else if (level == LiteLogLevel::WARNING) {
-+    (void)HiLogPrint(LOG_APP, LOG_WARN, LOG_DOMAIN, LOG_TAG, FORMAT, file, line, func, msg);
++    HILOG_WARN(LOG_APP, FORMAT, file, line, func, msg);
 +  } else if (level == LiteLogLevel::ERROR) {
-+    (void)HiLogPrint(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, FORMAT, file, line, func, msg);
++    HILOG_ERROR(LOG_APP, FORMAT, file, line, func, msg);
 +  } else {
-+    (void)HiLogPrint(LOG_APP, LOG_ERROR, LOG_DOMAIN, LOG_TAG, FORMAT, file, line, func, msg);
++    HILOG_ERROR(LOG_APP, FORMAT, file, line, func, msg);
 +  }
 +#endif
  }
@@ -10107,3 +10269,6 @@ index 832fb92d..6bc2d4d3 100644
      MS_LOG(ERROR) << "ILLEGAL FMK: fmk must be in FmkType.";
      return nullptr;
    }
+-- 
+2.17.1
+
