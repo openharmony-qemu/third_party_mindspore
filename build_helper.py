@@ -28,6 +28,7 @@ def do_patch(patch_dir, target_dir):
         '0009-npu-zero-copy.patch',
         '0010-micro-dynamic-shape-support-discrete-value.patch',
         '0011-fix-npu-infer-memory-leak-delete-liteGraph.patch',
+        '0012-fix-int8-bug.patch',
     ]
 
     cwd = os.getcwd()

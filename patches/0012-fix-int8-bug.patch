@@ -1,0 +1,10 @@
+diff --git a/mindspore/lite/src/litert/kernel/cpu/base/custom_base.cc b/mindspore/lite/src/litert/kernel/cpu/base/custom_base.cc
+index 9921e063..e65e97f3 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/base/custom_base.cc
++++ b/mindspore/lite/src/litert/kernel/cpu/base/custom_base.cc
+@@ -43,4 +43,5 @@ int CustomBaseCPUKernel::Run() {
+ REG_KERNEL(kCPU, kNumberTypeInt32, PrimType_Inner_ThirdPartyModel, LiteKernelCreator<CustomBaseCPUKernel>)
+ REG_KERNEL(kCPU, kNumberTypeFloat32, PrimType_Inner_ThirdPartyModel, LiteKernelCreator<CustomBaseCPUKernel>)
+ REG_KERNEL(kCPU, kNumberTypeBool, PrimType_Inner_ThirdPartyModel, LiteKernelCreator<CustomBaseCPUKernel>)
++REG_KERNEL(kCPU, kNumberTypeInt8, PrimType_Inner_ThirdPartyModel, LiteKernelCreator<CustomBaseCPUKernel>)
+ }  // namespace mindspore::kernel
