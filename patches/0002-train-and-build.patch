@@ -72,7 +72,7 @@ index 6d83e6f9..9d9c299f 100644
    cflags_cc = [
      "-Wno-ignored-qualifiers",
      "-Wunused-private-field",
-@@ -458,6 +460,224 @@ ohos_shared_library("mindspore_lib") {
+@@ -458,6 +460,225 @@ ohos_shared_library("mindspore_lib") {
    subsystem_name = "thirdparty"
  }
  
@@ -279,6 +279,7 @@ index 6d83e6f9..9d9c299f 100644
 +
 +  remove_configs = [ "//build/config/compiler:no_rtti" ]
 +  external_deps = [ "hilog:libhilog" ]
++  innerapi_tags = [ "platformsdk" ]
 +  output_name = "libmindspore-lite-train"
 +  output_extension = "so"
 +  defines += [ "SUPPORT_TRAIN" ]
