@@ -26,6 +26,7 @@
         "components": [
           "c_utils",
           "hilog",
+          "hiappevent",
           "hdf_core",
           "ipc",
           "neural_network_runtime",

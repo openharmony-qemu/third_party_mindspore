@@ -29,6 +29,7 @@ def do_patch(patch_dir, target_dir):
         '0010-micro-dynamic-shape-support-discrete-value.patch',
         '0011-fix-npu-infer-memory-leak-delete-liteGraph.patch',
         '0012-add-mindir-ops.patch',
+        '0013-hiappevent.patch',
     ]
 
     cwd = os.getcwd()
