@@ -1,7 +1,7 @@
-From e8bc30b81e6a135b73b44bea1ed7e6c4a32c071c Mon Sep 17 00:00:00 2001
-From: qinzheng4 <qinzheng4@huawei.com>
-Date: Wed, 10 Jan 2024 13:47:59 +0800
-Subject: [PATCH] fix
+From 40d5bbe784fda0a584b10dc1c833f1673f602acf Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Fri, 22 Mar 2024 19:06:15 +0800
+Subject: [PATCH] fix js xts test random crash
 
 ---
  include/js_api/@ohos.ai.mindSporeLite.d.ts    |  867 ++++++
@@ -10,18 +10,18 @@ Subject: [PATCH] fix
  include/js_api/ms_info.h                      |   69 +
  include/js_api/ms_parameters_napi.h           |   24 +
  include/js_api/mslite_model_callback_napi.h   |   38 +
- include/js_api/mslite_model_napi.h            |  186 ++
+ include/js_api/mslite_model_napi.h            |  187 ++
  include/js_api/mstensor_napi.h                |   49 +
  include/js_api/native_module_ohos_ms.h        |   22 +
  include/js_api/nnrt_device_desc_napi.h        |   45 +
  mindspore/lite/BUILD.gn                       |    1 +
  mindspore/lite/src/litert/js_api/BUILD.gn     |   56 +
  .../lite/src/litert/js_api/common_napi.cc     |  303 ++
- .../src/litert/js_api/mslite_model_napi.cc    | 2569 +++++++++++++++++
+ .../src/litert/js_api/mslite_model_napi.cc    | 2572 +++++++++++++++++
  .../lite/src/litert/js_api/mstensor_napi.cc   |  416 +++
  .../litert/js_api/native_module_ohos_ms.cc    |   48 +
  .../src/litert/js_api/nnrt_device_desc.cc     |  216 ++
- 17 files changed, 5144 insertions(+)
+ 17 files changed, 5148 insertions(+)
  create mode 100644 include/js_api/@ohos.ai.mindSporeLite.d.ts
  create mode 100644 include/js_api/common_napi.h
  create mode 100644 include/js_api/ms_errors.h
@@ -1315,10 +1315,10 @@ index 00000000..3b3ee595
 \ No newline at end of file
 diff --git a/include/js_api/mslite_model_napi.h b/include/js_api/mslite_model_napi.h
 new file mode 100644
-index 00000000..1f075ba4
+index 00000000..688287d3
 --- /dev/null
 +++ b/include/js_api/mslite_model_napi.h
-@@ -0,0 +1,186 @@
+@@ -0,0 +1,187 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -1490,6 +1490,7 @@ index 00000000..1f075ba4
 +
 +  static thread_local napi_ref constructor_;
 +  napi_env env_ = nullptr;
++  napi_ref wrapper_ = nullptr;
 +  static napi_ref tensorFormat_;
 +  static napi_ref tensorDataType_;
 +  static napi_ref contextThreadAffinityMode_;
@@ -1644,7 +1645,7 @@ index 00000000..a1c92de5
 +#endif  // MINDSPORE_INCLUDE_JS_API_NNRT_DEVICE_DESC_NAPI_H
 \ No newline at end of file
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index 9d9c299f..a774b58c 100644
+index 8a492bf9..7e824c01 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
 @@ -76,6 +76,7 @@ ohos_group("mindspore") {
@@ -2029,10 +2030,10 @@ index 00000000..85d69ff6
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/js_api/mslite_model_napi.cc b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..81eca8ce
+index 00000000..235f2209
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
-@@ -0,0 +1,2569 @@
+@@ -0,0 +1,2572 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -2113,15 +2114,18 @@ index 00000000..81eca8ce
 +const std::unordered_map<std::string, DeviceType> kDeviceTypes{
 +  {"cpu", kCPU},
 +  {"nnrt", kNNRt},
-+  {"nnrt", kGPU},
++  {"gpu", kGPU},
 +};
 +}  // namespace
 +
-+MSLiteModelNapi::MSLiteModelNapi() : native_model_(nullptr), env_(nullptr) {
++MSLiteModelNapi::MSLiteModelNapi() : native_model_(nullptr), env_(nullptr), wrapper_(nullptr) {
 +  MS_LOG(INFO) << "MSLiteModelNapi Instances create.";
 +}
 +
 +MSLiteModelNapi::~MSLiteModelNapi() {
++  if (wrapper_ != nullptr) {
++    napi_delete_reference(env_, wrapper_);
++  }
 +  native_model_ = nullptr;
 +  env_ = nullptr;
 +  if (model_info_ != nullptr) {
@@ -2756,7 +2760,7 @@ index 00000000..81eca8ce
 +  }
 +
 +  status =
-+    napi_wrap(env, thisVar, reinterpret_cast<void *>(model_napi.get()), MSLiteModelNapi::Finalize, nullptr, nullptr);
++    napi_wrap(env, thisVar, reinterpret_cast<void *>(model_napi.get()), MSLiteModelNapi::Finalize, nullptr, &model_napi->wrapper_);
 +  if (status == napi_ok) {
 +    model_napi.release();
 +    return thisVar;
@@ -5303,5 +5307,5 @@ index 00000000..45f9ce6f
 +}  // namespace mindspore
 \ No newline at end of file
 -- 
-2.25.1
+2.17.1
 
