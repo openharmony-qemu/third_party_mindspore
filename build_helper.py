@@ -30,6 +30,7 @@ def do_patch(patch_dir, target_dir):
         '0011-fix-npu-infer-memory-leak-delete-liteGraph.patch',
         '0012-add-mindir-ops.patch',
         '0013-hiappevent.patch',
+        '0014-DynamicQuant-strategy-optimization.patch',
     ]
 
     cwd = os.getcwd()
