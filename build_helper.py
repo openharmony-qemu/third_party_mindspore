@@ -31,6 +31,7 @@ def do_patch(patch_dir, target_dir):
         '0012-add-mindir-ops.patch',
         '0013-hiappevent.patch',
         '0014-DynamicQuant-strategy-optimization.patch',
+        '0015-bugfix-for-cpu-kernel.patch',
     ]
 
     cwd = os.getcwd()
