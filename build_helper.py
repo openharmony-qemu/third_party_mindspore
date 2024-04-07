@@ -4,6 +4,7 @@ import os
 import shutil
 import zipfile
 import argparse
+import hashlib
 
 def extract_source(in_zip_path, out_src_path):
     "depress source code form release package"
@@ -55,6 +56,57 @@ def create_status_file(out_src_path):
     f.close
 
 
+def compute_md5(file):
+    m = hashlib.md5()
+    with open(file, 'rb') as f:
+        m.update(f.read())
+    return m.hexdigest()
+
+
+def save_md5s(folder_path, out_path):
+    files_list = []
+    for file_name in os.listdir(folder_path):
+        if (file_name.endswith(".patch")):
+            files_list.append(file_name)
+
+    os.makedirs(out_path, exist_ok=True)
+    for pf in files_list:
+        md5_path = os.path.join(out_path, pf.replace(".patch", ".md5"))
+        with open(md5_path, 'w') as f:
+            f.write(compute_md5(os.path.join(folder_path, pf)))
+
+
+def md5_changed(patch_path, md5_path):
+    if not os.path.exists(md5_path):
+        return True
+    patch_list = []
+    md5_list = []
+    for file_name in os.listdir(patch_path):
+        if (file_name.endswith(".patch")):
+            patch_list.append(file_name)
+    for file_name in os.listdir(md5_path):
+        if (file_name.endswith(".md5")):
+            md5_list.append(file_name)
+    if (len(patch_list) != len(md5_list)):
+        return True
+
+    for md5_file in md5_list:
+        if not os.path.exists(os.path.join(patch_path, md5_file.replace(".md5", ".patch"))):
+            return True
+        with open(os.path.join(md5_path, md5_file), 'r') as f:
+            origin_v = f.read().strip()
+            if (origin_v != compute_md5(os.path.join(patch_path, md5_file.replace(".md5", ".patch")))):
+                return True
+    return False
+
+
+def source_has_changed(out_src_path, patch_path, md5_path):
+    if not os.path.exists(os.path.join(out_src_path, ".status")):
+        print(".status not exist.")
+        return True
+    return md5_changed(patch_path, md5_path)
+
+
 def main_work():
     parser = argparse.ArgumentParser(description="mindspore build helper")
     parser.add_argument('--in_zip_path')
@@ -66,10 +118,18 @@ def main_work():
     out_src_path = args['out_src_path']
     patch_dir = os.path.realpath(args['patch_dir'])
 
-    if os.path.exists(out_src_path):
-        shutil.rmtree(out_src_path)
+    md5_dir = os.path.join(out_src_path, "patches_md5")
+    if source_has_changed(out_src_path, patch_dir, md5_dir):
+        print("remove ", out_src_path)
+        if os.path.exists(out_src_path):
+            shutil.rmtree(out_src_path)
+        save_md5s(patch_dir, md5_dir)
 
-    os.mkdir(out_src_path)
+    if os.path.exists(os.path.join(out_src_path, ".status")):
+        print("patch files not changed and " + os.path.join(out_src_path, ".status") + " exists.")
+        return
+
+    os.makedirs(out_src_path, exist_ok=True)
     out_src_path = os.path.realpath(out_src_path)
 
     extract_source(in_zip_path, out_src_path)
