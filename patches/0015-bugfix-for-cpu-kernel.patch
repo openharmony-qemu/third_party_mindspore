@@ -1,13 +1,14 @@
-From 638fe15c7114843ff90297980ea62e4c470d9c9e Mon Sep 17 00:00:00 2001
+From 924cc8ff49b94b152d4a092006abe94dbcbf6018 Mon Sep 17 00:00:00 2001
 From: zhangyanhui <zhangyanhui17@huawei.com>
 Date: Thu, 28 Mar 2024 10:40:33 +0800
-Subject: [PATCH] where bugfix for broadcast
+Subject: [PATCH] update GLUFusion pass name attribute, to fix docs
 
 ---
  .../cpu/kernel/nnacl/infer/where_infer.c      |  66 ++++++------
  .../src/litert/kernel/cpu/fp32/where_fp32.cc  | 102 +++++++++++++++---
  .../src/litert/kernel/cpu/fp32/where_fp32.h   |   2 +
- 3 files changed, 120 insertions(+), 50 deletions(-)
+ .../lite/tools/optimizer/fusion/glu_fusion.h  |   4 +-
+ 4 files changed, 122 insertions(+), 52 deletions(-)
 
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/where_infer.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/where_infer.c
 index f6d4e1b2..c714627a 100644
@@ -261,6 +262,26 @@ index 0d785732..ae6e3eba 100644
  };
  }  // namespace mindspore::kernel
  #endif  // MINDSPORE_LITE_SRC_RUNTIME_KERNEL_CPU_FP32_WHERE_FP32_H_
+diff --git a/mindspore/lite/tools/optimizer/fusion/glu_fusion.h b/mindspore/lite/tools/optimizer/fusion/glu_fusion.h
+index 5e6a7e79..513a49d9 100644
+--- a/mindspore/lite/tools/optimizer/fusion/glu_fusion.h
++++ b/mindspore/lite/tools/optimizer/fusion/glu_fusion.h
+@@ -1,5 +1,5 @@
+ /**
+- * Copyright 2021 Huawei Technologies Co., Ltd
++ * Copyright 2021~2024 Huawei Technologies Co., Ltd
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -26,7 +26,7 @@ namespace mindspore {
+ namespace opt {
+ class GLUFusion : public LitePatternProcessPass {
+  public:
+-  explicit GLUFusion(const std::string &name = "glu_fusion", bool multigraph = true)
++  explicit GLUFusion(const std::string &name = "GLUFusion", bool multigraph = true)
+       : LitePatternProcessPass(name, multigraph) {}
+ 
+   ~GLUFusion() override = default;
 -- 
 2.25.1
 
