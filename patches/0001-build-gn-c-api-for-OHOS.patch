@@ -1,3 +1,459 @@
+From 5538177993640fbd096ef763bbabbad30bacdcd0 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Mon, 8 Apr 2024 11:00:15 +0800
+Subject: [PATCH] ndk build gn repeat with interface repository
+
+---
+ .gitignore                                    |     2 -
+ include/c_api/context_c.h                     |    50 +-
+ include/c_api/data_type_c.h                   |    44 +-
+ include/c_api/format_c.h                      |    38 +-
+ include/c_api/model_c.h                       |    70 +-
+ include/c_api/status_c.h                      |    68 +-
+ include/c_api/tensor_c.h                      |    34 +-
+ include/c_api/types_c.h                       |    28 +-
+ include/sdk_api/context.h                     |   180 +
+ include/sdk_api/data_type.h                   |    52 +
+ include/sdk_api/format.h                      |    46 +
+ include/sdk_api/model.h                       |   138 +
+ include/sdk_api/status.h                      |    80 +
+ include/sdk_api/tensor.h                      |   146 +
+ include/sdk_api/types.h                       |    50 +
+ .../plugin/device/cpu/kernel/nnacl/BUILD.gn   |   885 +
+ .../nnacl/fp16_grad/activation_grad_fp16.c    |     2 +-
+ .../include/nnacl/activation_fp32_simd.h      |    36 +
+ .../include/nnacl/activation_grad_simd.h      |    36 +
+ .../nnacl/include/nnacl/adam_fp32_simd.h      |    36 +
+ .../nnacl/include/nnacl/add_fp32_simd.h       |    36 +
+ .../nnacl/apply_proximal_adagrad_fp32_simd.h  |    36 +
+ ...pply_proximal_gradient_descent_fp32_simd.h |    36 +
+ .../include/nnacl/arithmetic_fp32_simd.h      |    36 +
+ .../include/nnacl/arithmetic_self_fp32_simd.h |    36 +
+ .../include/nnacl/avx/activation_fp32_avx.h   |   285 +
+ .../include/nnacl/avx/activation_grad_avx.h   |    57 +
+ .../nnacl/include/nnacl/avx/adam_fp32_avx.h   |   210 +
+ .../nnacl/include/nnacl/avx/add_fp32_avx.h    |   124 +
+ .../avx/apply_proximal_adagrad_fp32_avx.h     |    75 +
+ ...apply_proximal_gradient_descent_fp32_avx.h |    71 +
+ .../include/nnacl/avx/arithmetic_fp32_avx.h   |   294 +
+ .../nnacl/avx/arithmetic_self_fp32_avx.h      |   148 +
+ .../include/nnacl/avx/batchnorm_fp32_avx.h    |    67 +
+ .../nnacl/avx/bce_with_logits_loss_fp32_avx.h |    69 +
+ .../nnacl/include/nnacl/avx/bias_add_avx.h    |    64 +
+ .../nnacl/include/nnacl/avx/cast_base_avx.h   |    56 +
+ .../nnacl/avx/cast_gather_reduce_fp32_avx.h   |    72 +
+ .../nnacl/include/nnacl/avx/cdist_fp32_avx.h  |    70 +
+ .../nnacl/include/nnacl/avx/cumsum_fp32_avx.h |   121 +
+ .../nnacl/include/nnacl/avx/div_fp32_avx.h    |   167 +
+ .../include/nnacl/avx/dropout_fp32_avx.h      |    46 +
+ .../nnacl/include/nnacl/avx/exp_fp32_avx.h    |    63 +
+ .../nnacl/include/nnacl/avx/fill_base_avx.h   |    53 +
+ .../include/nnacl/avx/group_norm_fp32_avx.h   |    77 +
+ .../include/nnacl/avx/layer_norm_fp32_avx.h   |    68 +
+ .../nnacl/include/nnacl/avx/matmul_fp32_avx.h |   155 +
+ .../nnacl/include/nnacl/avx/mul_fp32_avx.h    |   218 +
+ .../include/nnacl/avx/pooling_fp32_avx.h      |    84 +
+ .../nnacl/include/nnacl/avx/power_fp32_avx.h  |   101 +
+ .../nnacl/avx/reduce_concat_fp32_avx.h        |   122 +
+ .../nnacl/include/nnacl/avx/reduce_fp32_avx.h |   227 +
+ .../include/nnacl/avx/scatter_nd_binary_avx.h |    52 +
+ .../include/nnacl/avx/softmax_fp32_avx.h      |    87 +
+ .../nnacl/avx/softmax_grad_fusion_fp32_avx.h  |    62 +
+ .../nnacl/include/nnacl/avx/sub_fp32_avx.h    |   167 +
+ .../nnacl/avx512/activation_fp32_avx512.h     |   285 +
+ .../nnacl/avx512/activation_grad_avx512.h     |    57 +
+ .../include/nnacl/avx512/adam_fp32_avx512.h   |   210 +
+ .../include/nnacl/avx512/add_fp32_avx512.h    |   124 +
+ .../apply_proximal_adagrad_fp32_avx512.h      |    75 +
+ ...ly_proximal_gradient_descent_fp32_avx512.h |    71 +
+ .../nnacl/avx512/arithmetic_fp32_avx512.h     |   294 +
+ .../avx512/arithmetic_self_fp32_avx512.h      |   148 +
+ .../nnacl/avx512/batchnorm_fp32_avx512.h      |    67 +
+ .../avx512/bce_with_logits_loss_fp32_avx512.h |    69 +
+ .../include/nnacl/avx512/bias_add_avx512.h    |    64 +
+ .../include/nnacl/avx512/cast_base_avx512.h   |    56 +
+ .../avx512/cast_gather_reduce_fp32_avx512.h   |    72 +
+ .../include/nnacl/avx512/cdist_fp32_avx512.h  |    70 +
+ .../include/nnacl/avx512/cumsum_fp32_avx512.h |   121 +
+ .../include/nnacl/avx512/div_fp32_avx512.h    |   167 +
+ .../nnacl/avx512/dropout_fp32_avx512.h        |    46 +
+ .../include/nnacl/avx512/exp_fp32_avx512.h    |    63 +
+ .../include/nnacl/avx512/fill_base_avx512.h   |    53 +
+ .../nnacl/avx512/group_norm_fp32_avx512.h     |    77 +
+ .../nnacl/avx512/layer_norm_fp32_avx512.h     |    68 +
+ .../include/nnacl/avx512/matmul_fp32_avx512.h |   155 +
+ .../include/nnacl/avx512/mul_fp32_avx512.h    |   218 +
+ .../nnacl/avx512/pooling_fp32_avx512.h        |    84 +
+ .../include/nnacl/avx512/power_fp32_avx512.h  |   101 +
+ .../nnacl/avx512/reduce_concat_fp32_avx512.h  |   122 +
+ .../include/nnacl/avx512/reduce_fp32_avx512.h |   227 +
+ .../nnacl/avx512/scatter_nd_binary_avx512.h   |    52 +
+ .../nnacl/avx512/softmax_fp32_avx512.h        |    87 +
+ .../avx512/softmax_grad_fusion_fp32_avx512.h  |    62 +
+ .../include/nnacl/avx512/sub_fp32_avx512.h    |   167 +
+ .../nnacl/include/nnacl/batchnorm_fp32_simd.h |    36 +
+ .../nnacl/bce_with_logits_loss_fp32_simd.h    |    36 +
+ .../nnacl/include/nnacl/bias_add_simd.h       |    36 +
+ .../nnacl/include/nnacl/cast_base_simd.h      |    36 +
+ .../nnacl/cast_gather_reduce_fp32_simd.h      |    36 +
+ .../nnacl/include/nnacl/cdist_fp32_simd.h     |    36 +
+ .../nnacl/include/nnacl/cumsum_fp32_simd.h    |    36 +
+ .../nnacl/include/nnacl/div_fp32_simd.h       |    36 +
+ .../nnacl/include/nnacl/dropout_fp32_simd.h   |    36 +
+ .../nnacl/include/nnacl/exp_fp32_simd.h       |    36 +
+ .../nnacl/include/nnacl/fill_base_simd.h      |    36 +
+ .../include/nnacl/group_norm_fp32_simd.h      |    36 +
+ .../include/nnacl/layer_norm_fp32_simd.h      |    36 +
+ .../nnacl/include/nnacl/matmul_fp32_simd.h    |    36 +
+ .../nnacl/include/nnacl/mul_fp32_simd.h       |    36 +
+ .../include/nnacl/neon/activation_fp32_neon.h |   284 +
+ .../include/nnacl/neon/activation_grad_neon.h |    56 +
+ .../nnacl/include/nnacl/neon/adam_fp32_neon.h |   209 +
+ .../nnacl/include/nnacl/neon/add_fp32_neon.h  |   123 +
+ .../neon/apply_proximal_adagrad_fp32_neon.h   |    74 +
+ ...pply_proximal_gradient_descent_fp32_neon.h |    70 +
+ .../include/nnacl/neon/arithmetic_fp32_neon.h |   293 +
+ .../nnacl/neon/arithmetic_self_fp32_neon.h    |   147 +
+ .../include/nnacl/neon/batchnorm_fp32_neon.h  |    66 +
+ .../neon/bce_with_logits_loss_fp32_neon.h     |    68 +
+ .../nnacl/include/nnacl/neon/bias_add_neon.h  |    63 +
+ .../nnacl/include/nnacl/neon/cast_base_neon.h |    55 +
+ .../nnacl/neon/cast_gather_reduce_fp32_neon.h |    71 +
+ .../include/nnacl/neon/cdist_fp32_neon.h      |    69 +
+ .../include/nnacl/neon/cumsum_fp32_neon.h     |   120 +
+ .../nnacl/include/nnacl/neon/div_fp32_neon.h  |   166 +
+ .../include/nnacl/neon/dropout_fp32_neon.h    |    45 +
+ .../nnacl/include/nnacl/neon/exp_fp32_neon.h  |    62 +
+ .../nnacl/include/nnacl/neon/fill_base_neon.h |    52 +
+ .../include/nnacl/neon/group_norm_fp32_neon.h |    76 +
+ .../include/nnacl/neon/layer_norm_fp32_neon.h |    67 +
+ .../include/nnacl/neon/matmul_fp32_neon.h     |   154 +
+ .../nnacl/include/nnacl/neon/mul_fp32_neon.h  |   217 +
+ .../include/nnacl/neon/pooling_fp32_neon.h    |    83 +
+ .../include/nnacl/neon/power_fp32_neon.h      |   100 +
+ .../nnacl/neon/reduce_concat_fp32_neon.h      |   121 +
+ .../include/nnacl/neon/reduce_fp32_neon.h     |   226 +
+ .../nnacl/neon/scatter_nd_binary_neon.h       |    51 +
+ .../include/nnacl/neon/softmax_fp32_neon.h    |    86 +
+ .../neon/softmax_grad_fusion_fp32_neon.h      |    61 +
+ .../nnacl/include/nnacl/neon/sub_fp32_neon.h  |   166 +
+ .../nnacl/include/nnacl/pooling_fp32_simd.h   |    36 +
+ .../nnacl/include/nnacl/power_fp32_simd.h     |    36 +
+ .../include/nnacl/reduce_concat_fp32_simd.h   |    36 +
+ .../nnacl/include/nnacl/reduce_fp32_simd.h    |    36 +
+ .../include/nnacl/scatter_nd_binary_simd.h    |    36 +
+ .../nnacl/include/nnacl/softmax_fp32_simd.h   |    36 +
+ .../nnacl/softmax_grad_fusion_fp32_simd.h     |    36 +
+ .../include/nnacl/sse/activation_fp32_sse.h   |   285 +
+ .../include/nnacl/sse/activation_grad_sse.h   |    57 +
+ .../nnacl/include/nnacl/sse/adam_fp32_sse.h   |   210 +
+ .../nnacl/include/nnacl/sse/add_fp32_sse.h    |   124 +
+ .../sse/apply_proximal_adagrad_fp32_sse.h     |    75 +
+ ...apply_proximal_gradient_descent_fp32_sse.h |    71 +
+ .../include/nnacl/sse/arithmetic_fp32_sse.h   |   294 +
+ .../nnacl/sse/arithmetic_self_fp32_sse.h      |   148 +
+ .../include/nnacl/sse/batchnorm_fp32_sse.h    |    67 +
+ .../nnacl/sse/bce_with_logits_loss_fp32_sse.h |    69 +
+ .../nnacl/include/nnacl/sse/bias_add_sse.h    |    64 +
+ .../nnacl/include/nnacl/sse/cast_base_sse.h   |    56 +
+ .../nnacl/sse/cast_gather_reduce_fp32_sse.h   |    72 +
+ .../nnacl/include/nnacl/sse/cdist_fp32_sse.h  |    70 +
+ .../nnacl/include/nnacl/sse/cumsum_fp32_sse.h |   121 +
+ .../nnacl/include/nnacl/sse/div_fp32_sse.h    |   167 +
+ .../include/nnacl/sse/dropout_fp32_sse.h      |    46 +
+ .../nnacl/include/nnacl/sse/exp_fp32_sse.h    |    63 +
+ .../nnacl/include/nnacl/sse/fill_base_sse.h   |    53 +
+ .../include/nnacl/sse/group_norm_fp32_sse.h   |    77 +
+ .../include/nnacl/sse/layer_norm_fp32_sse.h   |    68 +
+ .../nnacl/include/nnacl/sse/matmul_fp32_sse.h |   155 +
+ .../nnacl/include/nnacl/sse/mul_fp32_sse.h    |   218 +
+ .../include/nnacl/sse/pooling_fp32_sse.h      |    84 +
+ .../nnacl/include/nnacl/sse/power_fp32_sse.h  |   101 +
+ .../nnacl/sse/reduce_concat_fp32_sse.h        |   122 +
+ .../nnacl/include/nnacl/sse/reduce_fp32_sse.h |   227 +
+ .../include/nnacl/sse/scatter_nd_binary_sse.h |    52 +
+ .../include/nnacl/sse/softmax_fp32_sse.h      |    87 +
+ .../nnacl/sse/softmax_grad_fusion_fp32_sse.h  |    62 +
+ .../nnacl/include/nnacl/sse/sub_fp32_sse.h    |   167 +
+ .../nnacl/include/nnacl/sub_fp32_simd.h       |    36 +
+ .../cpu/kernel/nnacl/infer/infer_register.c   |     4 +-
+ mindspore/core/mindrt/BUILD.gn                |    49 +
+ mindspore/core/ops/base_operator.h            |     4 +-
+ mindspore/lite/BUILD.gn                       |   484 +
+ mindspore/lite/CMakeLists.txt                 |    11 +
+ mindspore/lite/mindir/BUILD.gn                |    61 +
+ mindspore/lite/mindir/CMakeLists.txt          |    31 +
+ mindspore/lite/mindir/include/mindir.h        |   447 +
+ .../lite/mindir/include/mindir_lite_graph.h   |    57 +
+ .../lite/mindir/include/mindir_primitive.h    |    15 +
+ mindspore/lite/mindir/include/mindir_tensor.h |    61 +
+ mindspore/lite/mindir/include/mindir_types.h  |   211 +
+ .../lite/mindir/inner_headers/lite_graph.h    |    27 +
+ .../inner_headers/mindir_memory_manager.h     |    33 +
+ mindspore/lite/mindir/inner_headers/utils.h   |    28 +
+ mindspore/lite/mindir/src/mindir.cc           |  4339 ++
+ .../lite/mindir/src/mindir_memory_manager.cc  |   129 +
+ .../lite/mindir/src/mindir_nnrt_lite_graph.cc |    87 +
+ .../src/mindir_nnrt_lite_graph_to_model.cc    |  1496 +
+ .../mindir_nnrt_lite_graph_to_model_v2_0.cc   |  1497 +
+ mindspore/lite/mindir/src/mindir_tensor.cc    |   433 +
+ mindspore/lite/mindir/src/utils.cc            |   102 +
+ mindspore/lite/mindir/tests/BUILD.gn          |    35 +
+ mindspore/lite/mindir/tests/mindir_test.cc    |    51 +
+ mindspore/lite/schema/gpu_cache_generated.h   |   319 +
+ .../lite/schema/inner/gpu_cache_generated.h   |   573 +
+ mindspore/lite/schema/inner/model_generated.h |  3452 ++
+ mindspore/lite/schema/inner/ops_generated.h   | 34917 ++++++++++++++++
+ .../lite/schema/inner/ops_types_generated.h   |  1168 +
+ mindspore/lite/schema/model_generated.h       |  2623 ++
+ mindspore/lite/schema/ops_generated.h         | 14900 +++++++
+ mindspore/lite/schema/ops_types_generated.h   |   750 +
+ mindspore/lite/schema/schema_generated.h      | 18994 +++++++++
+ mindspore/lite/src/CMakeLists.txt             |     6 +
+ mindspore/lite/src/common/BUILD.gn            |    83 +
+ .../lite/src/common/dynamic_library_loader.cc |     3 +-
+ mindspore/lite/src/common/log.cc              |    10 +-
+ mindspore/lite/src/common/log.h               |    45 +-
+ mindspore/lite/src/common/thread_utils.cc     |     2 +-
+ mindspore/lite/src/expression/node.cc         |     4 +-
+ mindspore/lite/src/litert/c_api/context_c.cc  |    60 +-
+ mindspore/lite/src/litert/c_api/context_c.h   |     2 +-
+ mindspore/lite/src/litert/c_api/model_c.cc    |   178 +-
+ mindspore/lite/src/litert/c_api/tensor_c.cc   |    45 +-
+ mindspore/lite/src/litert/cpu_info.cc         |     2 +-
+ .../lite/src/litert/cxx_api/converters.cc     |     6 +-
+ .../src/litert/delegate/nnrt/CMakeLists.txt   |    30 +
+ .../delegate/nnrt/checker/primitive_check.cc  |   187 +
+ .../delegate/nnrt/checker/primitive_check.h   |    12 +
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc |   360 +
+ .../src/litert/delegate/nnrt/nnrt_delegate.h  |    51 +
+ .../litert/delegate/nnrt/nnrt_model_kernel.cc |   175 +
+ .../litert/delegate/nnrt/nnrt_model_kernel.h  |    57 +
+ mindspore/lite/src/litert/kernel/cpu/BUILD.gn |   307 +
+ mindspore/lite/src/litert/lite_session.cc     |     2 +-
+ mindspore/lite/src/litert/scheduler.cc        |     4 +
+ mindspore/lite/test/ohos_test/BUILD.gn        |    40 +
+ mindspore/lite/test/ohos_test/ohos_test.xml   |    23 +
+ .../ohos_test/resource/models/mobilenetv2.ms  |   Bin 0 -> 13988384 bytes
+ .../lite/test/ohos_test/src/context_test.cc   |    76 +
+ .../lite/test/ohos_test/src/model_test.cc     |   234 +
+ .../lite/test/ohos_test/src/tensor_test.cc    |    98 +
+ mindspore/lite/tools/benchmark/BUILD.gn       |    66 +
+ .../lite/tools/benchmark/benchmark_base.cc    |     2 -
+ .../lite/tools/benchmark/benchmark_c_api.cc   |   142 +-
+ .../lite/tools/benchmark/benchmark_c_api.h    |    24 +-
+ .../tools/benchmark/benchmark_unified_api.cc  |     6 +-
+ 239 files changed, 106438 insertions(+), 418 deletions(-)
+ create mode 100644 include/sdk_api/context.h
+ create mode 100644 include/sdk_api/data_type.h
+ create mode 100644 include/sdk_api/format.h
+ create mode 100644 include/sdk_api/model.h
+ create mode 100644 include/sdk_api/status.h
+ create mode 100644 include/sdk_api/tensor.h
+ create mode 100644 include/sdk_api/types.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/activation_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/activation_grad_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/adam_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/add_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/apply_proximal_adagrad_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/apply_proximal_gradient_descent_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/arithmetic_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/arithmetic_self_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/activation_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/activation_grad_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/adam_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/add_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/apply_proximal_adagrad_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/apply_proximal_gradient_descent_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/arithmetic_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/arithmetic_self_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/batchnorm_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/bce_with_logits_loss_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/bias_add_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/cast_base_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/cast_gather_reduce_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/cdist_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/cumsum_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/div_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/dropout_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/exp_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/fill_base_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/group_norm_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/layer_norm_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/matmul_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/mul_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/pooling_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/power_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/reduce_concat_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/reduce_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/scatter_nd_binary_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/softmax_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/softmax_grad_fusion_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx/sub_fp32_avx.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/activation_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/activation_grad_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/adam_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/add_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/apply_proximal_adagrad_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/apply_proximal_gradient_descent_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/arithmetic_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/arithmetic_self_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/batchnorm_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/bce_with_logits_loss_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/bias_add_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/cast_base_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/cast_gather_reduce_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/cdist_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/cumsum_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/div_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/dropout_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/exp_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/fill_base_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/group_norm_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/layer_norm_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/matmul_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/mul_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/pooling_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/power_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/reduce_concat_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/reduce_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/scatter_nd_binary_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/softmax_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/softmax_grad_fusion_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/avx512/sub_fp32_avx512.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/batchnorm_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/bce_with_logits_loss_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/bias_add_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/cast_base_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/cast_gather_reduce_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/cdist_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/cumsum_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/div_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/dropout_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/exp_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/fill_base_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/group_norm_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/layer_norm_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/matmul_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/mul_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/activation_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/activation_grad_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/adam_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/add_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/apply_proximal_adagrad_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/apply_proximal_gradient_descent_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/arithmetic_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/arithmetic_self_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/batchnorm_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/bce_with_logits_loss_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/bias_add_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/cast_base_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/cast_gather_reduce_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/cdist_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/cumsum_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/div_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/dropout_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/exp_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/fill_base_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/group_norm_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/layer_norm_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/matmul_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/mul_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/pooling_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/power_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/reduce_concat_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/reduce_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/scatter_nd_binary_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/softmax_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/softmax_grad_fusion_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/neon/sub_fp32_neon.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/pooling_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/power_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/reduce_concat_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/reduce_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/scatter_nd_binary_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/softmax_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/softmax_grad_fusion_fp32_simd.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/activation_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/activation_grad_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/adam_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/add_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/apply_proximal_adagrad_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/apply_proximal_gradient_descent_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/arithmetic_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/arithmetic_self_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/batchnorm_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/bce_with_logits_loss_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/bias_add_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/cast_base_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/cast_gather_reduce_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/cdist_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/cumsum_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/div_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/dropout_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/exp_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/fill_base_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/group_norm_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/layer_norm_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/matmul_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/mul_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/pooling_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/power_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/reduce_concat_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/reduce_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/scatter_nd_binary_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/softmax_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/softmax_grad_fusion_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sse/sub_fp32_sse.h
+ create mode 100644 mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/include/nnacl/sub_fp32_simd.h
+ create mode 100644 mindspore/core/mindrt/BUILD.gn
+ create mode 100644 mindspore/lite/BUILD.gn
+ create mode 100644 mindspore/lite/mindir/BUILD.gn
+ create mode 100644 mindspore/lite/mindir/CMakeLists.txt
+ create mode 100644 mindspore/lite/mindir/include/mindir.h
+ create mode 100644 mindspore/lite/mindir/include/mindir_lite_graph.h
+ create mode 100644 mindspore/lite/mindir/include/mindir_primitive.h
+ create mode 100644 mindspore/lite/mindir/include/mindir_tensor.h
+ create mode 100644 mindspore/lite/mindir/include/mindir_types.h
+ create mode 100644 mindspore/lite/mindir/inner_headers/lite_graph.h
+ create mode 100644 mindspore/lite/mindir/inner_headers/mindir_memory_manager.h
+ create mode 100644 mindspore/lite/mindir/inner_headers/utils.h
+ create mode 100644 mindspore/lite/mindir/src/mindir.cc
+ create mode 100644 mindspore/lite/mindir/src/mindir_memory_manager.cc
+ create mode 100644 mindspore/lite/mindir/src/mindir_nnrt_lite_graph.cc
+ create mode 100644 mindspore/lite/mindir/src/mindir_nnrt_lite_graph_to_model.cc
+ create mode 100644 mindspore/lite/mindir/src/mindir_nnrt_lite_graph_to_model_v2_0.cc
+ create mode 100644 mindspore/lite/mindir/src/mindir_tensor.cc
+ create mode 100644 mindspore/lite/mindir/src/utils.cc
+ create mode 100644 mindspore/lite/mindir/tests/BUILD.gn
+ create mode 100644 mindspore/lite/mindir/tests/mindir_test.cc
+ create mode 100644 mindspore/lite/schema/gpu_cache_generated.h
+ create mode 100644 mindspore/lite/schema/inner/gpu_cache_generated.h
+ create mode 100644 mindspore/lite/schema/inner/model_generated.h
+ create mode 100644 mindspore/lite/schema/inner/ops_generated.h
+ create mode 100644 mindspore/lite/schema/inner/ops_types_generated.h
+ create mode 100644 mindspore/lite/schema/model_generated.h
+ create mode 100644 mindspore/lite/schema/ops_generated.h
+ create mode 100644 mindspore/lite/schema/ops_types_generated.h
+ create mode 100644 mindspore/lite/schema/schema_generated.h
+ create mode 100644 mindspore/lite/src/common/BUILD.gn
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/CMakeLists.txt
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.h
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/BUILD.gn
+ create mode 100644 mindspore/lite/test/ohos_test/BUILD.gn
+ create mode 100644 mindspore/lite/test/ohos_test/ohos_test.xml
+ create mode 100644 mindspore/lite/test/ohos_test/resource/models/mobilenetv2.ms
+ create mode 100644 mindspore/lite/test/ohos_test/src/context_test.cc
+ create mode 100644 mindspore/lite/test/ohos_test/src/model_test.cc
+ create mode 100644 mindspore/lite/test/ohos_test/src/tensor_test.cc
+ create mode 100644 mindspore/lite/tools/benchmark/BUILD.gn
+
 diff --git a/.gitignore b/.gitignore
 index 0d0837ca..acfdf600 100644
 --- a/.gitignore
@@ -19161,250 +19617,6 @@ index 721a9b0f..72337f70 100644
  
  if((MSLITE_ENABLE_CONVERTER OR MSLITE_ENABLE_TESTCASES) AND (
          NOT MSLITE_ENABLE_MINDRT
-diff --git a/mindspore/lite/interfaces/kits/c/BUILD.gn b/mindspore/lite/interfaces/kits/c/BUILD.gn
-new file mode 100644
-index 00000000..5f66ce18
---- /dev/null
-+++ b/mindspore/lite/interfaces/kits/c/BUILD.gn
-@@ -0,0 +1,37 @@
-+# Copyright 2022 Huawei Technologies Co., Ltd
-+#
-+# Licensed under the Apache License, Version 2.0 (the "License");
-+# you may not use this file except in compliance with the License.
-+# You may obtain a copy of the License at
-+#
-+# http://www.apache.org/licenses/LICENSE-2.0
-+#
-+# Unless required by applicable law or agreed to in writing, software
-+# distributed under the License is distributed on an "AS IS" BASIS,
-+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+# See the License for the specific language governing permissions and
-+# limitations under the License.
-+# ============================================================================
-+
-+import("//build/ohos.gni")
-+
-+ohos_ndk_headers("mindspore_header") {
-+  dest_dir = "$ndk_headers_out_dir/mindspore"
-+  sources = [
-+    "../../../../../include/sdk_api/context.h",
-+    "../../../../../include/sdk_api/data_type.h",
-+    "../../../../../include/sdk_api/format.h",
-+    "../../../../../include/sdk_api/model.h",
-+    "../../../../../include/sdk_api/status.h",
-+    "../../../../../include/sdk_api/tensor.h",
-+    "../../../../../include/sdk_api/types.h",
-+  ]
-+}
-+
-+ohos_ndk_library("mindspore_lib") {
-+  output_name = "mindspore-lite.huawei"
-+  output_extension = "so"
-+  ndk_description_file = "./mindspore_lib.ndk.json"
-+  system_capability = "SystemCapability.Ai.MindSpore"
-+  min_compact_version = "9"
-+}
-diff --git a/mindspore/lite/interfaces/kits/c/mindspore_lib.ndk.json b/mindspore/lite/interfaces/kits/c/mindspore_lib.ndk.json
-new file mode 100644
-index 00000000..b11dbb3b
---- /dev/null
-+++ b/mindspore/lite/interfaces/kits/c/mindspore_lib.ndk.json
-@@ -0,0 +1,194 @@
-+[
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextCreate"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextDestroy"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextSetThreadNum"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextGetThreadNum"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextSetThreadAffinityMode"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextGetThreadAffinityMode"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextSetThreadAffinityCoreList"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextGetThreadAffinityCoreList"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextSetEnableParallel"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextGetEnableParallel"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ContextAddDeviceInfo"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoCreate"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoDestroy"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoSetProvider"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoGetProvider"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoSetProviderDevice"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoGetProviderDevice"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoGetDeviceType"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoSetEnableFP16"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoGetEnableFP16"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoSetFrequency"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_DeviceInfoGetFrequency"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ModelCreate"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ModelDestroy"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ModelBuild"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ModelBuildFromFile"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ModelResize"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ModelPredict"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ModelGetInputs"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ModelGetOutputs"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ModelGetInputByTensorName"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_ModelGetOutputByTensorName"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorCreate"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorDestroy"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorClone"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorSetName"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorGetName"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorSetDataType"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorGetDataType"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorSetShape"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorGetShape"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorSetFormat"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorGetFormat"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorSetData"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorGetData"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorGetMutableData"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorGetElementNum"
-+  },
-+  {
-+      "first_introduced": "9",
-+      "name": "OH_AI_TensorGetDataSize"
-+  }
-+]
-\ No newline at end of file
 diff --git a/mindspore/lite/mindir/BUILD.gn b/mindspore/lite/mindir/BUILD.gn
 new file mode 100644
 index 00000000..b1435ef7
@@ -360086,3 +360298,6 @@ index 5f0f2553..bb36c168 100644
    }
  
    // CPU priority is behind GPU and NPU
+-- 
+2.17.1
+
