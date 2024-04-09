@@ -1,14 +1,14 @@
-From 924cc8ff49b94b152d4a092006abe94dbcbf6018 Mon Sep 17 00:00:00 2001
+From 7aa0a7bde120a88562e851b943d7682e5cf6ebf7 Mon Sep 17 00:00:00 2001
 From: zhangyanhui <zhangyanhui17@huawei.com>
-Date: Thu, 28 Mar 2024 10:40:33 +0800
-Subject: [PATCH] update GLUFusion pass name attribute, to fix docs
+Date: Tue, 9 Apr 2024 19:45:33 +0800
+Subject: [PATCH] auto-apply 0015-bugfix-for-cpu-kernel.patch
 
 ---
- .../cpu/kernel/nnacl/infer/where_infer.c      |  66 ++++++------
- .../src/litert/kernel/cpu/fp32/where_fp32.cc  | 102 +++++++++++++++---
- .../src/litert/kernel/cpu/fp32/where_fp32.h   |   2 +
- .../lite/tools/optimizer/fusion/glu_fusion.h  |   4 +-
- 4 files changed, 122 insertions(+), 52 deletions(-)
+ .../cpu/kernel/nnacl/infer/where_infer.c      | 66 ++++++-------
+ .../src/litert/kernel/cpu/fp32/where_fp32.cc  | 96 ++++++++++++++++---
+ .../src/litert/kernel/cpu/fp32/where_fp32.h   |  2 +
+ .../lite/tools/optimizer/fusion/glu_fusion.h  |  4 +-
+ 4 files changed, 116 insertions(+), 52 deletions(-)
 
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/where_infer.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/where_infer.c
 index f6d4e1b2..c714627a 100644
@@ -100,7 +100,7 @@ index f6d4e1b2..c714627a 100644
  }
  
 diff --git a/mindspore/lite/src/litert/kernel/cpu/fp32/where_fp32.cc b/mindspore/lite/src/litert/kernel/cpu/fp32/where_fp32.cc
-index d7c987e3..da4bcab5 100644
+index d7c987e3..a73fda7c 100644
 --- a/mindspore/lite/src/litert/kernel/cpu/fp32/where_fp32.cc
 +++ b/mindspore/lite/src/litert/kernel/cpu/fp32/where_fp32.cc
 @@ -20,6 +20,7 @@
@@ -194,19 +194,13 @@ index d7c987e3..da4bcab5 100644
    return RET_OK;
  }
  
-@@ -214,6 +240,54 @@ int WhereCPUKernel::Run() {
+@@ -214,6 +240,48 @@ int WhereCPUKernel::Run() {
    return ret;
  }
  
 +int WhereCPUKernel::BroadcastForInput(TensorC *condition, TensorC *x, TensorC *y, void **condition_broadcast_buf,
 +                                      void **x_broadcast_buf, void **y_broadcast_buf, TensorC *output) {
-+  size_t broad_cast_buf_size = GetElementNum(output);
-+  if (output->data_type_ == kNumberTypeFloat32) {
-+    broad_cast_buf_size *= sizeof(float);
-+  } else {
-+    MS_LOG(ERROR) << "output data type must be fp32, but now is " << output->data_type_;
-+    return RET_ERROR;
-+  }
++  size_t broad_cast_buf_size = GetSize(output);
 +  BroadcastShapeInfo condition_info;
 +  condition_info.input_shape_size_ = condition->shape_size_;
 +  condition_info.output_shape_size_ = output->shape_size_;
