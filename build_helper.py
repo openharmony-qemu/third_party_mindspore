@@ -33,6 +33,7 @@ def do_patch(patch_dir, target_dir):
         '0013-hiappevent.patch',
         '0014-DynamicQuant-strategy-optimization.patch',
         '0015-bugfix-for-cpu-kernel.patch',
+        '0016-bugfix-for-argminmax-swish-int8-and-vad-asan.patch',
     ]
 
     cwd = os.getcwd()
