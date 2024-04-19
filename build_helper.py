@@ -36,6 +36,7 @@ def do_patch(patch_dir, target_dir):
         '0016-bugfix-for-argminmax-swish-int8-and-vad-asan.patch',
         '0017-bugfix-for-onnx-parser.patch',
         '0018-nnrt-litegraph-dequant.patch',
+        '0019-adaper-NNCore-Api.patch',
     ]
 
     cwd = os.getcwd()
