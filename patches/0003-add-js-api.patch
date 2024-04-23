@@ -1,7 +1,7 @@
-From 40d5bbe784fda0a584b10dc1c833f1673f602acf Mon Sep 17 00:00:00 2001
-From: chengfeng27 <chengfeng27@huawei.com>
-Date: Fri, 22 Mar 2024 19:06:15 +0800
-Subject: [PATCH] fix js xts test random crash
+From 7828b1976be70b35d032d62980ff00a45f61d47c Mon Sep 17 00:00:00 2001
+From: zhangyanhui <zhangyanhui17@huawei.com>
+Date: Tue, 23 Apr 2024 17:30:26 +0800
+Subject: [PATCH] auto-apply 0003-add-js-api.patch
 
 ---
  include/js_api/@ohos.ai.mindSporeLite.d.ts    |  867 ++++++
@@ -17,11 +17,11 @@ Subject: [PATCH] fix js xts test random crash
  mindspore/lite/BUILD.gn                       |    1 +
  mindspore/lite/src/litert/js_api/BUILD.gn     |   56 +
  .../lite/src/litert/js_api/common_napi.cc     |  303 ++
- .../src/litert/js_api/mslite_model_napi.cc    | 2572 +++++++++++++++++
+ .../src/litert/js_api/mslite_model_napi.cc    | 2578 +++++++++++++++++
  .../lite/src/litert/js_api/mstensor_napi.cc   |  416 +++
  .../litert/js_api/native_module_ohos_ms.cc    |   48 +
  .../src/litert/js_api/nnrt_device_desc.cc     |  216 ++
- 17 files changed, 5148 insertions(+)
+ 17 files changed, 5154 insertions(+)
  create mode 100644 include/js_api/@ohos.ai.mindSporeLite.d.ts
  create mode 100644 include/js_api/common_napi.h
  create mode 100644 include/js_api/ms_errors.h
@@ -2030,10 +2030,10 @@ index 00000000..85d69ff6
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/js_api/mslite_model_napi.cc b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..235f2209
+index 00000000..2414a11b
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
-@@ -0,0 +1,2572 @@
+@@ -0,0 +1,2578 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -2489,6 +2489,10 @@ index 00000000..235f2209
 +
 +std::shared_ptr<mindspore::Model> MSLiteModelNapi::CreateModel(ModelInfo *model_info_ptr,
 +                                                               ContextInfo *context_info_ptr) {
++  if (context_info_ptr == nullptr) {
++    MS_LOG(ERROR) << "context_info_ptr is nullptr.";
++    return nullptr;
++  }
 +  // create and init context
 +  std::string s;
 +  for (const auto &device_name : context_info_ptr->target) {
@@ -2511,6 +2515,8 @@ index 00000000..235f2209
 +    MS_LOG(ERROR) << "Create context failed.";
 +    return nullptr;
 +  }
++  context->SetThreadNum(context_info_ptr->cpu_device.thread_num);
++  MS_LOG(DEBUG) << "current thread num is : " << context->GetThreadNum();
 +
 +  switch (model_info_ptr->mode) {
 +    case kBuffer: {
@@ -3925,7 +3931,7 @@ index 00000000..235f2209
 +        return;
 +      }
 +      auto inputs = modelNapi->native_model_->GetInputs();
-+      auto outputs = modelNapi->native_model_->GetOutputs();
++      std::vector<MSTensor> outputs;
 +
 +      auto predict_ret = modelNapi->native_model_->Predict(inputs, &outputs);
 +      if (predict_ret != mindspore::kSuccess) {
@@ -5307,5 +5313,5 @@ index 00000000..45f9ce6f
 +}  // namespace mindspore
 \ No newline at end of file
 -- 
-2.17.1
+2.25.1
 
