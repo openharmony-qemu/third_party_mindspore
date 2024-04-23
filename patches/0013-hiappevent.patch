@@ -1,12 +1,12 @@
-From 1ee69dffb3498cf97158a498a6affafdee7e33fd Mon Sep 17 00:00:00 2001
+From cc3acf5294ab5bb1f5a00bab8e394ff469dd18c8 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Thu, 18 Apr 2024 11:03:45 +0800
+Date: Tue, 23 Apr 2024 15:07:11 +0800
 Subject: [PATCH] hiappevent report async
 
 ---
  mindspore/lite/BUILD.gn                       |   2 +
  mindspore/lite/src/common/BUILD.gn            |   5 +
- .../src/common/hi_app_event/handler_thread.cc | 142 ++++++++++++++++++
+ .../src/common/hi_app_event/handler_thread.cc | 143 ++++++++++++++++++
  .../src/common/hi_app_event/handler_thread.h  | 102 +++++++++++++
  .../src/common/hi_app_event/hi_app_event.cc   |  76 ++++++++++
  .../src/common/hi_app_event/hi_app_event.h    |  31 ++++
@@ -14,7 +14,7 @@ Subject: [PATCH] hiappevent report async
  .../common/hi_app_event/hi_app_event_config.h |  45 ++++++
  mindspore/lite/src/litert/c_api/model_c.cc    |   6 +
  .../lite/src/litert/cxx_api/model/model.cc    |  96 +++++++++++-
- 10 files changed, 558 insertions(+), 4 deletions(-)
+ 10 files changed, 559 insertions(+), 4 deletions(-)
  create mode 100644 mindspore/lite/src/common/hi_app_event/handler_thread.cc
  create mode 100644 mindspore/lite/src/common/hi_app_event/handler_thread.h
  create mode 100644 mindspore/lite/src/common/hi_app_event/hi_app_event.cc
@@ -74,10 +74,10 @@ index 8bb14a30..e08e09ce 100644
      defines += [
 diff --git a/mindspore/lite/src/common/hi_app_event/handler_thread.cc b/mindspore/lite/src/common/hi_app_event/handler_thread.cc
 new file mode 100644
-index 00000000..777cec1e
+index 00000000..a23ed69b
 --- /dev/null
 +++ b/mindspore/lite/src/common/hi_app_event/handler_thread.cc
-@@ -0,0 +1,142 @@
+@@ -0,0 +1,143 @@
 +/**
 + * Copyright 2024 Huawei Technologies Co., Ltd
 + *
@@ -168,6 +168,7 @@ index 00000000..777cec1e
 +void HandlerThread::AbortAndJoin()
 +{
 +  abort_requested_.store(true);
++  condition_.notify_one();
 +  if (thread_.joinable()) {
 +    thread_.join();
 +  }
