@@ -526,17 +526,17 @@ index 13652633b8..b038831b1f 100644
 -#endif
 +  if(dlopen("libdeobfuscator_lib.z.so", RTLD_NOLOAD) == nullptr) {
 +    DeObfRegister::deobf_handle = dlopen("libdeobfuscator_lib.z.so", RTLD_NOW | RTLD_GLOBAL);
-+    if(DeObfRegister::deobf_handle == nullptr) {
-+      MS_LOG(WARNING) << "deobfuscator ability not apply";
++  }
++  if(DeObfRegister::deobf_handle == nullptr) {
++    MS_LOG(WARNING) << "Deobfuscate ability is disabled, so obfuscated models can not be executed.";
++  } else {
++    auto CreateDeObfFunc = reinterpret_cast<ObfCreateFunc>(dlsym(DeObfRegister::deobf_handle, "CreateDeObfFunc"));
++    if (CreateDeObfFunc == nullptr) {
++      MS_LOG(WARNING) << "cannot fetch CreateDeObfFunc";
++    } else {
++      DeObfRegister::RegisterDeObfuscator(CreateDeObfFunc);
++      DeObfRegister::NewDeObfProcessor(*this);
 +    }
-+  }
-+  auto CreateDeObfFunc = reinterpret_cast<ObfCreateFunc>(dlsym(DeObfRegister::deobf_handle, "CreateDeObfFunc"));
-+  if (CreateDeObfFunc == nullptr) {
-+    MS_LOG(WARNING) << "cannot fetch CreateDeObfFunc";
-+  }
-+  else {
-+    DeObfRegister::RegisterDeObfuscator(CreateDeObfFunc);
-+    DeObfRegister::NewDeObfProcessor(*this);
 +  }
    if (schema_version_ == SCHEMA_VERSION::SCHEMA_CUR) {
 -#ifdef ENABLE_MODEL_OBF
