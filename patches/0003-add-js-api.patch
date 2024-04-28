@@ -1,7 +1,7 @@
-From 7828b1976be70b35d032d62980ff00a45f61d47c Mon Sep 17 00:00:00 2001
-From: zhangyanhui <zhangyanhui17@huawei.com>
-Date: Tue, 23 Apr 2024 17:30:26 +0800
-Subject: [PATCH] auto-apply 0003-add-js-api.patch
+From ce2d85b4f486a4547a3f1ae9c9d99f5e794bae5f Mon Sep 17 00:00:00 2001
+From: 22dimensions <waitingwind@foxmail.com>
+Date: Sun, 28 Apr 2024 01:10:49 +0800
+Subject: [PATCH] 0003-add-js-api
 
 ---
  include/js_api/@ohos.ai.mindSporeLite.d.ts    |  867 ++++++
@@ -17,11 +17,11 @@ Subject: [PATCH] auto-apply 0003-add-js-api.patch
  mindspore/lite/BUILD.gn                       |    1 +
  mindspore/lite/src/litert/js_api/BUILD.gn     |   56 +
  .../lite/src/litert/js_api/common_napi.cc     |  303 ++
- .../src/litert/js_api/mslite_model_napi.cc    | 2578 +++++++++++++++++
+ .../src/litert/js_api/mslite_model_napi.cc    | 2661 +++++++++++++++++
  .../lite/src/litert/js_api/mstensor_napi.cc   |  416 +++
  .../litert/js_api/native_module_ohos_ms.cc    |   48 +
  .../src/litert/js_api/nnrt_device_desc.cc     |  216 ++
- 17 files changed, 5154 insertions(+)
+ 17 files changed, 5237 insertions(+)
  create mode 100644 include/js_api/@ohos.ai.mindSporeLite.d.ts
  create mode 100644 include/js_api/common_napi.h
  create mode 100644 include/js_api/ms_errors.h
@@ -2030,10 +2030,10 @@ index 00000000..85d69ff6
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/js_api/mslite_model_napi.cc b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..2414a11b
+index 00000000..bb0184ac
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
-@@ -0,0 +1,2578 @@
+@@ -0,0 +1,2661 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -2170,7 +2170,7 @@ index 00000000..2414a11b
 +    DECLARE_NAPI_STATIC_FUNCTION("loadTrainModelFromFile", LoadMSLiteTrainModelFromFile),
 +    DECLARE_NAPI_STATIC_FUNCTION("loadTrainModelFromBuffer", LoadMSLiteTrainModelFromBuffer),
 +    DECLARE_NAPI_STATIC_FUNCTION("loadTrainModelFromFd", LoadMSLiteTrainModelFromFd),
-+    DECLARE_NAPI_STATIC_FUNCTION("getAllNNRTDeviceDescs", GetAllNnrtDeviceDescs),
++    DECLARE_NAPI_STATIC_FUNCTION("getAllNNRTDeviceDescriptions", GetAllNnrtDeviceDescs),
 +    DECLARE_NAPI_PROPERTY("Format", CreateFormatObject(env)),
 +    DECLARE_NAPI_PROPERTY("DataType", CreateDataTypeObject(env)),
 +    DECLARE_NAPI_PROPERTY("ThreadAffinityMode", CreateThreadAffinityModeObject(env)),
@@ -4008,6 +4008,78 @@ index 00000000..2414a11b
 +  return jsResult;
 +}
 +
++int32_t SetModelInputs(napi_env env, napi_value argv, std::shared_ptr<Model> model) {
++  uint32_t array_length = 0;
++  napi_status status = napi_get_array_length(env, argv, &array_length);
++  if (status != napi_ok || array_length <= 0) {
++    MS_LOG(ERROR) << "get inputs tensor length failed.";
++    return ERR_INVALID_PARAM;
++  }
++
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "model is nullptr";
++    return ERR_INVALID_PARAM;
++  }
++
++  auto inputs = model->GetInputs();
++  if (inputs.size() != array_length) {
++    MS_LOG(ERROR) << "array length not equal to model inputs size.";
++    return ERR_INVALID_PARAM;
++  }
++
++  for (size_t i = 0; i < array_length; i++) {
++    napi_value element = nullptr;
++    status = napi_get_element(env, argv, i, &element);
++    if (status != napi_ok) {
++      MS_LOG(ERROR) << "can not get element";
++      return ERROR;
++    }
++
++    std::string property_name = "getData";
++    bool exist = false;
++    napi_value data_func = nullptr;
++
++    napi_status status = napi_has_named_property(env, element, property_name.c_str(), &exist);
++
++    if (status != napi_ok || !exist) {
++      MS_LOG(ERROR) << "can not find " << property_name.c_str() << " property.";
++      return ERROR;
++    }
++
++    if (napi_get_named_property(env, element, property_name.c_str(), &data_func) != napi_ok) {
++      MS_LOG(ERROR) << "get " << property_name.c_str() << " property fail.";
++      return ERROR;
++    }
++    void *js_data = nullptr;
++    size_t length = 0;
++    napi_value return_val;
++
++    status = napi_call_function(env, element, data_func, 0, nullptr, &return_val);
++    if (status != napi_ok || return_val == nullptr) {
++      MS_LOG(ERROR) << "napi call function error.";
++      return ERROR;
++    }
++    status = napi_get_arraybuffer_info(env, return_val, &js_data, &length);
++    if (status != napi_ok || js_data == nullptr) {
++      MS_LOG(ERROR) << "Get js data error.";
++      return ERROR;
++    }
++    if (inputs[i].DataSize() != length) {
++      MS_LOG(ERROR) << "tensor size is: " << static_cast<int>(inputs[i].DataSize()) << ", but data length got "
++                    << static_cast<int>(length);
++      return ERROR;
++    }
++
++    auto tensor_data = inputs[i].MutableData();
++    if (tensor_data == nullptr) {
++      MS_LOG(ERROR) << "malloc data for tensor failed.";
++      return ERROR;
++    }
++    memcpy(tensor_data, js_data, length);
++  }
++  return SUCCESS;
++}
++
 +napi_value MSLiteModelNapi::RunStep(napi_env env, napi_callback_info info) {
 +  napi_value undefinedResult = nullptr;
 +  bool result = false;
@@ -4019,17 +4091,28 @@ index 00000000..2414a11b
 +
 +  napi_value jsThis = nullptr;
 +  MSLiteModelNapi *modelNapi = nullptr;
-+  size_t argCount = 0;
++  size_t argCount = PARAM1;
++  napi_value argv[ARGS_ONE] = {0};
 +
-+  status = napi_get_cb_info(env, info, &argCount, nullptr, &jsThis, nullptr);
++  status = napi_get_cb_info(env, info, &argCount, argv, &jsThis, nullptr);
 +  if (status != napi_ok || jsThis == nullptr) {
 +    MS_LOG(ERROR) << "failed to retrieve details about the callback";
++    return undefinedResult;
++  }
++
++  if (argCount < ARGS_ONE) {
++    MS_LOG(ERROR) << "argument num is less than one, please give input tensors";
 +    return undefinedResult;
 +  }
 +
 +  status = napi_unwrap(env, jsThis, reinterpret_cast<void **>(&modelNapi));
 +  if (status != napi_ok || modelNapi == nullptr) {
 +    MS_LOG(ERROR) << "get model napi error";
++    return undefinedResult;
++  }
++
++  if (SetModelInputs(env, argv[PARAM0], modelNapi->native_model_) != SUCCESS) {
++    MS_LOG(ERROR) << "set tensor data failed";
 +    return undefinedResult;
 +  }
 +
@@ -5091,7 +5174,7 @@ index 00000000..7a381c1e
 +}
 diff --git a/mindspore/lite/src/litert/js_api/nnrt_device_desc.cc b/mindspore/lite/src/litert/js_api/nnrt_device_desc.cc
 new file mode 100644
-index 00000000..45f9ce6f
+index 00000000..145897db
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/nnrt_device_desc.cc
 @@ -0,0 +1,216 @@
@@ -5119,7 +5202,7 @@ index 00000000..45f9ce6f
 +
 +namespace mindspore {
 +thread_local napi_ref NnrtDeviceDescNapi::constructor_ = nullptr;
-+const std::string CLASS_NAME = "NNRTDeviceDesc";
++const std::string CLASS_NAME = "NNRTDeviceDescription";
 +
 +NnrtDeviceDescNapi::NnrtDeviceDescNapi() { MS_LOG(DEBUG) << "MSLITE NNRTDeviceDescNapi Instances create."; }
 +
