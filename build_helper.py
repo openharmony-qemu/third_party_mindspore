@@ -37,6 +37,7 @@ def do_patch(patch_dir, target_dir):
         '0017-bugfix-for-onnx-parser.patch',
         '0018-nnrt-litegraph-dequant.patch',
         '0019-adaper-NNCore-Api.patch',
+        '0020-fix-ocr-gcn-model-crash.patch',
     ]
 
     cwd = os.getcwd()
