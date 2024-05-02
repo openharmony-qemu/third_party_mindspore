@@ -1,0 +1,101 @@
+From 3d1f369cb1ae95cc7180a002067b19961650b432 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Tue, 30 Apr 2024 16:38:09 +0800
+Subject: [PATCH] fix ocr gcn model crash
+
+---
+ .../ccsrc/plugin/device/cpu/kernel/nnacl/kernel.c   | 13 +++++++++++++
+ mindspore/lite/src/litert/c_api/model_c.cc          | 13 +------------
+ mindspore/lite/src/litert/scheduler.cc              |  1 +
+ 3 files changed, 15 insertions(+), 12 deletions(-)
+
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel.c
+index b86ab817..86a5d163 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel.c
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel.c
+@@ -38,12 +38,22 @@ void Init_MSC_VER_kernels(void) {
+   return;
+ }
+ 
++bool checkOpValid(int opType) {
++  if (opType < PrimType_MIN || opType >= PrimType_MAX) {
++    return false;
++  }
++  return true;
++}
++
+ bool SupportKernelC(int opType, int dataType) {
+   Init_MSC_VER_kernels();
+   const int length = 16;
+   if (REGIST_DT(dataType) < 0 || REGIST_DT(dataType) >= length) {
+     return false;
+   }
++  if (!checkOpValid(opType)) {
++    return false;
++  }
+   KernelCreator creator = g_kernelCreatorRegistry[opType][REGIST_DT(dataType)];
+   return creator != NULL;
+ }
+@@ -77,6 +87,9 @@ int NNACLCheckKernelBase(KernelBase *kernel_base) {
+ KernelBase *CreateKernel(OpParameter *param, TensorC **ins, size_t in_size, TensorC **outs, size_t out_size,
+                          int data_type, ExecEnv *env) {
+   Init_MSC_VER_kernels();
++  if (!checkOpValid(param->type_)) {
++    return NULL;
++  }
+   KernelCreator creator = g_kernelCreatorRegistry[param->type_][REGIST_DT(data_type)];
+   if (creator == NULL) {
+     return NULL;
+diff --git a/mindspore/lite/src/litert/c_api/model_c.cc b/mindspore/lite/src/litert/c_api/model_c.cc
+index cbbe2dbb..4f40b3d3 100644
+--- a/mindspore/lite/src/litert/c_api/model_c.cc
++++ b/mindspore/lite/src/litert/c_api/model_c.cc
+@@ -259,8 +259,6 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+ 
+   std::vector<mindspore::MSTensor> ms_tensor_outputs;
+ 
+-  bool all_has_data = false;
+-
+   size_t output_num;
+   (void)impl->GetOutputs(&output_num);
+   auto handle_num = outputs->handle_num;
+@@ -273,15 +271,6 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+       }
+       ms_tensor_outputs.push_back(*static_cast<mindspore::MSTensor *>(outputs->handle_list[i]));
+     }
+-
+-    all_has_data = std::all_of(ms_tensor_outputs.begin(), ms_tensor_outputs.end(), [](const mindspore::MSTensor &t) {
+-      return t.Data() != nullptr;
+-    });
+-
+-    if (!all_has_data) {
+-      ms_tensor_outputs.clear();
+-    }
+-
+   }
+ 
+   auto ret = impl->model_->Predict(ms_tensor_inputs, &ms_tensor_outputs, before_call_back, after_call_back);
+@@ -290,7 +279,7 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+     return static_cast<OH_AI_Status>(ret.StatusCode());
+   }
+ 
+-  if (handle_num == output_num && all_has_data) {
++  if (handle_num == output_num) {
+     return OH_AI_STATUS_SUCCESS;
+   }
+ 
+diff --git a/mindspore/lite/src/litert/scheduler.cc b/mindspore/lite/src/litert/scheduler.cc
+index d6749471..bc2cf881 100644
+--- a/mindspore/lite/src/litert/scheduler.cc
++++ b/mindspore/lite/src/litert/scheduler.cc
+@@ -1021,6 +1021,7 @@ int Scheduler::FindCpuKernel(const std::vector<Tensor *> &in_tensors, const std:
+   MS_CHECK_TRUE_MSG(op_parameter != nullptr, RET_ERROR, "op parameter is nullptr.");
+   auto op_type = op_parameter->type_;
+   if (!KernelRegistry::GetInstance()->SupportKernel(desc)) {
++    MS_LOG(INFO) << "unsupport op_type: " << PrimitiveCurVersionTypeName(op_type) << ", data_type: " << desc.data_type;
+     return RET_NOT_SUPPORT;
+   }
+   kernel::KernelKey cpu_desc = desc;
+-- 
+2.17.1
+
