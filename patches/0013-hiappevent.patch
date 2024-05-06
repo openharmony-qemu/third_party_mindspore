@@ -151,7 +151,7 @@ index 00000000..a23ed69b
 +{
 +  running_.store(true);
 +
-+  (void)pthread_setname_np(pthread_self(), "OS_MSAppEventThread_");
++  (void)pthread_setname_np(pthread_self(), "OS_MSEvent");
 +  while (abort_requested_.load() == false) {
 +    Runnable r = Next();
 +    if (r != nullptr) {

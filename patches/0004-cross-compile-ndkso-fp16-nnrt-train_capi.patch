@@ -1695,7 +1695,7 @@ index 70414757..c50c46e0 100644
  #if !defined(__APPLE__) && !defined(_MSC_VER)
    static std::atomic_int index{0};
 -  (void)pthread_setname_np(pthread_self(), ("ActorThread_" + std::to_string(index++)).c_str());
-+  (void)pthread_setname_np(pthread_self(), ("OS_ActorThread_" + std::to_string(index++)).c_str());
++  (void)pthread_setname_np(pthread_self(), ("OS_Actor_" + std::to_string(index++)).c_str());
  #endif
  #ifdef PLATFORM_86
    // Some CPU kernels need set the flush zero mode to improve performance.
@@ -1741,7 +1741,7 @@ index 9e0dd25c..09c39f32 100644
    }
  #if !defined(__APPLE__) && !defined(_MSC_VER)
 -  (void)pthread_setname_np(pthread_self(), ("ParallelThread_" + std::to_string(worker_id_)).c_str());
-+  (void)pthread_setname_np(pthread_self(), ("OS_ParallelThread_" + std::to_string(worker_id_)).c_str());
++  (void)pthread_setname_np(pthread_self(), ("OS_Parallel_" + std::to_string(worker_id_)).c_str());
  #endif
  #ifdef PLATFORM_86
    // Some CPU kernels need set the flush zero mode to improve performance.
@@ -1820,7 +1820,7 @@ index c56e0425..2301be8c 100644
  #if !defined(__APPLE__) && !defined(_MSC_VER)
    static std::atomic_int index = {0};
 -  (void)pthread_setname_np(pthread_self(), ("KernelThread_" + std::to_string(index++)).c_str());
-+  (void)pthread_setname_np(pthread_self(), ("OS_KernelThread_" + std::to_string(index++)).c_str());
++  (void)pthread_setname_np(pthread_self(), ("OS_Kernel_" + std::to_string(index++)).c_str());
  #endif
  #ifdef PLATFORM_86
    // Some CPU kernels need set the flush zero mode to improve performance.
