@@ -1,0 +1,153 @@
+From ea6f481abe3d48698ceff12f2b3072d1bc6d0275 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Tue, 7 May 2024 20:09:55 +0800
+Subject: [PATCH] add mindir op BatchToSpace
+
+---
+ mindspore/lite/mindir/include/mindir.h       |  7 ++
+ mindspore/lite/mindir/include/mindir_types.h |  1 +
+ mindspore/lite/mindir/src/mindir.cc          | 98 ++++++++++++++++++++
+ 3 files changed, 106 insertions(+)
+
+diff --git a/mindspore/lite/mindir/include/mindir.h b/mindspore/lite/mindir/include/mindir.h
+index 7eb3a744..3ddf9313 100644
+--- a/mindspore/lite/mindir/include/mindir.h
++++ b/mindspore/lite/mindir/include/mindir.h
+@@ -666,6 +666,13 @@ PrimitivePtr MindIR_Rank_CreatePrimitive();
+ // ********** GatherNd **********
+ PrimitivePtr MindIR_GatherNd_CreatePrimitive();
+ 
++// ********** BatchToSpace **********
++PrimitivePtr MindIR_BatchToSpace_CreatePrimitive(const std::vector<int64_t>& block_size, const std::vector<std::vector<int64_t>>& crops);
++std::vector<int64_t> MindIR_BatchToSpace_GetBlockSize(ConstPrimitivePtr primitive);
++void MindIR_BatchToSpace_SetBlockSize(PrimitivePtr *primitive, const std::vector<int64_t>& block_size);
++std::vector<std::vector<int64_t>> MindIR_BatchToSpace_GetCrops(ConstPrimitivePtr primitive);
++void MindIR_BatchToSpace_SetCrops(PrimitivePtr *primitive, const std::vector<std::vector<int64_t>>& crops);
++
+ // ********** Custom **********
+ std::vector<const mindspore::schema::Attribute *> MindIR_Custom_GetAttr(ConstPrimitivePtr primitive);
+ std::string MindIR_Attribute_GetName(const mindspore::schema::Attribute &attr);
+diff --git a/mindspore/lite/mindir/include/mindir_types.h b/mindspore/lite/mindir/include/mindir_types.h
+index 196995fa..e7d23394 100644
+--- a/mindspore/lite/mindir/include/mindir_types.h
++++ b/mindspore/lite/mindir/include/mindir_types.h
+@@ -84,6 +84,7 @@ enum NodeType : uint32_t {
+   NODE_TYPE_ARGMAX_FUSION = 11,
+   NODE_TYPE_ASSERT = 13,
+   NODE_TYPE_AVG_POOL_FUSION = 17,
++  NODE_TYPE_BATCH_TO_SPACE = 21,
+   NODE_TYPE_BATCH_TO_SPACE_ND = 22,
+   NODE_TYPE_BIAS_ADD = 23,
+   NODE_TYPE_BROADCAST_TO = 27,
+diff --git a/mindspore/lite/mindir/src/mindir.cc b/mindspore/lite/mindir/src/mindir.cc
+index a1f86671..2e82276f 100644
+--- a/mindspore/lite/mindir/src/mindir.cc
++++ b/mindspore/lite/mindir/src/mindir.cc
+@@ -6750,6 +6750,104 @@ PrimitivePtr MindIR_GatherNd_CreatePrimitive() {
+   return ret_value;
+ }
+ 
++// ********** BatchToSpace **********
++PrimitivePtr MindIR_BatchToSpace_CreatePrimitive(const std::vector<int64_t> &block_size,
++                                                 const std::vector<std::vector<int64_t>> &crops) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateBatchToSpace(fbb, fbb.CreateVector(block_size.data(), block_size.size()),
++                                               CreateVec2D(fbb, crops));
++  auto prim_offset =
++    schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_BATCH_TO_SPACE), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++std::vector<int64_t> MindIR_BatchToSpace_GetBlockSize(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_BatchToSpace();
++    if (prim != nullptr && value != nullptr) {
++      std::vector<int64_t> result;
++      auto src = value->block_size();
++      if (src == nullptr) {
++        return {};
++      }
++      result.resize(src->size());
++      std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
++      return result;
++    } else {
++      return {};
++    }
++  } else {
++    return {};
++  }
++}
++
++void MindIR_BatchToSpace_SetBlockSize(PrimitivePtr *primitive, const std::vector<int64_t> &block_size) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_BatchToSpace();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateBatchToSpace(fbb, fbb.CreateVector(block_size.data(), block_size.size()),
++                                                   CreateVec2D(fbb, value->crops()));
++      auto prim_offset =
++        schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_BATCH_TO_SPACE), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++std::vector<std::vector<int64_t>> MindIR_BatchToSpace_GetCrops(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_BatchToSpace();
++    if (prim != nullptr && value != nullptr) {
++      std::vector<std::vector<int64_t>> out;
++      auto src = value->crops();
++      if (src == nullptr) {
++        return {};
++      }
++      for (auto sub_list : *src->data()) {
++        std::vector<int64_t> result_tmp;
++        result_tmp.resize(sub_list->data()->size());
++        std::transform(sub_list->data()->begin(), sub_list->data()->end(), result_tmp.begin(),
++                       [](int64_t item) { return item; });
++        out.emplace_back(result_tmp);
++      }
++      return out;
++    } else {
++      return {};
++    }
++  } else {
++    return {};
++  }
++}
++
++void MindIR_BatchToSpace_SetCrops(PrimitivePtr *primitive, const std::vector<std::vector<int64_t>> &crops) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_BatchToSpace();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateBatchToSpace(
++        fbb, fbb.CreateVector(value->block_size()->data(), value->block_size()->size()), CreateVec2D(fbb, crops));
++      auto prim_offset =
++        schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_BATCH_TO_SPACE), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      *primitive = ret_value;
++    }
++  }
++}
++
+ // ********** Custom **********
+ std::vector<const mindspore::schema::Attribute *> MindIR_Custom_GetAttr(ConstPrimitivePtr primitive) {
+   if (primitive == nullptr) {
+-- 
+2.17.1
+
