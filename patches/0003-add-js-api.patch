@@ -1,7 +1,7 @@
-From ce2d85b4f486a4547a3f1ae9c9d99f5e794bae5f Mon Sep 17 00:00:00 2001
-From: 22dimensions <waitingwind@foxmail.com>
-Date: Sun, 28 Apr 2024 01:10:49 +0800
-Subject: [PATCH] 0003-add-js-api
+From 6895ebb6aa99c7c1e47d83b76c31e581dbbdb884 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Tue, 7 May 2024 21:34:11 +0800
+Subject: [PATCH] rollback fix js xts test random crash
 
 ---
  include/js_api/@ohos.ai.mindSporeLite.d.ts    |  867 ++++++
@@ -10,18 +10,18 @@ Subject: [PATCH] 0003-add-js-api
  include/js_api/ms_info.h                      |   69 +
  include/js_api/ms_parameters_napi.h           |   24 +
  include/js_api/mslite_model_callback_napi.h   |   38 +
- include/js_api/mslite_model_napi.h            |  187 ++
+ include/js_api/mslite_model_napi.h            |  186 ++
  include/js_api/mstensor_napi.h                |   49 +
  include/js_api/native_module_ohos_ms.h        |   22 +
  include/js_api/nnrt_device_desc_napi.h        |   45 +
  mindspore/lite/BUILD.gn                       |    1 +
  mindspore/lite/src/litert/js_api/BUILD.gn     |   56 +
  .../lite/src/litert/js_api/common_napi.cc     |  303 ++
- .../src/litert/js_api/mslite_model_napi.cc    | 2661 +++++++++++++++++
+ .../src/litert/js_api/mslite_model_napi.cc    | 2658 +++++++++++++++++
  .../lite/src/litert/js_api/mstensor_napi.cc   |  416 +++
  .../litert/js_api/native_module_ohos_ms.cc    |   48 +
  .../src/litert/js_api/nnrt_device_desc.cc     |  216 ++
- 17 files changed, 5237 insertions(+)
+ 17 files changed, 5233 insertions(+)
  create mode 100644 include/js_api/@ohos.ai.mindSporeLite.d.ts
  create mode 100644 include/js_api/common_napi.h
  create mode 100644 include/js_api/ms_errors.h
@@ -1315,10 +1315,10 @@ index 00000000..3b3ee595
 \ No newline at end of file
 diff --git a/include/js_api/mslite_model_napi.h b/include/js_api/mslite_model_napi.h
 new file mode 100644
-index 00000000..688287d3
+index 00000000..1f075ba4
 --- /dev/null
 +++ b/include/js_api/mslite_model_napi.h
-@@ -0,0 +1,187 @@
+@@ -0,0 +1,186 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -1490,7 +1490,6 @@ index 00000000..688287d3
 +
 +  static thread_local napi_ref constructor_;
 +  napi_env env_ = nullptr;
-+  napi_ref wrapper_ = nullptr;
 +  static napi_ref tensorFormat_;
 +  static napi_ref tensorDataType_;
 +  static napi_ref contextThreadAffinityMode_;
@@ -2030,10 +2029,10 @@ index 00000000..85d69ff6
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/js_api/mslite_model_napi.cc b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..bb0184ac
+index 00000000..f59947ff
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
-@@ -0,0 +1,2661 @@
+@@ -0,0 +1,2658 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -2118,14 +2117,11 @@ index 00000000..bb0184ac
 +};
 +}  // namespace
 +
-+MSLiteModelNapi::MSLiteModelNapi() : native_model_(nullptr), env_(nullptr), wrapper_(nullptr) {
++MSLiteModelNapi::MSLiteModelNapi() : native_model_(nullptr), env_(nullptr) {
 +  MS_LOG(INFO) << "MSLiteModelNapi Instances create.";
 +}
 +
 +MSLiteModelNapi::~MSLiteModelNapi() {
-+  if (wrapper_ != nullptr) {
-+    napi_delete_reference(env_, wrapper_);
-+  }
 +  native_model_ = nullptr;
 +  env_ = nullptr;
 +  if (model_info_ != nullptr) {
@@ -2766,7 +2762,7 @@ index 00000000..bb0184ac
 +  }
 +
 +  status =
-+    napi_wrap(env, thisVar, reinterpret_cast<void *>(model_napi.get()), MSLiteModelNapi::Finalize, nullptr, &model_napi->wrapper_);
++    napi_wrap(env, thisVar, reinterpret_cast<void *>(model_napi.get()), MSLiteModelNapi::Finalize, nullptr, nullptr);
 +  if (status == napi_ok) {
 +    model_napi.release();
 +    return thisVar;
@@ -5396,5 +5392,5 @@ index 00000000..145897db
 +}  // namespace mindspore
 \ No newline at end of file
 -- 
-2.25.1
+2.17.1
 
