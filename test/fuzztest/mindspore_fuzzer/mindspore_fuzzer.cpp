@@ -24,25 +24,6 @@
 #include "../../utils/model_utils.h"
 #include "context_c_fuzzer.h"
 
-// add nnrt device info
-void AddDeviceNNRT(OH_AI_ContextHandle context) {
-    size_t num = 0;
-    auto desc = OH_AI_GetAllNNRTDeviceDescs(&num);
-    if (desc == nullptr) {
-        return;
-    }
-
-    auto id = OH_AI_GetDeviceIdFromNNRTDeviceDesc(desc);
-    OH_AI_DeviceInfoHandle nnrtDeviceInfo = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_NNRT);
-    OH_AI_DeviceInfoSetDeviceId(nnrtDeviceInfo, id);
-    OH_AI_DestroyAllNNRTDeviceDescs(&desc);
-
-    OH_AI_DeviceInfoSetPerformanceMode(nnrtDeviceInfo, OH_AI_PERFORMANCE_MEDIUM);
-    OH_AI_DeviceInfoSetPriority(nnrtDeviceInfo, OH_AI_PRIORITY_MEDIUM);
-
-    OH_AI_ContextAddDeviceInfo(context, nnrtDeviceInfo);
-}
-
 bool MSPreparedModelFuzzTest(const uint8_t* data, size_t size) {
     if (data == nullptr) {
         return false;
@@ -62,7 +43,6 @@ bool MSPreparedModelFuzzTest(const uint8_t* data, size_t size) {
         return false;
     }
     OH_AI_ContextAddDeviceInfo(context, cpuDeviceInfo);
-    AddDeviceNNRT(context);
 
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
