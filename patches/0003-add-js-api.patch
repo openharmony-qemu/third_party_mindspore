@@ -1,7 +1,7 @@
-From 6895ebb6aa99c7c1e47d83b76c31e581dbbdb884 Mon Sep 17 00:00:00 2001
-From: chengfeng27 <chengfeng27@huawei.com>
-Date: Tue, 7 May 2024 21:34:11 +0800
-Subject: [PATCH] rollback fix js xts test random crash
+From 318fa79ab19e529b32b73a976f852a7428a71109 Mon Sep 17 00:00:00 2001
+From: zhangyanhui <zhangyanhui17@huawei.com>
+Date: Sat, 25 May 2024 10:19:16 +0800
+Subject: [PATCH] auto-apply 0003-add-js-api.patch
 
 ---
  include/js_api/@ohos.ai.mindSporeLite.d.ts    |  867 ++++++
@@ -17,11 +17,11 @@ Subject: [PATCH] rollback fix js xts test random crash
  mindspore/lite/BUILD.gn                       |    1 +
  mindspore/lite/src/litert/js_api/BUILD.gn     |   56 +
  .../lite/src/litert/js_api/common_napi.cc     |  303 ++
- .../src/litert/js_api/mslite_model_napi.cc    | 2658 +++++++++++++++++
+ .../src/litert/js_api/mslite_model_napi.cc    | 2653 +++++++++++++++++
  .../lite/src/litert/js_api/mstensor_napi.cc   |  416 +++
  .../litert/js_api/native_module_ohos_ms.cc    |   48 +
  .../src/litert/js_api/nnrt_device_desc.cc     |  216 ++
- 17 files changed, 5233 insertions(+)
+ 17 files changed, 5228 insertions(+)
  create mode 100644 include/js_api/@ohos.ai.mindSporeLite.d.ts
  create mode 100644 include/js_api/common_napi.h
  create mode 100644 include/js_api/ms_errors.h
@@ -2029,10 +2029,10 @@ index 00000000..85d69ff6
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/js_api/mslite_model_napi.cc b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
 new file mode 100644
-index 00000000..f59947ff
+index 00000000..cfc71762
 --- /dev/null
 +++ b/mindspore/lite/src/litert/js_api/mslite_model_napi.cc
-@@ -0,0 +1,2658 @@
+@@ -0,0 +1,2653 @@
 +/**
 + * Copyright 2023 Huawei Technologies Co., Ltd
 + *
@@ -2124,11 +2124,6 @@ index 00000000..f59947ff
 +MSLiteModelNapi::~MSLiteModelNapi() {
 +  native_model_ = nullptr;
 +  env_ = nullptr;
-+  if (model_info_ != nullptr) {
-+    if (model_info_->model_buffer_data != nullptr) {
-+      model_info_->model_buffer_data = nullptr;
-+    }
-+  }
 +  MS_LOG(INFO) << "MSLiteModelNapi Instances destroy.";
 +}
 +
@@ -5392,5 +5387,5 @@ index 00000000..145897db
 +}  // namespace mindspore
 \ No newline at end of file
 -- 
-2.17.1
+2.25.1
 
