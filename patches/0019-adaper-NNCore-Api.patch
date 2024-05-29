@@ -1,17 +1,157 @@
-From 258ba9ffe8c5c9b7170cfb4726f23e90506cd547 Mon Sep 17 00:00:00 2001
+From 74be9eb2352222c5bbff2ba9ebb73fa97418ec03 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Mon, 22 Apr 2024 14:24:08 +0800
-Subject: [PATCH] adaper NNCore Api
+Date: Wed, 29 May 2024 11:30:53 +0800
+Subject: remove primitive check
 
 ---
+ .../delegate/nnrt/checker/primitive_check.cc  | 115 -----------
+ .../delegate/nnrt/checker/primitive_check.h   |   1 -
  .../litert/delegate/nnrt/nnrt_allocator.cc    |  64 +++---
  .../src/litert/delegate/nnrt/nnrt_allocator.h |  19 +-
- .../src/litert/delegate/nnrt/nnrt_delegate.cc |   4 +-
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc |  14 +-
  .../litert/delegate/nnrt/nnrt_model_kernel.cc | 189 ++++++++++--------
  .../litert/delegate/nnrt/nnrt_model_kernel.h  |  17 +-
  mindspore/lite/src/tensor.h                   |   2 +
- 6 files changed, 167 insertions(+), 128 deletions(-)
+ 8 files changed, 168 insertions(+), 253 deletions(-)
 
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc b/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc
+index 6b191c8e..67d60f1b 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc
+@@ -7,121 +7,6 @@
+ #include "src/common/utils.h"
+ namespace mindspore {
+ namespace lite {
+-
+-Status CheckPrimitiveSupported(const schema::Primitive *primitive) {
+-  if (primitive != nullptr) {
+-    auto prim = primitive;
+-    auto type = prim->value_type();
+-    switch (type) {
+-      case schema::PrimitiveType_Activation:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_AddFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_ArgMaxFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_AvgPoolFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_BatchToSpaceND:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_BiasAdd:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Cast:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Concat:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Conv2DFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Conv2dTransposeFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_DivFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Eltwise:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_ExpandDims:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Fill:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_FullConnection:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_FusedBatchNorm:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Gather:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_LayerNormFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_LessEqual:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_MatMulFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Maximum:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_MaxPoolFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_MulFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_OneHot:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_PadFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_PowFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_PReLUFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_QuantDTypeCast:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_ReduceFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Reshape:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Resize:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Rsqrt:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_ScaleFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Shape:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_SliceFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Softmax:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_SpaceToBatchND:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Split:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Sqrt:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_SquaredDifference:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Squeeze:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Stack:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_StridedSlice:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_SubFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_TileFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_TopKFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Transpose:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Unsqueeze:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Custom:
+-        return mindspore::kSuccess;
+-      default: {
+-        MS_LOG(WARNING) << "No primitive type :" << (int)(type);
+-        return mindspore::kLiteSuccessExit;
+-      }
+-    }
+-    return mindspore::kSuccess;
+-  } else {
+-    MS_LOG(ERROR) << "primitive is nullptr.";
+-    return mindspore::kLiteError;
+-  }
+-}
+ namespace {
+ bool NeedBitUppackCheck(const schema::Tensor &src_tensor) {
+   if (src_tensor.enableHuffmanCode()) {
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.h b/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.h
+index dbdd812c..46b812c0 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.h
+@@ -4,7 +4,6 @@
+ #include "include/api/status.h"
+ namespace mindspore {
+ namespace lite {
+-Status CheckPrimitiveSupported(const schema::Primitive *primitive);
+ Status CheckTensorSupported(const schema::Tensor *primitive);
+ }  // namespace lite
+ }  // namespace mindspore
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
 index f79c1682..b38fff62 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
@@ -192,7 +332,7 @@ index f6721369..4d76d298 100644
    OH_NNExecutor *executor_{nullptr};
    std::mutex mutex_;
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
-index d8450141..810e816d 100644
+index d8450141..36ed48d7 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
 @@ -169,7 +169,7 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
@@ -213,6 +353,30 @@ index d8450141..810e816d 100644
      if (nnrt_model_kernel == nullptr) {
        MS_LOG(ERROR) << "new NNRTModelKernel failed";
        return kLiteError;
+@@ -813,14 +813,6 @@ Status NNRTDelegate::DequantLiteGraph(LiteGraph *lite_graph) {
+ }
+ 
+ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
+-  Status ret;
+-  for (auto node : lite_graph.all_nodes_) {
+-    ret = lite::CheckPrimitiveSupported(static_cast<const schema::Primitive *>(node->primitive_));
+-    if (ret == kLiteError) {
+-      MS_LOG(ERROR) << " primitive supported check failed.";
+-      return;
+-    }
+-  }
+   std::vector<LiteGraph::Node *> node_list;
+   node_list.reserve(lite_graph.all_nodes_.size());
+   // copy node
+@@ -856,7 +848,7 @@ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
+     subgraph_list.emplace_back(new_subgraph);
+   }
+   for (auto tensor : lite_graph.all_tensors_) {
+-    ret = lite::CheckTensorSupported(static_cast<const schema::Tensor *>(tensor));
++    Status ret = lite::CheckTensorSupported(static_cast<const schema::Tensor *>(tensor));
+     if (ret == kLiteError) {
+       MS_LOG(ERROR) << "tensor supported check failed.";
+       return;
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
 index f83632dd..434836bb 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc

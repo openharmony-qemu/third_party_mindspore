@@ -1,13 +1,16 @@
-From 3d1f369cb1ae95cc7180a002067b19961650b432 Mon Sep 17 00:00:00 2001
+From c87618bc9c440082b7ed6f804539b499ea2263ed Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Tue, 30 Apr 2024 16:38:09 +0800
-Subject: [PATCH] fix ocr gcn model crash
+Date: Thu, 30 May 2024 19:32:52 +0800
+Subject: add model version check
 
 ---
- .../ccsrc/plugin/device/cpu/kernel/nnacl/kernel.c   | 13 +++++++++++++
- mindspore/lite/src/litert/c_api/model_c.cc          | 13 +------------
- mindspore/lite/src/litert/scheduler.cc              |  1 +
- 3 files changed, 15 insertions(+), 12 deletions(-)
+ .../plugin/device/cpu/kernel/nnacl/kernel.c   | 13 ++++++++++
+ mindspore/lite/src/common/utils.cc            | 26 +++++++++++++++++++
+ mindspore/lite/src/common/utils.h             |  7 +++++
+ mindspore/lite/src/litert/c_api/model_c.cc    | 13 +---------
+ mindspore/lite/src/litert/lite_model.cc       |  9 ++++---
+ mindspore/lite/src/litert/scheduler.cc        |  1 +
+ 6 files changed, 54 insertions(+), 15 deletions(-)
 
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel.c
 index b86ab817..86a5d163 100644
@@ -46,6 +49,68 @@ index b86ab817..86a5d163 100644
    KernelCreator creator = g_kernelCreatorRegistry[param->type_][REGIST_DT(data_type)];
    if (creator == NULL) {
      return NULL;
+diff --git a/mindspore/lite/src/common/utils.cc b/mindspore/lite/src/common/utils.cc
+index c8509976..e1699687 100644
+--- a/mindspore/lite/src/common/utils.cc
++++ b/mindspore/lite/src/common/utils.cc
+@@ -195,6 +195,32 @@ std::vector<std::string> Tokenize(const std::string &src, const std::string &del
+   return tokens;
+ }
+ 
++std::string GetShortVersionStr(const std::string &s) {
++  std::string match_str = "";
++  std::regex e("\\d+(\\.\\d+){2}");
++  auto words_begin = std::sregex_iterator(s.begin(), s.end(), e);
++  auto words_end = std::sregex_iterator();
++  if (words_begin != words_end) {
++    std::smatch match = *words_begin;
++    match_str = match.str();
++  }
++  return match_str;
++}
++
++bool IsVersionGreaterThan(const std::string& str1, const std::string& str2) {
++  auto str1_splits = StrSplit(str1, ".");
++  auto str2_splits = StrSplit(str2, ".");
++  size_t len1 = str1_splits.size();
++  size_t len2 = str2_splits.size();
++  size_t len = std::min(len1, len2);
++  for (size_t i = 0; i < len; ++i) {
++    if (str1_splits[i] != str2_splits[i]) {
++      return std::stoi(str1_splits[i]) > std::stoi(str2_splits[i]);
++    }
++  }
++  return len1 > len2;
++}
++
+ #if defined(__ANDROID__) || defined(MS_COMPILE_OHOS)
+ uint32_t getHwCap(int hwcap_type) {
+   uint32_t ret = getauxval(hwcap_type);
+diff --git a/mindspore/lite/src/common/utils.h b/mindspore/lite/src/common/utils.h
+index c3f1d069..ecbe4af2 100644
+--- a/mindspore/lite/src/common/utils.h
++++ b/mindspore/lite/src/common/utils.h
+@@ -25,6 +25,7 @@
+ #include <cmath>
+ #include <string>
+ #include <utility>
++#include <regex>
+ #include "src/common/log_adapter.h"
+ #include "tools/common/option.h"
+ #include "include/errorcode.h"
+@@ -213,6 +214,12 @@ enum RemoveSubStrMode { PREFIX, SUFFIX, ANY };
+ // remove redundant character
+ std::string RemoveSubStr(const std::string &from, const std::string &sub_str, RemoveSubStrMode mode = ANY);
+ 
++// match version: x.y.z
++std::string GetShortVersionStr(const std::string &s);
++
++// compare string
++bool IsVersionGreaterThan(const std::string& str1, const std::string& str2);
++
+ template <typename T>
+ inline Option<T> GenericParseValue(const std::string &value) {
+   T ret;
 diff --git a/mindspore/lite/src/litert/c_api/model_c.cc b/mindspore/lite/src/litert/c_api/model_c.cc
 index cbbe2dbb..4f40b3d3 100644
 --- a/mindspore/lite/src/litert/c_api/model_c.cc
@@ -84,6 +149,33 @@ index cbbe2dbb..4f40b3d3 100644
      return OH_AI_STATUS_SUCCESS;
    }
  
+diff --git a/mindspore/lite/src/litert/lite_model.cc b/mindspore/lite/src/litert/lite_model.cc
+index d32db7c8..006bc02c 100644
+--- a/mindspore/lite/src/litert/lite_model.cc
++++ b/mindspore/lite/src/litert/lite_model.cc
+@@ -29,6 +29,7 @@
+ #include "src/common/prim_util.h"
+ #include "src/common/graph_util.h"
+ #include "src/common/file_utils.h"
++#include "src/common/utils.h"
+ #include "src/tensor.h"
+ #include "extendrt/mindir_loader/model_loader.h"
+ #include "src/common/mmap_utils.h"
+@@ -434,9 +435,11 @@ int LiteModel::GenerateModelByVersion() {
+   if(DeObfRegister::deobf_handle != nullptr) {
+     dlclose(DeObfRegister::deobf_handle);
+   }
+-  if (this->graph_.version_ != Version()) {
+-    MS_LOG(INFO) << "model version is " << this->graph_.version_ << ", inference version is " << Version()
+-                 << " not equal";
++  if (IsVersionGreaterThan(GetShortVersionStr(this->graph_.version_), GetShortVersionStr(Version()))) {
++    MS_LOG(WARNING) << "The current model version "<< this->graph_.version_
++                    << " is later than the inference engine version " << Version()
++                    << ". Use a converter tool whose version is earlier than or equal to "
++                    << "the inference engine version to convert the model.";
+   }
+   MS_LOG(INFO) << "MindSpore Lite inference version: " << Version();
+   return status;
 diff --git a/mindspore/lite/src/litert/scheduler.cc b/mindspore/lite/src/litert/scheduler.cc
 index d6749471..bc2cf881 100644
 --- a/mindspore/lite/src/litert/scheduler.cc

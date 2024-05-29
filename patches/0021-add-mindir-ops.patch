@@ -1,16 +1,18 @@
-From c07165ab89651f626ca86a4c728936f808fccf8c Mon Sep 17 00:00:00 2001
+From 6e0f815416fcf21c082c346256b5bd20beee2b93 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Wed, 15 May 2024 17:02:10 +0800
-Subject: [PATCH] add mindir ops 59
+Date: Wed, 29 May 2024 11:30:53 +0800
+Subject: add MindIR_Tensor_GetNodeType
 
 ---
- mindspore/lite/mindir/BUILD.gn               |    2 +
- mindspore/lite/mindir/include/mindir.h       |  406 ++++
- mindspore/lite/mindir/include/mindir_types.h |   60 +
- mindspore/lite/mindir/src/mindir.cc          |  106 +-
- mindspore/lite/mindir/src/mindir_1.cc        | 2061 +++++++++++++++++
- mindspore/lite/mindir/src/mindir_2.cc        | 2152 ++++++++++++++++++
- 6 files changed, 4783 insertions(+), 4 deletions(-)
+ mindspore/lite/mindir/BUILD.gn                |    2 +
+ mindspore/lite/mindir/include/mindir.h        |  406 ++++
+ mindspore/lite/mindir/include/mindir_tensor.h |    1 +
+ mindspore/lite/mindir/include/mindir_types.h  |   60 +
+ mindspore/lite/mindir/src/mindir.cc           |  106 +-
+ mindspore/lite/mindir/src/mindir_1.cc         | 2061 ++++++++++++++++
+ mindspore/lite/mindir/src/mindir_2.cc         | 2152 +++++++++++++++++
+ mindspore/lite/mindir/src/mindir_tensor.cc    |   13 +
+ 8 files changed, 4797 insertions(+), 4 deletions(-)
  create mode 100644 mindspore/lite/mindir/src/mindir_1.cc
  create mode 100644 mindspore/lite/mindir/src/mindir_2.cc
 
@@ -444,6 +446,18 @@ index 7eb3a744..99072827 100644
  // ********** Custom **********
  std::vector<const mindspore::schema::Attribute *> MindIR_Custom_GetAttr(ConstPrimitivePtr primitive);
  std::string MindIR_Attribute_GetName(const mindspore::schema::Attribute &attr);
+diff --git a/mindspore/lite/mindir/include/mindir_tensor.h b/mindspore/lite/mindir/include/mindir_tensor.h
+index 43c1478c..d8b4aa37 100644
+--- a/mindspore/lite/mindir/include/mindir_tensor.h
++++ b/mindspore/lite/mindir/include/mindir_tensor.h
+@@ -23,6 +23,7 @@ void MindIR_Tensor_SetData(TensorPtr *tensor, const std::vector<uint8_t> &data);
+ std::vector<uint8_t> MindIR_Tensor_GetData(ConstTensorPtr tensor);
+ std::vector<QuantParam> MindIR_Tensor_GetQuantParams(ConstTensorPtr tensor);
+ void MindIR_Tensor_SetQuantParams(TensorPtr *tensor, const std::vector<QuantParam> &quant_params);
++int32_t MindIR_Tensor_GetNodeType(ConstTensorPtr tensor);
+ 
+ void MindIR_Tensor_Destroy(TensorPtr *tensor);
+ 
 diff --git a/mindspore/lite/mindir/include/mindir_types.h b/mindspore/lite/mindir/include/mindir_types.h
 index 196995fa..ec224b2c 100644
 --- a/mindspore/lite/mindir/include/mindir_types.h
@@ -2793,7 +2807,7 @@ index 00000000..5177e881
 +}  // namespace mindspore
 diff --git a/mindspore/lite/mindir/src/mindir_2.cc b/mindspore/lite/mindir/src/mindir_2.cc
 new file mode 100644
-index 00000000..00eb020b
+index 00000000..5c91b7bf
 --- /dev/null
 +++ b/mindspore/lite/mindir/src/mindir_2.cc
 @@ -0,0 +1,2152 @@
@@ -4885,9 +4899,9 @@ index 00000000..00eb020b
 +}
 +
 +// ********** ScatterElements **********
-+PrimitivePtr MindIR_ScatterElements_CreatePrimitive() {
++PrimitivePtr MindIR_ScatterElements_CreatePrimitive(int64_t axis) {
 +  flatbuffers::FlatBufferBuilder fbb;
-+  auto ops_offset = schema::CreateScatterElements(fbb);
++  auto ops_offset = schema::CreateScatterElements(fbb, axis);
 +  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SCATTER_ELEMENTS), ops_offset.o);
 +  fbb.Finish(prim_offset);
 +  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
@@ -4949,6 +4963,30 @@ index 00000000..00eb020b
 +}
 +}  // namespace lite
 +}  // namespace mindspore
+diff --git a/mindspore/lite/mindir/src/mindir_tensor.cc b/mindspore/lite/mindir/src/mindir_tensor.cc
+index 8888e2c9..0e6a631e 100644
+--- a/mindspore/lite/mindir/src/mindir_tensor.cc
++++ b/mindspore/lite/mindir/src/mindir_tensor.cc
+@@ -341,6 +341,19 @@ void MindIR_Tensor_SetQuantParams(TensorPtr *tensor, const std::vector<QuantPara
+   }
+ }
+ 
++int32_t MindIR_Tensor_GetNodeType(ConstTensorPtr tensor) {
++  if (tensor != nullptr) {
++    auto value = static_cast<const schema::Tensor *>(tensor);
++    if (value != nullptr) {
++      return value->nodeType();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
+ void MindIR_Tensor_Destroy(TensorPtr *tensor) {
+   if (tensor != nullptr && *tensor != nullptr) {
+     auto schema = static_cast<schema::Tensor *>(*tensor);
 -- 
 2.17.1
 
