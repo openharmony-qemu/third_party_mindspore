@@ -1,10 +1,26 @@
 #!/usr/bin/env python3
+# encoding: utf-8
+# Copyright 2024 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
 
 import os
 import shutil
 import zipfile
 import argparse
 import hashlib
+import subprocess
 
 def extract_source(in_zip_path, out_src_path):
     "depress source code form release package"
@@ -44,22 +60,23 @@ def do_patch(patch_dir, target_dir):
     cwd = os.getcwd()
     os.chdir(target_dir)
     print('Change dir to', os.getcwd())
-    os.system('git init .')
-    os.system('git add .; git commit -m "init"')
-    
+    subprocess.run(['git', 'init', '.'])
+    subprocess.run(['git', 'add', '.'])
+    subprocess.run(['git', 'commit', '-m', '"init"'])
+
     for patch in patches:
         print('Applying ', patch, '...')
-        ret = os.system('git apply ' + patch_dir + '/' + patch)
-        if ret != 0:
-            raise Exception("Apply patch {} failed.".format(patch))
-        os.system('git add .; git commit -m "auto-apply ' + patch + '"')
+        ret = subprocess.run(['git', 'apply', '{0}/{1}'.format(patch_dir, patch)])
+        if ret.returncode != 0:
+            raise Exception("Apply patch {0} failed, ret: {1}".format(patch, ret))
+        subprocess.run(['git', 'add', '.'])
+        subprocess.run(['git', 'commit', '-m', "auto-apply {0}".format(patch)])
         print('Done')
     os.chdir(cwd)
 
 def create_status_file(out_src_path):
-    f = open(out_src_path + '/.status', 'w')
-    f.write('ok')
-    f.close
+    with open("{0}/.status".format(out_src_path), 'w+') as f:
+        f.write('ok')
 
 
 def compute_md5(file):
