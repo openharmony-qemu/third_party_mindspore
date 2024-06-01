@@ -1,7 +1,7 @@
-From 464f222815cd1fed680d91569b29da5d6b4c281c Mon Sep 17 00:00:00 2001
-From: qinzheng4 <qinzheng4@huawei.com>
-Date: Mon, 19 Feb 2024 15:22:17 +0800
-Subject: [PATCH] 0009-npu-zero-copy
+From 03c31305a6a6c8a4b39d5fb734e312a747828672 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Sat, 1 Jun 2024 17:46:33 +0800
+Subject: fix output DataSize 0, heap-buffer-overflow
 
 ---
  include/c_api/tensor_c.h                      |  15 ++
@@ -9,14 +9,14 @@ Subject: [PATCH] 0009-npu-zero-copy
  mindspore/lite/src/litert/c_api/model_c.cc    |  40 ++++-
  mindspore/lite/src/litert/c_api/tensor_c.cc   |  32 ++++
  .../lite/src/litert/c_api/type_c_private.h    |   3 +
- .../src/litert/cxx_api/model/model_impl.cc    |  72 +++++++-
+ .../src/litert/cxx_api/model/model_impl.cc    |  77 +++++++-
  .../litert/delegate/nnrt/nnrt_allocator.cc    | 168 ++++++++++++++++++
  .../src/litert/delegate/nnrt/nnrt_allocator.h |  64 +++++++
  .../litert/delegate/nnrt/nnrt_model_kernel.cc |  50 +++++-
  .../litert/delegate/nnrt/nnrt_model_kernel.h  |   3 +
  .../litert/kernel/cpu/nnacl/nnacl_kernel.cc   |   2 +-
  mindspore/lite/src/litert/mindrt_executor.cc  |  14 +-
- 12 files changed, 453 insertions(+), 11 deletions(-)
+ 12 files changed, 458 insertions(+), 11 deletions(-)
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
 
@@ -47,7 +47,7 @@ index 6d2aaab6..2f641725 100644
  }
  #endif
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index 4a83f498..723df1ec 100644
+index 5866e335..58ee5e51 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
 @@ -443,6 +443,7 @@ ohos_shared_library("mindspore_lib") {
@@ -200,10 +200,10 @@ index 2d3b3883..1a76820d 100644
  #endif
  #endif  // MINDSPORE_LITE_SRC_LITERT_C_API_TYPE_C_PRIVATE_H_
 diff --git a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
-index 78b1ca67..5d1b78a2 100644
+index 78b1ca67..02533dc3 100644
 --- a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
 +++ b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
-@@ -463,7 +463,55 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
+@@ -463,7 +463,60 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
            input->set_shape(truncate_shape);
  #endif
          }
@@ -245,13 +245,18 @@ index 78b1ca67..5d1b78a2 100644
 +      MS_CHECK_TRUE_RET(ori_out_tensor != nullptr, kLiteNullptr);
 +
 +      auto user_output = (*outputs)[i];
-+      if (ori_output.impl() == user_output.impl()) {
++      auto user_lite_impl = std::static_pointer_cast<LiteTensorImpl>(user_output.impl());
++      MS_CHECK_TRUE_RET(user_lite_impl != nullptr, kLiteNullptr);
++      auto user_out_tensor = user_lite_impl->lite_tensor();
++      if (ori_out_tensor == user_out_tensor) {
 +        continue;
 +      }
 +
-+      auto user_out_data = user_output.MutableData();
-+      MS_CHECK_TRUE_RET(user_out_data != nullptr, kLiteNullptr);
-+      if (ori_out_tensor->allocator() == user_output.allocator()) {
++      void *user_out_data = nullptr;
++      if (user_output.DataSize() > 0) {
++        user_out_data = user_output.MutableData();
++      }
++      if (ori_out_tensor->allocator() == user_output.allocator() && user_out_data != nullptr) {
 +        MS_LOG(INFO) << "use user data";
 +        ori_out_tensor->set_data(user_out_data);
 +        ori_out_tensor->set_own_data(false);
@@ -260,7 +265,7 @@ index 78b1ca67..5d1b78a2 100644
        }
      }
    }
-@@ -474,6 +522,28 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
+@@ -474,6 +527,28 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
      return ret;
    }
    MS_LOG(DEBUG) << "Run graph success.";
@@ -669,5 +674,5 @@ index e5cd720c..5c08cedf 100644
      }
    }
 -- 
-2.25.1
+2.17.1
 
