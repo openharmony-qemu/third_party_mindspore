@@ -1,18 +1,18 @@
-From 74be9eb2352222c5bbff2ba9ebb73fa97418ec03 Mon Sep 17 00:00:00 2001
+From 56fc07c5f75593b94b4fe39b57003c89913b4329 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Wed, 29 May 2024 11:30:53 +0800
-Subject: remove primitive check
+Date: Wed, 5 Jun 2024 19:33:58 +0800
+Subject: [PATCH] auto-apply 0019-adaper-NNCore-Api.patch
 
 ---
  .../delegate/nnrt/checker/primitive_check.cc  | 115 -----------
  .../delegate/nnrt/checker/primitive_check.h   |   1 -
  .../litert/delegate/nnrt/nnrt_allocator.cc    |  64 +++---
- .../src/litert/delegate/nnrt/nnrt_allocator.h |  19 +-
+ .../src/litert/delegate/nnrt/nnrt_allocator.h |  20 +-
  .../src/litert/delegate/nnrt/nnrt_delegate.cc |  14 +-
- .../litert/delegate/nnrt/nnrt_model_kernel.cc | 189 ++++++++++--------
+ .../litert/delegate/nnrt/nnrt_model_kernel.cc | 190 ++++++++++--------
  .../litert/delegate/nnrt/nnrt_model_kernel.h  |  17 +-
  mindspore/lite/src/tensor.h                   |   2 +
- 8 files changed, 168 insertions(+), 253 deletions(-)
+ 8 files changed, 170 insertions(+), 253 deletions(-)
 
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc b/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc
 index 6b191c8e..67d60f1b 100644
@@ -281,7 +281,7 @@ index f79c1682..b38fff62 100644
  }  // namespace mindspore
 \ No newline at end of file
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
-index f6721369..4d76d298 100644
+index f6721369..52e6def7 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
 @@ -23,6 +23,9 @@
@@ -305,13 +305,14 @@ index f6721369..4d76d298 100644
    ~NNRTAllocator() override;
  
    void *Malloc(size_t size) override;
-@@ -42,14 +45,24 @@ class NNRTAllocator : public Allocator {
+@@ -42,14 +45,25 @@ class NNRTAllocator : public Allocator {
    int SetRefCount(void *ptr, int ref_count) override;
    int DecRefCount(void *ptr, int ref_count) override;
    int IncRefCount(void *ptr, int ref_count) override;
-+  NN_Tensor *GetNNTensor() {
-+    if (allocated_list_.size() > 0) {
-+      return allocated_list_.begin()->second->tensor_;
++  NN_Tensor *GetNNTensor(void *ptr) {
++    auto iter = allocated_list_.find(ptr);
++    if (iter != allocated_list_.end()) {
++      return iter->second->tensor_;
 +    }
 +    return nullptr;
 +  }
@@ -378,7 +379,7 @@ index d8450141..36ed48d7 100644
        MS_LOG(ERROR) << "tensor supported check failed.";
        return;
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
-index f83632dd..434836bb 100644
+index f83632dd..b3dab033 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
 @@ -19,7 +19,7 @@
@@ -440,7 +441,7 @@ index f83632dd..434836bb 100644
      return lite::RET_ERROR;
    }
    MS_LOG(INFO) << "Run NNRtModel Kernel success.";
-@@ -120,97 +128,106 @@ OH_NN_DataType mindspore::NNRTModelKernel::ConvertDataType(mindspore::DataType d
+@@ -120,97 +128,107 @@ OH_NN_DataType mindspore::NNRTModelKernel::ConvertDataType(mindspore::DataType d
    }
    return oh_data_type;
  }
@@ -545,7 +546,8 @@ index f83632dd..434836bb 100644
 -      return lite::RET_ERROR;
 +  } else {
 +    for (size_t i = 0; i < inputs_.size(); i++) {
-+      NN_Tensor *tensor_tmp = reinterpret_cast<lite::NNRTAllocator *>(inputs_[i].allocator().get())->GetNNTensor();
++      void *data = inputs_[i].MutableData();
++      NN_Tensor *tensor_tmp = reinterpret_cast<lite::NNRTAllocator *>(inputs_[i].allocator().get())->GetNNTensor(data);
 +      if (tensor_tmp == nullptr) {
 +        MS_LOG(ERROR) << "NNRTAllocator GetNNTensor failed, i = " << i;
 +        return lite::RET_ERROR;
@@ -602,8 +604,8 @@ index f83632dd..434836bb 100644
 +    }
 +  } else {
 +    for (size_t i = 0; i < outputs_.size(); i++) {
-+      (void)outputs_[i].MutableData();
-+      NN_Tensor *tensor_tmp = reinterpret_cast<lite::NNRTAllocator *>(outputs_[i].allocator().get())->GetNNTensor();
++      void *data = outputs_[i].MutableData();
++      NN_Tensor *tensor_tmp = reinterpret_cast<lite::NNRTAllocator *>(outputs_[i].allocator().get())->GetNNTensor(data);
 +      if (tensor_tmp == nullptr) {
 +        MS_LOG(ERROR) << "NNRTAllocator GetNNTensor failed, i = " << i;
 +        return lite::RET_ERROR;
