@@ -1,18 +1,19 @@
-From 56fc07c5f75593b94b4fe39b57003c89913b4329 Mon Sep 17 00:00:00 2001
+From 3793994296c2ede3f79544d613acd8f6600ec9fb Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Wed, 5 Jun 2024 19:33:58 +0800
-Subject: [PATCH] auto-apply 0019-adaper-NNCore-Api.patch
+Date: Fri, 7 Jun 2024 15:31:09 +0800
+Subject: fix lite_graph dequant crash
 
 ---
  .../delegate/nnrt/checker/primitive_check.cc  | 115 -----------
  .../delegate/nnrt/checker/primitive_check.h   |   1 -
  .../litert/delegate/nnrt/nnrt_allocator.cc    |  64 +++---
  .../src/litert/delegate/nnrt/nnrt_allocator.h |  20 +-
- .../src/litert/delegate/nnrt/nnrt_delegate.cc |  14 +-
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc |  32 +--
+ .../src/litert/delegate/nnrt/nnrt_delegate.h  |   1 +
  .../litert/delegate/nnrt/nnrt_model_kernel.cc | 190 ++++++++++--------
  .../litert/delegate/nnrt/nnrt_model_kernel.h  |  17 +-
  mindspore/lite/src/tensor.h                   |   2 +
- 8 files changed, 170 insertions(+), 253 deletions(-)
+ 9 files changed, 186 insertions(+), 256 deletions(-)
 
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc b/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc
 index 6b191c8e..67d60f1b 100644
@@ -333,7 +334,7 @@ index f6721369..52e6def7 100644
    OH_NNExecutor *executor_{nullptr};
    std::mutex mutex_;
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
-index d8450141..36ed48d7 100644
+index d8450141..a949c910 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
 @@ -169,7 +169,7 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
@@ -354,7 +355,23 @@ index d8450141..36ed48d7 100644
      if (nnrt_model_kernel == nullptr) {
        MS_LOG(ERROR) << "new NNRTModelKernel failed";
        return kLiteError;
-@@ -813,14 +813,6 @@ Status NNRTDelegate::DequantLiteGraph(LiteGraph *lite_graph) {
+@@ -760,6 +760,15 @@ schema::Tensor *NNRTDelegate::TensorToSchemaTensor(Tensor *lite_tensor, schema::
+   memcpy(tensor_buf, buf, fbb.GetSize());
+   auto tensor = flatbuffers::GetRoot<schema::Tensor>(tensor_buf);
+   fbb.Clear();
++  if (tensor != nullptr) {
++    // use to free tensor_buf
++    auto iter = dequant_schema_tensors_buffer_map_.find(const_cast<schema::Tensor *>(tensor));
++    if (iter != dequant_schema_tensors_buffer_map_.end()) {
++      MS_LOG(ERROR) << "schema tensor is duplicated.";
++      return nullptr;
++    }
++    dequant_schema_tensors_buffer_map_[const_cast<schema::Tensor *>(tensor)] = tensor_buf;
++  }
+   return const_cast<schema::Tensor *>(tensor);
+ }
+ 
+@@ -813,14 +822,6 @@ Status NNRTDelegate::DequantLiteGraph(LiteGraph *lite_graph) {
  }
  
  void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
@@ -369,7 +386,7 @@ index d8450141..36ed48d7 100644
    std::vector<LiteGraph::Node *> node_list;
    node_list.reserve(lite_graph.all_nodes_.size());
    // copy node
-@@ -856,7 +848,7 @@ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
+@@ -856,7 +857,7 @@ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
      subgraph_list.emplace_back(new_subgraph);
    }
    for (auto tensor : lite_graph.all_tensors_) {
@@ -378,8 +395,37 @@ index d8450141..36ed48d7 100644
      if (ret == kLiteError) {
        MS_LOG(ERROR) << "tensor supported check failed.";
        return;
+@@ -921,10 +922,13 @@ NNRTDelegate::~NNRTDelegate() {
+   if (lite_graph_ != nullptr) {
+     MS_LOG(ERROR) << "Delete NNRTDelegate.";
+   }
+-  for (auto iter : dequant_schema_tensors_) {
+-    delete iter.second;
+-    iter.second = nullptr;
++  for (auto iter : dequant_schema_tensors_buffer_map_) {
++    if (iter.second != nullptr) {
++      free(iter.second);
++      iter.second = nullptr;
++    }
+   }
++  dequant_schema_tensors_buffer_map_.clear();
+ }
+ }  // namespace lite
+ }  // namespace mindspore
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+index 778553ef..db2f0ee7 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+@@ -95,6 +95,7 @@ class NNRTDelegate : public Delegate {
+   std::vector<OH_NNExecutor *> nn_executor_list_;
+   std::vector<Tensor *> *dequant_src_tensors_;
+   std::map<uint32_t, schema::Tensor *> dequant_schema_tensors_;
++  std::map<schema::Tensor *, void *> dequant_schema_tensors_buffer_map_;
+   std::vector<schema::Tensor *> replaced_schema_tensors_;
+ };
+ }  // namespace lite
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
-index f83632dd..b3dab033 100644
+index f83632dd..2a66d133 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
 @@ -19,7 +19,7 @@
