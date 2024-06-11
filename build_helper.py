@@ -55,6 +55,7 @@ def do_patch(patch_dir, target_dir):
         '0019-adaper-NNCore-Api.patch',
         '0020-fix-ocr-gcn-model-crash.patch',
         '0021-add-mindir-ops.patch',
+        '0022-adapter-HiAI-Foundation-NPU.patch',
     ]
 
     cwd = os.getcwd()
