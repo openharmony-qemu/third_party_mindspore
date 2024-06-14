@@ -1,17 +1,17 @@
-From 3e33b1e07566f0ac9eb7b712047aff8f9e4598cb Mon Sep 17 00:00:00 2001
+From a80a695b3f6ce3118cc01c31359762cfac35f02d Mon Sep 17 00:00:00 2001
 From: zhangyanhui <zhangyanhui17@huawei.com>
 Date: Thu, 13 Jun 2024 14:23:56 +0800
 Subject: [PATCH] 0023-support-x86-emulator-build
 
 ---
  .../plugin/device/cpu/kernel/nnacl/BUILD.gn   | 92 +++++++++++++++----
- mindspore/lite/BUILD.gn                       | 52 ++++++-----
+ mindspore/lite/BUILD.gn                       | 60 ++++++------
  mindspore/lite/src/common/thread_utils.cc     |  2 +-
  mindspore/lite/src/litert/kernel/cpu/BUILD.gn | 28 +++++-
  .../cpu/fp32/convolution_delegate_fp32.cc     |  2 +
  ...volution_depthwise_slidewindow_x86_fp32.cc |  4 +-
  ...nvolution_depthwise_slidewindow_x86_fp32.h |  2 +-
- 7 files changed, 134 insertions(+), 48 deletions(-)
+ 7 files changed, 138 insertions(+), 52 deletions(-)
 
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
 index d27817be..387a675a 100644
@@ -196,7 +196,7 @@ index d27817be..387a675a 100644
  if (target_cpu == "arm") {
    nnacl_sources += arm_only_sources
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index 467cdb6a..8fe4bb94 100644
+index 467cdb6a..124c84c9 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
 @@ -118,12 +118,6 @@ control_flow_kernel_sources = [
@@ -281,7 +281,7 @@ index 467cdb6a..8fe4bb94 100644
    }
  
    configs = [
-@@ -434,7 +435,6 @@ ohos_shared_library("mindspore_lib") {
+@@ -434,10 +435,10 @@ ohos_shared_library("mindspore_lib") {
    output_name = "libmindspore-lite"
    output_extension = "so"
    innerapi_tags = [ "platformsdk" ]
@@ -289,6 +289,18 @@ index 467cdb6a..8fe4bb94 100644
    if (SUPPORT_NNRT) {
      if (mindspore_feature_nnrt_metagraph) {
        defines += [ "SUPPORT_NNRT_METAGRAPH" ]
++      sources += [ "src/litert/delegate/nnrt/hiai_foundation_wrapper.cc", ]
+       print("enabled feature: mindspore_feature_nnrt_metagraph")
+     }
+     sources += [
+@@ -445,7 +446,6 @@ ohos_shared_library("mindspore_lib") {
+       "src/litert/delegate/nnrt/nnrt_delegate.cc",
+       "src/litert/delegate/nnrt/nnrt_model_kernel.cc",
+       "src/litert/delegate/nnrt/nnrt_allocator.cc",
+-      "src/litert/delegate/nnrt/hiai_foundation_wrapper.cc",
+       "src/litert/delegate/nnrt/extension_options_parser.cc",
+     ]
+     include_dirs += [
 @@ -453,6 +453,7 @@ ohos_shared_library("mindspore_lib") {
        "../../mindspore/core/ir",
        "mindir/include",
@@ -309,10 +321,13 @@ index 467cdb6a..8fe4bb94 100644
      "MS_COMPILE_OHOS",
      "PRIMITIVE_WRITEABLE",
      "RUNTIME_PASS_CLIP",
-@@ -516,6 +515,15 @@ ohos_shared_library("mindspore_ndk") {
-     defines += [ "SUPPORT_NNRT_METAGRAPH" ]
-     print("enabled feature: mindspore_feature_nnrt_metagraph")
-   }
+@@ -512,9 +511,18 @@ ohos_shared_library("mindspore_ndk") {
+     "ENABLE_HI_APP_EVENT",
+   ]
+ 
+-  if (mindspore_feature_nnrt_metagraph) {
+-    defines += [ "SUPPORT_NNRT_METAGRAPH" ]
+-    print("enabled feature: mindspore_feature_nnrt_metagraph")
 +  if (SUPPORT_NNRT) {
 +    include_dirs += [
 +      "//foundation/ai/neural_network_runtime/",
@@ -320,11 +335,14 @@ index 467cdb6a..8fe4bb94 100644
 +    defines += [
 +      "SUPPORT_NNRT",
 +    ]
++    if (mindspore_feature_nnrt_metagraph) {
++      defines += [ "SUPPORT_NNRT_METAGRAPH" ]
++      print("enabled feature: mindspore_feature_nnrt_metagraph")
++    }
 +    external_deps = [ "neural_network_runtime:nnrt_target" ]
-+  }
+   }
  
    configs = [
-     ":mindspore_api",
 @@ -523,8 +531,6 @@ ohos_shared_library("mindspore_ndk") {
      ":secure_option",
    ]
