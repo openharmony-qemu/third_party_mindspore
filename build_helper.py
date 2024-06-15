@@ -57,6 +57,7 @@ def do_patch(patch_dir, target_dir):
         '0021-add-mindir-ops.patch',
         '0022-adapter-HiAI-Foundation-NPU.patch',
         '0023-support-x86-emulator-build.patch',
+        '0024-fix-gcn-model-squeeze-transpose-infershape-not-do.patch',
     ]
 
     cwd = os.getcwd()
