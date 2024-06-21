@@ -1,3 +1,33 @@
+From 9b1f17ffcb18cd58f796c9f30c0bc37e31347450 Mon Sep 17 00:00:00 2001
+From: zhangyanhui <zhangyanhui17@huawei.com>
+Date: Fri, 21 Jun 2024 16:08:21 +0800
+Subject: [PATCH] auto-apply 0002-train-and-build.patch
+
+---
+ .../plugin/device/cpu/kernel/nnacl/BUILD.gn   |  16 +-
+ mindspore/lite/BUILD.gn                       | 229 +++++++++++++++++-
+ .../include/registry/opencl_runtime_wrapper.h |   2 +-
+ mindspore/lite/src/litert/kernel/cpu/BUILD.gn |   1 +
+ .../litert/kernel/cpu/fp32/oneslike_fp32.cc   |  51 ++++
+ .../litert/kernel/cpu/fp32/oneslike_fp32.h    |  46 ++++
+ mindspore/lite/src/litert/lite_model.h        |   2 +-
+ mindspore/lite/src/litert/lite_session.cc     |   1 +
+ mindspore/lite/src/litert/weight_decoder.h    |   2 +-
+ mindspore/lite/src/tensor.h                   |   2 +-
+ mindspore/lite/src/tensorlist.h               |   2 +-
+ mindspore/lite/src/train/train_session.cc     |   6 +-
+ .../lite/tools/benchmark_train/net_train.h    |   2 +-
+ .../tools/converter/converter_metagraph.cc    |  14 +-
+ .../tools/converter/graphdef_transform.cc     |   4 +
+ .../legacy_optimizer/graph/CMakeLists.txt     |   1 +
+ .../legacy_optimizer/graph/node_name_pass.cc  |  96 ++++++++
+ .../legacy_optimizer/graph/node_name_pass.h   |  35 +++
+ 18 files changed, 493 insertions(+), 19 deletions(-)
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/oneslike_fp32.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/fp32/oneslike_fp32.h
+ create mode 100644 mindspore/lite/tools/converter/legacy_optimizer/graph/node_name_pass.cc
+ create mode 100644 mindspore/lite/tools/converter/legacy_optimizer/graph/node_name_pass.h
+
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
 index a1e7908e..7bbc3782 100644
 --- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
@@ -37,7 +67,7 @@ index a1e7908e..7bbc3782 100644
  arm64_only_sources += optimizing_assembly_sources
  arm64_only_sources += arm64_fp32_kernel_sources
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index 6d83e6f9..9d9c299f 100644
+index 6d83e6f9..8a492bf9 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
 @@ -74,10 +74,12 @@ import("//build/ohos.gni")
@@ -298,7 +328,7 @@ index 6d83e6f9..9d9c299f 100644
  config("opencl_option") {
    cflags_cc = [ "-Wno-missing-braces" ]
  }
-@@ -482,3 +702,7 @@ config("disable_android") {
+@@ -482,3 +703,7 @@ config("disable_android") {
  config("secure_option") {
    cflags = [ "-fstack-protector-all" ]
  }
@@ -501,7 +531,7 @@ index bdfdda02..6925cc95 100644
    TensorList() { tensor_list_c_ = {false, kObjectTypeTensorType, DEFAULT_FORMAT, 0, kTypeUnknown, -1, nullptr, 0, 0}; }
  
 diff --git a/mindspore/lite/src/train/train_session.cc b/mindspore/lite/src/train/train_session.cc
-index ef3c71f3..b581b389 100644
+index ef3c71f3..ce6a6437 100644
 --- a/mindspore/lite/src/train/train_session.cc
 +++ b/mindspore/lite/src/train/train_session.cc
 @@ -248,8 +248,8 @@ static int ReshapeWeightTensor(Tensor *orig_tensor, lite::Tensor *new_tensor) {
@@ -515,6 +545,15 @@ index ef3c71f3..b581b389 100644
        if (modify == nullptr) {
          MS_LOG(ERROR) << "Tensor is nullptr";
          return RET_PARAM_INVALID;
+@@ -1346,7 +1346,7 @@ int TrainSession::ExportWeightsCollaborateWithMicro(const std::string &file_name
+ std::vector<lite::Tensor *> TrainSession::GetFeatureMaps() const {
+   std::vector<lite::Tensor *> features;
+   for (auto cur_tensor : this->tensors_) {
+-    if (cur_tensor->IsConst() && cur_tensor->data_type() == kNumberTypeFloat32) {
++    if (cur_tensor->category() == lite::Category::CONST_TENSOR && cur_tensor->data_type() == kNumberTypeFloat32) {
+       features.push_back(cur_tensor);
+     }
+   }
 diff --git a/mindspore/lite/tools/benchmark_train/net_train.h b/mindspore/lite/tools/benchmark_train/net_train.h
 index 43853e99..67e58a04 100644
 --- a/mindspore/lite/tools/benchmark_train/net_train.h
@@ -574,7 +613,7 @@ index d571b532..90b744e5 100644
      forming_model_optimizer.AddPass(new (std::nothrow) ConvertFP32ToFP16Pass(param->weight_fp16));
      status = forming_model_optimizer.Run(graph_defT_);
 diff --git a/mindspore/lite/tools/converter/legacy_optimizer/graph/CMakeLists.txt b/mindspore/lite/tools/converter/legacy_optimizer/graph/CMakeLists.txt
-index 9b16f4f8..30bccbde 100755
+index 9b16f4f8..30bccbde 100644
 --- a/mindspore/lite/tools/converter/legacy_optimizer/graph/CMakeLists.txt
 +++ b/mindspore/lite/tools/converter/legacy_optimizer/graph/CMakeLists.txt
 @@ -9,6 +9,7 @@ file(GLOB GRAPH_PASS
@@ -729,3 +768,6 @@ index 00000000..4e58e5c7
 +}  // namespace lite
 +}  // namespace mindspore
 +#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_LEGACY_OPTIMIZER_GRAPH_NODE_NAME_PASS_H_
+-- 
+2.25.1
+
