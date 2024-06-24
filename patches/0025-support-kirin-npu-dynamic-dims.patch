@@ -1,24 +1,56 @@
-From 2348889c3196087b44b6965ff837cda996bc1dd1 Mon Sep 17 00:00:00 2001
+From ae7c49e1a023af6e5d164da129ec938b8768fdbc Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Mon, 17 Jun 2024 17:30:04 +0800
+Date: Fri, 21 Jun 2024 14:32:18 +0800
 Subject: [PATCH] support kirin npu dynamic dims
 
 ---
+ .../core/mindrt/src/thread/core_affinity.cc   |   2 +-
+ .../core/mindrt/src/thread/threadpool.cc      |   2 +-
  mindspore/lite/BUILD.gn                       |   1 +
- mindspore/lite/src/litert/c_api/context_c.cc  |   6 +-
+ mindspore/lite/src/litert/c_api/context_c.cc  |  11 +-
  mindspore/lite/src/litert/c_api/tensor_c.cc   |   2 +-
+ .../delegate/nnrt/extension_options_parser.cc |   6 +-
+ .../delegate/nnrt/extension_options_parser.h  |   4 +-
+ .../delegate/nnrt/hiai_foundation_wrapper.cc  |   1 +
  .../litert/delegate/nnrt/nnrt_allocator.cc    |  53 +++++++--
  .../src/litert/delegate/nnrt/nnrt_allocator.h |   4 +
- .../src/litert/delegate/nnrt/nnrt_delegate.cc |   6 +-
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc |  43 ++++---
  .../litert/delegate/nnrt/nnrt_model_kernel.cc | 112 +++++++-----------
  .../litert/delegate/nnrt/nnrt_model_kernel.h  |  15 +--
  .../src/litert/delegate/nnrt/nnrt_utils.cc    | 110 +++++++++++++++++
  .../src/litert/delegate/nnrt/nnrt_utils.h     |  29 +++++
+ mindspore/lite/src/litert/infer_manager.cc    |   5 +-
  mindspore/lite/src/tensor.cc                  |  16 ++-
- 11 files changed, 261 insertions(+), 93 deletions(-)
+ 17 files changed, 302 insertions(+), 114 deletions(-)
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.cc
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.h
 
+diff --git a/mindspore/core/mindrt/src/thread/core_affinity.cc b/mindspore/core/mindrt/src/thread/core_affinity.cc
+index a3478dff..6886f743 100644
+--- a/mindspore/core/mindrt/src/thread/core_affinity.cc
++++ b/mindspore/core/mindrt/src/thread/core_affinity.cc
+@@ -349,7 +349,7 @@ int CoreAffinity::SetAffinity(const pthread_t &thread_id, cpu_set_t *cpu_set) {
+   THREAD_INFO("thread: %d, mask: %lu", pthread_gettid_np(thread_id), cpu_set->__bits[0]);
+   int ret = sched_setaffinity(pthread_gettid_np(thread_id), sizeof(cpu_set_t), cpu_set);
+   if (ret != THREAD_OK) {
+-    THREAD_ERROR("bind thread %d to cpu failed. ERROR %{public}d", pthread_gettid_np(thread_id), ret);
++    THREAD_ERROR("bind thread %d to cpu failed. ERROR %d", pthread_gettid_np(thread_id), ret);
+     return THREAD_ERROR;
+   }
+ #endif
+diff --git a/mindspore/core/mindrt/src/thread/threadpool.cc b/mindspore/core/mindrt/src/thread/threadpool.cc
+index f166a104..e3856c26 100644
+--- a/mindspore/core/mindrt/src/thread/threadpool.cc
++++ b/mindspore/core/mindrt/src/thread/threadpool.cc
+@@ -72,7 +72,7 @@ void Worker::SetAffinity() {
+   THREAD_INFO("thread: %d, mask: %lu", gettid(), mask_.__bits[0]);
+   int ret = sched_setaffinity(gettid(), sizeof(cpu_set_t), &mask_);
+   if (ret != THREAD_OK) {
+-    THREAD_ERROR("bind thread %d to cpu failed. ERROR %{public}d", gettid(), errno);
++    THREAD_ERROR("bind thread %d to cpu failed. ERROR %d", gettid(), errno);
+   }
+   return;
+ #else
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
 index 124c84c9..acee9733 100644
 --- a/mindspore/lite/BUILD.gn
@@ -32,7 +64,7 @@ index 124c84c9..acee9733 100644
      include_dirs += [
        "src/delegate/nnrt/include",
 diff --git a/mindspore/lite/src/litert/c_api/context_c.cc b/mindspore/lite/src/litert/c_api/context_c.cc
-index 6b6a50d5..127c15f7 100644
+index 6b6a50d5..2fe3b055 100644
 --- a/mindspore/lite/src/litert/c_api/context_c.cc
 +++ b/mindspore/lite/src/litert/c_api/context_c.cc
 @@ -25,6 +25,10 @@
@@ -46,7 +78,15 @@ index 6b6a50d5..127c15f7 100644
  // ================ Context ================
  OH_AI_ContextHandle OH_AI_ContextCreate() {
    auto impl = new (std::nothrow) mindspore::Context();
-@@ -420,7 +424,7 @@ OH_AI_DeviceInfoHandle OH_AI_CreateNNRTDeviceInfoByType(OH_AI_NNRTDeviceType typ
+@@ -308,7 +312,6 @@ NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num) {
+   auto ret_load = mindspore::lite::LoadHiaiFLibraryFromPath(&hiai_handle_);
+   if (!ret_load || hiai_handle_ == nullptr) {
+     MS_LOG(ERROR) << "Load HiAI_Foundation so failed.";
+-    return nullptr;
+   }
+ #endif
+   *num = 0;
+@@ -420,7 +423,7 @@ OH_AI_DeviceInfoHandle OH_AI_CreateNNRTDeviceInfoByType(OH_AI_NNRTDeviceType typ
  
    OH_AI_DeviceInfoHandle handle = nullptr;
    for (size_t i = 0; i < num; i++) {
@@ -55,6 +95,17 @@ index 6b6a50d5..127c15f7 100644
        handle = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_NNRT);
        OH_AI_DeviceInfoSetDeviceId(handle, desc[i].device_id);
        break;
+@@ -514,6 +517,10 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
+     MS_LOG(ERROR) << "device info is null";
+     return OH_AI_STATUS_LITE_NULLPTR;
+   }
++  if (name == nullptr || value == nullptr || value_size < 0) {
++    MS_LOG(ERROR) << "name/value/value_size is not valid";
++    return OH_AI_STATUS_LITE_NULLPTR;
++  }
+   if (OH_AI_DeviceInfoGetDeviceType(device_info) != OH_AI_DEVICETYPE_NNRT) {
+     MS_LOG(ERROR) << "Add extension to non-NNRT device is not allowable, ignored";
+     return OH_AI_STATUS_LITE_ERROR;
 diff --git a/mindspore/lite/src/litert/c_api/tensor_c.cc b/mindspore/lite/src/litert/c_api/tensor_c.cc
 index fc3814dd..b0eea5cd 100644
 --- a/mindspore/lite/src/litert/c_api/tensor_c.cc
@@ -68,6 +119,72 @@ index fc3814dd..b0eea5cd 100644
    if (tensor == nullptr) {
      MS_LOG(ERROR) << "param is nullptr.";
      return nullptr;
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
+index 98343898..e35cc2a5 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
+@@ -38,7 +38,7 @@ int ExtensionOptionsParser::Parse(const std::vector<Extension> &extensions, Exte
+   DoParseCachePath(extensions, &param->cache_path_);
+   DoParseCacheVersion(extensions, &param->cache_version_);
+   DoParseBondMode(extensions, &param->band_mode);
+-  DoParseQuantConfig(extensions, &param->quant_config, &param->quant_config_size);
++  DoParseQuantConfig(extensions, &param->quant_config, &param->quant_config_size, &param->is_optional_quant_setted);
+   return RET_OK;
+ }
+ 
+@@ -76,7 +76,8 @@ void ExtensionOptionsParser::DoParseBondMode(const std::vector<Extension> &exten
+   }
+ }
+ 
+-void ExtensionOptionsParser::DoParseQuantConfig(const std::vector<Extension> &extensions, void **quant_config, size_t *num) {
++void ExtensionOptionsParser::DoParseQuantConfig(const std::vector<Extension> &extensions,
++                                                void **quant_config, size_t *num, bool *quant_setted) {
+   MS_CHECK_TRUE_RET_VOID(quant_config != nullptr);
+   MS_CHECK_TRUE_RET_VOID(num != nullptr);
+   auto iter_config = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
+@@ -85,6 +86,7 @@ void ExtensionOptionsParser::DoParseQuantConfig(const std::vector<Extension> &ex
+   if (iter_config != extensions.end()) {
+     *quant_config = static_cast<void *>(const_cast<uint8_t *>(iter_config->value.data()));
+     *num = iter_config->value.size();
++    *quant_setted = true;
+   }
+ }
+ }  // mindspore::lite::nnrt
+\ No newline at end of file
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.h b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.h
+index 792805a4..f24682ce 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.h
+@@ -28,6 +28,7 @@ struct ExtensionOptions {
+   mindspore::lite::HiAI_BandMode band_mode{HIAI_BANDMODE_UNSET};
+   void *quant_config;
+   size_t quant_config_size = 0;
++  bool is_optional_quant_setted = false;
+ };
+ 
+ class ExtensionOptionsParser {
+@@ -36,7 +37,8 @@ public:
+ 
+ private:
+   static void DoParseBondMode(const std::vector<Extension> &extensions, mindspore::lite::HiAI_BandMode *band_mode);
+-  static void DoParseQuantConfig(const std::vector<Extension> &extensions, void **quant_config, size_t *num);
++  static void DoParseQuantConfig(const std::vector<Extension> &extensions, void **quant_config, size_t *num,
++                                 bool *quant_setted);
+   static void DoParseCachePath(const std::vector<Extension> &extensions, std::string *cache_path);
+   static void DoParseCacheVersion(const std::vector<Extension> &extensions, uint32_t *cache_version);
+ };
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.cc b/mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.cc
+index e7a52827..a155b761 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.cc
+@@ -39,6 +39,7 @@ bool LoadHiaiFLibraryFromPath(void **handle_ptr) {
+ 
+   *handle_ptr = dlopen(HIAI_F_LIB, RTLD_NOW | RTLD_LOCAL);
+   if (*handle_ptr == nullptr) {
++    MS_LOG(WARNING) << "dlopen failed, error: " << dlerror();
+     return false;
+   }
+ 
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
 index b38fff62..7f5b230c 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
@@ -173,10 +290,20 @@ index 52e6def7..ef27f307 100644
    int RefCount(void *ptr) override;
    int SetRefCount(void *ptr, int ref_count) override;
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
-index 17abd0ed..293317c4 100644
+index 17abd0ed..a49e7449 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
-@@ -194,7 +194,7 @@ Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model)
+@@ -33,8 +33,7 @@ Status NNRTDelegate::Init() {
+ #ifdef SUPPORT_NNRT_METAGRAPH
+   auto ret = mindspore::lite::LoadHiaiFLibraryFromPath(&hiai_handle_);
+   if (!ret || hiai_handle_ == nullptr) {
+-    MS_LOG(ERROR) << "Load HiAI_Foundation so failed.";
+-    return kLiteError;
++    MS_LOG(WARNING) << "Load HiAI_Foundation so failed.";
+   }
+ #endif
+   return kSuccess;
+@@ -194,7 +193,7 @@ Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model)
    }
    OH_NNCompilation_Destroy(&nn_compilation);
  
@@ -185,7 +312,7 @@ index 17abd0ed..293317c4 100644
    if (nnrt_model_kernel == nullptr) {
      OH_NNExecutor_Destroy(&nn_executor);
      MS_LOG(ERROR) << "new NNRTModelKernel failed";
-@@ -233,7 +233,7 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
+@@ -233,7 +232,7 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
    }
    OH_NNCompilation_Destroy(&nn_compilation);
  
@@ -194,7 +321,50 @@ index 17abd0ed..293317c4 100644
    if (nnrt_model_kernel == nullptr) {
      OH_NNExecutor_Destroy(&nn_executor);
      MS_LOG(ERROR) << "new NNRTModelKernel failed";
-@@ -664,7 +664,7 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive>
+@@ -547,20 +546,30 @@ Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
+   }
+ 
+ #ifdef SUPPORT_NNRT_METAGRAPH
+-  ret_code = mindspore::lite::HMS_HiAIOptions_SetBandMode(nn_compilation, extension_options_.band_mode);
+-  if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
+-    MS_LOG(ERROR) << "NNCompilation set BandMode failed, ret: " << ret_code;
+-    return kLiteError;
+-  }
++  if (hiai_handle_ != nullptr) {
++    if (extension_options_.band_mode != mindspore::lite::HIAI_BANDMODE_UNSET) {
++      ret_code = mindspore::lite::HMS_HiAIOptions_SetBandMode(nn_compilation, extension_options_.band_mode);
++      if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
++        MS_LOG(ERROR) << "NNCompilation set BandMode failed, ret: " << ret_code;
++        return kLiteError;
++      }
++    }
+ 
+-  if (extension_options_.quant_config != nullptr && extension_options_.quant_config_size != 0) {
+-    ret_code = mindspore::lite::HMS_HiAIOptions_SetQuantConfig(nn_compilation,
+-                                                                      extension_options_.quant_config,
+-                                                                      extension_options_.quant_config_size);
+-    if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
+-      MS_LOG(ERROR) << "NNCompilation set QuantConfig failed, ret: " << ret_code;
+-      return kLiteError;
++    if (extension_options_.is_optional_quant_setted) {
++      if (extension_options_.quant_config == nullptr || extension_options_.quant_config_size <= 0) {
++        MS_LOG(ERROR) << "NNCompilation set QuantConfig faild, input quant config is invalid, please make sure buffer "
++                      << "is not null and size > 0.";
++        return kLiteError;
++      }
++      ret_code = mindspore::lite::HMS_HiAIOptions_SetQuantConfig(nn_compilation, extension_options_.quant_config,
++                                                                 extension_options_.quant_config_size);
++      if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
++        MS_LOG(ERROR) << "NNCompilation set QuantConfig failed, ret: " << ret_code;
++        return kLiteError;
++      }
+     }
++  } else {
++    MS_LOG(WARNING) << "hiai_foundation is nullptr.";
+   }
+ #endif
+ 
+@@ -664,7 +673,7 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive>
        continue ;
      }
  
@@ -611,6 +781,22 @@ index 00000000..f8055686
 +}  // namespace mindspore::lite
 +
 +#endif  // MINDSPORE_LITE_SRC_RUNTIME_DELEGATE_NNRT_UTILS_H
+diff --git a/mindspore/lite/src/litert/infer_manager.cc b/mindspore/lite/src/litert/infer_manager.cc
+index 908ab122..3a5f8832 100644
+--- a/mindspore/lite/src/litert/infer_manager.cc
++++ b/mindspore/lite/src/litert/infer_manager.cc
+@@ -208,7 +208,10 @@ int KernelInferShape(const std::vector<lite::Tensor *> &inputs, const std::vecto
+         return tensor_ret;
+       }
+     } else {
+-      if (out_tensors.at(i)->data_ != nullptr) {
++      // During the online phase of shape operator fusion, the output data is computed in advance during the infer shape
++      // stage. Therefore, the output data is not nullptr and is constant.
++      if (parameter->type_ == static_cast<int>(PrimType::PrimType_Inner_ShapeFusion) &&
++          out_tensors.at(i)->data_ != nullptr) {
+         outputs.at(i)->set_own_data(true);
+         outputs.at(i)->set_category(CONST_TENSOR);
+       }
 diff --git a/mindspore/lite/src/tensor.cc b/mindspore/lite/src/tensor.cc
 index a7bb1899..9d9a1491 100644
 --- a/mindspore/lite/src/tensor.cc
