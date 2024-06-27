@@ -1,14 +1,15 @@
-From 7aa0a7bde120a88562e851b943d7682e5cf6ebf7 Mon Sep 17 00:00:00 2001
+From 986c69df1307a8f6a53990627986bc621b2ef3d6 Mon Sep 17 00:00:00 2001
 From: zhangyanhui <zhangyanhui17@huawei.com>
-Date: Tue, 9 Apr 2024 19:45:33 +0800
+Date: Fri, 21 Jun 2024 16:33:30 +0800
 Subject: [PATCH] auto-apply 0015-bugfix-for-cpu-kernel.patch
 
 ---
  .../cpu/kernel/nnacl/infer/where_infer.c      | 66 ++++++-------
+ .../device/cpu/kernel/nnacl/kernel/clip.c     |  2 +
  .../src/litert/kernel/cpu/fp32/where_fp32.cc  | 96 ++++++++++++++++---
  .../src/litert/kernel/cpu/fp32/where_fp32.h   |  2 +
  .../lite/tools/optimizer/fusion/glu_fusion.h  |  4 +-
- 4 files changed, 116 insertions(+), 52 deletions(-)
+ 5 files changed, 118 insertions(+), 52 deletions(-)
 
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/where_infer.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/where_infer.c
 index f6d4e1b2..c714627a 100644
@@ -99,6 +100,19 @@ index f6d4e1b2..c714627a 100644
    return NNACL_OK;
  }
  
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/clip.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/clip.c
+index ece0eff0..ae8ac5d8 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/clip.c
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/clip.c
+@@ -81,6 +81,8 @@ int ClipCompute(struct KernelBase *self) {
+   NNACL_CHECK_NULL_RETURN_ERR(clip);
+   ClipParameter *param = (ClipParameter *)clip->base_.param_;
+   NNACL_CHECK_NULL_RETURN_ERR(param);
++  clip->min_val_ = param->min_val_;
++  clip->max_val_ = param->max_val_;
+ 
+   int ret = NNACL_OK;
+   if (clip->base_.in_size_ > ONE_TENSOR) {
 diff --git a/mindspore/lite/src/litert/kernel/cpu/fp32/where_fp32.cc b/mindspore/lite/src/litert/kernel/cpu/fp32/where_fp32.cc
 index d7c987e3..a73fda7c 100644
 --- a/mindspore/lite/src/litert/kernel/cpu/fp32/where_fp32.cc
