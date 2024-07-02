@@ -363,6 +363,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     MSModelFuzzTest_Null(data, size);
     MSContextFuzzTest_Null(data, size);
     MSTensorFuzzTest_Null(data, size);
-	MSContextFuzzTest(data, size);
+    MSContextFuzzTest(data, size);
     return 0;
 }

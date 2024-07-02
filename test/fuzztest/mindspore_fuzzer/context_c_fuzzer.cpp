@@ -85,7 +85,6 @@ bool MSContextFuzzTest_ThreadNum_Add1(const uint8_t *data, size_t size) {
     int32_t threadNum = dataFuzz.GetData<int32_t>();
     OH_AI_ContextSetThreadNum(context, threadNum);
     AddContextDeviceCPU(context);
-    AddContextDeviceNNRT(context);
 
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
@@ -107,7 +106,6 @@ bool MSContextFuzzTest_ThreadAffinityMode_Add1(const uint8_t *data, size_t size)
     int32_t affinityMode = dataFuzz.GetData<int32_t>();
     OH_AI_ContextSetThreadAffinityMode(context, affinityMode);
     AddContextDeviceCPU(context);
-    AddContextDeviceNNRT(context);
 
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
@@ -136,8 +134,6 @@ bool MSContextFuzzTest_Provider_Add1(const uint8_t *data, size_t size) {
     OH_AI_DeviceInfoSetProviderDevice(cpuDeviceInfo, infoProvider);
     OH_AI_ContextAddDeviceInfo(context, cpuDeviceInfo);
 
-    AddContextDeviceNNRT(context);
-
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
         printf("create model failed.\n");
@@ -158,7 +154,6 @@ bool MSContextFuzzTest_ThreadNum_Add2(const uint8_t *data, size_t size) {
     int32_t threadNum = dataFuzz.GetData<int32_t>();
     OH_AI_ContextSetThreadNum(context, threadNum);
     AddContextDeviceCPU(context);
-    AddContextDeviceNNRT(context);
 
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
@@ -180,7 +175,6 @@ bool MSContextFuzzTest_ThreadAffinityMode_Add2(const uint8_t *data, size_t size)
     int32_t affinityMode = dataFuzz.GetData<int32_t>();
     OH_AI_ContextSetThreadAffinityMode(context, affinityMode);
     AddContextDeviceCPU(context);
-    AddContextDeviceNNRT(context);
 
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
@@ -209,8 +203,6 @@ bool MSContextFuzzTest_Provider_Add2(const uint8_t *data, size_t size) {
     OH_AI_DeviceInfoSetProviderDevice(cpuDeviceInfo, infoProvider);
     OH_AI_ContextAddDeviceInfo(context, cpuDeviceInfo);
 
-    AddContextDeviceNNRT(context);
-
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
         printf("create model failed.\n");
@@ -231,7 +223,6 @@ bool MSContextFuzzTest_ThreadNum_Add3(const uint8_t *data, size_t size) {
     int32_t threadNum = dataFuzz.GetData<int32_t>();
     OH_AI_ContextSetThreadNum(context, threadNum);
     AddContextDeviceCPU(context);
-    AddContextDeviceNNRT(context);
 
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
@@ -253,7 +244,6 @@ bool MSContextFuzzTest_ThreadNum_Add4(const uint8_t *data, size_t size) {
     int32_t threadNum = dataFuzz.GetData<int32_t>();
     OH_AI_ContextSetThreadNum(context, threadNum);
     AddContextDeviceCPU(context);
-    AddContextDeviceNNRT(context);
 
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
@@ -275,7 +265,6 @@ bool MSContextFuzzTest_ThreadAffinityMode_Add3(const uint8_t *data, size_t size)
     int32_t affinityMode = dataFuzz.GetData<int32_t>();
     OH_AI_ContextSetThreadAffinityMode(context, affinityMode);
     AddContextDeviceCPU(context);
-    AddContextDeviceNNRT(context);
 
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
@@ -297,7 +286,6 @@ bool MSContextFuzzTest_ThreadAffinityMode_Add4(const uint8_t *data, size_t size)
     int32_t affinityMode = dataFuzz.GetData<int32_t>();
     OH_AI_ContextSetThreadAffinityMode(context, affinityMode);
     AddContextDeviceCPU(context);
-    AddContextDeviceNNRT(context);
 
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
@@ -326,8 +314,6 @@ bool MSContextFuzzTest_Provider_Add3(const uint8_t* data, size_t size) {
     OH_AI_DeviceInfoSetProviderDevice(cpuDeviceInfo, infoProvider);
     OH_AI_ContextAddDeviceInfo(context, cpuDeviceInfo);
 
-    AddContextDeviceNNRT(context);
-
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
         printf("create model failed.\n");
@@ -354,8 +340,6 @@ bool MSContextFuzzTest_Provider_Add4(const uint8_t *data, size_t size) {
     OH_AI_DeviceInfoSetProvider(cpuDeviceInfo, infoProvider);
     OH_AI_DeviceInfoSetProviderDevice(cpuDeviceInfo, infoProvider);
     OH_AI_ContextAddDeviceInfo(context, cpuDeviceInfo);
-
-    AddContextDeviceNNRT(context);
 
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
