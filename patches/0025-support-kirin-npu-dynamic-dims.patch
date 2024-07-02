@@ -1,12 +1,13 @@
-From ae7c49e1a023af6e5d164da129ec938b8768fdbc Mon Sep 17 00:00:00 2001
+From 2d825c5ee1c343ff72332dbbfd9f8b3cd1658344 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Fri, 21 Jun 2024 14:32:18 +0800
-Subject: [PATCH] support kirin npu dynamic dims
+Date: Tue, 2 Jul 2024 11:52:02 +0800
+Subject: [PATCH] fix quant build time too long
 
 ---
  .../core/mindrt/src/thread/core_affinity.cc   |   2 +-
  .../core/mindrt/src/thread/threadpool.cc      |   2 +-
  mindspore/lite/BUILD.gn                       |   1 +
+ mindspore/lite/src/common/context_util.cc     |   3 +-
  mindspore/lite/src/litert/c_api/context_c.cc  |  11 +-
  mindspore/lite/src/litert/c_api/tensor_c.cc   |   2 +-
  .../delegate/nnrt/extension_options_parser.cc |   6 +-
@@ -21,7 +22,7 @@ Subject: [PATCH] support kirin npu dynamic dims
  .../src/litert/delegate/nnrt/nnrt_utils.h     |  29 +++++
  mindspore/lite/src/litert/infer_manager.cc    |   5 +-
  mindspore/lite/src/tensor.cc                  |  16 ++-
- 17 files changed, 302 insertions(+), 114 deletions(-)
+ 18 files changed, 303 insertions(+), 116 deletions(-)
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.cc
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.h
 
@@ -63,6 +64,20 @@ index 124c84c9..acee9733 100644
      ]
      include_dirs += [
        "src/delegate/nnrt/include",
+diff --git a/mindspore/lite/src/common/context_util.cc b/mindspore/lite/src/common/context_util.cc
+index 0fa4ebd0..dae3a7cc 100644
+--- a/mindspore/lite/src/common/context_util.cc
++++ b/mindspore/lite/src/common/context_util.cc
+@@ -185,8 +185,7 @@ bool DeviceTypePriority(const InnerContext *context, int device_type1, int devic
+   if (context == nullptr) {
+     return false;
+   }
+-  std::vector<DeviceContext> device_infos = context->device_list_;
+-  for (DeviceContext device_info : device_infos) {
++  for (const DeviceContext& device_info : context->device_list_) {
+     if (device_info.device_type_ == device_type1) {
+       return true;
+     }
 diff --git a/mindspore/lite/src/litert/c_api/context_c.cc b/mindspore/lite/src/litert/c_api/context_c.cc
 index 6b6a50d5..2fe3b055 100644
 --- a/mindspore/lite/src/litert/c_api/context_c.cc
