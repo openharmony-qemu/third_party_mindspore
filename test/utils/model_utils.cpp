@@ -208,6 +208,33 @@ void ModelPredict(OH_AI_ModelHandle model, OH_AI_ContextHandle context, std::str
     printf("=========OH_AI_ModelDestroy End===========\n");
 }
 
+// add invalid model_type
+void ModelPredict_ModelBuild(OH_AI_ModelHandle model, OH_AI_ContextHandle context, std::string modelName,
+                             bool buildByGraph) {
+    std::string modelPath = g_testResourcesDir + modelName + ".ms";
+    const char *graphPath = modelPath.c_str();
+    OH_AI_Status ret = OH_AI_STATUS_SUCCESS;
+    if (buildByGraph) {
+        printf("==========Build model by graphBuf==========\n");
+        size_t size;
+        size_t *ptrSize = &size;
+        char *graphBuf = ReadFile(graphPath, ptrSize);
+        ASSERT_NE(graphBuf, nullptr);
+        ret = OH_AI_ModelBuild(model, graphBuf, size, OH_AI_MODELTYPE_INVALID, context);
+        if (ret != OH_AI_STATUS_LITE_PARAM_INVALID) {
+            printf("OH_AI_ModelBuild failed due to model_type is OH_AI_MODELTYPE_INVALID.\n");
+        }
+        delete[] graphBuf;
+    } else {
+        printf("==========Build model==========\n");
+        ret = OH_AI_ModelBuildFromFile(model, graphPath, OH_AI_MODELTYPE_INVALID, context);
+        if (ret != OH_AI_STATUS_LITE_PARAM_INVALID) {
+            printf("OH_AI_ModelBuildFromFile failed due to model_type is OH_AI_MODELTYPE_INVALID.\n");
+        }
+    }
+    printf("==========build model return code:%d\n", ret);
+}
+
 // model train build and predict
 void ModelTrain(OH_AI_ModelHandle model, OH_AI_ContextHandle context, std::string modelName,
                 OH_AI_ShapeInfo shapeInfos, bool buildByGraph, bool isTranspose, bool isCallback) {

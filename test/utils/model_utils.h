@@ -42,6 +42,8 @@ void CompareResult(OH_AI_TensorHandleArray outputs, std::string modelName, float
 // model build and predict
 void ModelPredict(OH_AI_ModelHandle model, OH_AI_ContextHandle context, std::string modelName,
                   OH_AI_ShapeInfo shapeInfos, bool buildByGraph, bool isTranspose, bool isCallback);
+void ModelPredict_ModelBuild(OH_AI_ModelHandle model, OH_AI_ContextHandle context, std::string modelName,
+                             bool buildByGraph);
 void ModelTrain(OH_AI_ModelHandle model, OH_AI_ContextHandle context, std::string modelName,
                 OH_AI_ShapeInfo shapeInfos, bool buildByGraph, bool isTranspose, bool isCallback);
 
