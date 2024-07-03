@@ -74,7 +74,6 @@ bool MSContextFuzzTest_Provider(const uint8_t *data, size_t size) {
 }
 
 
-// add OH_AI_ModelBuild(model, graphBuf, size, OH_AI_MODELTYPE_MINDIR, context)
 bool MSContextFuzzTest_ThreadNum_Add1(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -95,7 +94,6 @@ bool MSContextFuzzTest_ThreadNum_Add1(const uint8_t *data, size_t size) {
     return true;
 }
 
-// add OH_AI_ModelBuild(model, graphBuf, size, OH_AI_MODELTYPE_MINDIR, context)
 bool MSContextFuzzTest_ThreadAffinityMode_Add1(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -116,7 +114,6 @@ bool MSContextFuzzTest_ThreadAffinityMode_Add1(const uint8_t *data, size_t size)
     return true;
 }
 
-// add OH_AI_ModelBuild(model, graphBuf, size, OH_AI_MODELTYPE_MINDIR, context)
 bool MSContextFuzzTest_Provider_Add1(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -143,7 +140,6 @@ bool MSContextFuzzTest_Provider_Add1(const uint8_t *data, size_t size) {
     return true;
 }
 
-// add OH_AI_ModelPredict(model, inputs, &outputs, beforeCallBack, afterCallBack);
 bool MSContextFuzzTest_ThreadNum_Add2(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -164,7 +160,6 @@ bool MSContextFuzzTest_ThreadNum_Add2(const uint8_t *data, size_t size) {
     return true;
 }
 
-// add OH_AI_ModelPredict(model, inputs, &outputs, beforeCallBack, afterCallBack);
 bool MSContextFuzzTest_ThreadAffinityMode_Add2(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -185,7 +180,6 @@ bool MSContextFuzzTest_ThreadAffinityMode_Add2(const uint8_t *data, size_t size)
     return true;
 }
 
-// add OH_AI_ModelPredict(model, inputs, &outputs, beforeCallBack, afterCallBack);
 bool MSContextFuzzTest_Provider_Add2(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -212,7 +206,6 @@ bool MSContextFuzzTest_Provider_Add2(const uint8_t *data, size_t size) {
     return true;
 }
 
-// add OH_AI_ModelBuild(model, graphBuf, size, OH_AI_MODELTYPE_INVALID, context)
 bool MSContextFuzzTest_ThreadNum_Add3(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -233,7 +226,6 @@ bool MSContextFuzzTest_ThreadNum_Add3(const uint8_t *data, size_t size) {
     return true;
 }
 
-// add OH_AI_ModelBuild(model, graphBuf, size, OH_AI_MODELTYPE_INVALID, context)
 bool MSContextFuzzTest_ThreadNum_Add4(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -254,7 +246,6 @@ bool MSContextFuzzTest_ThreadNum_Add4(const uint8_t *data, size_t size) {
     return true;
 }
 
-// add OH_AI_ModelBuild(model, graphBuf, size, OH_AI_MODELTYPE_INVALID, context)
 bool MSContextFuzzTest_ThreadAffinityMode_Add3(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -275,7 +266,6 @@ bool MSContextFuzzTest_ThreadAffinityMode_Add3(const uint8_t *data, size_t size)
     return true;
 }
 
-// add OH_AI_ModelBuild(model, graphBuf, size, OH_AI_MODELTYPE_INVALID, context)
 bool MSContextFuzzTest_ThreadAffinityMode_Add4(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -296,7 +286,6 @@ bool MSContextFuzzTest_ThreadAffinityMode_Add4(const uint8_t *data, size_t size)
     return true;
 }
 
-// add OH_AI_ModelBuild(model, graphBuf, size, OH_AI_MODELTYPE_INVALID, context)
 bool MSContextFuzzTest_Provider_Add3(const uint8_t* data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -323,7 +312,6 @@ bool MSContextFuzzTest_Provider_Add3(const uint8_t* data, size_t size) {
     return true;
 }
 
-// add OH_AI_ModelBuild(model, graphBuf, size, OH_AI_MODELTYPE_INVALID, context)
 bool MSContextFuzzTest_Provider_Add4(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();
     if (context == nullptr) {
@@ -346,7 +334,7 @@ bool MSContextFuzzTest_Provider_Add4(const uint8_t *data, size_t size) {
         printf("create model failed.\n");
         return false;
     }
-    ModelPredict_ModelBuild(model, context, "ml_face_isface",false);
+    ModelPredict_ModelBuild(model, context, "ml_face_isface", false);
     return true;
 }
 
