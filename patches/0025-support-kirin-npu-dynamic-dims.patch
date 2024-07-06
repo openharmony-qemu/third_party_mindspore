@@ -1,7 +1,7 @@
-From 2d825c5ee1c343ff72332dbbfd9f8b3cd1658344 Mon Sep 17 00:00:00 2001
+From 74ec0f8dcc86556745b1686199768030d50d2827 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Tue, 2 Jul 2024 11:52:02 +0800
-Subject: [PATCH] fix quant build time too long
+Date: Sat, 6 Jul 2024 11:03:18 +0800
+Subject: [PATCH] fix npu memory growth
 
 ---
  .../core/mindrt/src/thread/core_affinity.cc   |   2 +-
@@ -13,7 +13,7 @@ Subject: [PATCH] fix quant build time too long
  .../delegate/nnrt/extension_options_parser.cc |   6 +-
  .../delegate/nnrt/extension_options_parser.h  |   4 +-
  .../delegate/nnrt/hiai_foundation_wrapper.cc  |   1 +
- .../litert/delegate/nnrt/nnrt_allocator.cc    |  53 +++++++--
+ .../litert/delegate/nnrt/nnrt_allocator.cc    |  65 ++++++++--
  .../src/litert/delegate/nnrt/nnrt_allocator.h |   4 +
  .../src/litert/delegate/nnrt/nnrt_delegate.cc |  43 ++++---
  .../litert/delegate/nnrt/nnrt_model_kernel.cc | 112 +++++++-----------
@@ -22,7 +22,7 @@ Subject: [PATCH] fix quant build time too long
  .../src/litert/delegate/nnrt/nnrt_utils.h     |  29 +++++
  mindspore/lite/src/litert/infer_manager.cc    |   5 +-
  mindspore/lite/src/tensor.cc                  |  16 ++-
- 18 files changed, 303 insertions(+), 116 deletions(-)
+ 18 files changed, 310 insertions(+), 121 deletions(-)
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.cc
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.h
 
@@ -201,7 +201,7 @@ index e7a52827..a155b761 100644
    }
  
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
-index b38fff62..7f5b230c 100644
+index b38fff62..18ce2206 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
 @@ -20,6 +20,7 @@
@@ -289,6 +289,39 @@ index b38fff62..7f5b230c 100644
  void NNRTAllocator::Free(void *ptr) {
    if (ptr == nullptr) {
      return;
+@@ -104,7 +141,9 @@ void NNRTAllocator::Free(void *ptr) {
+   auto membuf = iter->second;
+   membuf->ref_count_ = 0;
+   (void)allocated_list_.erase(iter);
+-  (void)free_list_.insert(std::make_pair(membuf->size, membuf));
++  OH_NNTensor_Destroy(&membuf->tensor_);
++  OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
++  delete membuf;
+ }
+ 
+ int NNRTAllocator::RefCount(void *ptr) {
+@@ -143,8 +182,8 @@ int NNRTAllocator::DecRefCount(void *ptr, int ref_count) {
+   auto iter = allocated_list_.find(ptr);
+   if (iter != allocated_list_.end()) {
+     auto membuf = iter->second;
+-    auto ref = std::atomic_fetch_sub(&membuf->ref_count_, ref_count);
+-    return ref;
++    std::atomic_fetch_sub(&membuf->ref_count_, ref_count);
++    return membuf->ref_count_;
+   }
+   return -1;
+ }
+@@ -157,8 +196,8 @@ int NNRTAllocator::IncRefCount(void *ptr, int ref_count) {
+   auto iter = allocated_list_.find(ptr);
+   if (iter != allocated_list_.end()) {
+     auto membuf = iter->second;
+-    auto ref = std::atomic_fetch_add(&membuf->ref_count_, ref_count);
+-    return ref;
++    std::atomic_fetch_add(&membuf->ref_count_, ref_count);
++    return membuf->ref_count_;
+   }
+   return -1;
+ }
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
 index 52e6def7..ef27f307 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
