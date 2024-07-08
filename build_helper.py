@@ -59,6 +59,7 @@ def do_patch(patch_dir, target_dir):
         '0023-support-x86-emulator-build.patch',
         '0024-fix-gcn-model-squeeze-transpose-infershape-not-do.patch',
         '0025-support-kirin-npu-dynamic-dims.patch',
+        '0026-fix-depthwise-conv-kernel.patch',
     ]
 
     cwd = os.getcwd()
