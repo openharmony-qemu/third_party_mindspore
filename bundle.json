@@ -16,7 +16,7 @@
         "SystemCapability.Ai.MindSpore",
         "SystemCapability.AI.MindSporeLite"
       ],
-      "feature": [ "mindspore_feature_nnrt_metagraph = false" ],
+      "features": [ "mindspore_feature_nnrt_metagraph" ],
       "adapted_system_type": [
         "standard"
       ],
