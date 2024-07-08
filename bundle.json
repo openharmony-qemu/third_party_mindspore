@@ -82,7 +82,7 @@
           }
         ],
         "test": [
-          "//third_party/mindspore/:mindspore-test"
+          "//third_party/mindspore:mindspore-test"
         ]
       }
     }
