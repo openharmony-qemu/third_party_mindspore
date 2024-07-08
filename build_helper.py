@@ -60,6 +60,8 @@ def do_patch(patch_dir, target_dir):
         '0024-fix-gcn-model-squeeze-transpose-infershape-not-do.patch',
         '0025-support-kirin-npu-dynamic-dims.patch',
         '0026-fix-depthwise-conv-kernel.patch',
+
+        '0028-fix-onnx-parser-and-cpu-kernel.patch',
     ]
 
     cwd = os.getcwd()
