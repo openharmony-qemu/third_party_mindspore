@@ -51,12 +51,8 @@ HWTEST(MSLiteNnrtTest, Nnrt_ContextTest, testing::ext::TestSize.Level0) {
         std::cout << "NNRT device: id = " << id << ", name: " << name << ", type:" << type << std::endl;
     }
 
-    for (size_t i = 0; i < num; i++) {
-        auto desc = OH_AI_GetElementOfNNRTDeviceDescs(descs, i);
-        ASSERT_NE(desc, nullptr);
-        OH_AI_DestroyAllNNRTDeviceDescs(&desc);
-        ASSERT_EQ(desc, nullptr);
-    }
+    OH_AI_DestroyAllNNRTDeviceDescs(&descs);
+    ASSERT_EQ(descs, nullptr);
 }
 
 /*
