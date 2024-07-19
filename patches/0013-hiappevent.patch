@@ -1,20 +1,20 @@
-From cc3acf5294ab5bb1f5a00bab8e394ff469dd18c8 Mon Sep 17 00:00:00 2001
+From 4c255522b8ad0325e00dcd4d65bb909f6b7e1ab3 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Tue, 23 Apr 2024 15:07:11 +0800
-Subject: [PATCH] hiappevent report async
+Date: Fri, 19 Jul 2024 10:43:48 +0800
+Subject: [PATCH] hiappevent not report when not hap
 
 ---
  mindspore/lite/BUILD.gn                       |   2 +
  mindspore/lite/src/common/BUILD.gn            |   5 +
  .../src/common/hi_app_event/handler_thread.cc | 143 ++++++++++++++++++
  .../src/common/hi_app_event/handler_thread.h  | 102 +++++++++++++
- .../src/common/hi_app_event/hi_app_event.cc   |  76 ++++++++++
+ .../src/common/hi_app_event/hi_app_event.cc   |  80 ++++++++++
  .../src/common/hi_app_event/hi_app_event.h    |  31 ++++
  .../hi_app_event/hi_app_event_config.cc       |  57 +++++++
  .../common/hi_app_event/hi_app_event_config.h |  45 ++++++
  mindspore/lite/src/litert/c_api/model_c.cc    |   6 +
  .../lite/src/litert/cxx_api/model/model.cc    |  96 +++++++++++-
- 10 files changed, 559 insertions(+), 4 deletions(-)
+ 10 files changed, 563 insertions(+), 4 deletions(-)
  create mode 100644 mindspore/lite/src/common/hi_app_event/handler_thread.cc
  create mode 100644 mindspore/lite/src/common/hi_app_event/handler_thread.h
  create mode 100644 mindspore/lite/src/common/hi_app_event/hi_app_event.cc
@@ -74,7 +74,7 @@ index 8bb14a30..e08e09ce 100644
      defines += [
 diff --git a/mindspore/lite/src/common/hi_app_event/handler_thread.cc b/mindspore/lite/src/common/hi_app_event/handler_thread.cc
 new file mode 100644
-index 00000000..a23ed69b
+index 00000000..a84504c0
 --- /dev/null
 +++ b/mindspore/lite/src/common/hi_app_event/handler_thread.cc
 @@ -0,0 +1,143 @@
@@ -332,10 +332,10 @@ index 00000000..91e5cc19
 +#endif  // LITE_HANDLER_THREAD_H
 diff --git a/mindspore/lite/src/common/hi_app_event/hi_app_event.cc b/mindspore/lite/src/common/hi_app_event/hi_app_event.cc
 new file mode 100644
-index 00000000..8903260d
+index 00000000..ab46cde3
 --- /dev/null
 +++ b/mindspore/lite/src/common/hi_app_event/hi_app_event.cc
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,80 @@
 +/**
 + * Copyright 2024 Huawei Technologies Co., Ltd
 + *
@@ -370,6 +370,7 @@ index 00000000..8903260d
 +constexpr auto kDomain = "api_diagnostic";
 +constexpr auto kEventName = "api_exec_end";
 +constexpr auto kSdkName = "MindSporeLiteKit";
++constexpr int64_t kAppEventNotHapErrCode = -200;
 +static int64_t process_id = -1;
 +}
 +
@@ -397,6 +398,9 @@ index 00000000..8903260d
 +
 +void HiAppEventWriteEndEvent(const int result, const int err_code, const std::string &api_name,
 +                             const uint64_t begin_time, const std::string &devices) {
++  if (process_id == kAppEventNotHapErrCode) {
++    return;
++  }
 +  OHOS::HiviewDFX::HiAppEvent::Event event(kDomain, kEventName, OHOS::HiviewDFX::HiAppEvent::BEHAVIOR);
 +  event.AddParam("trans_id", "transId_" + std::to_string(std::rand() + HiAppEventConfig::GetInstance()->GetTimeMs()));
 +  event.AddParam("api_name", api_name);
