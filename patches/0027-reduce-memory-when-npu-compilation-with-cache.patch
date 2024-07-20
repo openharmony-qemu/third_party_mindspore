@@ -1,7 +1,7 @@
-From 4d2333ad11f46504793d84358d387ceb3ca6ee36 Mon Sep 17 00:00:00 2001
+From 26c5fdaba564763f30c01d7cdd88b8fa362e5717 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Fri, 19 Jul 2024 18:42:34 +0800
-Subject: [PATCH] fix asr infer time long
+Date: Sat, 20 Jul 2024 10:19:14 +0800
+Subject: [PATCH] update hasCache api
 
 ---
  .../core/mindrt/src/thread/core_affinity.cc   |   2 +-
@@ -10,13 +10,13 @@ Subject: [PATCH] fix asr infer time long
  mindspore/lite/src/common/mmap_utils.h        |   2 +-
  mindspore/lite/src/litert/cache_session.cc    | 424 ++++++++++++++++++
  mindspore/lite/src/litert/cache_session.h     | 129 ++++++
- .../src/litert/cxx_api/model/model_impl.cc    |  35 +-
+ .../src/litert/cxx_api/model/model_impl.cc    |  36 +-
  .../delegate/nnrt/extension_options_parser.cc |  12 +
  .../delegate/nnrt/extension_options_parser.h  |   2 +
  mindspore/lite/src/litert/lite_model.cc       |  12 +-
  mindspore/lite/src/litert/lite_model.h        |   2 +-
  mindspore/lite/src/litert/lite_session.h      |   6 +-
- 12 files changed, 625 insertions(+), 15 deletions(-)
+ 12 files changed, 626 insertions(+), 15 deletions(-)
  create mode 100644 mindspore/lite/src/litert/cache_session.cc
  create mode 100644 mindspore/lite/src/litert/cache_session.h
 
@@ -655,7 +655,7 @@ index 00000000..f0ae185a
 +
 +#endif  // MINDSPORE_LITE_SRC_LITERT_CACHE_SESSION_H_
 diff --git a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
-index 02533dc3..35e3e044 100644
+index 02533dc3..cacbf86e 100644
 --- a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
 +++ b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
 @@ -39,6 +39,11 @@
@@ -670,7 +670,7 @@ index 02533dc3..35e3e044 100644
  namespace mindspore {
  namespace {
  const char *const kExecutionPlan = "execution_plan";
-@@ -1006,7 +1011,35 @@ float ModelImpl::GetLearningRate() {
+@@ -1006,7 +1011,36 @@ float ModelImpl::GetLearningRate() {
  }
  
  lite::LiteSession *ModelImpl::CreateLiteSession(const std::shared_ptr<lite::InnerContext> &context) {
@@ -689,7 +689,8 @@ index 02533dc3..35e3e044 100644
 +      const auto &extensions = nnrt_device_info.extensions_;
 +      lite::nnrt::ExtensionOptions extension_options;
 +      mindspore::lite::nnrt::ExtensionOptionsParser::Parse(extensions, &extension_options);
-+      auto has_cache = OH_NNModel_HasCache(extension_options.cache_path_.c_str(), extension_options.model_name.c_str());
++      auto has_cache = OH_NNModel_HasCache(extension_options.cache_path_.c_str(), extension_options.model_name.c_str(),
++                                           extension_options.cache_version_);
 +      if (has_cache) {
 +        session = reinterpret_cast<lite::LiteSession *>(new (std::nothrow) lite::CacheSession());
 +        if (session == nullptr) {
