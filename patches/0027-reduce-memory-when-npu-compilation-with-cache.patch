@@ -1,14 +1,14 @@
-From 26c5fdaba564763f30c01d7cdd88b8fa362e5717 Mon Sep 17 00:00:00 2001
+From fcce2a2794417a6ff16148dbb751e402e476084a Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Sat, 20 Jul 2024 10:19:14 +0800
-Subject: [PATCH] update hasCache api
+Date: Tue, 23 Jul 2024 10:46:59 +0800
+Subject: [PATCH] fix memory leak
 
 ---
  .../core/mindrt/src/thread/core_affinity.cc   |   2 +-
  mindspore/lite/BUILD.gn                       |   5 +-
- mindspore/lite/src/common/mmap_utils.cc       |   9 +-
+ mindspore/lite/src/common/mmap_utils.cc       |  14 +-
  mindspore/lite/src/common/mmap_utils.h        |   2 +-
- mindspore/lite/src/litert/cache_session.cc    | 424 ++++++++++++++++++
+ mindspore/lite/src/litert/cache_session.cc    | 425 ++++++++++++++++++
  mindspore/lite/src/litert/cache_session.h     | 129 ++++++
  .../src/litert/cxx_api/model/model_impl.cc    |  36 +-
  .../delegate/nnrt/extension_options_parser.cc |  12 +
@@ -16,7 +16,7 @@ Subject: [PATCH] update hasCache api
  mindspore/lite/src/litert/lite_model.cc       |  12 +-
  mindspore/lite/src/litert/lite_model.h        |   2 +-
  mindspore/lite/src/litert/lite_session.h      |   6 +-
- 12 files changed, 626 insertions(+), 15 deletions(-)
+ 12 files changed, 631 insertions(+), 16 deletions(-)
  create mode 100644 mindspore/lite/src/litert/cache_session.cc
  create mode 100644 mindspore/lite/src/litert/cache_session.h
 
@@ -50,7 +50,7 @@ index acee9733..d8ed3b44 100644
      }
      sources += [
 diff --git a/mindspore/lite/src/common/mmap_utils.cc b/mindspore/lite/src/common/mmap_utils.cc
-index ca8f8d1e..df636cc1 100644
+index ca8f8d1e..0dd31f7c 100644
 --- a/mindspore/lite/src/common/mmap_utils.cc
 +++ b/mindspore/lite/src/common/mmap_utils.cc
 @@ -24,7 +24,7 @@
@@ -76,6 +76,18 @@ index ca8f8d1e..df636cc1 100644
    close(fd);
    if (mmap_buffers == MAP_FAILED) {
      MS_LOG(ERROR) << "Model mmap failed.";
+@@ -54,7 +59,10 @@ void *ReadFileByMmap(const std::string &file, size_t *size) {
+ 
+ void UnmapMmapBuffer(void *buffer, size_t size) {
+ #if !defined(_WIN32) && !defined(_WIN64)
+-  (void)munmap(buffer, size);
++  auto ret = munmap(buffer, size);
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "munmap failed ret: " << ret << ", err: " << strerror(errno);
++  }
+ #else
+   MS_LOG(ERROR) << "Mmap is unsupported on windows.";
+ #endif
 diff --git a/mindspore/lite/src/common/mmap_utils.h b/mindspore/lite/src/common/mmap_utils.h
 index bdd7c9a5..d3b0ec5f 100644
 --- a/mindspore/lite/src/common/mmap_utils.h
@@ -91,10 +103,10 @@ index bdd7c9a5..d3b0ec5f 100644
  }  // namespace mindspore
 diff --git a/mindspore/lite/src/litert/cache_session.cc b/mindspore/lite/src/litert/cache_session.cc
 new file mode 100644
-index 00000000..4141270c
+index 00000000..7bafe3f7
 --- /dev/null
 +++ b/mindspore/lite/src/litert/cache_session.cc
-@@ -0,0 +1,424 @@
+@@ -0,0 +1,425 @@
 +/**
 + * Copyright 2024 Huawei Technologies Co., Ltd
 + *
@@ -346,6 +358,7 @@ index 00000000..4141270c
 +    return nullptr;
 +  }
 +  model->buf = const_cast<char *>(model_buf);
++  model->buf_size_ = size;
 +  return model;
 +}
 +
