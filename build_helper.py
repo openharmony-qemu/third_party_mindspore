@@ -63,6 +63,7 @@ def do_patch(patch_dir, target_dir):
         '0027-reduce-memory-when-npu-compilation-with-cache.patch',
         '0028-fix-onnx-parser-and-cpu-kernel.patch',
         '0029-revert-cache-executor.patch',
+        '0030-generate-flatbuffer-notice.patch',
     ]
 
     cwd = os.getcwd()
