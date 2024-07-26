@@ -51,11 +51,21 @@ bool MSContextFuzzTest_Provider(const uint8_t *data, size_t size) {
         printf("create context failed.\n");
         return false;
     }
-    const char *infoProvider = reinterpret_cast<const char *>(data);
+    char *infoProvider = static_cast<char *>(malloc(size + 1));
+    if (infoProvider == nullptr) {
+        printf("malloc failed.\n");
+        return false;
+    }
+    if (memcpy_s(infoProvider, size + 1, data, size) != EOK) {
+        LOGE("memcpy_s failed.");
+        return false;
+    }
+    infoProvider[size] = '\0';
     OH_AI_DeviceInfoHandle cpuDeviceInfo = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
     if (cpuDeviceInfo == nullptr) {
         printf("OH_AI_DeviceInfoCreate failed.\n");
         OH_AI_ContextDestroy(&context);
+        free(infoProvider);
         return OH_AI_STATUS_LITE_ERROR;
     }
     OH_AI_DeviceInfoSetProvider(cpuDeviceInfo, infoProvider);
@@ -67,9 +77,11 @@ bool MSContextFuzzTest_Provider(const uint8_t *data, size_t size) {
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
         printf("create model failed.\n");
+        free(infoProvider);
         return false;
     }
     ModelPredict(model, context, "ml_face_isface", {}, false, true, false);
+    free(infoProvider);
     return true;
 }
 
@@ -120,11 +132,21 @@ bool MSContextFuzzTest_Provider_Add1(const uint8_t *data, size_t size) {
         printf("create context failed.\n");
         return false;
     }
-    const char *infoProvider = reinterpret_cast<const char *>(data);
+    char *infoProvider = static_cast<char *>(malloc(size + 1));
+    if (infoProvider == nullptr) {
+        printf("malloc failed.\n");
+        return false;
+    }
+    if (memcpy_s(infoProvider, size + 1, data, size) != EOK) {
+        LOGE("memcpy_s failed.");
+        return false;
+    }
+    infoProvider[size] = '\0';
     OH_AI_DeviceInfoHandle cpuDeviceInfo = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
     if (cpuDeviceInfo == nullptr) {
         printf("OH_AI_DeviceInfoCreate failed.\n");
         OH_AI_ContextDestroy(&context);
+        free(infoProvider);
         return OH_AI_STATUS_LITE_ERROR;
     }
     OH_AI_DeviceInfoSetProvider(cpuDeviceInfo, infoProvider);
@@ -134,9 +156,11 @@ bool MSContextFuzzTest_Provider_Add1(const uint8_t *data, size_t size) {
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
         printf("create model failed.\n");
+        free(infoProvider);
         return false;
     }
     ModelPredict(model, context, "ml_face_isface", {}, true, true, false);
+    free(infoProvider);
     return true;
 }
 
@@ -186,11 +210,21 @@ bool MSContextFuzzTest_Provider_Add2(const uint8_t *data, size_t size) {
         printf("create context failed.\n");
         return false;
     }
-    const char *infoProvider = reinterpret_cast<const char *>(data);
+    char *infoProvider = static_cast<char *>(malloc(size + 1));
+    if (infoProvider == nullptr) {
+        printf("malloc failed.\n");
+        return false;
+    }
+    if (memcpy_s(infoProvider, size + 1, data, size) != EOK) {
+        LOGE("memcpy_s failed.");
+        return false;
+    }
+    infoProvider[size] = '\0';
     OH_AI_DeviceInfoHandle cpuDeviceInfo = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
     if (cpuDeviceInfo == nullptr) {
         printf("OH_AI_DeviceInfoCreate failed.\n");
         OH_AI_ContextDestroy(&context);
+        free(infoProvider);
         return OH_AI_STATUS_LITE_ERROR;
     }
     OH_AI_DeviceInfoSetProvider(cpuDeviceInfo, infoProvider);
@@ -200,9 +234,11 @@ bool MSContextFuzzTest_Provider_Add2(const uint8_t *data, size_t size) {
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
         printf("create model failed.\n");
+        free(infoProvider);
         return false;
     }
     ModelPredict(model, context, "ml_face_isface", {}, false, true, true);
+    free(infoProvider);
     return true;
 }
 
@@ -292,11 +328,21 @@ bool MSContextFuzzTest_Provider_Add3(const uint8_t* data, size_t size) {
         printf("create context failed.\n");
         return false;
     }
-    const char *infoProvider = reinterpret_cast<const char *>(data);
+    char *infoProvider = static_cast<char *>(malloc(size + 1));
+    if (infoProvider == nullptr) {
+        printf("malloc failed.\n");
+        return false;
+    }
+    if (memcpy_s(infoProvider, size + 1, data, size) != EOK) {
+        LOGE("memcpy_s failed.");
+        return false;
+    }
+    infoProvider[size] = '\0';
     OH_AI_DeviceInfoHandle cpuDeviceInfo = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
     if (cpuDeviceInfo == nullptr) {
         printf("OH_AI_DeviceInfoCreate failed.\n");
         OH_AI_ContextDestroy(&context);
+        free(infoProvider);
         return OH_AI_STATUS_LITE_ERROR;
     }
     OH_AI_DeviceInfoSetProvider(cpuDeviceInfo, infoProvider);
@@ -306,9 +352,11 @@ bool MSContextFuzzTest_Provider_Add3(const uint8_t* data, size_t size) {
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
         printf("create model failed.\n");
+        free(infoProvider);
         return false;
     }
     ModelPredict_ModelBuild(model, context, "ml_face_isface", true);
+    free(infoProvider);
     return true;
 }
 
@@ -318,11 +366,21 @@ bool MSContextFuzzTest_Provider_Add4(const uint8_t *data, size_t size) {
         printf("create context failed.\n");
         return false;
     }
-    const char *infoProvider = reinterpret_cast<const char *>(data);
+    char *infoProvider = static_cast<char *>(malloc(size + 1));
+    if (infoProvider == nullptr) {
+        printf("malloc failed.\n");
+        return false;
+    }
+    if (memcpy_s(infoProvider, size + 1, data, size) != EOK) {
+        LOGE("memcpy_s failed.");
+        return false;
+    }
+    infoProvider[size] = '\0';
     OH_AI_DeviceInfoHandle cpuDeviceInfo = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_CPU);
     if (cpuDeviceInfo == nullptr) {
         printf("OH_AI_DeviceInfoCreate failed.\n");
         OH_AI_ContextDestroy(&context);
+        free(infoProvider);
         return OH_AI_STATUS_LITE_ERROR;
     }
     OH_AI_DeviceInfoSetProvider(cpuDeviceInfo, infoProvider);
@@ -332,9 +390,11 @@ bool MSContextFuzzTest_Provider_Add4(const uint8_t *data, size_t size) {
     OH_AI_ModelHandle model = OH_AI_ModelCreate();
     if (model == nullptr) {
         printf("create model failed.\n");
+        free(infoProvider);
         return false;
     }
     ModelPredict_ModelBuild(model, context, "ml_face_isface", false);
+    free(infoProvider);
     return true;
 }
 
