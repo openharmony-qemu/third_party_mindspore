@@ -57,7 +57,8 @@ bool MSContextFuzzTest_Provider(const uint8_t *data, size_t size) {
         return false;
     }
     if (memcpy_s(infoProvider, size + 1, data, size) != EOK) {
-        LOGE("memcpy_s failed.");
+        printf("memcpy_s failed.");
+        free(infoProvider);
         return false;
     }
     infoProvider[size] = '\0';
@@ -138,7 +139,8 @@ bool MSContextFuzzTest_Provider_Add1(const uint8_t *data, size_t size) {
         return false;
     }
     if (memcpy_s(infoProvider, size + 1, data, size) != EOK) {
-        LOGE("memcpy_s failed.");
+        printf("memcpy_s failed.");
+        free(infoProvider);
         return false;
     }
     infoProvider[size] = '\0';
@@ -216,7 +218,8 @@ bool MSContextFuzzTest_Provider_Add2(const uint8_t *data, size_t size) {
         return false;
     }
     if (memcpy_s(infoProvider, size + 1, data, size) != EOK) {
-        LOGE("memcpy_s failed.");
+        printf("memcpy_s failed.");
+        free(infoProvider);
         return false;
     }
     infoProvider[size] = '\0';
@@ -334,7 +337,8 @@ bool MSContextFuzzTest_Provider_Add3(const uint8_t* data, size_t size) {
         return false;
     }
     if (memcpy_s(infoProvider, size + 1, data, size) != EOK) {
-        LOGE("memcpy_s failed.");
+        printf("memcpy_s failed.");
+        free(infoProvider);
         return false;
     }
     infoProvider[size] = '\0';
@@ -372,7 +376,8 @@ bool MSContextFuzzTest_Provider_Add4(const uint8_t *data, size_t size) {
         return false;
     }
     if (memcpy_s(infoProvider, size + 1, data, size) != EOK) {
-        LOGE("memcpy_s failed.");
+        printf("memcpy_s failed.");
+        free(infoProvider);
         return false;
     }
     infoProvider[size] = '\0';
