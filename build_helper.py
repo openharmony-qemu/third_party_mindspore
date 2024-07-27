@@ -64,6 +64,7 @@ def do_patch(patch_dir, target_dir):
         '0028-fix-onnx-parser-and-cpu-kernel.patch',
         '0029-revert-cache-executor.patch',
         '0030-generate-flatbuffer-notice.patch',
+        '0031-fix-matmul-assemble-can-not-protect-stack-in-mutil-thread.patch',
     ]
 
     cwd = os.getcwd()
