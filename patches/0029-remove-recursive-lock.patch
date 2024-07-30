@@ -1,0 +1,237 @@
+From 551353a01bc269ac3a509b916bfe28499d1db714 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Thu, 1 Aug 2024 20:49:49 +0800
+Subject: [PATCH] remove recursive lock, which conflict with ffrt
+
+---
+ .../src/litert/cxx_api/model/model_impl.cc    | 26 -------------------
+ .../src/litert/cxx_api/model/model_impl.h     |  1 -
+ 2 files changed, 27 deletions(-)
+
+diff --git a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
+index cacbf86e..6a73a927 100644
+--- a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
++++ b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
+@@ -161,7 +161,6 @@ bool ModelImpl::IsEnablePreInference() {
+ #endif
+ Status ModelImpl::Build(const void *model_data, size_t data_size, ModelType model_type,
+                         const std::shared_ptr<Context> &ms_context) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ != nullptr) {
+     MS_LOG(ERROR) << "Model has been called Build";
+     return kLiteModelRebuild;
+@@ -207,7 +206,6 @@ Status ModelImpl::Build(const void *model_data, size_t data_size, ModelType mode
+ 
+ Status ModelImpl::Build(const std::string &model_path, ModelType model_type,
+                         const std::shared_ptr<Context> &ms_context) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ != nullptr) {
+     MS_LOG(ERROR) << "Model has been called Build";
+     return kLiteModelRebuild;
+@@ -243,7 +241,6 @@ Status ModelImpl::Build(const std::string &model_path, ModelType model_type,
+ }
+ 
+ Status ModelImpl::Build() {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ != nullptr) {
+     MS_LOG(ERROR) << "Model has been called Build";
+     return kLiteModelRebuild;
+@@ -357,7 +354,6 @@ Status ModelImpl::RunGraph(const MSKernelCallBack &before, const MSKernelCallBac
+ bool ModelImpl::IsTrainModel() { return (graph_ && graph_->graph_data_ && graph_->graph_data_->IsTrainModel()); }
+ 
+ Status ModelImpl::LoadConfig(const std::string &config_path) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ != nullptr) {
+     MS_LOG(ERROR) << "Model has been called Build, please call LoadConfig before Build.";
+     return kLiteError;
+@@ -380,7 +376,6 @@ Status ModelImpl::LoadConfig(const std::string &config_path) {
+ }
+ 
+ Status ModelImpl::UpdateConfig(const std::string &section, const std::pair<std::string, std::string> &config) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   auto iter = config_info_.find(section);
+   if (iter == config_info_.end()) {
+     if (config_info_.size() >= kMaxSectionNum) {
+@@ -400,7 +395,6 @@ Status ModelImpl::UpdateConfig(const std::string &section, const std::pair<std::
+ 
+ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTensor> *outputs,
+                           const MSKernelCallBack &before, const MSKernelCallBack &after) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -565,7 +559,6 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
+ }
+ 
+ Status ModelImpl::Predict(const MSKernelCallBack &before, const MSKernelCallBack &after) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -592,7 +585,6 @@ Status ModelImpl::Predict(const MSKernelCallBack &before, const MSKernelCallBack
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetInputs() {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -617,7 +609,6 @@ std::vector<MSTensor> ModelImpl::GetInputs() {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetOutputs() {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -655,7 +646,6 @@ std::vector<MSTensor> ModelImpl::GetOutputs() {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetGradients() const {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -670,7 +660,6 @@ std::vector<MSTensor> ModelImpl::GetGradients() const {
+ }
+ 
+ Status ModelImpl::ApplyGradients(const std::vector<MSTensor> &gradients) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -699,7 +688,6 @@ Status ModelImpl::ApplyGradients(const std::vector<MSTensor> &gradients) {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetFeatureMaps() const {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -714,7 +702,6 @@ std::vector<MSTensor> ModelImpl::GetFeatureMaps() const {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetTrainableParams() const {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -729,7 +716,6 @@ std::vector<MSTensor> ModelImpl::GetTrainableParams() const {
+ }
+ 
+ Status ModelImpl::UpdateFeatureMaps(const std::vector<MSTensor> &new_weights) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -758,7 +744,6 @@ Status ModelImpl::UpdateFeatureMaps(const std::vector<MSTensor> &new_weights) {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetOptimizerParams() const {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -773,7 +758,6 @@ std::vector<MSTensor> ModelImpl::GetOptimizerParams() const {
+ }
+ 
+ Status ModelImpl::SetOptimizerParams(const std::vector<MSTensor> &params) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -802,7 +786,6 @@ Status ModelImpl::SetOptimizerParams(const std::vector<MSTensor> &params) {
+ }
+ 
+ MSTensor ModelImpl::GetInputByTensorName(const std::string &name) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return MSTensor(nullptr);
+@@ -822,7 +805,6 @@ MSTensor ModelImpl::GetInputByTensorName(const std::string &name) {
+ }
+ 
+ std::vector<std::string> ModelImpl::GetOutputTensorNames() {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -831,7 +813,6 @@ std::vector<std::string> ModelImpl::GetOutputTensorNames() {
+ }
+ 
+ MSTensor ModelImpl::GetOutputByTensorName(const std::string &name) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return MSTensor(nullptr);
+@@ -851,7 +832,6 @@ MSTensor ModelImpl::GetOutputByTensorName(const std::string &name) {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetOutputsByNodeName(const std::string &name) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -881,7 +861,6 @@ std::vector<MSTensor> ModelImpl::GetOutputsByNodeName(const std::string &name) {
+ 
+ Status ModelImpl::BindGLTexture2DMemory(const std::map<std::string, unsigned int> &inputGLTexture,
+                                         std::map<std::string, unsigned int> *outputGLTexture) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   MS_LOG(INFO) << "Bind GLTexture2D to Input MsTensors and Output MsTensors";
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+@@ -896,7 +875,6 @@ Status ModelImpl::BindGLTexture2DMemory(const std::map<std::string, unsigned int
+ }
+ 
+ Status ModelImpl::Resize(const std::vector<MSTensor> &inputs, const std::vector<std::vector<int64_t>> &dims) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -950,7 +928,6 @@ Status ModelImpl::Resize(const std::vector<MSTensor> &inputs, const std::vector<
+ }
+ 
+ Status ModelImpl::UpdateWeights(const std::vector<MSTensor> &new_weights) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -982,7 +959,6 @@ Status ModelImpl::UpdateWeights(const std::vector<MSTensor> &new_weights) {
+ }
+ 
+ Status ModelImpl::SetupVirtualBatch(int virtual_batch_multiplier, float lr, float momentum) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -992,7 +968,6 @@ Status ModelImpl::SetupVirtualBatch(int virtual_batch_multiplier, float lr, floa
+ }
+ 
+ Status ModelImpl::SetLearningRate(float learning_rate) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -1002,7 +977,6 @@ Status ModelImpl::SetLearningRate(float learning_rate) {
+ }
+ 
+ float ModelImpl::GetLearningRate() {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(WARNING) << "Model has not been called Build, or Model Build has failed";
+     return 0.0;
+diff --git a/mindspore/lite/src/litert/cxx_api/model/model_impl.h b/mindspore/lite/src/litert/cxx_api/model/model_impl.h
+index 8e11ee55..17cafba8 100644
+--- a/mindspore/lite/src/litert/cxx_api/model/model_impl.h
++++ b/mindspore/lite/src/litert/cxx_api/model/model_impl.h
+@@ -131,7 +131,6 @@ class ModelImpl {
+   std::shared_ptr<Context> context_ = nullptr;
+   std::shared_ptr<TrainCfg> cfg_ = nullptr;
+   std::vector<Metrics *> metrics_;
+-  mutable std::recursive_mutex mutex_;
+   void SetGraph(const std::shared_ptr<Graph> &graph) { graph_ = graph; }
+   void SetContext(const std::shared_ptr<Context> &context) { context_ = context; }
+   void SetConfig(const std::shared_ptr<TrainCfg> cfg) { cfg_ = cfg; }
+-- 
+2.17.1
+

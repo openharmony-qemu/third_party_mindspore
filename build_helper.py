@@ -62,7 +62,7 @@ def do_patch(patch_dir, target_dir):
         '0026-fix-depthwise-conv-kernel.patch',
         '0027-reduce-memory-when-npu-compilation-with-cache.patch',
         '0028-fix-onnx-parser-and-cpu-kernel.patch',
-        '0029-revert-cache-executor.patch',
+        '0029-remove-recursive-lock.patch',
         '0030-generate-flatbuffer-notice.patch',
         '0031-fix-matmul-assemble-can-not-protect-stack-in-mutil-thread.patch',
     ]
