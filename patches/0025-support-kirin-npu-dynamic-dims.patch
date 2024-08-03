@@ -1,7 +1,7 @@
-From b2e69d2509f71037bf66d0007ebc502fad07bcae Mon Sep 17 00:00:00 2001
+From 548f98e1129d33e31314c4cfa8446584f4e48b29 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Fri, 12 Jul 2024 18:37:24 +0800
-Subject: [PATCH] fix npu memory frequently malloc/free
+Date: Thu, 1 Aug 2024 16:57:50 +0800
+Subject: [PATCH] allocator get/set crash in multi thread
 
 ---
  .../core/mindrt/src/thread/core_affinity.cc   |   2 +-
@@ -9,7 +9,7 @@ Subject: [PATCH] fix npu memory frequently malloc/free
  mindspore/lite/BUILD.gn                       |   1 +
  mindspore/lite/src/common/context_util.cc     |   3 +-
  mindspore/lite/src/litert/c_api/context_c.cc  |  11 +-
- mindspore/lite/src/litert/c_api/tensor_c.cc   |   2 +-
+ mindspore/lite/src/litert/c_api/tensor_c.cc   |  16 ++-
  .../delegate/nnrt/extension_options_parser.cc |   6 +-
  .../delegate/nnrt/extension_options_parser.h  |   4 +-
  .../delegate/nnrt/hiai_foundation_wrapper.cc  |   1 +
@@ -22,7 +22,7 @@ Subject: [PATCH] fix npu memory frequently malloc/free
  .../src/litert/delegate/nnrt/nnrt_utils.h     |  29 +++++
  mindspore/lite/src/litert/infer_manager.cc    |   5 +-
  mindspore/lite/src/tensor.cc                  |  16 ++-
- 18 files changed, 307 insertions(+), 120 deletions(-)
+ 18 files changed, 320 insertions(+), 121 deletions(-)
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.cc
  create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.h
 
@@ -122,10 +122,41 @@ index 6b6a50d5..2fe3b055 100644
      MS_LOG(ERROR) << "Add extension to non-NNRT device is not allowable, ignored";
      return OH_AI_STATUS_LITE_ERROR;
 diff --git a/mindspore/lite/src/litert/c_api/tensor_c.cc b/mindspore/lite/src/litert/c_api/tensor_c.cc
-index fc3814dd..b0eea5cd 100644
+index fc3814dd..7d6c7930 100644
 --- a/mindspore/lite/src/litert/c_api/tensor_c.cc
 +++ b/mindspore/lite/src/litert/c_api/tensor_c.cc
-@@ -231,7 +231,7 @@ OH_AI_Status OH_AI_TensorSetAllocator(OH_AI_TensorHandle tensor, void *allocator
+@@ -19,9 +19,13 @@
+ #include "src/tensor.h"
+ #include "src/litert/cxx_api/tensor/tensor_impl.h"
+ 
++// allocator_table contains mapping of raw_ptr to weak_ptr of Allocator, allocator_table_mutex is used in multi-thread
++// scene when user build multiple models, to avoid read/write unordered_map conflicts crash.
+ static std::unordered_map<void *, std::weak_ptr<mindspore::Allocator>> allocator_table;
++static std::mutex allocator_table_mutex;
+ 
+ void CleanAllocatorTable() {
++  std::lock_guard<std::mutex> lock(allocator_table_mutex);
+   allocator_table.clear();
+ }
+ 
+@@ -222,21 +226,29 @@ OH_AI_Status OH_AI_TensorSetAllocator(OH_AI_TensorHandle tensor, void *allocator
+     return OH_AI_STATUS_LITE_NULLPTR;
+   }
+   auto impl = static_cast<mindspore::MSTensor *>(tensor);
++  std::lock_guard<std::mutex> lock(allocator_table_mutex);
+   if (allocator_table.count(allocator) == 0) {
+     MS_LOG(ERROR) << "the input allocator does not belong to framework";
+     return OH_AI_STATUS_LITE_PARAM_INVALID;
+   }
+   std::static_pointer_cast<mindspore::LiteTensorImpl>(impl->impl())->set_own_data(true);
+-  impl->SetAllocator(allocator_table[allocator].lock());
++  auto allocator_ptr = allocator_table[allocator].lock();
++  if (allocator_ptr != nullptr) {
++    impl->SetAllocator(allocator_ptr);
++  } else {
++    MS_LOG(ERROR) << "get allocator shared ptr failed.";
++    return OH_AI_STATUS_LITE_NULLPTR;
++  }
    return OH_AI_STATUS_SUCCESS;
  }
  
@@ -134,6 +165,12 @@ index fc3814dd..b0eea5cd 100644
    if (tensor == nullptr) {
      MS_LOG(ERROR) << "param is nullptr.";
      return nullptr;
+   }
+   auto impl = static_cast<mindspore::MSTensor *>(tensor);
++  std::lock_guard<std::mutex> lock(allocator_table_mutex);
+   allocator_table[impl->allocator().get()] = impl->allocator();
+   return impl->allocator().get();
+ }
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
 index 98343898..e35cc2a5 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
