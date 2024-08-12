@@ -1,18 +1,97 @@
-From 043e4263bf4bcc6dd31a257da8f2a5f547ad72cd Mon Sep 17 00:00:00 2001
+From c580b97cbfea388ac393f617c4d960021bf11322 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Tue, 30 Jul 2024 17:14:13 +0800
-Subject: [PATCH] fix matmul assemble
+Date: Mon, 12 Aug 2024 11:42:12 +0800
+Subject: [PATCH] fix arm64/fp16 assemble can not protect stack in mutil-thread
+ switch case
 
 ---
- .../nnacl/assembly/arm64/BigMatmulFp32Opt.S   | 22 +++++++++----------
- .../kernel/nnacl/assembly/arm64/MatmulFp32.S  | 14 ++++++------
- .../nnacl/assembly/arm64/MatmulFp32Opt.S      | 14 ++++++------
- .../nnacl/assembly/arm64/MatmulFp32OptRow12.S | 14 ++++++------
- .../nnacl/assembly/arm64/MatmulFp32OptRow4.S  | 16 +++++++-------
- .../nnacl/assembly/arm64/MatmulFp32OptRow8.S  | 14 ++++++------
- .../nnacl/assembly/arm64/MatmulWinogradFp32.S |  7 +++---
- 7 files changed, 50 insertions(+), 51 deletions(-)
+ .../kernel/nnacl/assembly/arm64/AdderFp32.S   | 10 ++---
+ .../nnacl/assembly/arm64/BigMatmulFp32Opt.S   | 22 +++++-----
+ .../assembly/arm64/ConvDw3x3Fp32Stride1.S     | 12 ++---
+ .../assembly/arm64/ConvDw3x3Fp32Stride2.S     | 12 ++---
+ .../nnacl/assembly/arm64/ConvDw3x3Int8.S      | 34 +++++++-------
+ .../assembly/arm64/ConvDw3x3Int8Corner.S      | 19 ++++----
+ .../assembly/arm64/ConvDw3x3Int8Horizontal.S  | 25 +++++------
+ .../assembly/arm64/ConvDw3x3Int8Stride2.S     | 34 +++++++-------
+ .../assembly/arm64/ConvDw3x3Int8Vertical.S    | 19 ++++----
+ .../nnacl/assembly/arm64/ConvDw3x3Line.S      |  6 +--
+ .../nnacl/assembly/arm64/ConvDwFp32Center.S   | 30 ++++++-------
+ .../assembly/arm64/ConvDwFp32Indirect3x3.S    |  7 ++-
+ .../nnacl/assembly/arm64/ConvDwInt8Center.S   | 44 +++++++++----------
+ .../nnacl/assembly/arm64/ConvFp32Center.S     | 42 +++++++++---------
+ .../nnacl/assembly/arm64/ConvSW1x16Kernel.S   | 23 +++++-----
+ .../nnacl/assembly/arm64/ConvSW1x8Kernel.S    | 21 +++++----
+ .../nnacl/assembly/arm64/ConvSW2x16Kernel.S   | 21 +++++----
+ .../nnacl/assembly/arm64/ConvSW2x8Kernel.S    | 21 +++++----
+ .../nnacl/assembly/arm64/ConvSW3x16Kernel.S   | 23 +++++-----
+ .../nnacl/assembly/arm64/ConvSW3x8Kernel.S    | 21 +++++----
+ .../nnacl/assembly/arm64/ConvSW4x16Kernel.S   | 28 ++++++------
+ .../nnacl/assembly/arm64/ConvSW4x8Kernel.S    | 28 ++++++------
+ .../nnacl/assembly/arm64/ConvSW5x16Kernel.S   | 28 ++++++------
+ .../nnacl/assembly/arm64/ConvSW5x8Kernel.S    | 28 ++++++------
+ .../nnacl/assembly/arm64/DeconvDwFp32Center.S | 15 +++----
+ .../nnacl/assembly/arm64/DeconvDwInt8Center.S | 15 +++----
+ .../nnacl/assembly/arm64/MatVecMulFp32.S      | 24 +++++-----
+ .../nnacl/assembly/arm64/MatVecMulPackFp32.S  | 15 +++----
+ .../kernel/nnacl/assembly/arm64/MatmulFp32.S  | 14 +++---
+ .../nnacl/assembly/arm64/MatmulFp32Opt.S      | 16 +++----
+ .../nnacl/assembly/arm64/MatmulFp32OptRow12.S | 14 +++---
+ .../nnacl/assembly/arm64/MatmulFp32OptRow4.S  | 16 +++----
+ .../nnacl/assembly/arm64/MatmulFp32OptRow8.S  | 14 +++---
+ .../kernel/nnacl/assembly/arm64/MatmulInt8.S  | 38 ++++++++--------
+ .../nnacl/assembly/arm64/MatmulInt8Opt.S      | 44 +++++++++----------
+ .../nnacl/assembly/arm64/MatmulR4Int8.S       |  8 ++--
+ .../nnacl/assembly/arm64/MatmulWinogradFp32.S |  7 ++-
+ .../nnacl/assembly/arm64/PostFuncBiasReluC8.S |  6 +--
+ .../assembly/arm64/PostFuncInt8C4Neon64.S     | 15 +++----
+ .../kernel/nnacl/assembly/arm64/SPMM8x8Fp32.S |  8 ++--
+ .../nnacl/assembly/arm64/TiledC4MatmulFp32.S  |  6 +--
+ .../nnacl/assembly/arm64/WinogradTransLeft.S  |  3 +-
+ .../nnacl/assembly/arm64/WinogradTransRight.S |  3 +-
+ .../nnacl/assembly/fp16/ConvDwFp16Center.S    | 30 ++++++-------
+ .../nnacl/assembly/fp16/DeconvDwFp16Center.S  | 15 +++----
+ .../nnacl/assembly/fp16/MatVecMulFp16.S       |  6 +--
+ .../nnacl/assembly/fp16/Matmul12X16Fp16.S     | 14 +++---
+ .../nnacl/assembly/fp16/MatmulBaseFp16Neon.S  | 14 +++---
+ .../kernel/nnacl/assembly/fp16/MatmulFp16.S   | 14 +++---
+ .../nnacl/assembly/fp16/MatmulFp16Opt.S       | 11 +++--
+ .../nnacl/assembly/fp16/MatmulFp16OptV2.S     | 20 ++++-----
+ .../nnacl/assembly/fp16/MatmulWinogradFp16.S  |  7 ++-
+ .../nnacl/assembly/fp16/TiledC4MatmulFp16.S   |  6 +--
+ .../nnacl/assembly/fp16/VecMatmulFp16.S       |  6 +--
+ .../assembly/fp16/WinogradTransLeftFp16.S     |  3 +-
+ .../assembly/fp16/WinogradTransRightFp16.S    |  3 +-
+ 56 files changed, 483 insertions(+), 505 deletions(-)
 
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/AdderFp32.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/AdderFp32.S
+index 66136f42..9123d88c 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/AdderFp32.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/AdderFp32.S
+@@ -34,11 +34,12 @@
+ 
+ asm_function AdderFloatNeon64
+     sub sp, sp, #144
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
+ 
+-    ldr x8, [sp]
++    ldr x8, [sp, #144]
+ 
+     mov x20, #48 // sizeof(float) * 12
+     mul x17, x5, x20 // block stride of lhs/rhs: sizeof(float) * 12 * depth
+@@ -614,7 +615,6 @@ LoopColEnd:
+         subs x6, x6, #12
+         bgt LoopRowStart
+ 
+-  sub sp, sp, #144
+   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+   ldp x19, x20, [sp], #16
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/BigMatmulFp32Opt.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/BigMatmulFp32Opt.S
 index 498038ff..03898585 100644
 --- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/BigMatmulFp32Opt.S
@@ -53,6 +132,1214 @@ index 498038ff..03898585 100644
    ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
    ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
    ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Fp32Stride1.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Fp32Stride1.S
+index f04d9082..b96efd64 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Fp32Stride1.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Fp32Stride1.S
+@@ -36,12 +36,13 @@
+ 
+ asm_function ConvDw3x3Stride1
+     sub sp, sp, #128
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+ 
+-    ldr w8, [sp]
+-    ldr w9, [sp, #8]
+-    ldr w10, [sp, #16]
++    ldr w8, [sp, #128]
++    ldr w9, [sp, #136]
++    ldr w10, [sp, #144]
+ 
+     mov w11, #4
+     mul w15, w4, w11   // col_size * 4
+@@ -203,7 +204,6 @@ WIDTH1_LEFT:
+         st1 {v21.4s}, [x0]
+ 
+ End:
+-    sub sp, sp, #128
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Fp32Stride2.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Fp32Stride2.S
+index 0dd075dd..7632d48e 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Fp32Stride2.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Fp32Stride2.S
+@@ -36,12 +36,13 @@
+ 
+ asm_function ConvDw3x3Stride2
+     sub sp, sp, #128
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+ 
+-    ldr w8, [sp]
+-    ldr w9, [sp, #8]
+-    ldr w10, [sp, #16]
++    ldr w8, [sp, #128]
++    ldr w9, [sp, #136]
++    ldr w10, [sp, #144]
+ 
+     mov w11, #4
+     mul w15, w4, w11   // col_size * 4
+@@ -205,7 +206,6 @@ WIDTH1_LEFT:
+         st1 {v24.4s}, [x0]
+ 
+ End:
+-    sub sp, sp, #128
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8.S
+index bfb9b8f6..5187d368 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8.S
+@@ -44,22 +44,23 @@
+ 
+ asm_function ConvDw3x3Int8Neon64
+   sub sp, sp, #192
+-  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-  stp x19, x20, [sp], #16
+-  stp x21, x22, [sp], #16
+-  stp x23, x24, [sp], #16
+-  stp x25, x26, [sp], #16
+-
+-  ldr x8, [sp]
+-  ldr x9, [sp, #8]
+-  ldr x10, [sp, #16]
+-  ldr x11, [sp, #24]
+-  ldr x12, [sp, #32]
+-  ldr x13, [sp, #40]
+-  ldr x14, [sp, #48]
+-  ldr x15, [sp, #56]
+-  ldr x23, [sp, #64]  // per_channel
++  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++  add x9, sp, #64
++  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++  stp x19, x20, [sp, #128]
++  stp x21, x22, [sp, #144]
++  stp x23, x24, [sp, #160]
++  stp x25, x26, [sp, #176]
++
++  ldr x8, [sp, #192]
++  ldr x9, [sp, #200]
++  ldr x10, [sp, #208]
++  ldr x11, [sp, #216]
++  ldr x12, [sp, #224]
++  ldr x13, [sp, #232]
++  ldr x14, [sp, #240]
++  ldr x15, [sp, #248]
++  ldr x23, [sp, #256]  // per_channel
+ 
+   add x19, x3, #16
+   add w20, w6, w6   // channel * 2
+@@ -488,7 +489,6 @@ OUTZP3:
+   st1 {v21.8b}, [x0], x6
+ 
+ End:
+-  sub sp, sp, #192
+   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+   ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Corner.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Corner.S
+index b07ac01b..416e1a3a 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Corner.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Corner.S
+@@ -32,20 +32,20 @@ asm_function ConvDw3x3Int8Corner
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #32
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
+ 
+     dup v25.8b, w7                      // in_zp
+-    ldr x8, [sp]
++    ldr x8, [sp, #32]
+     dup v26.4s, w8                      // out_zp
+-    ldr x9, [sp, #8]                    // out_multiplier
+-    ldr x10, [sp, #16]                  // left_shift
+-    ldr x11, [sp, #24]                  // right_shift
+-    ldr x12, [sp, #32]
++    ldr x9, [sp, #40]                    // out_multiplier
++    ldr x10, [sp, #48]                  // left_shift
++    ldr x11, [sp, #56]                  // right_shift
++    ldr x12, [sp, #64]
+     dup v30.4s, w12                     // acc_min
+-    ldr x13, [sp, #40]
++    ldr x13, [sp, #72]
+     dup v31.4s, w13                     // acc_max
+-    ldr x14, [sp, #48]                  // per_channel
++    ldr x14, [sp, #80]                  // per_channel
+     cbnz x14, PerChannelDump
+     PerLayerDump:
+         ld1r {v27.4s}, [x9]
+@@ -216,7 +216,6 @@ asm_function ConvDw3x3Int8Corner
+         st1 {v23.s}[0], [x0], #4
+         st1 {v24.s}[0], [x0], #4
+ 
+-    sub sp, sp, #32
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Horizontal.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Horizontal.S
+index 92eeffea..379154e6 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Horizontal.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Horizontal.S
+@@ -32,21 +32,21 @@ asm_function ConvDw3x3Int8Horizontal
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #48
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
++    stp x23, x24, [sp, #32]
+ 
+     dup v25.8b, w7                      // in_zp
+-    ldr x8, [sp]
++    ldr x8, [sp, #48]
+     dup v26.4s, w8                      // out_zp
+-    ldr x9, [sp, #8]                    // out_multiplier
+-    ldr x10, [sp, #16]                  // left_shift
+-    ldr x11, [sp, #24]                  // right_shift
+-    ldr x12, [sp, #32]
++    ldr x9, [sp, #56]                    // out_multiplier
++    ldr x10, [sp, #64]                  // left_shift
++    ldr x11, [sp, #72]                  // right_shift
++    ldr x12, [sp, #80]
+     dup v30.4s, w12                     // acc_min
+-    ldr x13, [sp, #40]
++    ldr x13, [sp, #88]
+     dup v31.4s, w13                     // acc_max
+-    ldr x14, [sp, #48]                  // per_channel
++    ldr x14, [sp, #96]                  // per_channel
+     cbnz x14, PerChannelDump
+     PerLayerDump:
+         ld1r {v27.4s}, [x9]
+@@ -58,9 +58,9 @@ asm_function ConvDw3x3Int8Horizontal
+         ld1 {v28.4s}, [x10], #16
+         ld1 {v29.4s}, [x11], #16
+     ContinueFunc:
+-    ldr x12, [sp, #32]
++    ldr x12, [sp, #80]
+     dup v30.4s, w12                     // acc_min
+-    ldr x13, [sp, #40]
++    ldr x13, [sp, #88]
+     dup v31.4s, w13                     // acc_max
+ 
+     mov x12, #2
+@@ -248,7 +248,6 @@ asm_function ConvDw3x3Int8Horizontal
+ 
+         st1 {v23.s}[0], [x0], #4
+         st1 {v24.s}[0], [x0], #4
+-    sub sp, sp, #48
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ldp x23, x24, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Stride2.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Stride2.S
+index cc1b3e9b..8643a536 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Stride2.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Stride2.S
+@@ -44,22 +44,23 @@
+ 
+ asm_function ConvDw3x3Int8Stride2
+     sub sp, sp, #192
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
+-
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]
+-    ldr x10, [sp, #16]
+-    ldr x11, [sp, #24]
+-    ldr x12, [sp, #32]
+-    ldr x13, [sp, #40]
+-    ldr x14, [sp, #48]
+-    ldr x15, [sp, #56]
+-    ldr x23, [sp, #64]  // per_channel
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x25, x26, [sp, #176]
++
++    ldr x8, [sp, #192]
++    ldr x9, [sp, #200]
++    ldr x10, [sp, #208]
++    ldr x11, [sp, #216]
++    ldr x12, [sp, #224]
++    ldr x13, [sp, #232]
++    ldr x14, [sp, #240]
++    ldr x15, [sp, #248]
++    ldr x23, [sp, #256]  // per_channel
+ 
+     add x19, x3, #16
+     add w20, w6, w6   // channel * 2
+@@ -463,7 +464,6 @@ OUTZP3:
+     st1 {v24.8b}, [x0], x6
+ 
+ End:
+-    sub sp, sp, #192
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Vertical.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Vertical.S
+index 67151534..706bc9fe 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Vertical.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Int8Vertical.S
+@@ -32,20 +32,20 @@ asm_function ConvDw3x3Int8Vertical
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #32
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
+ 
+     dup v25.8b, w7                      // in_zp
+-    ldr x8, [sp]
++    ldr x8, [sp, #32]
+     dup v26.4s, w8                      // out_zp
+-    ldr x9, [sp, #8]                    // out_multiplier
+-    ldr x10, [sp, #16]                  // left_shift
+-    ldr x11, [sp, #24]                  // right_shift
+-    ldr x12, [sp, #32]
++    ldr x9, [sp, #40]                    // out_multiplier
++    ldr x10, [sp, #48]                  // left_shift
++    ldr x11, [sp, #56]                  // right_shift
++    ldr x12, [sp, #64]
+     dup v30.4s, w12                     // acc_min
+-    ldr x13, [sp, #40]
++    ldr x13, [sp, #72]
+     dup v31.4s, w13                     // acc_max
+-    ldr x14, [sp, #48]                  // per_channel
++    ldr x14, [sp, #80]                  // per_channel
+     cbnz x14, PerChannelDump
+     PerLayerDump:
+         ld1r {v27.4s}, [x9]
+@@ -239,7 +239,6 @@ asm_function ConvDw3x3Int8Vertical
+ 
+         st1 {v23.s}[0], [x0], #4
+         st1 {v24.s}[0], [x0], #4
+-    sub sp, sp, #32
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Line.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Line.S
+index 6157848e..f939ec62 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Line.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDw3x3Line.S
+@@ -29,8 +29,9 @@ asm_function ConvDw3x3Line
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #128
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+ 
+     ldr x8, [x1]
+     ldr x9, [x1, #8]
+@@ -196,7 +197,6 @@ asm_function ConvDw3x3Line
+         add x0, x0, #16
+         bgt LoopC4
+ 
+-    sub sp, sp, #128
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Center.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Center.S
+index e9ddd65a..6f30c3ac 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Center.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Center.S
+@@ -31,21 +31,22 @@ asm_function ConvDwFp32Center
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #192
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x25, x26, [sp, #176]
+ 
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]
+-    ldr x10, [sp, #16]
+-    ldr x11, [sp, #24]
+-    ldr x12, [sp, #32]
+-    ldr x13, [sp, #40]
+-    ldr x14, [sp, #48]
+-    ldr x15, [sp, #56]
++    ldr x8, [sp, #192]
++    ldr x9, [sp, #200]
++    ldr x10, [sp, #208]
++    ldr x11, [sp, #216]
++    ldr x12, [sp, #224]
++    ldr x13, [sp, #232]
++    ldr x14, [sp, #240]
++    ldr x15, [sp, #248]
+ 
+     ld1 {v24.4s}, [x3]
+     movi v26.4s, #6
+@@ -302,7 +303,6 @@ asm_function ConvDwFp32Center
+         subs x4, x4, #1
+         bne LoopH
+ 
+-    sub sp, sp, #192
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Indirect3x3.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Indirect3x3.S
+index 34cc9037..ca93dc7d 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Indirect3x3.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Indirect3x3.S
+@@ -25,14 +25,14 @@
+ 
+ asm_function ConvDwFp32Indirect3x3
+     sub sp, sp, #32
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
+ 
+     movi v31.4s, #6
+     scvtf v31.4s, v31.4s
+     dup v30.4s, wzr
+ 
+-    ldr x8, [sp]
++    ldr x8, [sp, #32]
+     cmp x5, #0
+     beq End
+ 
+@@ -153,7 +153,6 @@ asm_function ConvDwFp32Indirect3x3
+         cmp x5, #0
+         bgt LoopPixel
+ End:
+-    sub sp, sp, #32
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+ ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwInt8Center.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwInt8Center.S
+index 7ed94e6b..328250f3 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwInt8Center.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwInt8Center.S
+@@ -34,44 +34,45 @@ asm_function ConvDwInt8Center
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #192
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
+-
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]
+-    ldr x10, [sp, #16]
+-    ldr x11, [sp, #24]
+-    ldr x12, [sp, #32]
+-    ldr x13, [sp, #40]
+-
+-    ldr x14, [sp, #48] // input_zp
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x25, x26, [sp, #176]
++
++    ldr x8, [sp, #192]
++    ldr x9, [sp, #200]
++    ldr x10, [sp, #208]
++    ldr x11, [sp, #216]
++    ldr x12, [sp, #224]
++    ldr x13, [sp, #232]
++
++    ldr x14, [sp, #240] // input_zp
+     ld1 {v19.8b}, [x14], #8
+ 
+-    ldr x15, [sp, #56] // output_zp
++    ldr x15, [sp, #248] // output_zp
+     ld1 {v20.4s}, [x15], #16
+     ld1 {v21.4s}, [x15], #16
+ 
+-    ldr x16, [sp, #64] // out_multiplier
++    ldr x16, [sp, #256] // out_multiplier
+     ld1 {v22.4s}, [x16], #16
+     ld1 {v23.4s}, [x16], #16
+ 
+-    ldr x17, [sp, #72] // left_shift
++    ldr x17, [sp, #264] // left_shift
+     ld1 {v24.4s}, [x17], #16
+     ld1 {v25.4s}, [x17], #16
+ 
+-    ldr x25, [sp, #80] // right shift
++    ldr x25, [sp, #272] // right shift
+     ld1 {v26.4s}, [x25], #16
+     ld1 {v27.4s}, [x25], #16
+ 
+-    ldr x19, [sp, #88] // acc_min
++    ldr x19, [sp, #280] // acc_min
+     ld1 {v28.4s}, [x19], #16
+     ld1 {v29.4s}, [x19], #16
+ 
+-    ldr x20, [sp, #96] // acc_max
++    ldr x20, [sp, #288] // acc_max
+     ld1 {v30.4s}, [x20], #16
+     ld1 {v31.4s}, [x20], #16
+ 
+@@ -283,7 +284,6 @@ asm_function ConvDwInt8Center
+         subs x4, x4, #1
+         bne LoopH
+ 
+-    sub sp, sp, #192
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvFp32Center.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvFp32Center.S
+index 2cc456f6..0a9d3265 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvFp32Center.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvFp32Center.S
+@@ -31,21 +31,22 @@ asm_function ConvSwFp32Center
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #208
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
+-    stp x27, x28, [sp], #16
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x25, x26, [sp, #176]
++    stp x27, x28, [sp, #192]
+ 
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]
+-    ldr x10, [sp, #16]
+-    ldr x11, [sp, #24]
+-    ldr x12, [sp, #32]
+-    ldr x13, [sp, #40]
+-    ldr x14, [sp, #48]
++    ldr x8, [sp, #208]
++    ldr x9, [sp, #216]
++    ldr x10, [sp, #224]
++    ldr x11, [sp, #232]
++    ldr x12, [sp, #240]
++    ldr x13, [sp, #248]
++    ldr x14, [sp, #256]
+     mul x15, x6, x7
+     mul x15, x10, x15
+     mov x16, #16
+@@ -198,9 +199,9 @@ asm_function ConvSwFp32Center
+                 add x20, x20, x13
+                 subs x22, x22, #1
+                 bne LoopKh16
+-            ldr x16, [sp, #64]
++            ldr x16, [sp, #272]
+             cbnz x16, Relu616
+-            ldr x26, [sp, #56]
++            ldr x26, [sp, #264]
+             cbnz x26, Relu16
+             b Write16
+         Relu616:
+@@ -347,9 +348,9 @@ asm_function ConvSwFp32Center
+                 add x20, x20, x13
+                 subs x22, x22, #1
+                 bne LoopKh8
+-            ldr x16, [sp, #64]
++            ldr x16, [sp, #272]
+             cbnz x16, Relu68
+-            ldr x26, [sp, #56]
++            ldr x26, [sp, #264]
+             cbnz x26, Relu8
+             b Write8
+         Relu68:
+@@ -426,9 +427,9 @@ asm_function ConvSwFp32Center
+                 add x20, x20, x13
+                 subs x22, x22, #1
+                 bne LoopKh
+-            ldr x16, [sp, #64]
++            ldr x16, [sp, #272]
+             cbnz x16, Relu6
+-            ldr x26, [sp, #56]
++            ldr x26, [sp, #264]
+             cbnz x26, Relu
+             b Write
+         Relu6:
+@@ -446,7 +447,6 @@ asm_function ConvSwFp32Center
+         subs x4, x4, #1
+         bne LoopH
+ 
+-    sub sp, sp, #208
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW1x16Kernel.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW1x16Kernel.S
+index 2267e776..3b436c17 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW1x16Kernel.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW1x16Kernel.S
+@@ -30,17 +30,17 @@ asm_function SWConv1x16Kernel
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
+-
+-    ldr x10, [sp]
+-    ldr x11, [sp, #8]
+-    ldr x12, [sp, #16]
+-    ldr x13, [sp, #24]
+-    ldr x14, [sp, #32]
+-    ldr x15, [sp, #40]
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
++    stp x23, x24, [sp, #32]
++    stp x25, x26, [sp, #48]
++
++    ldr x10, [sp, #64]
++    ldr x11, [sp, #72]
++    ldr x12, [sp, #80]
++    ldr x13, [sp, #88]
++    ldr x14, [sp, #96]
++    ldr x15, [sp, #104]
+     lsl x7, x7, #2
+     lsl x11, x11, #2
+     lsl x12, x12, #2
+@@ -413,7 +413,6 @@ asm_function SWConv1x16Kernel
+             st1 {v2.4s}, [x21]
+             st1 {v3.4s}, [x22]
+     End:
+-    sub sp, sp, #64
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ldp x23, x24, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW1x8Kernel.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW1x8Kernel.S
+index fa8bb63d..6a29e95e 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW1x8Kernel.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW1x8Kernel.S
+@@ -30,17 +30,17 @@ asm_function SWConv1x8Kernel
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
++    stp x23, x24, [sp, #32]
++    stp x25, x26, [sp, #48]
+ 
+-    ldr x10, [sp]
+-    ldr x11, [sp, #8]
+-    ldr x12, [sp, #16]
+-    ldr x13, [sp, #24]
+-    ldr x14, [sp, #32]
+-    ldr x15, [sp, #40]
++    ldr x10, [sp, #64]
++    ldr x11, [sp, #72]
++    ldr x12, [sp, #80]
++    ldr x13, [sp, #88]
++    ldr x14, [sp, #96]
++    ldr x15, [sp, #104]
+     lsl x7, x7, #2
+     lsl x11, x11, #2
+     lsl x12, x12, #2
+@@ -270,7 +270,6 @@ asm_function SWConv1x8Kernel
+             st1 {v0.4s}, [x0]
+             st1 {v1.4s}, [x20]
+     End:
+-    sub sp, sp, #64
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ldp x23, x24, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW2x16Kernel.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW2x16Kernel.S
+index 69624af6..8a5dd83a 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW2x16Kernel.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW2x16Kernel.S
+@@ -30,17 +30,17 @@ asm_function SWConv2x16Kernel
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
++    stp x23, x24, [sp, #32]
++    stp x25, x26, [sp, #48]
+ 
+-    ldr x10, [sp]
+-    ldr x11, [sp, #8]
+-    ldr x12, [sp, #16]
+-    ldr x13, [sp, #24]
+-    ldr x14, [sp, #32]
+-    ldr x15, [sp, #40]
++    ldr x10, [sp, #64]
++    ldr x11, [sp, #72]
++    ldr x12, [sp, #80]
++    ldr x13, [sp, #88]
++    ldr x14, [sp, #96]
++    ldr x15, [sp, #104]
+     lsl x7, x7, #2
+     lsl x11, x11, #2
+     lsl x12, x12, #2
+@@ -399,7 +399,6 @@ asm_function SWConv2x16Kernel
+             st1 {v3.4s}, [x22], #16
+             st1 {v7.4s}, [x22]
+     End:
+-    sub sp, sp, #64
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ldp x23, x24, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW2x8Kernel.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW2x8Kernel.S
+index 8fefa4be..6efd21d0 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW2x8Kernel.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW2x8Kernel.S
+@@ -30,17 +30,17 @@ asm_function SWConv2x8Kernel
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
++    stp x23, x24, [sp, #32]
++    stp x25, x26, [sp, #48]
+ 
+-    ldr x10, [sp]
+-    ldr x11, [sp, #8]
+-    ldr x12, [sp, #16]
+-    ldr x13, [sp, #24]
+-    ldr x14, [sp, #32]
+-    ldr x15, [sp, #40]
++    ldr x10, [sp, #64]
++    ldr x11, [sp, #72]
++    ldr x12, [sp, #80]
++    ldr x13, [sp, #88]
++    ldr x14, [sp, #96]
++    ldr x15, [sp, #104]
+     lsl x7, x7, #2
+     lsl x11, x11, #2
+     lsl x12, x12, #2
+@@ -257,7 +257,6 @@ asm_function SWConv2x8Kernel
+             st1 {v1.4s}, [x20], #16
+             st1 {v3.4s}, [x20]
+     End:
+-    sub sp, sp, #64
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ldp x23, x24, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW3x16Kernel.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW3x16Kernel.S
+index 61efd444..428dea69 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW3x16Kernel.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW3x16Kernel.S
+@@ -30,18 +30,18 @@ asm_function SWConv3x16Kernel
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #128
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    stp x19, x20, [sp, #64]
++    stp x21, x22, [sp, #80]
++    stp x23, x24, [sp, #96]
++    stp x25, x26, [sp, #112]
+ 
+-    ldr x10, [sp]
+-    ldr x11, [sp, #8]
+-    ldr x12, [sp, #16]
+-    ldr x13, [sp, #24]
+-    ldr x14, [sp, #32]
+-    ldr x15, [sp, #40]
++    ldr x10, [sp, #128]
++    ldr x11, [sp, #136]
++    ldr x12, [sp, #144]
++    ldr x13, [sp, #152]
++    ldr x14, [sp, #160]
++    ldr x15, [sp, #168]
+     lsl x7, x7, #2
+     lsl x11, x11, #2
+     lsl x12, x12, #2
+@@ -524,7 +524,6 @@ asm_function SWConv3x16Kernel
+             st1 {v7.4s}, [x22], #16
+             st1 {v11.4s}, [x22]
+     End:
+-    sub sp, sp, #128
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW3x8Kernel.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW3x8Kernel.S
+index 1e958572..472e50b9 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW3x8Kernel.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW3x8Kernel.S
+@@ -30,17 +30,17 @@ asm_function SWConv3x8Kernel
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
++    stp x23, x24, [sp, #32]
++    stp x25, x26, [sp, #48]
+ 
+-    ldr x10, [sp]
+-    ldr x11, [sp, #8]
+-    ldr x12, [sp, #16]
+-    ldr x13, [sp, #24]
+-    ldr x14, [sp, #32]
+-    ldr x15, [sp, #40]
++    ldr x10, [sp, #64]
++    ldr x11, [sp, #72]
++    ldr x12, [sp, #80]
++    ldr x13, [sp, #88]
++    ldr x14, [sp, #96]
++    ldr x15, [sp, #104]
+     lsl x7, x7, #2
+     lsl x11, x11, #2
+     lsl x12, x12, #2
+@@ -324,7 +324,6 @@ asm_function SWConv3x8Kernel
+             st1 {v3.4s}, [x20], #16
+             st1 {v5.4s}, [x20]
+     End:
+-    sub sp, sp, #64
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ldp x23, x24, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW4x16Kernel.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW4x16Kernel.S
+index 1cd5e124..076724a7 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW4x16Kernel.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW4x16Kernel.S
+@@ -30,20 +30,21 @@ asm_function SWConv4x16Kernel
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #208
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
+-    stp x27, x28, [sp], #16
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x25, x26, [sp, #176]
++    stp x27, x28, [sp, #192]
+ 
+-    ldr x10, [sp]
+-    ldr x11, [sp, #8]
+-    ldr x12, [sp, #16]
+-    ldr x13, [sp, #24]
+-    ldr x14, [sp, #32]
+-    ldr x15, [sp, #40]
++    ldr x10, [sp, #208]
++    ldr x11, [sp, #216]
++    ldr x12, [sp, #224]
++    ldr x13, [sp, #232]
++    ldr x14, [sp, #240]
++    ldr x15, [sp, #248]
+     lsl x7, x7, #2
+     lsl x11, x11, #2
+     lsl x12, x12, #2
+@@ -650,7 +651,6 @@ asm_function SWConv4x16Kernel
+             st1 {v11.4s}, [x22], #16
+             st1 {v15.4s}, [x22]
+     End:
+-    sub sp, sp, #208
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW4x8Kernel.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW4x8Kernel.S
+index 28109031..6b24de97 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW4x8Kernel.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW4x8Kernel.S
+@@ -30,20 +30,21 @@ asm_function SWConv4x8Kernel
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #208
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
+-    stp x27, x28, [sp], #16
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x25, x26, [sp, #176]
++    stp x27, x28, [sp, #192]
+ 
+-    ldr x10, [sp]
+-    ldr x11, [sp, #8]
+-    ldr x12, [sp, #16]
+-    ldr x13, [sp, #24]
+-    ldr x14, [sp, #32]
+-    ldr x15, [sp, #40]
++    ldr x10, [sp, #208]
++    ldr x11, [sp, #216]
++    ldr x12, [sp, #224]
++    ldr x13, [sp, #232]
++    ldr x14, [sp, #240]
++    ldr x15, [sp, #248]
+     lsl x7, x7, #2
+     lsl x11, x11, #2
+     lsl x12, x12, #2
+@@ -394,7 +395,6 @@ asm_function SWConv4x8Kernel
+             st1 {v5.4s}, [x20], #16
+             st1 {v7.4s}, [x20]
+     End:
+-    sub sp, sp, #208
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW5x16Kernel.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW5x16Kernel.S
+index 302e5a3d..a2b7ea2c 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW5x16Kernel.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW5x16Kernel.S
+@@ -30,20 +30,21 @@ asm_function SWConv5x16Kernel
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #208
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
+-    stp x27, x28, [sp], #16
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x25, x26, [sp, #176]
++    stp x27, x28, [sp, #192]
+ 
+-    ldr x10, [sp]
+-    ldr x11, [sp, #8]
+-    ldr x12, [sp, #16]
+-    ldr x13, [sp, #24]
+-    ldr x14, [sp, #32]
+-    ldr x15, [sp, #40]
++    ldr x10, [sp, #208]
++    ldr x11, [sp, #216]
++    ldr x12, [sp, #224]
++    ldr x13, [sp, #232]
++    ldr x14, [sp, #240]
++    ldr x15, [sp, #248]
+     lsl x7, x7, #2
+     lsl x11, x11, #2
+     lsl x12, x12, #2
+@@ -445,7 +446,6 @@ asm_function SWConv5x16Kernel
+             st1 {v15.4s}, [x22], #16
+             st1 {v19.4s}, [x22]
+     End:
+-    sub sp, sp, #208
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW5x8Kernel.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW5x8Kernel.S
+index 059cc7fc..b7e48480 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW5x8Kernel.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvSW5x8Kernel.S
+@@ -30,20 +30,21 @@ asm_function SWConv5x8Kernel
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #208
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
+-    stp x27, x28, [sp], #16
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x25, x26, [sp, #176]
++    stp x27, x28, [sp, #192]
+ 
+-    ldr x10, [sp]
+-    ldr x11, [sp, #8]
+-    ldr x12, [sp, #16]
+-    ldr x13, [sp, #24]
+-    ldr x14, [sp, #32]
+-    ldr x15, [sp, #40]
++    ldr x10, [sp, #208]
++    ldr x11, [sp, #216]
++    ldr x12, [sp, #224]
++    ldr x13, [sp, #232]
++    ldr x14, [sp, #240]
++    ldr x15, [sp, #248]
+     lsl x7, x7, #2
+     lsl x11, x11, #2
+     lsl x12, x12, #2
+@@ -296,7 +297,6 @@ asm_function SWConv5x8Kernel
+             st1 {v7.4s}, [x20], #16
+             st1 {v9.4s}, [x20]
+     End:
+-    sub sp, sp, #208
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/DeconvDwFp32Center.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/DeconvDwFp32Center.S
+index e6875bb1..11722e71 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/DeconvDwFp32Center.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/DeconvDwFp32Center.S
+@@ -30,14 +30,14 @@ asm_function DeconvDwFp32Center
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #32
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
+ 
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]
+-    ldr x10, [sp, #16]
+-    ldr x11, [sp, #24]
+-    ldr x12, [sp, #32]
++    ldr x8, [sp, #32]
++    ldr x9, [sp, #40]
++    ldr x10, [sp, #48]
++    ldr x11, [sp, #56]
++    ldr x12, [sp, #64]
+ 
+     LoopH:
+         mov x15, x0
+@@ -69,7 +69,6 @@ asm_function DeconvDwFp32Center
+         subs x3, x3, #1
+         bne LoopH
+ 
+-    sub sp, sp, #32
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/DeconvDwInt8Center.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/DeconvDwInt8Center.S
+index aaf210f0..1c3723fa 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/DeconvDwInt8Center.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/DeconvDwInt8Center.S
+@@ -30,14 +30,14 @@ asm_function DeconvDwInt8Center
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #32
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
+ 
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]
+-    ldr x10, [sp, #16]
+-    ldr x11, [sp, #24]
+-    ldr x12, [sp, #32]
++    ldr x8, [sp, #32]
++    ldr x9, [sp, #40]
++    ldr x10, [sp, #48]
++    ldr x11, [sp, #56]
++    ldr x12, [sp, #64]
+ 
+     LoopH:
+         mov x15, x0
+@@ -69,7 +69,6 @@ asm_function DeconvDwInt8Center
+         subs x3, x3, #1
+         bne LoopH
+ 
+-    sub sp, sp, #32
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatVecMulFp32.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatVecMulFp32.S
+index 71a7f0f1..36c8d8ec 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatVecMulFp32.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatVecMulFp32.S
+@@ -15,7 +15,7 @@
+  */
+ #ifdef ENABLE_ARM64
+ #include "nnacl/assembly_global.h"
+-    
++
+ .text
+ .align 5
+ 
+@@ -30,24 +30,25 @@
+ 
+ asm_default_function MatVecMulFp32
+   sub sp, sp, #128
+-  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+-  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
++  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
++  add x9, sp, #64
++  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
+ 
+   mov w14, #4      // sizeof(float)
+   mul w8, w14, w5  // rhs depthx1 block stride
+   mov w14, #4
+-  mul w13, w8, w14 // rhs depthx4 block stride 
++  mul w13, w8, w14 // rhs depthx4 block stride
+ 
+ Loop:
+   mov x15, x0     // reload a ptr
+   mov x7, x1      // reload b ptr
+   mov w9, w5      // reload depth
+   cmp w6, #4
+-  blt Loop1x1  
++  blt Loop1x1
+ 
+-Loop1x4: 
+-  dup v10.8h, wzr  
+-  dup v11.8h, wzr  
++Loop1x4:
++  dup v10.8h, wzr
++  dup v11.8h, wzr
+   dup v12.8h, wzr
+   dup v13.8h, wzr
+   dup v14.8h, wzr
+@@ -150,7 +151,7 @@ End1x4:
+ 
+   cbz x3, Act1x4
+   ld1 {v15.4s}, [x3], #16
+-  fadd v14.4s, v14.4s, v15.4s   // add bias 
++  fadd v14.4s, v14.4s, v15.4s   // add bias
+ 
+ Act1x4:
+   cmp w4, #3
+@@ -214,8 +215,8 @@ Depth1_1x1:
+   b Depth1_1x1
+ 
+ End1x1:
+-  faddp v6.4s, v4.4s, v4.4s  
+-  faddp v7.4s, v6.4s, v6.4s  
++  faddp v6.4s, v4.4s, v4.4s
++  faddp v7.4s, v6.4s, v6.4s
+   fadd v7.4s, v7.4s, v5.4s
+ 
+   cbz x3, Act1x1
+@@ -245,7 +246,6 @@ Write1x1:
+   b Loop
+ 
+ End:
+-  sub sp, sp, #128
+   ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+   ld1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+   ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatVecMulPackFp32.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatVecMulPackFp32.S
+index d485b012..b013f48a 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatVecMulPackFp32.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatVecMulPackFp32.S
+@@ -30,8 +30,8 @@
+ 
+ asm_default_function MatVecMulPackFp32
+     sub sp, sp, #16
+-    stp x29, x30, [sp], #16
+-  
++    stp x29, x30, [sp]
++
+     dup v1.2d, xzr
+     mov w7, #6
+     dup v2.4s, w7
+@@ -43,7 +43,7 @@ asm_default_function MatVecMulPackFp32
+         st1 {v24.4s, v25.4s}, [x2], #32
+         subs w6, w6, #8
+         bge Loop1x8Start
+-                
++
+     Loop1xNStart:
+         add w6, w6, #8
+         cbz w6, End
+@@ -59,7 +59,7 @@ asm_default_function MatVecMulPackFp32
+         beq End
+         st1 {v25.s}[2], [x2]
+         b End
+-            
++
+     Loop1x4Start:
+         add w6, w6, #4
+         cbz w6, End
+@@ -75,7 +75,7 @@ asm_default_function MatVecMulPackFp32
+         beq End
+         st1 {v24.s}[3], [x2], #4
+         b End
+-        
++
+     Compute1x8Unit:
+         mov x7, x0     // reload a-ptr
+         mov w8, w5     // reset depth
+@@ -140,7 +140,7 @@ asm_default_function MatVecMulPackFp32
+                     fmax v25.4s, v25.4s, v1.4s
+                 Return1x8:
+                     ret
+-  
++
+     Compute1x4Unit:
+         mov x7, x0     // reload a-ptr
+         mov w8, w5     // reset depth
+@@ -191,9 +191,8 @@ asm_default_function MatVecMulPackFp32
+                     fmax v24.4s, v24.4s, v1.4s
+                 Return1x4:
+                     ret
+-  
++
+     End:
+-        sub sp, sp, #16
+         ldp x29, x30, [sp], #16
+         ret
+ #endif
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulFp32.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulFp32.S
 index 67d20dcc..2dedccd0 100644
 --- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulFp32.S
@@ -91,9 +1378,18 @@ index 67d20dcc..2dedccd0 100644
    ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
    ldp x19, x20, [sp], #16
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulFp32Opt.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulFp32Opt.S
-index 6937f4ba..6e2d8846 100644
+index 6937f4ba..51d107c8 100644
 --- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulFp32Opt.S
 +++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulFp32Opt.S
+@@ -19,7 +19,7 @@
+ .text
+ .align 5
+ 
+-// void MatmulFloatNeon64(const float *a, const float *b, float *c, const float *bias, int act_type, int depth
++// void MatmulFloatNeon64Opt(const float *a, const float *b, float *c, const float *bias, int act_type, int depth
+ //                        int row, int col, size_t stride, size_t writeMode)
+ // x0: a
+ // x1: b
 @@ -34,13 +34,14 @@
  
  asm_function MatmulFloatNeon64Opt
@@ -231,6 +1527,163 @@ index a9e42a54..c5b260c0 100644
    ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
    ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
    ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulInt8.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulInt8.S
+index a0e94c5f..731bac4b 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulInt8.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulInt8.S
+@@ -44,24 +44,25 @@
+ 
+ asm_function MatmulInt8Neon64
+   sub sp, sp, #208
+-  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-  stp x19, x20, [sp], #16
+-  stp x21, x22, [sp], #16
+-  stp x23, x24, [sp], #16
+-  stp x25, x26, [sp], #16
+-  stp x27, x28, [sp], #16
+-
+-  ldr w8, [sp]
+-  ldr w9, [sp, #8]
+-  ldr w10, [sp, #16]
+-  ldr x11, [sp, #24]
+-  ldr x12, [sp, #32]
+-  ldr x13, [sp, #40]
+-  ldr w14, [sp, #48]
+-  ldr w15, [sp, #56]
+-  ldr w24, [sp, #64]
+-  ldr w27, [sp, #72]
++  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++  add x9, sp, #64
++  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++  stp x19, x20, [sp, #128]
++  stp x21, x22, [sp, #144]
++  stp x23, x24, [sp, #160]
++  stp x25, x26, [sp, #176]
++  stp x27, x28, [sp, #192]
++
++  ldr w8, [sp, #208]
++  ldr w9, [sp, #216]
++  ldr w10, [sp, #224]
++  ldr x11, [sp, #232]
++  ldr x12, [sp, #240]
++  ldr x13, [sp, #248]
++  ldr w14, [sp, #256]
++  ldr w15, [sp, #264]
++  ldr w24, [sp, #272]
++  ldr w27, [sp, #280]
+ 
+   mov w17, #4       // sizeof(int8)*4
+   mul w21, w5, w17  // the stride of a/b: sizeof(int8)*4*deep16
+@@ -408,7 +409,6 @@ PerTEnd2:
+   b L1
+ 
+ End1:
+-  sub sp, sp, #208
+   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+   ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulInt8Opt.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulInt8Opt.S
+index 64be8a14..a54ee5b8 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulInt8Opt.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulInt8Opt.S
+@@ -43,23 +43,24 @@
+ 
+ asm_function MatmulInt8Opt
+     sub sp, sp, #224
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
+-    stp x27, x28, [sp], #16
+-    stp x29, x30, [sp], #16
+-
+-    ldr w8, [sp]
+-    ldr w9, [sp, #8]
+-    ldr w10, [sp, #16]
+-    ldr x11, [sp, #24]
+-    ldr x12, [sp, #32]
+-    ldr x13, [sp, #40]
+-    ldr x14, [sp, #48]
+-    ldr x15, [sp, #56]
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x25, x26, [sp, #176]
++    stp x27, x28, [sp, #192]
++    stp x29, x30, [sp, #208]
++
++    ldr w8, [sp, #224]
++    ldr w9, [sp, #232]
++    ldr w10, [sp, #240]
++    ldr x11, [sp, #248]
++    ldr x12, [sp, #256]
++    ldr x13, [sp, #264]
++    ldr x14, [sp, #272]
++    ldr x15, [sp, #280]
+ 
+     mov x23, #4
+     mul x23, x23, x5  // lhs step
+@@ -70,7 +71,7 @@ LoopRow:
+     mov x17, x4 // reload rhs col
+     mov x29, x7 // reload bias ptr
+     mov x27, x2 // reload dst ptr
+-    ldr x28, [sp, #64] // reload filter_zp
++    ldr x28, [sp, #288] // reload filter_zp
+ 
+     LoopCol:
+         mov x25, x6 // reload a_sums ptr
+@@ -334,16 +335,15 @@ LoopRow:
+ LoopColEnd:
+     subs x3, x3, #4
+     ble LoopRowEnd
+-    ldr x11, [sp, #24]
+-    ldr x12, [sp, #32]
+-    ldr x13, [sp, #40]
++    ldr x11, [sp, #248]
++    ldr x12, [sp, #256]
++    ldr x13, [sp, #264]
+     add x6, x6, #16
+     add x0, x0, x23
+     add x2, x2, x24
+     b LoopRow
+ 
+ LoopRowEnd:
+-    sub sp, sp, #224
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulR4Int8.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulR4Int8.S
+index fe5207ad..adb0a42c 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulR4Int8.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulR4Int8.S
+@@ -33,9 +33,10 @@
+ 
+ asm_function MatMulR4Int8Neon64
+   sub sp, sp, #144
+-  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-  stp x19, x20, [sp], #16
++  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++  add x9, sp, #64
++  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++  stp x19, x20, [sp, #128]
+ 
+   mov w15, #0       // b col index
+   mov w16, #0       // a row index
+@@ -185,7 +186,6 @@ End2:
+   b L1
+ 
+ End1:
+-  sub sp, sp, #144
+   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+   ldp x19, x20, [sp], #16
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulWinogradFp32.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulWinogradFp32.S
 index 0b814ce4..23032ab9 100644
 --- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/MatmulWinogradFp32.S
@@ -256,6 +1709,562 @@ index 0b814ce4..23032ab9 100644
          ld1 {v8.4s}, [sp], #16
          ldp x19, x20, [sp], #16
          ldp x21, x22, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/PostFuncBiasReluC8.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/PostFuncBiasReluC8.S
+index 5355d302..1392ab4a 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/PostFuncBiasReluC8.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/PostFuncBiasReluC8.S
+@@ -34,8 +34,9 @@
+ 
+ asm_function PostFuncBiasReluC8
+   sub sp, sp, #128
+-  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
++  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++  add x9, sp, #64
++  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+ 
+   movi v26.4s, #6
+   scvtf v26.4s, v26.4s
+@@ -546,7 +547,6 @@ Loop_C1_7_Write:
+   b Loop_C1_7_Write
+ 
+ End:
+-  sub sp, sp, #128
+   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+   ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/PostFuncInt8C4Neon64.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/PostFuncInt8C4Neon64.S
+index 0818d74e..a240b64d 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/PostFuncInt8C4Neon64.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/PostFuncInt8C4Neon64.S
+@@ -54,14 +54,14 @@
+ 
+ asm_function PostFuncInt8C4Neon64
+   sub sp, sp, #16
+-  stp x24, x25, [sp], #16
++  stp x24, x25, [sp]
+ 
+-  ldr w8, [sp]
+-  ldr w9, [sp, #8]
+-  ldr w10, [sp, #16]
+-  ldr w11, [sp, #24]
+-  ldr w12, [sp, #32]
+-  ldr w13, [sp, #40]
++  ldr w8, [sp, #16]
++  ldr w9, [sp, #24]
++  ldr w10, [sp, #32]
++  ldr w11, [sp, #40]
++  ldr w12, [sp, #48]
++  ldr w13, [sp, #56]
+ 
+   dup v26.4s, w7
+   dup v27.4s, w8
+@@ -254,7 +254,6 @@ Loop_C1_3:
+ 
+ 
+ End:
+-  sub sp, sp, #16
+   ldp x24, x25, [sp], #16
+   ret
+ #endif
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/SPMM8x8Fp32.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/SPMM8x8Fp32.S
+index cfa9bdf8..614d83f8 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/SPMM8x8Fp32.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/SPMM8x8Fp32.S
+@@ -55,9 +55,10 @@
+ 
+ asm_function SPMM8x8Fp32
+     sub sp, sp, #144
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
+ 
+     // init output with bias
+     ldr w8, [x5], #4
+@@ -286,7 +287,6 @@ WRITE_OUT:
+     st1 {v14.4s, v15.4s}, [x4]
+ 
+ End:
+-  sub sp, sp, #144
+   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+   ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/TiledC4MatmulFp32.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/TiledC4MatmulFp32.S
+index 5987e68a..e0efc7b2 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/TiledC4MatmulFp32.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/TiledC4MatmulFp32.S
+@@ -29,8 +29,9 @@ asm_function TiledC4MatmulFp32
+ //x5: oc4
+ 
+ sub sp, sp, #128
+-st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
++st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++add x9, sp, #64
++st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+ 
+ mov x7, #4 //sizeof(float)
+ mul x3, x3, x7
+@@ -272,7 +273,6 @@ LoopOcHalf:
+     st1 {v20.4s, v21.4s, v22.4s, v23.4s}, [x0], #64
+ 
+ LoopOcEnd:
+-    sub sp, sp, #128
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/WinogradTransLeft.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/WinogradTransLeft.S
+index 4a26b251..243b19de 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/WinogradTransLeft.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/WinogradTransLeft.S
+@@ -30,7 +30,7 @@ asm_function WinogradTransLeft
+ //x6:length
+ 
+ sub sp, sp, #32
+-stp x19, x20, [sp], #32
++stp x19, x20, [sp]
+ 
+ mov x8, #16 // 4 * sizeof(float)
+ mul x8, x6, x8
+@@ -152,7 +152,6 @@ LoopH:
+     subs x4, x4, #1
+     bne LoopH
+ 
+-    sub sp, sp, #32
+     ldp x19, x20, [sp], #32
+     ret
+ 
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/WinogradTransRight.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/WinogradTransRight.S
+index 931fa016..95ee50a5 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/WinogradTransRight.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/WinogradTransRight.S
+@@ -30,7 +30,7 @@ asm_function WinogradTransRight
+ //x6: length
+ 
+ sub sp, sp, #16
+-stp x19, x20, [sp], #16
++stp x19, x20, [sp]
+ 
+ mov x8, #16 // 4 * sizeof(float)
+ mul x8, x6, x8
+@@ -155,7 +155,6 @@ LoopH:
+     subs x4, x4, #1
+     bne LoopH
+ 
+-    sub sp, sp, #16
+     ldp x19, x20, [sp], #16
+     ret
+ #endif
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/ConvDwFp16Center.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/ConvDwFp16Center.S
+index 221a1609..56f03dbd 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/ConvDwFp16Center.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/ConvDwFp16Center.S
+@@ -31,21 +31,22 @@ asm_function ConvDwFp16Center
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #192
+-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x25, x26, [sp], #16
++    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++    add x9, sp, #64
++    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x25, x26, [sp, #176]
+ 
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]
+-    ldr x10, [sp, #16]
+-    ldr x11, [sp, #24]
+-    ldr x12, [sp, #32]
+-    ldr x13, [sp, #40]
+-    ldr x14, [sp, #48]
+-    ldr x15, [sp, #56]
++    ldr x8, [sp, #192]
++    ldr x9, [sp, #200]
++    ldr x10, [sp, #208]
++    ldr x11, [sp, #216]
++    ldr x12, [sp, #224]
++    ldr x13, [sp, #232]
++    ldr x14, [sp, #240]
++    ldr x15, [sp, #248]
+ 
+     ld1 {v24.8h}, [x3]
+     movi v26.8h, #0x46, lsl #8
+@@ -301,7 +302,6 @@ asm_function ConvDwFp16Center
+         subs x4, x4, #1
+         bne LoopH
+ 
+-    sub sp, sp, #192
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/DeconvDwFp16Center.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/DeconvDwFp16Center.S
+index 1266b160..bb37a913 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/DeconvDwFp16Center.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/DeconvDwFp16Center.S
+@@ -30,14 +30,14 @@ asm_function DeconvDwFp16Center
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #32
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
++    stp x19, x20, [sp]
++    stp x21, x22, [sp, #16]
+ 
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]
+-    ldr x10, [sp, #16]
+-    ldr x11, [sp, #24]
+-    ldr x12, [sp, #32]
++    ldr x8, [sp, #32]
++    ldr x9, [sp, #40]
++    ldr x10, [sp, #48]
++    ldr x11, [sp, #56]
++    ldr x12, [sp, #64]
+ 
+     LoopH:
+         mov x15, x0
+@@ -69,7 +69,6 @@ asm_function DeconvDwFp16Center
+         subs x3, x3, #1
+         bne LoopH
+ 
+-    sub sp, sp, #32
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+     ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatVecMulFp16.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatVecMulFp16.S
+index 80a55b75..4f5441a3 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatVecMulFp16.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatVecMulFp16.S
+@@ -30,8 +30,9 @@
+ 
+ asm_function MatVecMulFp16Neon64
+   sub sp, sp, #128
+-  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+-  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
++  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
++  add x9, sp, #64
++  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
+ 
+   mov w14, #2      // sizeof(float16)
+   mul w8, w14, w5  // rhs depthx1 block stride
+@@ -184,7 +185,6 @@ Write1x1:
+   b Loop
+ 
+ End:
+-  sub sp, sp, #128
+   ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+   ld1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+   ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/Matmul12X16Fp16.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/Matmul12X16Fp16.S
+index a0e28b74..9f804fd3 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/Matmul12X16Fp16.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/Matmul12X16Fp16.S
+@@ -36,13 +36,14 @@
+ 
+ asm_function MatMul12x16Fp16Opt
+     sub sp, sp, #160
+-    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+-    st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
++    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
++    add x9, sp, #64
++    st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
+ 
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]
++    ldr x8, [sp, #160]
++    ldr x9, [sp, #168]
+ 
+ .macro CLEAR_OUTPUT_V8_V9
+     dup v8.4s, wzr
+@@ -1694,7 +1695,6 @@ LoopColEnd:
+         subs x6, x6, #12
+         bgt LoopRowStart
+ 
+-    sub sp, sp, #160
+     ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+     ld1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulBaseFp16Neon.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulBaseFp16Neon.S
+index 79fa12bc..31f1adbd 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulBaseFp16Neon.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulBaseFp16Neon.S
+@@ -34,13 +34,14 @@
+ 
+ asm_function MatmulBaseFp16Neon
+     sub sp, sp, #160
+-    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+-    st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
++    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
++    add x9, sp, #64
++    st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
+ 
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]  // act
++    ldr x8, [sp, #160]
++    ldr x9, [sp, #168]  // act
+     add x8, x8, x8  // stride * sizeof(float16_t)
+ 
+     add x16, x7, x7 // col * sizeof(float16_t)
+@@ -951,7 +952,6 @@ LoopColEnd:
+     add x0, x0, x15
+     bgt LoopRowStart
+ 
+-    sub sp, sp, #160
+     ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+     ld1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+     ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16.S
+index 6bb93f99..1d6b69a6 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16.S
+@@ -34,15 +34,16 @@
+ 
+ asm_function MatmulFp16Neon64
+   sub sp, sp, #144
+-  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+-  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+-  stp x19, x20, [sp], #16
++  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
++  add x9, sp, #64
++  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
++  stp x19, x20, [sp, #128]
+ 
+   mov w18, #16 // sizeof(float16) * 8
+   mul w15, w5, w18 // block stride of lhs/rhs: sizeof(float16) * 8 * depth
+   mov x11, x3 // bias flag
+   mov x19, #2
+-  ldr x17, [sp]
++  ldr x17, [sp, #144]
+   mul x17, x17, x19
+ 
+ L1:
+@@ -308,7 +309,7 @@ Relu:
+   fmax v31.8h, v31.8h, v14.8h
+ 
+ Write:
+-  ldrb w13, [sp, #8]
++  ldrb w13, [sp, #152]
+   cbz w13, WriteC8
+   cmp w7, #1
+   beq Write1
+@@ -877,14 +878,13 @@ End2:
+   subs w7, w7, #8 // rhs col - 8
+   add x1, x1, x15 // rhs ptr + stride
+   add x3, x3, #16 // bias ptr + stride
+-  ldrb w13, [sp, #8]
++  ldrb w13, [sp, #152]
+   cbz w13, NoDstStep
+   add x2, x2, #16 // dst ptr + stride
+ NoDstStep:
+   bgt L1
+ 
+ End1:
+-  sub sp, sp, #144
+   ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+   ld1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+   ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16Opt.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16Opt.S
+index 4a111066..21348f80 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16Opt.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16Opt.S
+@@ -34,12 +34,12 @@
+ 
+ asm_function MatmulFp16Neon64Opt
+     sub sp, sp, #96
+-    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
++    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
++    stp x19, x20, [sp, #64]
++    stp x21, x22, [sp, #80]
+ 
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]
++    ldr x8, [sp, #96]
++    ldr x9, [sp, #104]
+ 
+     mov x21, #32 // sizeof(float16_t) * 16
+     mul x17, x5, x21 // block stride of lhs/rhs: sizeof(float16_t) * 16 * depth
+@@ -1178,7 +1178,6 @@ LoopColEnd:
+         subs x6, x6, #16
+         bgt LoopRowStart
+ 
+-    sub sp, sp, #96
+     ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+     ldp x19, x20, [sp], #16
+     ldp x21, x22, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16OptV2.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16OptV2.S
+index 2d901a3d..40b788c9 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16OptV2.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulFp16OptV2.S
+@@ -34,15 +34,16 @@
+ 
+ asm_function MatmulFp16OptV2
+     sub sp, sp, #192
+-    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+-    st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
+-    stp x23, x24, [sp], #16
+-    stp x29, x30, [sp], #16
+-
+-    ldr x8, [sp]
+-    ldr x9, [sp, #8]  // writeMode
++    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
++    add x9, sp, #64
++    st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
++    stp x19, x20, [sp, #128]
++    stp x21, x22, [sp, #144]
++    stp x23, x24, [sp, #160]
++    stp x29, x30, [sp, #176]
++
++    ldr x8, [sp, #192]
++    ldr x9, [sp, #200]  // writeMode
+     lsl x8, x8, #1  // stride * sizeof(float16_t)
+ 
+     lsl x15, x7, #1 // col * sizeof(float16_t)
+@@ -2955,7 +2956,6 @@ Compute1x4Unit:
+         ret
+ 
+ End:
+-  sub sp, sp, #192
+   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+   ldp x19, x20, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulWinogradFp16.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulWinogradFp16.S
+index 9ee3c4d5..ca0542da 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulWinogradFp16.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/MatmulWinogradFp16.S
+@@ -27,9 +27,9 @@ asm_function MatrixMultiplyWinogradFp16
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+     sub sp, sp, #48
+-    st1 {v8.8h}, [sp], #16
+-    stp x19, x20, [sp], #16
+-    stp x21, x22, [sp], #16
++    st1 {v8.8h}, [sp]
++    stp x19, x20, [sp, #16]
++    stp x21, x22, [sp, #32]
+ 
+     mov x8, #2
+     mul x10, x5, x8    // n * 2
+@@ -210,7 +210,6 @@ asm_function MatrixMultiplyWinogradFp16
+             b LoopM
+ 
+     EndLoopM:
+-        sub sp, sp, #48
+         ld1 {v8.8h}, [sp], #16
+         ldp x19, x20, [sp], #16
+         ldp x21, x22, [sp], #16
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/TiledC4MatmulFp16.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/TiledC4MatmulFp16.S
+index d7570d18..5b616ae7 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/TiledC4MatmulFp16.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/TiledC4MatmulFp16.S
+@@ -22,8 +22,9 @@
+ asm_function TiledC4MatmulFp16
+ 
+ sub sp, sp, #128
+-st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+-st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
++st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
++add x9, sp, #64
++st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+ 
+ mov x7, #2 //sizeof(float)
+ mul x3, x3, x7
+@@ -265,7 +266,6 @@ LoopOcHalf:
+     st1 {v20.4h, v21.4h, v22.4h, v23.4h}, [x0], #32
+ 
+ LoopOcEnd:
+-    sub sp, sp, #128
+     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
+     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+     ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/VecMatmulFp16.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/VecMatmulFp16.S
+index d11dd472..0df891d3 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/VecMatmulFp16.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/VecMatmulFp16.S
+@@ -31,8 +31,9 @@
+ 
+ asm_function VecMatmulFp16Neon64_2
+   sub sp, sp, #128
+-  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+-  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
++  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
++  add x9, sp, #64
++  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
+ 
+ LoopCol:
+   mov x15, x0   // reload a ptr
+@@ -174,7 +175,6 @@ Write7:
+   b End
+ 
+ End:
+-  sub sp, sp, #128
+   ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
+   ld1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+   ret
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/WinogradTransLeftFp16.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/WinogradTransLeftFp16.S
+index 1970c16a..c9b4104e 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/WinogradTransLeftFp16.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/WinogradTransLeftFp16.S
+@@ -22,7 +22,7 @@
+ asm_function WinogradTransLeftFp16
+ 
+ sub sp, sp, #16
+-stp x19, x20, [sp], #16
++stp x19, x20, [sp]
+ 
+ mov x8, #8 // 4 * sizeof(float16)
+ mul x8, x6, x8
+@@ -144,7 +144,6 @@ LoopH:
+     subs x4, x4, #1
+     bne LoopH
+ 
+-    sub sp, sp, #16
+     ldp x19, x20, [sp], #16
+     ret
+ 
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/WinogradTransRightFp16.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/WinogradTransRightFp16.S
+index c575f504..46c3cd84 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/WinogradTransRightFp16.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/fp16/WinogradTransRightFp16.S
+@@ -22,7 +22,7 @@
+ asm_function WinogradTransRightFp16
+ 
+ sub sp, sp, #16
+-stp x19, x20, [sp], #16
++stp x19, x20, [sp]
+ 
+ mov x8, #8 // 4 * sizeof(float16)
+ mul x8, x6, x8
+@@ -147,7 +147,6 @@ LoopH:
+     subs x4, x4, #1
+     bne LoopH
+ 
+-    sub sp, sp, #16
+     ldp x19, x20, [sp], #16
+ 
+     ret
 -- 
 2.17.1
 
