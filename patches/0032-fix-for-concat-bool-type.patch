@@ -1,0 +1,25 @@
+From 282ca538e47b667a308ca38ee51a57c7f65f68f9 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Wed, 14 Aug 2024 09:50:45 +0800
+Subject: [PATCH] fix for concat bool type
+
+---
+ mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/concat.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/concat.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/concat.c
+index dc1ebb8e..d9efab09 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/concat.c
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/concat.c
+@@ -271,7 +271,7 @@ KernelBase *CreateConcat(OpParameter *param, int data_type) {
+   ConcatStruct *concat = (ConcatStruct *)malloc(sizeof(ConcatStruct));
+   NNACL_CHECK_NULL_RETURN_NULL(concat);
+   memset(concat, 0, sizeof(ConcatStruct));
+-  concat->data_type_ = kNumberTypeFloat32;
++  concat->data_type_ = data_type;
+   concat->inner_sizes_ = NULL;
+   concat->inputs_ptr_ = NULL;
+   concat->is_with_data_ = NULL;
+-- 
+2.17.1
+
