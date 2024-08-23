@@ -66,6 +66,7 @@ def do_patch(patch_dir, target_dir):
         '0030-generate-flatbuffer-notice.patch',
         '0031-fix-matmul-assemble-can-not-protect-stack-in-mutil-thread.patch',
         '0032-fix-for-concat-bool-type.patch',
+        '0036-fix-split-non-uniform-split.patch',
     ]
 
     cwd = os.getcwd()

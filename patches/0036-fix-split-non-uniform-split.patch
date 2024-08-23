@@ -1,0 +1,34 @@
+From 19edf6b71a81c21bcaa15e6e564fc6ad56a188da Mon Sep 17 00:00:00 2001
+From: rabbit-fgh <2955722401@qq.com>
+Date: Thu, 22 Aug 2024 11:22:18 +0800
+Subject: [PATCH] fix split problems
+
+---
+ .../plugin/device/cpu/kernel/nnacl/infer/split_infer.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/split_infer.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/split_infer.c
+index b017e259..1d3aabe1 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/split_infer.c
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/split_infer.c
+@@ -34,11 +34,13 @@ int UpdateSplitSize(const TensorC *const *inputs, size_t inputs_size, SplitParam
+   }
+   if (param->split_count_ == 0) {
+     const TensorC *input = inputs[0];
+-    if (input->shape_[param->split_dim_] % param->num_split_ != 0) {
+-      return NNACL_ERR;
+-    }
++    int32_t split_chunk_size = UP_DIV(input->shape_[param->split_dim_], param->num_split_);
+     for (int i = 0; i < param->num_split_; ++i) {
+-      param->split_sizes_[i] = input->shape_[param->split_dim_] / param->num_split_;
++      if (i != param->num_split_ - 1) {
++        param->split_sizes_[i] = split_chunk_size;
++      } else {
++        param->split_sizes_[i] = input->shape_[param->split_dim_] - split_chunk_size * i;
++      }
+     }
+   }
+   return NNACL_OK;
+-- 
+2.45.1.windows.1
+
