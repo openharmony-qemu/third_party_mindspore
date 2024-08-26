@@ -1,0 +1,474 @@
+From e101f6e61047ccd0a7531f426de7ba837800da0a Mon Sep 17 00:00:00 2001
+From: rabbit-fgh <2955722401@qq.com>
+Date: Mon, 26 Aug 2024 11:55:13 +0800
+Subject: [PATCH] nullptr1
+
+fix nullptr2
+---
+ mindspore/lite/mindir/src/mindir.cc           | 163 ++++++++++--------
+ mindspore/lite/mindir/src/mindir_tensor.cc    |   3 +-
+ .../control_flow/kernel/identity_kernel.cc    |  11 +-
+ mindspore/lite/src/litert/c_api/model_c.cc    |  11 ++
+ mindspore/lite/src/litert/cache_session.cc    |   4 +
+ .../lite/src/litert/cxx_api/model/model.cc    |  12 +-
+ mindspore/lite/src/litert/lite_mindrt.cc      |   4 +
+ .../lite/src/litert/pack_weight_manager.cc    |   3 +
+ .../cast_gather_reduce_fusion_pass.cc         |   1 +
+ .../reduce_concat_fusion_pass.cc              |   1 +
+ .../split_reduce_concat_fusion_pass.cc        |   1 +
+ mindspore/lite/src/litert/weight_decoder.cc   |   2 +
+ 12 files changed, 134 insertions(+), 82 deletions(-)
+
+diff --git a/mindspore/lite/mindir/src/mindir.cc b/mindspore/lite/mindir/src/mindir.cc
+index 39600e4d..93204fb8 100644
+--- a/mindspore/lite/mindir/src/mindir.cc
++++ b/mindspore/lite/mindir/src/mindir.cc
+@@ -37,13 +37,16 @@ PrimitivePtr MindIR_Activation_CreatePrimitive(ActivationType activation_type, f
+ ActivationType MindIR_Activation_GetActivationType(ConstPrimitivePtr primitive) {
+   if (primitive != nullptr) {
+     auto prim = static_cast<const schema::Primitive *>(primitive);
++    if (prim == nullptr) {
++      ActivationType en = static_cast<ActivationType>(0);
++      return en;
++    }
+     auto value = prim->value_as_Activation();
+-    if (prim != nullptr && value != nullptr) {
+-      return static_cast<ActivationType>(value->activation_type());
+-    } else {
++    if (value == nullptr) {
+       ActivationType en = static_cast<ActivationType>(0);
+       return en;
+     }
++    return static_cast<ActivationType>(value->activation_type());
+   } else {
+     ActivationType en = static_cast<ActivationType>(0);
+     return en;
+@@ -53,30 +56,34 @@ ActivationType MindIR_Activation_GetActivationType(ConstPrimitivePtr primitive)
+ void MindIR_Activation_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
+   if (primitive != nullptr && *primitive != nullptr) {
+     auto prim = static_cast<schema::Primitive *>(*primitive);
+-    auto value = prim->value_as_Activation();
+-    if (prim != nullptr && value != nullptr) {
+-      flatbuffers::FlatBufferBuilder fbb;
+-      auto ops_offset =
+-        schema::CreateActivation(fbb, static_cast<schema::ActivationType>(activation_type), value->alpha(),
+-                                 value->min_val(), value->max_val(), value->approximate());
+-      auto prim_offset =
+-        schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
+-      fbb.Finish(prim_offset);
+-      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+-      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+-      *primitive = ret_value;
++    if(prim != nullptr){
++      auto value = prim->value_as_Activation();
++      if (value != nullptr) {
++        flatbuffers::FlatBufferBuilder fbb;
++        auto ops_offset =
++          schema::CreateActivation(fbb, static_cast<schema::ActivationType>(activation_type), value->alpha(),
++                                  value->min_val(), value->max_val(), value->approximate());
++        auto prim_offset =
++          schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
++        fbb.Finish(prim_offset);
++        auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++        auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++        *primitive = ret_value;
++      }
+     }
+   }
+ }
+ float MindIR_Activation_GetAlpha(ConstPrimitivePtr primitive) {
+   if (primitive != nullptr) {
+     auto prim = static_cast<const schema::Primitive *>(primitive);
++    if(prim == nullptr){
++      return .0;
++    }
+     auto value = prim->value_as_Activation();
+-    if (prim != nullptr && value != nullptr) {
+-      return value->alpha();
+-    } else {
++    if(value == nullptr){
+       return .0;
+     }
++    return value->alpha();
+   } else {
+     return .0;
+   }
+@@ -85,29 +92,33 @@ float MindIR_Activation_GetAlpha(ConstPrimitivePtr primitive) {
+ void MindIR_Activation_SetAlpha(PrimitivePtr *primitive, float alpha) {
+   if (primitive != nullptr && *primitive != nullptr) {
+     auto prim = static_cast<schema::Primitive *>(*primitive);
+-    auto value = prim->value_as_Activation();
+-    if (prim != nullptr && value != nullptr) {
+-      flatbuffers::FlatBufferBuilder fbb;
+-      auto ops_offset = schema::CreateActivation(fbb, static_cast<schema::ActivationType>(value->activation_type()),
+-                                                 alpha, value->min_val(), value->max_val(), value->approximate());
+-      auto prim_offset =
+-        schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
+-      fbb.Finish(prim_offset);
+-      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+-      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+-      *primitive = ret_value;
++    if(prim != nullptr){
++      auto value = prim->value_as_Activation();
++      if (value != nullptr) {
++        flatbuffers::FlatBufferBuilder fbb;
++        auto ops_offset = schema::CreateActivation(fbb, static_cast<schema::ActivationType>(value->activation_type()),
++                                                  alpha, value->min_val(), value->max_val(), value->approximate());
++        auto prim_offset =
++          schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
++        fbb.Finish(prim_offset);
++        auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++        auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++        *primitive = ret_value;
++      }
+     }
+   }
+ }
+ float MindIR_Activation_GetMinVal(ConstPrimitivePtr primitive) {
+   if (primitive != nullptr) {
+     auto prim = static_cast<const schema::Primitive *>(primitive);
++    if(prim == nullptr){
++      return .0;
++    }
+     auto value = prim->value_as_Activation();
+-    if (prim != nullptr && value != nullptr) {
+-      return value->min_val();
+-    } else {
++    if(value == nullptr){
+       return .0;
+     }
++    return value->min_val();
+   } else {
+     return .0;
+   }
+@@ -116,29 +127,33 @@ float MindIR_Activation_GetMinVal(ConstPrimitivePtr primitive) {
+ void MindIR_Activation_SetMinVal(PrimitivePtr *primitive, float min_val) {
+   if (primitive != nullptr && *primitive != nullptr) {
+     auto prim = static_cast<schema::Primitive *>(*primitive);
+-    auto value = prim->value_as_Activation();
+-    if (prim != nullptr && value != nullptr) {
+-      flatbuffers::FlatBufferBuilder fbb;
+-      auto ops_offset = schema::CreateActivation(fbb, static_cast<schema::ActivationType>(value->activation_type()),
+-                                                 value->alpha(), min_val, value->max_val(), value->approximate());
+-      auto prim_offset =
+-        schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
+-      fbb.Finish(prim_offset);
+-      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+-      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+-      *primitive = ret_value;
++    if(prim != nullptr){
++      auto value = prim->value_as_Activation();
++      if (value != nullptr) {
++        flatbuffers::FlatBufferBuilder fbb;
++        auto ops_offset = schema::CreateActivation(fbb, static_cast<schema::ActivationType>(value->activation_type()),
++                                                  value->alpha(), min_val, value->max_val(), value->approximate());
++        auto prim_offset =
++          schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
++        fbb.Finish(prim_offset);
++        auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++        auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++        *primitive = ret_value;
++      }
+     }
+   }
+ }
+ float MindIR_Activation_GetMaxVal(ConstPrimitivePtr primitive) {
+   if (primitive != nullptr) {
+     auto prim = static_cast<const schema::Primitive *>(primitive);
++    if(prim == nullptr){
++      return .0;
++    }
+     auto value = prim->value_as_Activation();
+-    if (prim != nullptr && value != nullptr) {
+-      return value->max_val();
+-    } else {
++    if(value == nullptr){
+       return .0;
+     }
++    return value->max_val();
+   } else {
+     return .0;
+   }
+@@ -147,29 +162,33 @@ float MindIR_Activation_GetMaxVal(ConstPrimitivePtr primitive) {
+ void MindIR_Activation_SetMaxVal(PrimitivePtr *primitive, float max_val) {
+   if (primitive != nullptr && *primitive != nullptr) {
+     auto prim = static_cast<schema::Primitive *>(*primitive);
+-    auto value = prim->value_as_Activation();
+-    if (prim != nullptr && value != nullptr) {
+-      flatbuffers::FlatBufferBuilder fbb;
+-      auto ops_offset = schema::CreateActivation(fbb, static_cast<schema::ActivationType>(value->activation_type()),
+-                                                 value->alpha(), value->min_val(), max_val, value->approximate());
+-      auto prim_offset =
+-        schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
+-      fbb.Finish(prim_offset);
+-      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+-      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+-      *primitive = ret_value;
++    if(prim != nullptr){
++      auto value = prim->value_as_Activation();
++      if (value != nullptr) {
++        flatbuffers::FlatBufferBuilder fbb;
++        auto ops_offset = schema::CreateActivation(fbb, static_cast<schema::ActivationType>(value->activation_type()),
++                                                  value->alpha(), value->min_val(), max_val, value->approximate());
++        auto prim_offset =
++          schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
++        fbb.Finish(prim_offset);
++        auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++        auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++        *primitive = ret_value;
++      }
+     }
+   }
+ }
+ bool MindIR_Activation_GetApproximate(ConstPrimitivePtr primitive) {
+   if (primitive != nullptr) {
+     auto prim = static_cast<const schema::Primitive *>(primitive);
++    if(prim == nullptr){
++      return false;
++    }
+     auto value = prim->value_as_Activation();
+-    if (prim != nullptr && value != nullptr) {
+-      return value->approximate();
+-    } else {
++    if(value == nullptr){
+       return false;
+     }
++    return value->approximate();
+   } else {
+     return false;
+   }
+@@ -178,17 +197,19 @@ bool MindIR_Activation_GetApproximate(ConstPrimitivePtr primitive) {
+ void MindIR_Activation_SetApproximate(PrimitivePtr *primitive, bool approximate) {
+   if (primitive != nullptr && *primitive != nullptr) {
+     auto prim = static_cast<schema::Primitive *>(*primitive);
+-    auto value = prim->value_as_Activation();
+-    if (prim != nullptr && value != nullptr) {
+-      flatbuffers::FlatBufferBuilder fbb;
+-      auto ops_offset = schema::CreateActivation(fbb, static_cast<schema::ActivationType>(value->activation_type()),
+-                                                 value->alpha(), value->min_val(), value->max_val(), approximate);
+-      auto prim_offset =
+-        schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
+-      fbb.Finish(prim_offset);
+-      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
+-      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+-      *primitive = ret_value;
++    if(prim != nullptr){
++      auto value = prim->value_as_Activation();
++      if (value != nullptr) {
++        flatbuffers::FlatBufferBuilder fbb;
++        auto ops_offset = schema::CreateActivation(fbb, static_cast<schema::ActivationType>(value->activation_type()),
++                                                  value->alpha(), value->min_val(), value->max_val(), approximate);
++        auto prim_offset =
++          schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ACTIVATION), ops_offset.o);
++        fbb.Finish(prim_offset);
++        auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++        auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++        *primitive = ret_value;
++      }
+     }
+   }
+ }
+diff --git a/mindspore/lite/mindir/src/mindir_tensor.cc b/mindspore/lite/mindir/src/mindir_tensor.cc
+index 0e6a631e..c7dd19b2 100644
+--- a/mindspore/lite/mindir/src/mindir_tensor.cc
++++ b/mindspore/lite/mindir/src/mindir_tensor.cc
+@@ -54,7 +54,7 @@ TensorPtr MindIR_Tensor_Create(const char *name, DataType data_type, const int32
+ std::string MindIR_Tensor_GetName(ConstTensorPtr tensor) {
+   if (tensor != nullptr) {
+     auto value = static_cast<const schema::Tensor *>(tensor);
+-    if (value != nullptr) {
++    if (value != nullptr && value->name() != nullptr) {
+       return value->name()->str();
+     } else {
+       return "";
+@@ -360,7 +360,6 @@ void MindIR_Tensor_Destroy(TensorPtr *tensor) {
+     MindIRMemoryManager::GetInstance()->DeleteTensor(schema);
+     *tensor = nullptr;
+   }
+-  *tensor = nullptr;
+ }
+ }  // namespace lite
+ }  // namespace mindspore
+diff --git a/mindspore/lite/src/control_flow/kernel/identity_kernel.cc b/mindspore/lite/src/control_flow/kernel/identity_kernel.cc
+index a43a5caf..21ef3808 100644
+--- a/mindspore/lite/src/control_flow/kernel/identity_kernel.cc
++++ b/mindspore/lite/src/control_flow/kernel/identity_kernel.cc
+@@ -99,8 +99,13 @@ KernelExec *IdentityKernel::Create(std::vector<lite::Tensor *> in_tensors, std::
+   auto lite_kernel = new IdentityKernel(param, in_tensors, out_tensors, ctx);
+   MS_CHECK_TRUE_MSG(lite_kernel != nullptr, nullptr, "new inner kernel failed.");
+   std::shared_ptr<kernel::Kernel> shared_kernel(lite_kernel);
+-  auto *kernel_exec = new KernelExec(shared_kernel);
+-  kernel_exec->set_context(ctx);
+-  return kernel_exec;
++  if(shared_kernel != nullptr){
++    auto *kernel_exec = new KernelExec(shared_kernel);
++    kernel_exec->set_context(ctx);
++    return kernel_exec;
++  } else {
++    MS_LOG(ERROR) << "malloc shared_kernel failed.";
++    return nullptr;
++  }
+ }
+ }  // namespace mindspore::kernel
+diff --git a/mindspore/lite/src/litert/c_api/model_c.cc b/mindspore/lite/src/litert/c_api/model_c.cc
+index 4f40b3d3..661a8d06 100644
+--- a/mindspore/lite/src/litert/c_api/model_c.cc
++++ b/mindspore/lite/src/litert/c_api/model_c.cc
+@@ -385,6 +385,13 @@ char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_t *num) {
+   }
+   for (size_t i = 0; i < loss_name.size(); i++) {
+     name[i] = static_cast<char *>(malloc(loss_name[i].size() + 1));
++    if (name[i] == nullptr) {
++      for(size_t j = 0; j < i; j++){
++        free(name[j]);
++      }
++      MS_LOG(ERROR) << "Failed to malloc name.";
++      return nullptr;
++    }
+     strcpy(name[i], loss_name[i].c_str());
+   }
+   return name;
+@@ -618,6 +625,10 @@ OH_AI_Status OH_AI_ExportModelBuffer(OH_AI_ModelHandle model, OH_AI_ModelType mo
+                                                    export_inference_only, tensor_name);
+   auto data = static_cast<char *>(buffer.MutableData());
+   *model_data = (char *) malloc(buffer.DataSize());
++  if (*model_data == nullptr) {
++    MS_LOG(ERROR) << "*model_data is nullptr.";
++    return OH_AI_STATUS_LITE_NULLPTR;
++  }
+   *data_size = buffer.DataSize();
+   memcpy(*model_data, data, buffer.DataSize());
+   if (!ret.IsOk()) {
+diff --git a/mindspore/lite/src/litert/cache_session.cc b/mindspore/lite/src/litert/cache_session.cc
+index 7bafe3f7..e128c933 100644
+--- a/mindspore/lite/src/litert/cache_session.cc
++++ b/mindspore/lite/src/litert/cache_session.cc
+@@ -209,6 +209,10 @@ int CacheSession::LoadModelAndCompileByPath(const std::string &model_path, minds
+     return RET_ERROR;
+   } else {
+     model = ImportInOutFromBuffer(model_buf, model_size, true, model_type, model_path);
++    if (model == nullptr) {
++      MS_LOG(ERROR) << "Import model failed";
++      return RET_ERROR;
++    }
+     dynamic_cast<LiteModel *>(model)->PrepareInnerTensors();
+   }
+   if (model == nullptr) {
+diff --git a/mindspore/lite/src/litert/cxx_api/model/model.cc b/mindspore/lite/src/litert/cxx_api/model/model.cc
+index 2814da41..282c752e 100644
+--- a/mindspore/lite/src/litert/cxx_api/model/model.cc
++++ b/mindspore/lite/src/litert/cxx_api/model/model.cc
+@@ -297,6 +297,12 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
+ 
+ Status Model::Build(GraphCell graph, const std::shared_ptr<Context> &model_context,
+                     const std::shared_ptr<TrainCfg> &train_cfg) {
++std::stringstream err_msg;
++if (model_context == nullptr) {
++  err_msg << "Invalid null context.";
++  MS_LOG(ERROR) << err_msg.str();
++  return Status(kLiteNullptr, err_msg.str());
++}
+ #ifdef ENABLE_HI_APP_EVENT
+   uint64_t begin_time = mindspore::lite::HiAppEventConfig::GetInstance()->GetTimeMs();
+   std::string devices;
+@@ -304,7 +310,6 @@ Status Model::Build(GraphCell graph, const std::shared_ptr<Context> &model_conte
+     devices += std::to_string(device->GetDeviceType()) + " ";
+   }
+ #endif
+-  std::stringstream err_msg;
+   if (impl_ == nullptr) {
+     MS_LOG(ERROR) << "Model implement is null.";
+     return kLiteNullptr;
+@@ -315,11 +320,6 @@ Status Model::Build(GraphCell graph, const std::shared_ptr<Context> &model_conte
+     MS_LOG(ERROR) << err_msg.str();
+     return Status(kLiteNullptr, err_msg.str());
+   }
+-  if (model_context == nullptr) {
+-    err_msg << "Invalid null context.";
+-    MS_LOG(ERROR) << err_msg.str();
+-    return Status(kLiteNullptr, err_msg.str());
+-  }
+ #if defined(ENABLE_PRE_INFERENCE) && defined(__linux__) && !defined(Debug)
+   if (lite::GetNumThreads() == lite::kSingleThread && impl_->IsEnablePreInference()) {
+     pid_t pid = fork();
+diff --git a/mindspore/lite/src/litert/lite_mindrt.cc b/mindspore/lite/src/litert/lite_mindrt.cc
+index fe7b64f2..4d1b4ba6 100644
+--- a/mindspore/lite/src/litert/lite_mindrt.cc
++++ b/mindspore/lite/src/litert/lite_mindrt.cc
+@@ -106,6 +106,10 @@ int LiteOpActor::IsolateInputData(std::vector<std::shared_ptr<LiteOpActor>> *act
+         old_tensor->set_data_type(kernel_->desc().data_type);
+       }
+       SetTensorListTensorDataType(kernel_->desc().data_type, old_tensor);
++      if (kernel_->Context() == nullptr) {
++        MS_LOG(ERROR) << "kernel_->Context() is nullptr.";
++        return RET_NULL_PTR;
++      }
+       old_tensor->set_allocator(kernel_->Context()->allocator);
+       continue;
+     }
+diff --git a/mindspore/lite/src/litert/pack_weight_manager.cc b/mindspore/lite/src/litert/pack_weight_manager.cc
+index 09f4e4b4..554bf4dc 100644
+--- a/mindspore/lite/src/litert/pack_weight_manager.cc
++++ b/mindspore/lite/src/litert/pack_weight_manager.cc
+@@ -264,6 +264,9 @@ void PackWeightManager::FreePackWeight(std::string runner_id, std::string model_
+       MS_LOG(INFO) << "free pack weight of runner id: " << runner_id;
+       pack_weight_->FreePackWeight(runner_id);
+     }
++  } else {
++    MS_LOG(INFO) << "pack_weight_ is nullptr.";
++    return;
+   }
+   if (model_id.empty()) {
+     MS_LOG(INFO) << "model id is empty.";
+diff --git a/mindspore/lite/src/litert/pass/online_fusion/cast_gather_reduce_fusion_pass.cc b/mindspore/lite/src/litert/pass/online_fusion/cast_gather_reduce_fusion_pass.cc
+index 4892292c..00186dc7 100644
+--- a/mindspore/lite/src/litert/pass/online_fusion/cast_gather_reduce_fusion_pass.cc
++++ b/mindspore/lite/src/litert/pass/online_fusion/cast_gather_reduce_fusion_pass.cc
+@@ -127,6 +127,7 @@ int CastGatherReduceOnlineFusionPass::CreateCastGatherReduceCustomNode(LiteGraph
+   (void)memcpy(prim, fbb.GetBufferPointer(), fbb.GetSize());
+   auto online_fusion_prim = flatbuffers::GetRoot<schema::Primitive>(prim);
+   if (online_fusion_prim == nullptr) {
++    free(prim)
+     MS_LOG(ERROR) << "GetRoot CastGatherReduceFusion primitive failed.";
+     return RET_ERROR;
+   }
+diff --git a/mindspore/lite/src/litert/pass/online_fusion/reduce_concat_fusion_pass.cc b/mindspore/lite/src/litert/pass/online_fusion/reduce_concat_fusion_pass.cc
+index 5cfec79b..21115cc5 100644
+--- a/mindspore/lite/src/litert/pass/online_fusion/reduce_concat_fusion_pass.cc
++++ b/mindspore/lite/src/litert/pass/online_fusion/reduce_concat_fusion_pass.cc
+@@ -135,6 +135,7 @@ int ReduceConcatOnlineFusionPass::CreateReduceConcatCustomNode(LiteGraph::Node *
+   (void)memcpy(prim, fbb.GetBufferPointer(), fbb.GetSize());
+   auto online_fusion_prim = flatbuffers::GetRoot<schema::Primitive>(prim);
+   if (online_fusion_prim == nullptr) {
++    free(prim)
+     MS_LOG(ERROR) << "GetRoot ReduceConcatFusion primitive failed.";
+     return RET_ERROR;
+   }
+diff --git a/mindspore/lite/src/litert/pass/online_fusion/split_reduce_concat_fusion_pass.cc b/mindspore/lite/src/litert/pass/online_fusion/split_reduce_concat_fusion_pass.cc
+index e6f1353f..f9a08a04 100644
+--- a/mindspore/lite/src/litert/pass/online_fusion/split_reduce_concat_fusion_pass.cc
++++ b/mindspore/lite/src/litert/pass/online_fusion/split_reduce_concat_fusion_pass.cc
+@@ -233,6 +233,7 @@ int SplitReduceConcatOnlineFusionPass::CreateCustomNode(LiteGraph::Node *node, S
+   (void)memcpy(prim, fbb.GetBufferPointer(), fbb.GetSize());
+   auto online_fusion_prim = flatbuffers::GetRoot<schema::Primitive>(prim);
+   if (online_fusion_prim == nullptr) {
++    free(prim)
+     MS_LOG(ERROR) << "GetRoot SplitReduceConcatFusion primitive failed.";
+     return RET_ERROR;
+   }
+diff --git a/mindspore/lite/src/litert/weight_decoder.cc b/mindspore/lite/src/litert/weight_decoder.cc
+index d851ea1f..7872b83f 100644
+--- a/mindspore/lite/src/litert/weight_decoder.cc
++++ b/mindspore/lite/src/litert/weight_decoder.cc
+@@ -177,6 +177,8 @@ int WeightDecoder::UnPackToInt(const SchemaTensorWrapper &src_tensor, lite::Tens
+ int WeightDecoder::UnPack(const SchemaTensorWrapper &src_tensor, lite::Tensor *dst_tensor) {
+   MS_ASSERT(src_tensor.handler() != nullptr);
+   MS_ASSERT(src_tensor.data() != nullptr);
++  MS_CHECK_TRUE_MSG(src_tensor.handler()->dims() != nullptr, RET_ERROR, "dims is nullptr");
++  MS_CHECK_TRUE_MSG(src_tensor.handler()->name() != nullptr, RET_ERROR, "name is nullptr");
+   STATUS ret = RET_OK;
+   if (src_tensor.handler()->enableHuffmanCode()) {
+     ret = WeightDecoder::DecodeHuffmanCode(src_tensor, dst_tensor);
+-- 
+2.45.1.windows.1
+
