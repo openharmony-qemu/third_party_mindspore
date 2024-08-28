@@ -68,6 +68,7 @@ def do_patch(patch_dir, target_dir):
         '0032-fix-for-concat-bool-type.patch',
         '0033-fix-nullptr-etal.patch',
         '0036-fix-split-non-uniform-split.patch',
+        '0037-fix-for-fuzz-problem.patch',
     ]
 
     cwd = os.getcwd()
