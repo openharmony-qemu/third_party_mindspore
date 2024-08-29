@@ -67,6 +67,7 @@ def do_patch(patch_dir, target_dir):
         '0031-fix-matmul-assemble-can-not-protect-stack-in-mutil-thread.patch',
         '0032-fix-for-concat-bool-type.patch',
         '0033-fix-nullptr-etal.patch',
+        '0034-fix-semicolon-and-nullptr-etal.patch',
         '0036-fix-split-non-uniform-split.patch',
         '0037-fix-for-fuzz-problem.patch',
     ]
