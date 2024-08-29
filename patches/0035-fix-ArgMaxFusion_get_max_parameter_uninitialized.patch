@@ -1,0 +1,24 @@
+From 2d816538b2663a21240a3bff38a876e75e2d7e2d Mon Sep 17 00:00:00 2001
+From: rabbit-fgh <2955722401@qq.com>
+Date: Thu, 29 Aug 2024 19:47:59 +0800
+Subject: [PATCH] fix ArgMaxFusion
+
+---
+ mindspore/lite/src/litert/kernel/cpu/int8/argminmax_int8.cc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mindspore/lite/src/litert/kernel/cpu/int8/argminmax_int8.cc b/mindspore/lite/src/litert/kernel/cpu/int8/argminmax_int8.cc
+index 7cb872d9..ecf7920a 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/int8/argminmax_int8.cc
++++ b/mindspore/lite/src/litert/kernel/cpu/int8/argminmax_int8.cc
+@@ -69,6 +69,7 @@ int ArgMinMaxInt8CPUKernel::Prepare() {
+   compute_param_->topk_ = param->topk_;
+   compute_param_->out_value_ = param->out_value_;
+   compute_param_->keep_dims_ = param->keep_dims_;
++  compute_param_->get_max_ = (param->op_parameter_.type_ == PrimType_ArgMinFusion ? false : true);
+ 
+   out_quant_arg_ = reinterpret_cast<QuantArg *>(malloc(sizeof(QuantArg)));
+   if (out_quant_arg_ == nullptr) {
+-- 
+2.45.1.windows.1
+
