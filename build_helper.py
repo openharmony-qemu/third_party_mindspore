@@ -71,6 +71,7 @@ def do_patch(patch_dir, target_dir):
         '0035-fix-ArgMaxFusion_get_max_parameter_uninitialized.patch',
         '0036-fix-split-non-uniform-split.patch',
         '0037-fix-for-fuzz-problem.patch',
+        '0038-refactor-nnrt-allocator-to-singleton.patch',
     ]
 
     cwd = os.getcwd()

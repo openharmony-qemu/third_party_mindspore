@@ -1,0 +1,325 @@
+From 16b0a56d18d14046e6987ef3abb21ba48915722b Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Wed, 28 Aug 2024 10:27:00 +0800
+Subject: [PATCH] refactor-nnrt-allocator-to-singleton
+
+---
+ .../src/litert/cxx_api/model/model_impl.cc    |   6 +-
+ .../litert/delegate/nnrt/nnrt_allocator.cc    | 114 +++++++++++++-----
+ .../src/litert/delegate/nnrt/nnrt_allocator.h |  13 +-
+ .../litert/delegate/nnrt/nnrt_model_kernel.cc |  16 +--
+ mindspore/lite/src/litert/lite_session.cc     |   4 +
+ mindspore/lite/src/tensor.cc                  |   8 ++
+ 6 files changed, 113 insertions(+), 48 deletions(-)
+
+diff --git a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
+index 6a73a927..b7fa3c65 100644
+--- a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
++++ b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
+@@ -321,7 +321,11 @@ Status ModelImpl::Build() {
+ 
+ static void ResetTensorData(std::vector<void *> old_data, const std::vector<lite::Tensor *> &tensors) {
+   for (size_t j = 0; j < old_data.size(); j++) {
+-    tensors.at(j)->set_data(old_data.at(j));
++    auto tensor = tensors.at(j);
++    if (old_data.at(j) != tensor->data()) {
++      tensor->FreeData();
++    }
++    tensor->set_data(old_data.at(j));
+   }
+ }
+ 
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
+index 4910343f..c160315e 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
+@@ -25,53 +25,100 @@
+ 
+ namespace mindspore {
+ namespace lite {
+-NNRTAllocator::~NNRTAllocator() {
++std::shared_ptr<NNRTAllocator> NNRTAllocator::GetInstance() {
++  static std::shared_ptr<NNRTAllocator> instance(new (std::nothrow) NNRTAllocator());
++  return instance;
++}
++
++void NNRTAllocator::ClearFreeList() {
+   std::lock_guard<std::mutex> locker(mutex_);
+-  for (auto &it : allocated_list_) {
++  for (auto &it : free_list_) {
+     auto membuf = it.second;
++    if (membuf == nullptr) {
++      MS_LOG(ERROR) << "membuf in free_list_ is nullptr.";
++      continue;
++    }
+     OH_NNTensor_Destroy(&membuf->tensor_);
+     OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
+     delete membuf;
++    membuf = nullptr;
++  }
++  free_list_.clear();
++}
++
++void NNRTAllocator::FreeAllocatedTensor(void *data) {
++  std::lock_guard<std::mutex> locker(mutex_);
++  auto iter = allocated_list_.find(data);
++  if (iter == allocated_list_.end()) {
++    return;
++  }
++  auto membuf = iter->second;
++  if (membuf == nullptr) {
++    MS_LOG(ERROR) << "membuf in allocated_list_ is nullptr, data: " << data;
++    return;
++  }
++  membuf->ref_count_ = 0;
++  (void)allocated_list_.erase(iter);
++  OH_NNTensor_Destroy(&membuf->tensor_);
++  OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
++  delete membuf;
++  membuf = nullptr;
++}
++
++NNRTAllocator::~NNRTAllocator() {
++  std::lock_guard<std::mutex> locker(mutex_);
++  for (auto &it : allocated_list_) {
++    auto membuf = it.second;
++    if (membuf != nullptr) {
++      MS_LOG(ERROR) << "NN_Tensor is not released, may lead to memory leak, data ptr: " << membuf->data << ", size: "
++                    << membuf->size;
++    }
+   }
+-  allocated_list_.clear();
+ 
+   for (auto &it : free_list_) {
+     auto membuf = it.second;
+-    OH_NNTensor_Destroy(&membuf->tensor_);
+-    OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
+-    delete membuf;
++    if (membuf != nullptr) {
++      MS_LOG(ERROR) << "NN_Tensor is not released, may lead to memory leak, data ptr: " << membuf->data << ", size: "
++                    << membuf->size;
++    }
+   }
+-  free_list_.clear();
+ }
+ 
+-NN_TensorDesc *NNRTAllocator::CreateNNRtTensorDesc(const std::vector<int> &shape, const TypeId data_type,
+-                                                   const Format format, const std::string &name) {
+-  auto tensor_desc = OH_NNTensorDesc_Create();
+-  if (tensor_desc == nullptr) {
+-    MS_LOG(ERROR) << "OH_NNTensorDesc_Create failed, i = " << index_;
+-    return nullptr;
+-  }
++OH_NN_ReturnCode NNRTAllocator::SetTensorDesc(NN_TensorDesc *tensor_desc, const std::vector<int> &shape,
++                                              const TypeId data_type, const Format format, const std::string &name) {
+   OH_NN_ReturnCode ret = OH_NNTensorDesc_SetShape(tensor_desc, shape.data(), shape.size());
+   if (ret != OH_NN_SUCCESS) {
+-    MS_LOG(ERROR) << "OH_NNTensorDesc_SetShape failed, i = " << index_ << ", shape: " << shape;
+-    OH_NNTensorDesc_Destroy(&tensor_desc);
+-    return nullptr;
++    MS_LOG(ERROR) << "OH_NNTensorDesc_SetShape failed, shape: " << shape << ", name: " << name;
++    return ret;
+   }
+   ret = OH_NNTensorDesc_SetDataType(tensor_desc, CastToNNRtDataType(data_type));
+   if (ret != OH_NN_SUCCESS) {
+-    MS_LOG(ERROR) << "OH_NNTensorDesc_SetDataType failed, i = " << index_ << ", data_type: " << data_type;
+-    OH_NNTensorDesc_Destroy(&tensor_desc);
+-    return nullptr;
++    MS_LOG(ERROR) << "OH_NNTensorDesc_SetDataType failed, data_type: " << data_type << ", name: " << name;
++    return ret;
+   }
+   ret = OH_NNTensorDesc_SetFormat(tensor_desc, CastToNNRtFormat(format));
+   if (ret != OH_NN_SUCCESS) {
+-    MS_LOG(ERROR) << "OH_NNTensorDesc_SetFormat failed, i = " << index_ << ", format: " << format;
+-    OH_NNTensorDesc_Destroy(&tensor_desc);
+-    return nullptr;
++    MS_LOG(ERROR) << "OH_NNTensorDesc_SetFormat failed, format: " << format << ", name: " << name;
++    return ret;
+   }
+   ret = OH_NNTensorDesc_SetName(tensor_desc, name.c_str());
+   if (ret != OH_NN_SUCCESS) {
+-    MS_LOG(ERROR) << "OH_NNTensorDesc_SetName failed, i = " << index_ << ", name: " << name;
++    MS_LOG(ERROR) << "OH_NNTensorDesc_SetName failed, name: " << name;
++    return ret;
++  }
++  return ret;
++}
++
++NN_TensorDesc *NNRTAllocator::CreateNNRtTensorDesc(const std::vector<int> &shape, const TypeId data_type,
++                                                   const Format format, const std::string &name) {
++  auto tensor_desc = OH_NNTensorDesc_Create();
++  if (tensor_desc == nullptr) {
++    MS_LOG(ERROR) << "OH_NNTensorDesc_Create failed, name: " << name;
++    return nullptr;
++  }
++  OH_NN_ReturnCode ret = SetTensorDesc(tensor_desc, shape, data_type, format, name);
++  if (ret != OH_NN_SUCCESS) {
++    MS_LOG(ERROR) << "SetTensorDesc failed, name: " << name;
+     OH_NNTensorDesc_Destroy(&tensor_desc);
+     return nullptr;
+   }
+@@ -82,12 +129,17 @@ void *NNRTAllocator::MallocByDesc(size_t size, const std::vector<int> &shape, co
+                                   const Format format, const std::string &name) {
+   std::lock_guard<std::mutex> locker(mutex_);
+   auto iter = free_list_.lower_bound(size);
+-  if (iter != free_list_.end()) {
++  if (iter != free_list_.end() && (size == iter->second->size)) {
+     auto membuf = iter->second;
+-    membuf->ref_count_ = 0;
+-    (void)free_list_.erase(iter);
+-    allocated_list_[membuf->data] = membuf;
+-    return membuf->data;
++    OH_NN_ReturnCode ret = SetTensorDesc(membuf->tensor_desc_, shape, data_type, format, name);
++    if (ret != OH_NN_SUCCESS) {
++      MS_LOG(ERROR) << "SetTensorDesc failed, name: " << name;
++    } else {
++      membuf->ref_count_ = 0;
++      (void)free_list_.erase(iter);
++      allocated_list_[membuf->data] = membuf;
++      return membuf->data;
++    }
+   }
+ 
+   auto membuf = new (std::nothrow) MemBuf();
+@@ -104,14 +156,14 @@ void *NNRTAllocator::MallocByDesc(size_t size, const std::vector<int> &shape, co
+   }
+   membuf->tensor_ = OH_NNTensor_Create(device_id_, membuf->tensor_desc_);
+   if (membuf->tensor_ == nullptr) {
+-    MS_LOG(ERROR) << "OH_NNTensor_CreateWithSize failed, i = " << index_;
++    MS_LOG(ERROR) << "OH_NNTensor_CreateWithSize failed, name: " << name;
+     OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
+     delete membuf;
+     return nullptr;
+   }
+   membuf->data = OH_NNTensor_GetDataBuffer(membuf->tensor_);
+   if (membuf->data == nullptr) {
+-    MS_LOG(ERROR) << "OH_NNTensor_GetDataBuffer failed, i = " << index_;
++    MS_LOG(ERROR) << "OH_NNTensor_GetDataBuffer failed, name: " << name;
+     OH_NNTensor_Destroy(&membuf->tensor_);
+     OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
+     delete membuf;
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
+index ef27f307..ac599770 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
+@@ -31,19 +31,19 @@ struct OH_NNExecutor;
+ 
+ namespace mindspore {
+ namespace lite {
+-enum MemoryCategory { NNRT_INPUT, NNRT_OUTPUT };
+ 
+ class NNRTAllocator : public Allocator {
+  public:
+-  NNRTAllocator(OH_NNExecutor *executor, int index, size_t device_id, MemoryCategory memory_category)
+-      : index_(index), device_id_(device_id), memory_category_(memory_category), executor_(executor) {}
++  NNRTAllocator() {}
+   ~NNRTAllocator() override;
+-
++  static std::shared_ptr<NNRTAllocator> GetInstance();
+   void *Malloc(size_t size) override;
+   void *MallocByDesc(size_t size, const std::vector<int> &shape, const TypeId data_type, const Format format,
+                      const std::string &name);
+   NN_TensorDesc *CreateNNRtTensorDesc(const std::vector<int> &shape, const TypeId data_type, const Format format,
+                                       const std::string &name);
++  OH_NN_ReturnCode SetTensorDesc(NN_TensorDesc *tensor_desc, const std::vector<int> &shape, const TypeId data_type,
++                                 const Format format, const std::string &name);
+   void Free(void *ptr) override;
+   int RefCount(void *ptr) override;
+   int SetRefCount(void *ptr, int ref_count) override;
+@@ -56,6 +56,9 @@ class NNRTAllocator : public Allocator {
+     }
+     return nullptr;
+   }
++  void SetDeviceId(size_t id) { device_id_ = id; }
++  void ClearFreeList();
++  void FreeAllocatedTensor(void *data);
+ 
+  private:
+   struct MemBuf {
+@@ -66,9 +69,7 @@ class NNRTAllocator : public Allocator {
+     size_t size{0};
+   };
+ 
+-  int index_{0};
+   size_t device_id_{0};
+-  MemoryCategory memory_category_{NNRT_INPUT};
+   OH_NNExecutor *executor_{nullptr};
+   std::mutex mutex_;
+   // <membuf->memory_->data, membuf>
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
+index 1411020b..26c4633a 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
+@@ -24,20 +24,16 @@ constexpr auto kDynamicDims = "DynamicDims";
+ }
+ 
+ int NNRTModelKernel::Prepare() {
++  auto nnrt_allocator = lite::NNRTAllocator::GetInstance();
++  if (nnrt_allocator == nullptr) {
++    MS_LOG(ERROR) << "Get NNRTAllocator failed";
++    return lite::RET_NULL_PTR;
++  }
++  nnrt_allocator->SetDeviceId(nnrt_device_info_.device_id_);
+   for (size_t i = 0; i < inputs_.size(); i++) {
+-    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor_, i, nnrt_device_info_.device_id_, lite::NNRT_INPUT);
+-    if (nnrt_allocator == nullptr) {
+-      MS_LOG(ERROR) << "Create NNRTAllocator failed";
+-      return lite::RET_NULL_PTR;
+-    }
+     inputs_[i].SetAllocator(nnrt_allocator);
+   }
+   for (size_t i = 0; i < outputs_.size(); i++) {
+-    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor_, i, nnrt_device_info_.device_id_, lite::NNRT_OUTPUT);
+-    if (nnrt_allocator == nullptr) {
+-      MS_LOG(ERROR) << "Create NNRTAllocator failed";
+-      return lite::RET_NULL_PTR;
+-    }
+     outputs_[i].SetAllocator(nnrt_allocator);
+   }
+   return lite::RET_OK;
+diff --git a/mindspore/lite/src/litert/lite_session.cc b/mindspore/lite/src/litert/lite_session.cc
+index f635c8d2..7502ec27 100644
+--- a/mindspore/lite/src/litert/lite_session.cc
++++ b/mindspore/lite/src/litert/lite_session.cc
+@@ -69,6 +69,7 @@
+ #include "src/litert/runtime_packed_node_pass.h"
+ #ifdef SUPPORT_NNRT
+ #include "src/litert/delegate/nnrt/nnrt_delegate.h"
++#include "src/litert/delegate/nnrt/nnrt_allocator.h"
+ #endif
+ 
+ using AbstractBaseModel = mindspore::infer::AbstractBaseModel;
+@@ -1280,6 +1281,9 @@ LiteSession::~LiteSession() {
+   }
+   delete (model_);
+   model_ = nullptr;
++#ifdef SUPPORT_NNRT
++  NNRTAllocator::GetInstance()->ClearFreeList();
++#endif
+   is_running_.store(false);
+ }
+ 
+diff --git a/mindspore/lite/src/tensor.cc b/mindspore/lite/src/tensor.cc
+index 9d9a1491..6e97750a 100644
+--- a/mindspore/lite/src/tensor.cc
++++ b/mindspore/lite/src/tensor.cc
+@@ -112,8 +112,16 @@ Tensor *Tensor::CopyTensor(const Tensor &src_tensor, bool copy_data, AllocatorPt
+ }
+ 
+ Tensor::~Tensor() {
++#ifdef SUPPORT_NNRT
++  void *allocated_data = this->tensor_c_.data_;
++#endif
+   FreeData();
+   this->tensor_c_.data_ = nullptr;
++#ifdef SUPPORT_NNRT
++  if (this->own_data_ && IS_NNRT_ALLOCATOR(allocator_)) {
++    NNRTAllocator::GetInstance()->FreeAllocatedTensor(allocated_data);
++  }
++#endif
+ }
+ 
+ bool Tensor::operator==(const Tensor &tensor) {
+-- 
+2.17.1
+
