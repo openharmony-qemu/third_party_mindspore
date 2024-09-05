@@ -1,0 +1,186 @@
+From 3ebaf5f8d6d98cbdfe009fc94a378184a77f07fe Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Tue, 3 Sep 2024 21:46:41 +0800
+Subject: [PATCH] add compile option SP, extensions white list
+
+---
+ mindspore/lite/BUILD.gn                       |  9 +++++++-
+ mindspore/lite/mindir/BUILD.gn                | 22 +++++++++++++++++--
+ mindspore/lite/src/litert/c_api/context_c.cc  | 10 +++++++++
+ .../delegate/nnrt/extension_options_parser.cc |  4 ++--
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc |  2 +-
+ mindspore/lite/src/litert/js_api/BUILD.gn     |  6 +++++
+ 6 files changed, 47 insertions(+), 6 deletions(-)
+
+diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
+index c7c51620..6deff934 100644
+--- a/mindspore/lite/BUILD.gn
++++ b/mindspore/lite/BUILD.gn
+@@ -352,6 +352,7 @@ if ((target_cpu == "arm" || target_cpu == "arm64") && !is_emulator) {
+ }
+ 
+ ohos_shared_library("mindspore_lib") {
++  branch_protector_ret = "pac_ret"
+   deps = [
+     "../ccsrc/plugin/device/cpu/kernel/nnacl/:nnacl_obj",
+     "../core/mindrt/:mindrt_obj",
+@@ -486,6 +487,7 @@ ohos_shared_library("mindspore_lib") {
+ 
+ # NDK lib
+ ohos_shared_library("mindspore_ndk") {
++  branch_protector_ret = "pac_ret"
+   deps = [
+     ":mindspore_lib",
+     ":mindspore_train_lib",
+@@ -664,6 +666,7 @@ not_needed(fp16_train_kernel_sources)
+ all_train_sources += fp32_train_kernel_sources
+ 
+ ohos_shared_library("mindspore_train_lib") {
++  branch_protector_ret = "pac_ret"
+   deps = [
+     ":mindspore_lib",
+   ]
+@@ -716,6 +719,7 @@ ohos_shared_library("mindspore_train_lib") {
+     ":mindspore_api",
+     ":disable_android",
+     ":train_kernel_option",
++    ":secure_option",
+   ]
+ 
+   remove_configs = [ "//build/config/compiler:no_rtti" ]
+@@ -766,7 +770,10 @@ config("disable_android") {
+ }
+ 
+ config("secure_option") {
+-  cflags = [ "-fstack-protector-all" ]
++  cflags = [
++    "-fstack-protector-all",
++    "-D_FORTIFY_SOURCE=2",
++  ]
+ }
+ 
+ config("train_kernel_option") {
+diff --git a/mindspore/lite/mindir/BUILD.gn b/mindspore/lite/mindir/BUILD.gn
+index 975d201f..a134ddb2 100644
+--- a/mindspore/lite/mindir/BUILD.gn
++++ b/mindspore/lite/mindir/BUILD.gn
+@@ -26,7 +26,26 @@ config("mindir_config") {
+   ]
+ }
+ 
++config("mindir_secure_disable_android") {
++  cflags = [
++    "-UANDROID",
++    "-U__ANDROID__",
++    "-U__ANDROID_API__",
++    "-fstack-protector-all",
++    "-D_FORTIFY_SOURCE=2",
++  ]
++  cflags_cc = [
++    "-UANDROID",
++    "-U__ANDROID__",
++    "-U__ANDROID_API__",
++  ]
++  ldflags = [
++    "-Wl,--no-as-needed",
++  ]
++}
++
+ ohos_shared_library("mindir_lib") {
++  branch_protector_ret = "pac_ret"
+   include_dirs = [
+     "../",
+     "../../core",
+@@ -58,8 +77,7 @@ ohos_shared_library("mindir_lib") {
+     "flatbuffers:libflatbuffers_static",
+   ]
+   configs = [
+-    "../:disable_android",
+-    "../:secure_option",
++    ":mindir_secure_disable_android",
+   ]
+   public_configs = [ ":mindir_config" ]
+   defines = [ "MS_COMPILE_OHOS" ]
+diff --git a/mindspore/lite/src/litert/c_api/context_c.cc b/mindspore/lite/src/litert/c_api/context_c.cc
+index ef7d4b6a..88fdc4d0 100644
+--- a/mindspore/lite/src/litert/c_api/context_c.cc
++++ b/mindspore/lite/src/litert/c_api/context_c.cc
+@@ -525,6 +525,16 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
+     MS_LOG(ERROR) << "Add extension to non-NNRT device is not allowable, ignored";
+     return OH_AI_STATUS_LITE_ERROR;
+   }
++  static std::vector<std::string> extension_keys = {"CachePath", "CacheVersion", "ModelName", "QuantBuffer",
++                                                     "isProfiling", "opLayout", "InputDims", "DynamicDims", "BandMode",
++                                                     "NPU_FM_SHARED"};
++  auto it = std::find(extension_keys.begin(), extension_keys.end(), std::string(name));
++  if (it == extension_keys.end()) {
++    MS_LOG(ERROR) << "The name of the extension is not allowable, only can be one of {CachePath, CacheVersion,"
++                    << " ModelName, QuantBuffer, isProfiling, opLayout, InputDims, DynamicDims, BandMode,"
++                    << "NPU_FM_SHARED}.";
++    return OH_AI_STATUS_LITE_ERROR;
++  }
+   auto impl = reinterpret_cast<mindspore::NNRTDeviceInfo *>(device_info);
+   mindspore::Extension extension;
+   extension.name = std::string(name);
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
+index a66cd5ea..6e4c57a4 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
+@@ -29,7 +29,7 @@ const std::map<std::string, mindspore::lite::HiAI_BandMode> kBandModeMap = {
+ const std::string kCachePath = "CachePath";
+ const std::string kCacheVersion = "CacheVersion";
+ const std::string kBandMode = "BandMode";
+-const std::string kQuantConfigData = "QuantConfigData";
++const std::string kQuantBuffer = "QuantBuffer";
+ const std::string kModelName = "ModelName";
+ }  // namespace
+ 
+@@ -83,7 +83,7 @@ void ExtensionOptionsParser::DoParseQuantConfig(const std::vector<Extension> &ex
+   MS_CHECK_TRUE_RET_VOID(quant_config != nullptr);
+   MS_CHECK_TRUE_RET_VOID(num != nullptr);
+   auto iter_config = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
+-    return extension.name == kQuantConfigData;
++    return extension.name == kQuantBuffer;
+   });
+   if (iter_config != extensions.end()) {
+     *quant_config = static_cast<void *>(const_cast<uint8_t *>(iter_config->value.data()));
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+index a49e7449..ba921da5 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+@@ -546,7 +546,7 @@ Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
+   }
+ 
+ #ifdef SUPPORT_NNRT_METAGRAPH
+-  if (hiai_handle_ != nullptr) {
++  if (hiai_handle_ != nullptr && IsKirinNPUWithOfflineInference()) {
+     if (extension_options_.band_mode != mindspore::lite::HIAI_BANDMODE_UNSET) {
+       ret_code = mindspore::lite::HMS_HiAIOptions_SetBandMode(nn_compilation, extension_options_.band_mode);
+       if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
+diff --git a/mindspore/lite/src/litert/js_api/BUILD.gn b/mindspore/lite/src/litert/js_api/BUILD.gn
+index f12e4db4..4004cc47 100644
+--- a/mindspore/lite/src/litert/js_api/BUILD.gn
++++ b/mindspore/lite/src/litert/js_api/BUILD.gn
+@@ -15,6 +15,7 @@ import("//build/ohos.gni")
+ import("//build/ohos/ace/ace.gni")
+ 
+ ohos_shared_library("mindsporelite_napi") {
++  branch_protector_ret = "pac_ret"
+   include_dirs = [
+     "//third_party/mindspore/mindspore-src/source/",
+     "//third_party/mindspore/mindspore-src/source/include/api",
+@@ -37,6 +38,11 @@ ohos_shared_library("mindsporelite_napi") {
+     "nnrt_device_desc.cc"
+   ]
+ 
++  configs = [
++    "../../../:disable_android",
++    "../../../:secure_option",
++  ]
++
+   deps = [
+     "../../../:mindspore_lib",
+     "../../../:mindspore_ndk"
+-- 
+2.17.1
+
