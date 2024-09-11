@@ -1,0 +1,69 @@
+From 1b10553fa964dc02c9d126dcd8b1422fd0f188af Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Tue, 10 Sep 2024 22:03:13 +0800
+Subject: [PATCH] fix mutable memory leak
+
+---
+ mindspore/lite/src/litert/c_api/tensor_c.cc            | 1 +
+ mindspore/lite/src/litert/cxx_api/tensor/tensor_impl.h | 4 +++-
+ mindspore/lite/src/litert/kernel/cpu/int8/pad_int8.h   | 3 +++
+ mindspore/lite/src/tensor.cc                           | 2 +-
+ 4 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/mindspore/lite/src/litert/c_api/tensor_c.cc b/mindspore/lite/src/litert/c_api/tensor_c.cc
+index 7d6c7930..4e7a1e56 100644
+--- a/mindspore/lite/src/litert/c_api/tensor_c.cc
++++ b/mindspore/lite/src/litert/c_api/tensor_c.cc
+@@ -47,6 +47,7 @@ OH_AI_TensorHandle OH_AI_TensorCreate(const char *name, OH_AI_DataType type, con
+     return nullptr;
+   }
+   lite_tensor_impl->set_from_session(false);
++  lite_tensor_impl->set_own_data(lite_tensor_impl->lite_tensor()->own_data());
+   auto impl = new (std::nothrow) mindspore::MSTensor(lite_tensor_impl);
+   if (impl == nullptr) {
+     MS_LOG(ERROR) << "Failed to allocate MSTensor.";
+diff --git a/mindspore/lite/src/litert/cxx_api/tensor/tensor_impl.h b/mindspore/lite/src/litert/cxx_api/tensor/tensor_impl.h
+index be3743c4..6d9404d2 100644
+--- a/mindspore/lite/src/litert/cxx_api/tensor/tensor_impl.h
++++ b/mindspore/lite/src/litert/cxx_api/tensor/tensor_impl.h
+@@ -184,7 +184,9 @@ class LiteTensorImpl : public MutableTensorImpl {
+       MS_LOG(ERROR) << "Invalid tensor.";
+       return nullptr;
+     }
+-    return lite_tensor_->MutableData();
++    auto ret = lite_tensor_->MutableData();
++    own_data_ = lite_tensor_->own_data();
++    return ret;
+   }
+   bool IsConst() const override {
+     if (lite_tensor_ == nullptr) {
+diff --git a/mindspore/lite/src/litert/kernel/cpu/int8/pad_int8.h b/mindspore/lite/src/litert/kernel/cpu/int8/pad_int8.h
+index 067d527a..81fd2057 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/int8/pad_int8.h
++++ b/mindspore/lite/src/litert/kernel/cpu/int8/pad_int8.h
+@@ -33,6 +33,9 @@ class PadInt8CPUKernel : public LiteKernel {
+       : LiteKernel(parameter, inputs, outputs, ctx) {
+     op_parameter_->thread_num_ = ctx->thread_num_;
+     pad_param_ = reinterpret_cast<PadParameter *>(op_parameter_);
++    pad_quant_arg_.in_quant_args_ = nullptr;
++    pad_quant_arg_.out_quanr_args_ = nullptr;
++    pad_quant_arg_.constant_value_ = nullptr;
+   }
+   ~PadInt8CPUKernel() override { FreeQuantParam(); };
+ 
+diff --git a/mindspore/lite/src/tensor.cc b/mindspore/lite/src/tensor.cc
+index 6e97750a..7e54a80c 100644
+--- a/mindspore/lite/src/tensor.cc
++++ b/mindspore/lite/src/tensor.cc
+@@ -567,7 +567,7 @@ Tensor *Tensor::CreateTensor(const std::string &name, TypeId type, const std::ve
+     MS_LOG(ERROR) << "shape, data type and data len not match.";
+     return nullptr;
+   }
+-  tensor->set_data(const_cast<void *>(data));
++  tensor->set_data(const_cast<void *>(data), false);
+   tensor->set_shape(shape);
+   tensor->set_tensor_name(name);
+   tensor->set_data_type(type);
+-- 
+2.17.1
+

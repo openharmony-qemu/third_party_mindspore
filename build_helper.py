@@ -74,6 +74,7 @@ def do_patch(patch_dir, target_dir):
         '0038-refactor-nnrt-allocator-to-singleton.patch',
         '0039-add-compile-option-SP-extensions-white-list.patch',
         '0040-fix-context-double-free.patch',
+        '0041-fix-MutableData-memory-leak.patch',
     ]
 
     cwd = os.getcwd()
