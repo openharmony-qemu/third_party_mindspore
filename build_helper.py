@@ -75,6 +75,7 @@ def do_patch(patch_dir, target_dir):
         '0039-add-compile-option-SP-extensions-white-list.patch',
         '0040-fix-context-double-free.patch',
         '0041-fix-MutableData-memory-leak.patch',
+        '0042-scatterND-indices-illegal.patch',
     ]
 
     cwd = os.getcwd()
