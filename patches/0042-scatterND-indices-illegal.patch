@@ -1,13 +1,82 @@
-From ef59ff8a592d002ea1bb309d1595e18604453e94 Mon Sep 17 00:00:00 2001
+From 941273f129af68a549150c527e25c704987d7d5d Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Wed, 11 Sep 2024 11:28:37 +0800
-Subject: [PATCH] scatterND indices illegal
+Date: Wed, 11 Sep 2024 15:55:21 +0800
+Subject: [PATCH] extensions add QuantConfigData
 
 ---
+ .../nnacl/infer/sparse_segment_sum_infer.c    |  1 -
+ mindspore/lite/src/litert/c_api/context_c.cc  |  4 ++--
+ .../delegate/nnrt/extension_options_parser.cc |  3 ++-
+ mindspore/lite/src/litert/inner_allocator.cc  |  2 +-
  .../kernel/cpu/base/scatter_nd_binary.cc      | 24 +++++++++++++++++--
  mindspore/lite/src/litert/lite_session.cc     |  1 -
- 2 files changed, 22 insertions(+), 3 deletions(-)
+ 6 files changed, 27 insertions(+), 8 deletions(-)
 
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/sparse_segment_sum_infer.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/sparse_segment_sum_infer.c
+index 34069304..c8160bf6 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/sparse_segment_sum_infer.c
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/sparse_segment_sum_infer.c
+@@ -32,7 +32,6 @@ int SparseSegmentSumInferShape(const TensorC *const *inputs, size_t inputs_size,
+   }
+ 
+   return NNACL_INFER_INVALID;
+-  // return NNACL_OK;
+ }
+ 
+ REG_INFER(SparseSegmentSum, PrimType_SparseSegmentSum, SparseSegmentSumInferShape)
+diff --git a/mindspore/lite/src/litert/c_api/context_c.cc b/mindspore/lite/src/litert/c_api/context_c.cc
+index 5418c46a..d0ebe095 100644
+--- a/mindspore/lite/src/litert/c_api/context_c.cc
++++ b/mindspore/lite/src/litert/c_api/context_c.cc
+@@ -536,8 +536,8 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
+     return OH_AI_STATUS_LITE_ERROR;
+   }
+   static std::vector<std::string> extension_keys = {"CachePath", "CacheVersion", "ModelName", "QuantBuffer",
+-                                                     "isProfiling", "opLayout", "InputDims", "DynamicDims", "BandMode",
+-                                                     "NPU_FM_SHARED"};
++                                                    "QuantConfigData", "isProfiling", "opLayout", "InputDims",
++                                                    "DynamicDims", "BandMode", "NPU_FM_SHARED"};
+   auto it = std::find(extension_keys.begin(), extension_keys.end(), std::string(name));
+   if (it == extension_keys.end()) {
+     MS_LOG(ERROR) << "The name of the extension is not allowable, only can be one of {CachePath, CacheVersion,"
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
+index 6e4c57a4..b2a01592 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
+@@ -30,6 +30,7 @@ const std::string kCachePath = "CachePath";
+ const std::string kCacheVersion = "CacheVersion";
+ const std::string kBandMode = "BandMode";
+ const std::string kQuantBuffer = "QuantBuffer";
++const std::string kQuantConfigData = "QuantConfigData";
+ const std::string kModelName = "ModelName";
+ }  // namespace
+ 
+@@ -83,7 +84,7 @@ void ExtensionOptionsParser::DoParseQuantConfig(const std::vector<Extension> &ex
+   MS_CHECK_TRUE_RET_VOID(quant_config != nullptr);
+   MS_CHECK_TRUE_RET_VOID(num != nullptr);
+   auto iter_config = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
+-    return extension.name == kQuantBuffer;
++    return extension.name == kQuantBuffer || extension.name == kQuantConfigData;
+   });
+   if (iter_config != extensions.end()) {
+     *quant_config = static_cast<void *>(const_cast<uint8_t *>(iter_config->value.data()));
+diff --git a/mindspore/lite/src/litert/inner_allocator.cc b/mindspore/lite/src/litert/inner_allocator.cc
+index 9bd0c017..c80c7de9 100644
+--- a/mindspore/lite/src/litert/inner_allocator.cc
++++ b/mindspore/lite/src/litert/inner_allocator.cc
+@@ -54,11 +54,11 @@ void *DefaultAllocator::Malloc(size_t size) {
+     MS_LOG(ERROR) << "MallocData out of max_size, size: " << size;
+     return nullptr;
+   }
++  Lock();
+   if (this->total_size_ >= max_malloc_size_) {
+     MS_LOG(ERROR) << "Memory pool is exhausted";
+     return nullptr;
+   }
+-  Lock();
+   auto iter = freeList_.lower_bound(size);
+   if (iter != freeList_.end() && ReuseMemory(iter->second->size, size)) {
+     auto membuf = iter->second;
 diff --git a/mindspore/lite/src/litert/kernel/cpu/base/scatter_nd_binary.cc b/mindspore/lite/src/litert/kernel/cpu/base/scatter_nd_binary.cc
 index 0c98fedc..23e6b4cd 100644
 --- a/mindspore/lite/src/litert/kernel/cpu/base/scatter_nd_binary.cc
