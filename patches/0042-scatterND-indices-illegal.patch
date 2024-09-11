@@ -1,0 +1,74 @@
+From ef59ff8a592d002ea1bb309d1595e18604453e94 Mon Sep 17 00:00:00 2001
+From: chengfeng27 <chengfeng27@huawei.com>
+Date: Wed, 11 Sep 2024 11:28:37 +0800
+Subject: [PATCH] scatterND indices illegal
+
+---
+ .../kernel/cpu/base/scatter_nd_binary.cc      | 24 +++++++++++++++++--
+ mindspore/lite/src/litert/lite_session.cc     |  1 -
+ 2 files changed, 22 insertions(+), 3 deletions(-)
+
+diff --git a/mindspore/lite/src/litert/kernel/cpu/base/scatter_nd_binary.cc b/mindspore/lite/src/litert/kernel/cpu/base/scatter_nd_binary.cc
+index 0c98fedc..23e6b4cd 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/base/scatter_nd_binary.cc
++++ b/mindspore/lite/src/litert/kernel/cpu/base/scatter_nd_binary.cc
+@@ -31,6 +31,14 @@ int ScatterNDBinaryCPUKernel::Prepare() {
+   return ReSize();
+ }
+ 
++/**
++ * ScatterND equation is like follows:
++ *
++ *    output = np.copy(input)
++ *    update_indices = indices.shape[:-1]
++ *    for idx in np.ndindex(update_indices):
++ *        output[indices[idx]] = updates[idx]
++ */
+ int ScatterNDBinaryCPUKernel::ReSize() {
+   auto input = in_tensors_.at(kScatterUpdateInputIndex);
+   auto indices = in_tensors_.at(kScatterIndicesIndex);
+@@ -90,7 +98,13 @@ int ScatterNDBinaryCPUKernel::ReSize() {
+     for (int i = 0; i < param_->num_unit; i++) {
+       int tmp_stride = 0;
+       for (int j = 0; j < indices_unit_rank; j++) {
+-        tmp_stride += indices_data[i * indices_unit_rank + j] * out_strides.at(j) * param_->unit_size;
++        int index = indices_data[i * indices_unit_rank + j];
++        if ((index < -input_shape[j]) || (index >= input_shape[j])) {
++          MS_LOG(ERROR) << "illegal index: " << index << ", should in [" << -input_shape[j] << ", " << input_shape[j]
++                        << ")";
++          return RET_ERROR;
++        }
++        tmp_stride += index * out_strides.at(j) * param_->unit_size;
+       }
+       output_unit_offsets_.push_back(tmp_stride);
+     }
+@@ -99,7 +113,13 @@ int ScatterNDBinaryCPUKernel::ReSize() {
+     for (int i = 0; i < param_->num_unit; i++) {
+       int tmp_stride = 0;
+       for (int j = 0; j < indices_unit_rank; j++) {
+-        tmp_stride += indices_data[i * indices_unit_rank + j] * out_strides.at(j) * param_->unit_size;
++        int64_t index = indices_data[i * indices_unit_rank + j];
++        if ((index < -input_shape[j]) || (index >= input_shape[j])) {
++          MS_LOG(ERROR) << "illegal index: " << index << ", should in [" << -input_shape[j] << ", " << input_shape[j]
++                        << ")";
++          return RET_ERROR;
++        }
++        tmp_stride += index * out_strides.at(j) * param_->unit_size;
+       }
+       output_unit_offsets_.push_back(tmp_stride);
+     }
+diff --git a/mindspore/lite/src/litert/lite_session.cc b/mindspore/lite/src/litert/lite_session.cc
+index 7502ec27..69c292e9 100644
+--- a/mindspore/lite/src/litert/lite_session.cc
++++ b/mindspore/lite/src/litert/lite_session.cc
+@@ -1104,7 +1104,6 @@ int LiteSession::CreateNNRTDelegate() {
+     MS_LOG(ERROR) << "New NNRT delegate failed";
+     return RET_ERROR;
+   }
+-//  ((NNRTDelegate *)(delegate_.get()))->SetMetaGraph(this->model_->buf);
+   delegate_device_type_ = DT_NNRT;
+   this->context_->delegate = delegate_;
+ #endif
+-- 
+2.17.1
+
