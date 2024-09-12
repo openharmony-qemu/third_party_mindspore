@@ -1,16 +1,17 @@
-From 941273f129af68a549150c527e25c704987d7d5d Mon Sep 17 00:00:00 2001
+From e9a9786e9619b6fcb8637eaf1331829793ccc351 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Wed, 11 Sep 2024 15:55:21 +0800
-Subject: [PATCH] extensions add QuantConfigData
+Date: Thu, 12 Sep 2024 10:38:08 +0800
+Subject: [PATCH] context nullptr return, remote std::cout
 
 ---
  .../nnacl/infer/sparse_segment_sum_infer.c    |  1 -
- mindspore/lite/src/litert/c_api/context_c.cc  |  4 ++--
+ .../src/common/hi_app_event/handler_thread.cc |  5 ++--
+ mindspore/lite/src/litert/c_api/context_c.cc  |  5 ++--
  .../delegate/nnrt/extension_options_parser.cc |  3 ++-
  mindspore/lite/src/litert/inner_allocator.cc  |  2 +-
  .../kernel/cpu/base/scatter_nd_binary.cc      | 24 +++++++++++++++++--
  mindspore/lite/src/litert/lite_session.cc     |  1 -
- 6 files changed, 27 insertions(+), 8 deletions(-)
+ 7 files changed, 31 insertions(+), 10 deletions(-)
 
 diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/sparse_segment_sum_infer.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/sparse_segment_sum_infer.c
 index 34069304..c8160bf6 100644
@@ -24,11 +25,42 @@ index 34069304..c8160bf6 100644
  }
  
  REG_INFER(SparseSegmentSum, PrimType_SparseSegmentSum, SparseSegmentSumInferShape)
+diff --git a/mindspore/lite/src/common/hi_app_event/handler_thread.cc b/mindspore/lite/src/common/hi_app_event/handler_thread.cc
+index a84504c0..1cf32bca 100644
+--- a/mindspore/lite/src/common/hi_app_event/handler_thread.cc
++++ b/mindspore/lite/src/common/hi_app_event/handler_thread.cc
+@@ -15,6 +15,7 @@
+  */
+ 
+ #include "handler_thread.h"
++#include "src/common/log.h"
+ 
+ namespace mindspore {
+ namespace lite {
+@@ -121,8 +122,8 @@ public:
+ 
+ bool HandlerThread::Post(std::string key, Runnable && aRunnable)
+ {
+-  if (not Running()) {
+-    std::cout << "Denying insertion, as the looper is not running.\n";
++  if (!Running()) {
++    MS_LOG(ERROR) << "Denying insertion, as the looper is not running.";
+     return false;
+   }
+ 
 diff --git a/mindspore/lite/src/litert/c_api/context_c.cc b/mindspore/lite/src/litert/c_api/context_c.cc
-index 5418c46a..d0ebe095 100644
+index 5418c46a..92085960 100644
 --- a/mindspore/lite/src/litert/c_api/context_c.cc
 +++ b/mindspore/lite/src/litert/c_api/context_c.cc
-@@ -536,8 +536,8 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
+@@ -41,6 +41,7 @@ OH_AI_ContextHandle OH_AI_ContextCreate() {
+   if (impl->context_ == nullptr) {
+     MS_LOG(ERROR) << "memory allocation failed.";
+     delete impl;
++    return nullptr;
+   }
+   impl->owned_by_model_ = false;
+   return static_cast<OH_AI_ContextHandle>(impl);
+@@ -536,8 +537,8 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
      return OH_AI_STATUS_LITE_ERROR;
    }
    static std::vector<std::string> extension_keys = {"CachePath", "CacheVersion", "ModelName", "QuantBuffer",
