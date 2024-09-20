@@ -1,16 +1,16 @@
-From 16b0a56d18d14046e6987ef3abb21ba48915722b Mon Sep 17 00:00:00 2001
+From decd3c1abfadace6022cc1baf1fa9505e1af1ca2 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Wed, 28 Aug 2024 10:27:00 +0800
-Subject: [PATCH] refactor-nnrt-allocator-to-singleton
+Date: Fri, 20 Sep 2024 11:49:09 +0800
+Subject: [PATCH] GetNNTensor unordered_map crash
 
 ---
  .../src/litert/cxx_api/model/model_impl.cc    |   6 +-
  .../litert/delegate/nnrt/nnrt_allocator.cc    | 114 +++++++++++++-----
- .../src/litert/delegate/nnrt/nnrt_allocator.h |  13 +-
+ .../src/litert/delegate/nnrt/nnrt_allocator.h |  14 ++-
  .../litert/delegate/nnrt/nnrt_model_kernel.cc |  16 +--
  mindspore/lite/src/litert/lite_session.cc     |   4 +
  mindspore/lite/src/tensor.cc                  |   8 ++
- 6 files changed, 113 insertions(+), 48 deletions(-)
+ 6 files changed, 114 insertions(+), 48 deletions(-)
 
 diff --git a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
 index 6a73a927..b7fa3c65 100644
@@ -199,10 +199,10 @@ index 4910343f..c160315e 100644
      OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
      delete membuf;
 diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
-index ef27f307..ac599770 100644
+index ef27f307..9d7fa3c0 100644
 --- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
 +++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
-@@ -31,19 +31,19 @@ struct OH_NNExecutor;
+@@ -31,31 +31,35 @@ struct OH_NNExecutor;
  
  namespace mindspore {
  namespace lite {
@@ -226,7 +226,13 @@ index ef27f307..ac599770 100644
    void Free(void *ptr) override;
    int RefCount(void *ptr) override;
    int SetRefCount(void *ptr, int ref_count) override;
-@@ -56,6 +56,9 @@ class NNRTAllocator : public Allocator {
+   int DecRefCount(void *ptr, int ref_count) override;
+   int IncRefCount(void *ptr, int ref_count) override;
+   NN_Tensor *GetNNTensor(void *ptr) {
++    std::lock_guard<std::mutex> locker(mutex_);
+     auto iter = allocated_list_.find(ptr);
+     if (iter != allocated_list_.end()) {
+       return iter->second->tensor_;
      }
      return nullptr;
    }
@@ -236,7 +242,7 @@ index ef27f307..ac599770 100644
  
   private:
    struct MemBuf {
-@@ -66,9 +69,7 @@ class NNRTAllocator : public Allocator {
+@@ -66,9 +70,7 @@ class NNRTAllocator : public Allocator {
      size_t size{0};
    };
  
