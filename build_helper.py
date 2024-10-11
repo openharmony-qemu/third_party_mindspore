@@ -76,6 +76,7 @@ def do_patch(patch_dir, target_dir):
         '0040-fix-context-double-free.patch',
         '0041-fix-MutableData-memory-leak.patch',
         '0042-scatterND-indices-illegal.patch',
+        '0043-fix-too-many-hi-app-event-reports.patch',
     ]
 
     cwd = os.getcwd()
