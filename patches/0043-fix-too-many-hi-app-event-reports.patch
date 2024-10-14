@@ -1,22 +1,21 @@
-From 1af381234afefbb54b01edd6d391129ec5699b8e Mon Sep 17 00:00:00 2001
+From 3d19d093b845829f4fc8e9149dffe6a3a9d59971 Mon Sep 17 00:00:00 2001
 From: wqg <2593994958@qq.com>
-Date: Tue, 8 Oct 2024 11:02:55 +0800
-Subject: [PATCH] fix too many hi_app_event reports
+Date: Mon, 14 Oct 2024 20:40:09 +0800
+Subject: [PATCH] auto-apply 0043-fix-too-many-hi-app-event-reports.patch
 
-Signed-off-by: wqg <2593994958@qq.com>
 ---
  mindspore/lite/src/common/BUILD.gn            |   3 +-
  .../src/common/hi_app_event/handler_thread.cc | 144 -----------------
  .../src/common/hi_app_event/handler_thread.h  | 102 ------------
- .../src/common/hi_app_event/hi_app_event.cc   |  82 ++++------
- .../src/common/hi_app_event/hi_app_event.h    |  31 +++-
+ .../src/common/hi_app_event/hi_app_event.cc   |  88 +++++-----
+ .../src/common/hi_app_event/hi_app_event.h    |  33 +++-
  .../hi_app_event/hi_app_event_config.cc       |  57 -------
  .../common/hi_app_event/hi_app_event_config.h |  45 ------
- .../hi_app_event/hi_app_event_thread.cc       | 150 ++++++++++++++++++
+ .../hi_app_event/hi_app_event_thread.cc       | 153 ++++++++++++++++++
  .../common/hi_app_event/hi_app_event_thread.h |  95 +++++++++++
  mindspore/lite/src/litert/c_api/model_c.cc    |   5 +-
- .../lite/src/litert/cxx_api/model/model.cc    |  53 ++-----
- 11 files changed, 324 insertions(+), 443 deletions(-)
+ .../lite/src/litert/cxx_api/model/model.cc    |  53 ++----
+ 11 files changed, 335 insertions(+), 443 deletions(-)
  delete mode 100644 mindspore/lite/src/common/hi_app_event/handler_thread.cc
  delete mode 100644 mindspore/lite/src/common/hi_app_event/handler_thread.h
  delete mode 100644 mindspore/lite/src/common/hi_app_event/hi_app_event_config.cc
@@ -298,10 +297,10 @@ index 91e5cc19..00000000
 -}  // lite
 -#endif  // LITE_HANDLER_THREAD_H
 diff --git a/mindspore/lite/src/common/hi_app_event/hi_app_event.cc b/mindspore/lite/src/common/hi_app_event/hi_app_event.cc
-index ab46cde3..8f679814 100644
+index ab46cde3..c2bfb4cd 100644
 --- a/mindspore/lite/src/common/hi_app_event/hi_app_event.cc
 +++ b/mindspore/lite/src/common/hi_app_event/hi_app_event.cc
-@@ -16,64 +16,48 @@
+@@ -16,64 +16,54 @@
  
  #ifdef ENABLE_HI_APP_EVENT
  #include "src/common/hi_app_event/hi_app_event.h"
@@ -332,14 +331,20 @@ index ab46cde3..8f679814 100644
 +}
 +
 +void HiAppEvent::Init() {
-+    event_thread_.Init();
++    bool ret = event_thread_.Init();
++    if (!ret) {
++        return;
++    }
 +    is_ready_.store(true);
 +}
 +
 +void HiAppEvent::Report(const int result, const int err_code, const std::string &api_name,
 +                              const uint64_t begin_time, const std::string &devices) {
-+    if (!is_ready_.load()) {
-+        Init();
++    {
++        std::lock_guard<std::mutex> init_guard_lock(init_mutex_);
++        if (!is_ready_.load()) {
++            Init();
++        }
 +    }
 +    uint64_t end_time = GetTimeMs();
 +    event_thread_.Submit(result, err_code, api_name, begin_time, end_time, devices);
@@ -400,10 +405,10 @@ index ab46cde3..8f679814 100644
  }  // namespace lite
  }  // namespace mindspore
 diff --git a/mindspore/lite/src/common/hi_app_event/hi_app_event.h b/mindspore/lite/src/common/hi_app_event/hi_app_event.h
-index a5de1ad3..4e738b3d 100644
+index a5de1ad3..017a4912 100644
 --- a/mindspore/lite/src/common/hi_app_event/hi_app_event.h
 +++ b/mindspore/lite/src/common/hi_app_event/hi_app_event.h
-@@ -18,13 +18,38 @@
+@@ -18,13 +18,40 @@
  #define MINDSPORE_LITE_HI_APP_EVENT_H_
  
  #ifdef ENABLE_HI_APP_EVENT
@@ -411,6 +416,7 @@ index a5de1ad3..4e738b3d 100644
  #include <string>
 +#include <atomic>
 +#include <memory>
++#include <mutex>
  
  namespace mindspore {
  namespace lite {
@@ -441,6 +447,7 @@ index a5de1ad3..4e738b3d 100644
 +    HiAppEventThread event_thread_;
 +    std::string api_type_ = "ts_api";
 +    std::atomic_bool is_ready_ = false;
++    std::mutex init_mutex_;
 +};
  }  // namespace lite
  }  // namespace mindspore
@@ -561,10 +568,10 @@ index 57bee08d..00000000
 -#endif  // MINDSPORE_LITE_HI_APP_EVENT_CONFIG_H_
 diff --git a/mindspore/lite/src/common/hi_app_event/hi_app_event_thread.cc b/mindspore/lite/src/common/hi_app_event/hi_app_event_thread.cc
 new file mode 100644
-index 00000000..d0e5f180
+index 00000000..8118d36a
 --- /dev/null
 +++ b/mindspore/lite/src/common/hi_app_event/hi_app_event_thread.cc
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,153 @@
 +/**
 + * Copyright 2024 Huawei Technologies Co., Ltd
 + *
@@ -603,7 +610,10 @@ index 00000000..d0e5f180
 +}
 +
 +bool HiAppEventThread::Init() {
-+    HiAppEventAddProcessor();
++    int ret = HiAppEventAddProcessor();
++    if (ret == -1) {
++        return false;
++    }
 +    running_.store(true);
 +    thread_ = std::thread(&HiAppEventThread::RunFunc, this);
 +    return true;
@@ -611,7 +621,7 @@ index 00000000..d0e5f180
 +
 +void HiAppEventThread::WriteHiAppEvent() {
 +    // when there is no sandbox environment for hap, for example, xts, skip writing app events.
-+    if (kProcess_id == kAppEventNotHapErrCode) {
++    if (kProcessID == kAppEventNotHapErrCode) {
 +        return;
 +    }
 +    for (auto &e : event_map_) {
@@ -661,17 +671,17 @@ index 00000000..d0e5f180
 +        event3.isRealTime = true;
 +        config.eventConfigs.push_back(event3);
 +    }
-+    if (kProcess_id == -1) {
-+        kProcess_id = OHOS::HiviewDFX::HiAppEvent::AppEventProcessorMgr::AddProcessor(config);
++    if (kProcessID == -1) {
++        kProcessID = OHOS::HiviewDFX::HiAppEvent::AppEventProcessorMgr::AddProcessor(config);
 +    }
-+    return kProcess_id;
++    return kProcessID;
 +}
 +
 +void HiAppEventThread::RunFunc() {
 +    (void) pthread_setname_np(pthread_self(), "OS_MSEvent");
 +    while (running_.load()) {
 +        std::unique_lock<std::mutex> lock(mutex_);
-+        auto status = condition_.wait_for(lock, std::chrono::milliseconds(kWaitTime));
++        auto status = condition_.wait_for(lock, std::chrono::seconds(kWaitTime));
 +
 +        if (!running_.load() || status == std::cv_status::timeout) {
 +            // write all events and clear event_map
@@ -718,7 +728,7 @@ index 00000000..d0e5f180
 \ No newline at end of file
 diff --git a/mindspore/lite/src/common/hi_app_event/hi_app_event_thread.h b/mindspore/lite/src/common/hi_app_event/hi_app_event_thread.h
 new file mode 100644
-index 00000000..b1f42f1e
+index 00000000..e48e335b
 --- /dev/null
 +++ b/mindspore/lite/src/common/hi_app_event/hi_app_event_thread.h
 @@ -0,0 +1,95 @@
@@ -765,8 +775,8 @@ index 00000000..b1f42f1e
 +    constexpr auto kEventName = "api_called_stat";
 +    constexpr auto kSdkName = "MindSporeLiteKit";
 +    constexpr int64_t kAppEventNotHapErrCode = -200;
-+    constexpr int32_t kWaitTime = 6 * 1000;
-+    static int64_t kProcess_id = -1;
++    constexpr int32_t kWaitTime = 60;
++    static int64_t kProcessID = -1;
 +    constexpr int32_t RET_OK = 0;
 +
 +    struct EventInfo {
