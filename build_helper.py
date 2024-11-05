@@ -77,6 +77,7 @@ def do_patch(patch_dir, target_dir):
         '0041-fix-MutableData-memory-leak.patch',
         '0042-scatterND-indices-illegal.patch',
         '0043-fix-too-many-hi-app-event-reports.patch',
+        '0044-fix-multi-thread-nnrt-infer-failed.patch',
     ]
 
     cwd = os.getcwd()
