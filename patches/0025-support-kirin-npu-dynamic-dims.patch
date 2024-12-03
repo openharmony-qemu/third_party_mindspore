@@ -82,18 +82,7 @@ diff --git a/mindspore/lite/src/litert/c_api/context_c.cc b/mindspore/lite/src/l
 index 6b6a50d5..2fe3b055 100644
 --- a/mindspore/lite/src/litert/c_api/context_c.cc
 +++ b/mindspore/lite/src/litert/c_api/context_c.cc
-@@ -25,6 +25,10 @@
- #include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
- #endif
- 
-+namespace {
-+const auto kNpuNamePrefixLen = 4;
-+}
-+
- // ================ Context ================
- OH_AI_ContextHandle OH_AI_ContextCreate() {
-   auto impl = new (std::nothrow) mindspore::Context();
-@@ -308,7 +312,6 @@ NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num) {
+@@ -308,7 +308,6 @@ NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num) {
    auto ret_load = mindspore::lite::LoadHiaiFLibraryFromPath(&hiai_handle_);
    if (!ret_load || hiai_handle_ == nullptr) {
      MS_LOG(ERROR) << "Load HiAI_Foundation so failed.";
@@ -101,7 +90,7 @@ index 6b6a50d5..2fe3b055 100644
    }
  #endif
    *num = 0;
-@@ -514,6 +517,10 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
+@@ -514,6 +513,10 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
      MS_LOG(ERROR) << "device info is null";
      return OH_AI_STATUS_LITE_NULLPTR;
    }
