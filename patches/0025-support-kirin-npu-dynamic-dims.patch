@@ -101,15 +101,6 @@ index 6b6a50d5..2fe3b055 100644
    }
  #endif
    *num = 0;
-@@ -420,7 +423,7 @@ OH_AI_DeviceInfoHandle OH_AI_CreateNNRTDeviceInfoByType(OH_AI_NNRTDeviceType typ
- 
-   OH_AI_DeviceInfoHandle handle = nullptr;
-   for (size_t i = 0; i < num; i++) {
--    if (desc[i].device_type == type) {
-+    if (desc[i].device_type == type && strncmp(desc[i].device_name, "NPU_", kNpuNamePrefixLen) == 0) {
-       handle = OH_AI_DeviceInfoCreate(OH_AI_DEVICETYPE_NNRT);
-       OH_AI_DeviceInfoSetDeviceId(handle, desc[i].device_id);
-       break;
 @@ -514,6 +517,10 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
      MS_LOG(ERROR) << "device info is null";
      return OH_AI_STATUS_LITE_NULLPTR;
