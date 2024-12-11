@@ -16,7 +16,7 @@
 import("//build/ohos.gni")
 
 # Prepare source at first.
-in_zip_path = rebase_path("./mindspore-v2.1.0.zip", root_build_dir)
+in_zip_path = rebase_path("./mindspore-v2.3.0.zip", root_build_dir)
 out_src_path = rebase_path("./mindspore-src", root_build_dir)
 patch_dir = rebase_path("./patches/", root_build_dir)
 

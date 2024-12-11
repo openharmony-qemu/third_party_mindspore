@@ -1,10 +1,18 @@
-From 881a1c16aeac375bb92d32e80d70239694d0b34b Mon Sep 17 00:00:00 2001
+From 59092be37eeb37362d571b16bb635367999fd4f4 Mon Sep 17 00:00:00 2001
 From: chengfeng27 <chengfeng27@huawei.com>
-Date: Wed, 5 Jun 2024 19:33:58 +0800
-Subject: fix MindIR_ScatterElements_CreatePrimitive
+Date: Mon, 6 Jan 2025 15:19:36 +0800
+Subject: [PATCH] auto-apply 0006-mindir-NPU-x86-emulator-dynamic-dims.patch
 
 ---
- mindspore/lite/mindir/BUILD.gn                |    2 +
+ .../plugin/device/cpu/kernel/nnacl/BUILD.gn   |   92 +-
+ .../nnacl/assembly/arm32/ConvDwFp32Row.S      |    2 +-
+ .../nnacl/assembly/arm64/ConvDwFp32Row.S      |    2 +-
+ .../nnacl/constant_of_shape_parameter.h       |    1 +
+ .../nnacl/fp32/constant_of_shape_fp32.h       |    7 +
+ .../cpu/kernel/nnacl/kernel/strided_slice.c   |    1 +
+ .../core/mindrt/src/thread/core_affinity.cc   |    2 +-
+ mindspore/lite/BUILD.gn                       |   85 +-
+ mindspore/lite/mindir/BUILD.gn                |    8 +-
  mindspore/lite/mindir/include/mindir.h        |  406 ++++
  mindspore/lite/mindir/include/mindir_tensor.h |    1 +
  mindspore/lite/mindir/include/mindir_types.h  |   60 +
@@ -12,12 +20,532 @@ Subject: fix MindIR_ScatterElements_CreatePrimitive
  mindspore/lite/mindir/src/mindir_1.cc         | 2061 ++++++++++++++++
  mindspore/lite/mindir/src/mindir_2.cc         | 2152 +++++++++++++++++
  mindspore/lite/mindir/src/mindir_tensor.cc    |   13 +
- 8 files changed, 4797 insertions(+), 4 deletions(-)
+ mindspore/lite/src/common/context_util.cc     |    3 +-
+ mindspore/lite/src/common/mmap_utils.cc       |   14 +-
+ mindspore/lite/src/common/mmap_utils.h        |    2 +-
+ .../constant_of_shape_populate.cc             |    3 +
+ .../populate/constant_of_shape_populate.cc    |    3 +
+ mindspore/lite/src/common/thread_utils.cc     |    2 +-
+ mindspore/lite/src/litert/c_api/context_c.cc  |   14 +
+ mindspore/lite/src/litert/c_api/tensor_c.cc   |   16 +-
+ mindspore/lite/src/litert/cache_session.cc    |  425 ++++
+ mindspore/lite/src/litert/cache_session.h     |  129 +
+ .../src/litert/cxx_api/model/model_impl.cc    |   62 +-
+ .../src/litert/cxx_api/model/model_impl.h     |    1 -
+ .../delegate/nnrt/extension_options_parser.cc |  104 +
+ .../delegate/nnrt/extension_options_parser.h  |   50 +
+ .../delegate/nnrt/hiai_foundation_wrapper.cc  |   65 +
+ .../delegate/nnrt/hiai_foundation_wrapper.h   |   47 +
+ .../litert/delegate/nnrt/nnrt_allocator.cc    |   61 +-
+ .../src/litert/delegate/nnrt/nnrt_allocator.h |    4 +
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc |  146 +-
+ .../src/litert/delegate/nnrt/nnrt_delegate.h  |   15 +-
+ .../litert/delegate/nnrt/nnrt_model_kernel.cc |  112 +-
+ .../litert/delegate/nnrt/nnrt_model_kernel.h  |   15 +-
+ .../src/litert/delegate/nnrt/nnrt_utils.cc    |  110 +
+ .../src/litert/delegate/nnrt/nnrt_utils.h     |   29 +
+ mindspore/lite/src/litert/kernel/cpu/BUILD.gn |   28 +-
+ .../kernel/cpu/base/constant_of_shape.cc      |    5 +
+ .../cpu/fp32/convolution_delegate_fp32.cc     |    2 +
+ ...volution_depthwise_slidewindow_x86_fp32.cc |    4 +-
+ ...nvolution_depthwise_slidewindow_x86_fp32.h |    2 +-
+ mindspore/lite/src/litert/lite_model.cc       |   12 +-
+ mindspore/lite/src/litert/lite_model.h        |    2 +-
+ mindspore/lite/src/litert/lite_session.h      |    6 +-
+ mindspore/lite/src/tensor.cc                  |   16 +-
+ .../converter/parser/onnx/onnx_node_parser.cc |    2 +-
+ 50 files changed, 6277 insertions(+), 233 deletions(-)
  create mode 100644 mindspore/lite/mindir/src/mindir_1.cc
  create mode 100644 mindspore/lite/mindir/src/mindir_2.cc
+ create mode 100644 mindspore/lite/src/litert/cache_session.cc
+ create mode 100644 mindspore/lite/src/litert/cache_session.h
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.h
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.cc
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.h
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.cc
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.h
 
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
+index 33e9002e..25b21643 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/BUILD.gn
+@@ -46,7 +46,6 @@ config("nnacl_public_config") {
+     }
+   } else if (target_cpu == "x86_64") {
+     cflags_c += [
+-      "-mavx512f",
+       "-mavx",
+       "-mavx2",
+       "-mfma",
+@@ -56,8 +55,16 @@ config("nnacl_public_config") {
+     defines += [
+       "ENABLE_SSE",
+       "ENABLE_AVX",
+-      "ENABLE_AVX512",
+     ]
++    # emulator not support avx512
++    if (!is_emulator) {
++      cflags_c += [
++        "-mavx512f",
++      ]
++      defines += [
++        "ENABLE_AVX512",
++      ]
++    }
+   }
+ }
+ 
+@@ -105,7 +112,6 @@ c_kernel_sources = [
+   "kernel/convolution_depthwise_sw.c",
+   "kernel/convolution_im2col_arm32.c",
+   "kernel/convolution_im2col_arm64.c",
+-  "kernel/convolution_im2col_avx512.c",
+   "kernel/convolution_im2col_avx.c",
+   "kernel/convolution_im2col_base.c",
+   "kernel/convolution_im2col.c",
+@@ -143,7 +149,6 @@ c_kernel_sources = [
+   "kernel/log_softmax.c",
+   "kernel/matmul_arm32.c",
+   "kernel/matmul_arm64.c",
+-  "kernel/matmul_avx512.c",
+   "kernel/matmul_avx.c",
+   "kernel/matmul_base.c",
+   "kernel/matmul.c",
+@@ -182,10 +187,6 @@ c_kernel_sources = [
+   "kernel/zeros_like.c",
+ ]
+ 
+-# list of ${NNACL_DIR}/experimental/*.c
+-experimental_kernel_sources = [
+-]
+-
+ # list of ${NNACL_DIR}/base/*.c
+ base_kernel_sources = [
+   "base/arithmetic_base.c",
+@@ -234,7 +235,6 @@ fp32_kernel_sources = [
+   "fp32/conv_common_fp32.c",
+   "fp32/conv_depthwise_avx_fp32.c",
+   "fp32/conv_depthwise_fp32.c",
+-  "fp32/conv_im2col_avx512_fp32.c",
+   "fp32/conv_im2col_fp32.c",
+   "fp32/conv_sw_arm64_fp32.c",
+   "fp32/conv_sw_avx_fp32.c",
+@@ -259,8 +259,6 @@ fp32_kernel_sources = [
+   "fp32/local_response_norm_fp32.c",
+   "fp32/log_softmax_fp32.c",
+   "fp32/lstm_fp32.c",
+-  "fp32/matmul_avx512_fp32.c",
+-  "fp32/matmul_avx512_mask_fp32.c",
+   "fp32/matmul_avx_fp32.c",
+   "fp32/matmul_fp32.c",
+   "fp32/mul_fp32.c",
+@@ -800,6 +798,13 @@ sse_avx_avx512_sources = [
+   "assembly/avx/MatmulAvx.S",
+ ]
+ 
++# only x86_64 real machine support avx512
++if (target_cpu == "x86_64" && !is_emulator) {
++  sse_avx_avx512_sources += [
++    "assembly/avx512/ConvDwFp32RowAVX512.S",
++  ]
++}
++
+ gemm_avx512_kernel_sources = [
+   "experimental/HPC-generator/gemm_avx512/nnacl_gemm_avx512_10x16_kernel_nhwc_fp32.c",
+   "experimental/HPC-generator/gemm_avx512/nnacl_gemm_avx512_10x32_kernel_nhwc_fp32.c",
+@@ -850,16 +855,64 @@ gemm_avx512_kernel_sources = [
+   "experimental/HPC-generator/gemm_avx512/nnacl_gemm_avx512_9x32_kernel_nhwc_fp32.c",
+ ]
+ 
++gemm_mask_avx512_kernel_sources = [
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_10x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_10x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_11x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_11x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_12x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_12x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_1x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_1x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_1x48_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_1x64_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_1x80_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_1x96_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_2x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_2x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_2x48_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_2x64_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_2x80_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_2x96_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_3x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_3x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_3x48_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_3x64_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_3x80_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_3x96_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_4x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_4x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_4x48_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_4x64_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_4x80_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_4x96_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_5x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_5x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_5x48_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_5x64_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_5x80_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_6x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_6x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_6x48_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_6x64_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_7x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_7x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_7x48_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_8x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_8x32_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_8x48_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_9x16_mask_kernel_nhwc_fp32.c",
++  "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_9x32_mask_kernel_nhwc_fp32.c",
++]
++
+ fp32_kernel_sources -= no_fast_math_fp32_kernel_sources
+ fp32_kernel_sources -= avx_fp32_kernel_sources
+-fp32_kernel_sources -= avx512_fp32_kernel_sources
+ fp32_kernel_sources -= arm64_fp32_kernel_sources
+ 
+ # source files on all target
+ nnacl_sources = common_sources
+ nnacl_sources += base_kernel_sources
+ nnacl_sources += c_kernel_sources
+-nnacl_sources += experimental_kernel_sources
+ nnacl_sources += fp32_kernel_sources
+ nnacl_sources += fp32_sparse_kernel_sources
+ nnacl_sources += fp32_grad_kernel_sources
+@@ -870,7 +923,6 @@ nnacl_sources += infer_control_sources
+ 
+ # source files on arm32
+ arm_only_sources = arm32_assembly_sources
+-#arm_only_sources += arm32_fp16_assembly_sources
+ not_needed(arm32_fp16_assembly_sources)
+ 
+ # source files on arm64
+@@ -884,8 +936,16 @@ arm64_only_sources += arm64_fp32_kernel_sources
+ # sources files on x86_64
+ x86_64_only_sources = sse_avx_avx512_sources
+ x86_64_only_sources += avx_fp32_kernel_sources
+-x86_64_only_sources += avx512_fp32_kernel_sources
+-x86_64_only_sources += gemm_avx512_kernel_sources
++# emulator not support avx512
++if (is_emulator) {
++  not_needed(avx512_fp32_kernel_sources)
++  not_needed(gemm_avx512_kernel_sources)
++  not_needed(gemm_mask_avx512_kernel_sources)
++} else {
++  x86_64_only_sources += avx512_fp32_kernel_sources
++  x86_64_only_sources += gemm_avx512_kernel_sources
++  x86_64_only_sources += gemm_mask_avx512_kernel_sources
++}
+ 
+ if (target_cpu == "arm") {
+   nnacl_sources += arm_only_sources
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm32/ConvDwFp32Row.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm32/ConvDwFp32Row.S
+index 8d1d819d..19750920 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm32/ConvDwFp32Row.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm32/ConvDwFp32Row.S
+@@ -35,7 +35,7 @@ asm_function ConvDwFp32Row
+     mov r6, #4
+     mul r5, r5, r6
+     cmp r3, #0
+-    beq End
++    ble End
+ 
+     LoopNumPixel:
+         mov r6, r1   // input_ptr
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Row.S b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Row.S
+index 417aa4ce..e50e2ee5 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Row.S
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/arm64/ConvDwFp32Row.S
+@@ -30,7 +30,7 @@ asm_function ConvDwFp32Row
+     // x19 ~ x29 should be also preserved
+     // whereas our coding style do not permit such amount of parameters
+ cmp x3, #0
+-beq End
++ble End
+ 
+ mov x9, x0
+ mov x12, #4
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/constant_of_shape_parameter.h b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/constant_of_shape_parameter.h
+index f108ea98..d75edb6f 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/constant_of_shape_parameter.h
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/constant_of_shape_parameter.h
+@@ -23,6 +23,7 @@ typedef struct ConstantOfShapeParameter {
+   union value_ {
+     float f32_value_;
+     int32_t int32_value_;
++    bool bool_value_;
+   } value_;
+   int data_type_;
+   int element_size_;
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp32/constant_of_shape_fp32.h b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp32/constant_of_shape_fp32.h
+index 6c607cf5..c884d031 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp32/constant_of_shape_fp32.h
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp32/constant_of_shape_fp32.h
+@@ -38,6 +38,13 @@ inline int ConstantOfShapeFp32(float *output, int start, int end, float value) {
+   return NNACL_OK;
+ }
+ 
++inline int ConstantOfShapeBool(bool *output, int start, int end, bool value) {
++  for (int i = start; i < end; i++) {
++    output[i] = value;
++  }
++  return NNACL_OK;
++}
++
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/strided_slice.c b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/strided_slice.c
+index 915f933a..d8268783 100644
+--- a/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/strided_slice.c
++++ b/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel/strided_slice.c
+@@ -275,3 +275,4 @@ REG_KERNEL_CREATOR(PrimType_StridedSlice, kNumberTypeFloat16, CreateStridedSlice
+ REG_KERNEL_CREATOR(PrimType_StridedSlice, kNumberTypeInt64, CreateStridedSlice)
+ REG_KERNEL_CREATOR(PrimType_StridedSlice, kNumberTypeInt32, CreateStridedSlice)
+ REG_KERNEL_CREATOR(PrimType_StridedSlice, kNumberTypeInt8, CreateStridedSlice)
++REG_KERNEL_CREATOR(PrimType_StridedSlice, kNumberTypeBool, CreateStridedSlice)
+diff --git a/mindspore/core/mindrt/src/thread/core_affinity.cc b/mindspore/core/mindrt/src/thread/core_affinity.cc
+index 8b2cfeb3..5eb2dc35 100644
+--- a/mindspore/core/mindrt/src/thread/core_affinity.cc
++++ b/mindspore/core/mindrt/src/thread/core_affinity.cc
+@@ -218,7 +218,7 @@ int GetMaxFrequency(int core_id) {
+ float CoreAffinity::GetServerFrequency() {
+   float max_freq = -1.0f;
+ #if defined(__APPLE__) || defined(__MACOSX) || defined(_MSC_VER) || defined(_WIN32) || defined(ANDROID) || \
+-  defined(__ANDROID__)
++  defined(__ANDROID__) || defined(MS_COMPILE_OHOS)
+   return max_freq;  // MHz
+ #else
+   // The CPU cores in the server of the numa architecture are the same.
+diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
+index 6f7f85e9..c7c51620 100644
+--- a/mindspore/lite/BUILD.gn
++++ b/mindspore/lite/BUILD.gn
+@@ -118,12 +118,6 @@ control_flow_kernel_sources = [
+   "src/control_flow/kernel/identity_kernel.cc",
+ ]
+ 
+-experimental_sources = [
+-]
+-
+-string_kernel_source = [
+-]
+-
+ auto_parallel_source = [
+   "src/litert/sub_graph_split.cc"
+ ]
+@@ -186,19 +180,11 @@ lite_mindrt_sources = [
+ all_lite_sources += cxx_api_sources
+ all_lite_sources += api_source
+ all_lite_sources += control_flow_kernel_sources
+-all_lite_sources += experimental_sources
+-all_lite_sources += string_kernel_source
+ all_lite_sources += auto_parallel_source
+ all_lite_sources += custom_registry_sources
+ all_lite_sources += weight_decode_source
+ all_lite_sources += lite_mindrt_sources
+ 
+-ops_base_sources = [
+-#  "src/common/ops/anf_utils.cc", # disable runtiem convert
+-#  "src/common/ops/ops_def.cc", # disable kernel executor
+-#  "src/common/ops/ops_utils.cc" # disable kernel executor
+-]
+-
+ basic_populate_sources = [
+   "src/common/ops/populate/activation_grad_populate.cc",
+   "src/common/ops/populate/activation_populate.cc",
+@@ -346,8 +332,7 @@ control_populate_sources = [
+   "src/common/ops/populate/control/tensorliststack_populate.cc",
+ ]
+ 
+-all_ops_sources = ops_base_sources
+-all_ops_sources += basic_populate_sources
++all_ops_sources = basic_populate_sources
+ all_ops_sources += string_populate_sources
+ all_ops_sources += control_populate_sources
+ 
+@@ -360,13 +345,18 @@ missing_sources = [
+ 
+ all_sources += missing_sources
+ 
++SUPPORT_NNRT = false
++# currently, only arm/arm64 real machine support nnrt
++if ((target_cpu == "arm" || target_cpu == "arm64") && !is_emulator) {
++  SUPPORT_NNRT = true
++}
++
+ ohos_shared_library("mindspore_lib") {
+   deps = [
+     "../ccsrc/plugin/device/cpu/kernel/nnacl/:nnacl_obj",
+     "../core/mindrt/:mindrt_obj",
+     "src/litert/kernel/cpu/:cpu_kernel_obj",
+     "src/common/:lite_common_mid_obj",
+-    "//third_party/flatbuffers:flatbuffers_install_action",
+   ]
+ 
+   sources = all_sources
+@@ -387,7 +377,6 @@ ohos_shared_library("mindspore_lib") {
+     "../ccsrc/",
+     "src/litert/kernel/cpu/",
+     "../core/mindrt/src/",
+-    "//foundation/ai/neural_network_runtime/",
+   ]
+ 
+   defines = [
+@@ -418,6 +407,17 @@ ohos_shared_library("mindspore_lib") {
+       "CL_HPP_TARGET_OPENCL_VERSION=120",
+       "CL_HPP_MINIMUM_OPENCL_VERSION=120",
+     ]
++  } else if (target_cpu == "x86_64") {
++    defines += [
++      "ENABLE_SSE",
++      "ENABLE_AVX",
++    ]
++    # emulator not support avx512
++    if (!is_emulator) {
++      defines += [
++        "ENABLE_AVX512",
++      ]
++    }
+   }
+ 
+   configs = [
+@@ -429,15 +429,24 @@ ohos_shared_library("mindspore_lib") {
+ 
+   remove_configs = [ "//build/config/compiler:no_rtti" ]
+ 
+-  external_deps = [ "hilog:libhilog" ]
++  external_deps = [
++    "hilog:libhilog",
++  ]
++
++  public_external_deps = [
++    "flatbuffers:libflatbuffers_static",
++  ]
+ 
+   output_name = "libmindspore-lite"
+   output_extension = "so"
+   innerapi_tags = [ "platformsdk" ]
+-  SUPPORT_NNRT = true
+   if (SUPPORT_NNRT) {
+     if (mindspore_feature_nnrt_metagraph) {
+       defines += [ "SUPPORT_NNRT_METAGRAPH" ]
++      sources += [
++        "src/litert/delegate/nnrt/hiai_foundation_wrapper.cc",
++        "src/litert/cache_session.cc",
++      ]
+       print("enabled feature: mindspore_feature_nnrt_metagraph")
+     }
+     sources += [
+@@ -445,12 +454,15 @@ ohos_shared_library("mindspore_lib") {
+       "src/litert/delegate/nnrt/nnrt_delegate.cc",
+       "src/litert/delegate/nnrt/nnrt_model_kernel.cc",
+       "src/litert/delegate/nnrt/nnrt_allocator.cc",
++      "src/litert/delegate/nnrt/extension_options_parser.cc",
++      "src/litert/delegate/nnrt/nnrt_utils.cc",
+     ]
+     include_dirs += [
+       "src/delegate/nnrt/include",
+       "../../mindspore/core/ir",
+       "mindir/include",
+       "mindir/inner_headers",
++      "//foundation/ai/neural_network_runtime/",
+     ]
+ 
+     external_deps += [ "neural_network_runtime:nnrt_target" ]
+@@ -477,7 +489,6 @@ ohos_shared_library("mindspore_ndk") {
+   deps = [
+     ":mindspore_lib",
+     ":mindspore_train_lib",
+-    "//third_party/flatbuffers:flatbuffers_install_action",
+   ]
+ 
+   sources = c_api_sources
+@@ -497,11 +508,9 @@ ohos_shared_library("mindspore_ndk") {
+     "../../third_party/",
+     "./schema/",
+     "../ccsrc/",
+-    "//foundation/ai/neural_network_runtime/",
+   ]
+ 
+   defines = [
+-    "SUPPORT_NNRT",
+     "MS_COMPILE_OHOS",
+     "PRIMITIVE_WRITEABLE",
+     "RUNTIME_PASS_CLIP",
+@@ -510,14 +519,30 @@ ohos_shared_library("mindspore_ndk") {
+     "ENABLE_HI_APP_EVENT",
+   ]
+ 
++  if (SUPPORT_NNRT) {
++    include_dirs += [
++      "//foundation/ai/neural_network_runtime/",
++    ]
++    defines += [
++      "SUPPORT_NNRT",
++    ]
++    if (mindspore_feature_nnrt_metagraph) {
++      defines += [ "SUPPORT_NNRT_METAGRAPH" ]
++      print("enabled feature: mindspore_feature_nnrt_metagraph")
++    }
++    external_deps = [ "neural_network_runtime:nnrt_target" ]
++  }
++
++  public_external_deps = [
++    "flatbuffers:libflatbuffers_static",
++  ]
++
+   configs = [
+     ":mindspore_api",
+     ":disable_android",
+     ":secure_option",
+   ]
+ 
+-  external_deps = [ "neural_network_runtime:nnrt_target" ]
+-
+   remove_configs = [ "//build/config/compiler:no_rtti" ]
+ 
+   output_name = "libmindspore_lite_ndk"
+@@ -641,7 +666,6 @@ all_train_sources += fp32_train_kernel_sources
+ ohos_shared_library("mindspore_train_lib") {
+   deps = [
+     ":mindspore_lib",
+-    "//third_party/flatbuffers:flatbuffers_install_action",
+   ]
+ 
+   sources = all_train_sources
+@@ -695,7 +719,12 @@ ohos_shared_library("mindspore_train_lib") {
+   ]
+ 
+   remove_configs = [ "//build/config/compiler:no_rtti" ]
+-  external_deps = [ "hilog:libhilog" ]
++  external_deps = [
++    "hilog:libhilog",
++  ]
++  public_external_deps = [
++    "flatbuffers:libflatbuffers_static",
++  ]
+   innerapi_tags = [ "platformsdk" ]
+   output_name = "libmindspore-lite-train"
+   output_extension = "so"
+@@ -742,4 +771,4 @@ config("secure_option") {
+ 
+ config("train_kernel_option") {
+   cflags_cc = [ "-fno-finite-math-only" ]
+-}
++}
+\ No newline at end of file
 diff --git a/mindspore/lite/mindir/BUILD.gn b/mindspore/lite/mindir/BUILD.gn
-index ad4eff84..ec87d1da 100644
+index ad4eff84..975d201f 100644
 --- a/mindspore/lite/mindir/BUILD.gn
 +++ b/mindspore/lite/mindir/BUILD.gn
 @@ -38,6 +38,8 @@ ohos_shared_library("mindir_lib") {
@@ -29,6 +557,20 @@ index ad4eff84..ec87d1da 100644
      "src/mindir_memory_manager.cc",
      "src/mindir_nnrt_lite_graph.cc",
      "src/mindir_tensor.cc",
+@@ -50,10 +52,10 @@ ohos_shared_library("mindir_lib") {
+     "hdf_core:libhdi",
+     "hilog:libhilog",
+     "bounds_checking_function:libsec_shared",
+-    "drivers_interface_nnrt:nnrt_idl_headers"
++    "drivers_interface_nnrt:nnrt_idl_headers",
+   ]
+-  deps = [
+-    "//third_party/flatbuffers:flatbuffers_install_action",
++  public_external_deps = [
++    "flatbuffers:libflatbuffers_static",
+   ]
+   configs = [
+     "../:disable_android",
 diff --git a/mindspore/lite/mindir/include/mindir.h b/mindspore/lite/mindir/include/mindir.h
 index 7eb3a744..d236b6cc 100644
 --- a/mindspore/lite/mindir/include/mindir.h
@@ -4987,6 +5529,2408 @@ index 8888e2c9..0e6a631e 100644
  void MindIR_Tensor_Destroy(TensorPtr *tensor) {
    if (tensor != nullptr && *tensor != nullptr) {
      auto schema = static_cast<schema::Tensor *>(*tensor);
+diff --git a/mindspore/lite/src/common/context_util.cc b/mindspore/lite/src/common/context_util.cc
+index c68086df..ccf1e446 100644
+--- a/mindspore/lite/src/common/context_util.cc
++++ b/mindspore/lite/src/common/context_util.cc
+@@ -185,8 +185,7 @@ bool DeviceTypePriority(const InnerContext *context, int device_type1, int devic
+   if (context == nullptr) {
+     return false;
+   }
+-  std::vector<DeviceContext> device_infos = context->device_list_;
+-  for (DeviceContext device_info : device_infos) {
++  for (const DeviceContext& device_info : context->device_list_) {
+     if (device_info.device_type_ == device_type1) {
+       return true;
+     }
+diff --git a/mindspore/lite/src/common/mmap_utils.cc b/mindspore/lite/src/common/mmap_utils.cc
+index 7f4f3c69..0bda5d69 100644
+--- a/mindspore/lite/src/common/mmap_utils.cc
++++ b/mindspore/lite/src/common/mmap_utils.cc
+@@ -24,7 +24,7 @@
+ 
+ namespace mindspore {
+ namespace lite {
+-void *ReadFileByMmap(const std::string &file, size_t *size) {
++void *ReadFileByMmap(const std::string &file, size_t *size, bool populate) {
+ #if !defined(_WIN32) && !defined(_WIN64) && !defined(MS_COMPILE_IOS)
+   auto real_path = RealPath(file.c_str());
+   MS_CHECK_TRUE_RET(!real_path.empty(), nullptr);
+@@ -40,7 +40,12 @@ void *ReadFileByMmap(const std::string &file, size_t *size) {
+     return nullptr;
+   }
+   *size = static_cast<size_t>(fd_stat.st_size);
+-  auto mmap_buffers = mmap(nullptr, *size, PROT_READ, MAP_SHARED | MAP_POPULATE, fd, 0);
++  void *mmap_buffers;
++  if (populate) {
++    mmap_buffers = mmap(nullptr, *size, PROT_READ, MAP_SHARED | MAP_POPULATE, fd, 0);
++  } else {
++    mmap_buffers = mmap(nullptr, *size, PROT_READ, MAP_SHARED, fd, 0);
++  }  
+   (void)close(fd);
+   if (mmap_buffers == MAP_FAILED) {
+     MS_LOG(ERROR) << "Model mmap failed.";
+@@ -55,7 +60,10 @@ void *ReadFileByMmap(const std::string &file, size_t *size) {
+ 
+ void UnmapMmapBuffer(void *buffer, size_t size) {
+ #if !defined(_WIN32) && !defined(_WIN64)
+-  (void)munmap(buffer, size);
++  auto ret = munmap(buffer, size);
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "munmap failed ret: " << ret << ", err: " << strerror(errno);
++  }
+ #else
+   MS_LOG(ERROR) << "Mmap is unsupported on windows.";
+ #endif
+diff --git a/mindspore/lite/src/common/mmap_utils.h b/mindspore/lite/src/common/mmap_utils.h
+index bdd7c9a5..d3b0ec5f 100644
+--- a/mindspore/lite/src/common/mmap_utils.h
++++ b/mindspore/lite/src/common/mmap_utils.h
+@@ -20,7 +20,7 @@
+ 
+ namespace mindspore {
+ namespace lite {
+-void *ReadFileByMmap(const std::string &file, size_t *size);
++void *ReadFileByMmap(const std::string &file, size_t *size, bool populate = true);
+ void UnmapMmapBuffer(void *buffer, size_t size);
+ }  // namespace lite
+ }  // namespace mindspore
+diff --git a/mindspore/lite/src/common/ops/operator_populate/constant_of_shape_populate.cc b/mindspore/lite/src/common/ops/operator_populate/constant_of_shape_populate.cc
+index 3552b5f9..743f42f5 100644
+--- a/mindspore/lite/src/common/ops/operator_populate/constant_of_shape_populate.cc
++++ b/mindspore/lite/src/common/ops/operator_populate/constant_of_shape_populate.cc
+@@ -42,6 +42,9 @@ OpParameter *PopulateConstantOfShapeOpParameter(const BaseOperatorPtr &base_oper
+     case kNumberTypeInt32:
+       param->value_.int32_value_ = static_cast<int32_t>(value[0]);
+       break;
++    case kNumberTypeBool:
++      param->value_.bool_value_ = static_cast<bool>(value[0]);
++      break;
+     default:
+       MS_LOG(ERROR) << "The value of constant of shape is invalid";
+       free(param);
+diff --git a/mindspore/lite/src/common/ops/populate/constant_of_shape_populate.cc b/mindspore/lite/src/common/ops/populate/constant_of_shape_populate.cc
+index 8843ffa7..231c2dec 100644
+--- a/mindspore/lite/src/common/ops/populate/constant_of_shape_populate.cc
++++ b/mindspore/lite/src/common/ops/populate/constant_of_shape_populate.cc
+@@ -51,6 +51,9 @@ OpParameter *PopulateConstantOfShapeParameter(const void *prim) {
+     case kNumberTypeFloat16:
+       param->value_.f32_value_ = static_cast<float>(val[0]);
+       break;
++    case kNumberTypeBool:
++      param->value_.bool_value_ = static_cast<bool>(val[0]);
++      break;
+     default:
+       MS_LOG(ERROR) << "The value of constant of shape is invalid";
+       free(param);
+diff --git a/mindspore/lite/src/common/thread_utils.cc b/mindspore/lite/src/common/thread_utils.cc
+index 28c8e1cd..28c7acab 100644
+--- a/mindspore/lite/src/common/thread_utils.cc
++++ b/mindspore/lite/src/common/thread_utils.cc
+@@ -17,7 +17,7 @@
+ #if defined(__linux__) && !defined(ENABLE_ARM)
+ #include "src/common/thread_utils.h"
+ #include <sys/stat.h>
+-#include <wait.h>
++#include <sys/wait.h>
+ #include "src/common/log_adapter.h"
+ 
+ namespace mindspore {
+diff --git a/mindspore/lite/src/litert/c_api/context_c.cc b/mindspore/lite/src/litert/c_api/context_c.cc
+index febdeb22..b924c52b 100644
+--- a/mindspore/lite/src/litert/c_api/context_c.cc
++++ b/mindspore/lite/src/litert/c_api/context_c.cc
+@@ -20,6 +20,9 @@
+ #include "src/litert/c_api/type_c_private.h"
+ #include "include/api/context.h"
+ #include "src/common/log_adapter.h"
++#ifdef SUPPORT_NNRT_METAGRAPH
++#include "src/litert/delegate/nnrt/hiai_foundation_wrapper.h"
++#endif
+ #ifdef SUPPORT_NNRT
+ #include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
+ #endif
+@@ -298,6 +301,13 @@ NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num) {
+     return nullptr;
+   }
+ #ifdef SUPPORT_NNRT
++#ifdef SUPPORT_NNRT_METAGRAPH
++  void *hiai_handle_{nullptr};
++  auto ret_load = mindspore::lite::LoadHiaiFLibraryFromPath(&hiai_handle_);
++  if (!ret_load || hiai_handle_ == nullptr) {
++    MS_LOG(ERROR) << "Load HiAI_Foundation so failed.";
++  }
++#endif
+   *num = 0;
+ 
+   const size_t *all_device_ids;
+@@ -501,6 +511,10 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
+     MS_LOG(ERROR) << "device info is null";
+     return OH_AI_STATUS_LITE_NULLPTR;
+   }
++  if (name == nullptr || value == nullptr || value_size < 0) {
++    MS_LOG(ERROR) << "name/value/value_size is not valid";
++    return OH_AI_STATUS_LITE_NULLPTR;
++  }
+   if (OH_AI_DeviceInfoGetDeviceType(device_info) != OH_AI_DEVICETYPE_NNRT) {
+     MS_LOG(ERROR) << "Add extension to non-NNRT device is not allowable, ignored";
+     return OH_AI_STATUS_LITE_ERROR;
+diff --git a/mindspore/lite/src/litert/c_api/tensor_c.cc b/mindspore/lite/src/litert/c_api/tensor_c.cc
+index fc3814dd..7d6c7930 100644
+--- a/mindspore/lite/src/litert/c_api/tensor_c.cc
++++ b/mindspore/lite/src/litert/c_api/tensor_c.cc
+@@ -19,9 +19,13 @@
+ #include "src/tensor.h"
+ #include "src/litert/cxx_api/tensor/tensor_impl.h"
+ 
++// allocator_table contains mapping of raw_ptr to weak_ptr of Allocator, allocator_table_mutex is used in multi-thread
++// scene when user build multiple models, to avoid read/write unordered_map conflicts crash.
+ static std::unordered_map<void *, std::weak_ptr<mindspore::Allocator>> allocator_table;
++static std::mutex allocator_table_mutex;
+ 
+ void CleanAllocatorTable() {
++  std::lock_guard<std::mutex> lock(allocator_table_mutex);
+   allocator_table.clear();
+ }
+ 
+@@ -222,21 +226,29 @@ OH_AI_Status OH_AI_TensorSetAllocator(OH_AI_TensorHandle tensor, void *allocator
+     return OH_AI_STATUS_LITE_NULLPTR;
+   }
+   auto impl = static_cast<mindspore::MSTensor *>(tensor);
++  std::lock_guard<std::mutex> lock(allocator_table_mutex);
+   if (allocator_table.count(allocator) == 0) {
+     MS_LOG(ERROR) << "the input allocator does not belong to framework";
+     return OH_AI_STATUS_LITE_PARAM_INVALID;
+   }
+   std::static_pointer_cast<mindspore::LiteTensorImpl>(impl->impl())->set_own_data(true);
+-  impl->SetAllocator(allocator_table[allocator].lock());
++  auto allocator_ptr = allocator_table[allocator].lock();
++  if (allocator_ptr != nullptr) {
++    impl->SetAllocator(allocator_ptr);
++  } else {
++    MS_LOG(ERROR) << "get allocator shared ptr failed.";
++    return OH_AI_STATUS_LITE_NULLPTR;
++  }
+   return OH_AI_STATUS_SUCCESS;
+ }
+ 
+-void *OH_AI_TensorGetAllocator(const OH_AI_TensorHandle tensor) {
++void *OH_AI_TensorGetAllocator(OH_AI_TensorHandle tensor) {
+   if (tensor == nullptr) {
+     MS_LOG(ERROR) << "param is nullptr.";
+     return nullptr;
+   }
+   auto impl = static_cast<mindspore::MSTensor *>(tensor);
++  std::lock_guard<std::mutex> lock(allocator_table_mutex);
+   allocator_table[impl->allocator().get()] = impl->allocator();
+   return impl->allocator().get();
+ }
+diff --git a/mindspore/lite/src/litert/cache_session.cc b/mindspore/lite/src/litert/cache_session.cc
+new file mode 100644
+index 00000000..7bafe3f7
+--- /dev/null
++++ b/mindspore/lite/src/litert/cache_session.cc
+@@ -0,0 +1,425 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "cache_session.h"
++#include "src/common/context_util.h"
++#include "src/common/tensor_util.h"
++#include "src/common/mmap_utils.h"
++#include "src/common/file_utils.h"
++#include "src/litert/delegate/nnrt/nnrt_model_kernel.h"
++
++namespace mindspore {
++namespace lite {
++CacheSession::~CacheSession() {
++  if (nn_executor_ != nullptr) {
++    OH_NNExecutor_Destroy(&nn_executor_);
++    MS_LOG(INFO) << "Destroy NNExecutor Finish.";
++  }
++}
++
++int CacheSession::CompileGraph(Model *model) {
++  bool expected = false;
++  if (!is_running_.compare_exchange_strong(expected, true)) {
++    MS_LOG(ERROR) << "Not support multi-threading";
++    return RET_ERROR;
++  }
++  // Convert to abstract base model interface
++  auto ret = ConvertInOutTensors(model);
++  context_->set_schema_version(reinterpret_cast<LiteModel *>(model)->GetSchemaVersion());
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "ConvertTensors failed: " << ret;
++    is_running_.store(false);
++    return ret;
++  }
++  InitGraphInputTensors(model);
++  InitGraphOutputTensors(model);
++
++  // create NNRt kernel
++  ret = ScheduleToNNRTKernel();
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "Schedule NNRt kernel failed: " << ret;
++    is_running_.store(false);
++    return ret;
++  }
++
++  InitGraphInOutTensorsMap(model);
++  ret = PrepareKernels(model);
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "Prepare kernels failed: " << ret;
++    is_running_.store(false);
++    return ret;
++  }
++
++  ret = InitExecutor();
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "InitExecutor failed: " << ret;
++    is_running_.store(false);
++    return ret;
++  }
++
++  MarkSharedWeight(kernels_);
++  FreePackOpWeight(kernels_);
++
++  is_running_.store(false);
++  return RET_OK;
++}
++
++int CacheSession::InitExecutor() {
++  executor_ = new (std::nothrow) Executor();
++  if (executor_ == nullptr) {
++    MS_LOG(ERROR) << "New Executor failed";
++    return RET_ERROR;
++  }
++  auto ret = executor_->Prepare(kernels_, inputs_, outputs_, context_.get());
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "Prepare executor failed: " << ret;
++    return ret;
++  }
++  return RET_OK;
++}
++
++int CacheSession::ConvertInOutTensors(const lite::Model *model) {
++  MS_ASSERT(model != nullptr);
++  auto lite_model = reinterpret_cast<const lite::LiteModel *>(model);
++  uint32_t tensor_count = model->graph_.all_tensors_.size();
++  auto model_input_indices = model->graph_.input_indices_;
++  auto model_output_indices = model->graph_.output_indices_;
++
++  for (uint32_t i = 0; i < tensor_count; ++i) {
++    auto *src_tensor = model->graph_.all_tensors_[i];
++    if (!IsContain(model_input_indices, i) && !IsContain(model_output_indices, i)) {
++      this->tensors_.emplace_back(nullptr);
++      continue;
++    }
++    if (src_tensor == nullptr) {
++      MS_LOG(ERROR) << i << "th tensor in model is nullptr";
++      return RET_NULL_PTR;
++    }
++    auto *dst_tensor = ConvertTensor(*src_tensor);
++    if (dst_tensor == nullptr) {
++      MS_LOG(ERROR) << "Convert new " << i << "th tensor failed!";
++      return RET_NULL_PTR;
++    }
++    auto ret = ConvertTensorsData(lite_model, i, dst_tensor);
++    if (ret != RET_OK) {
++      MS_LOG(ERROR) << "Convert data of " << i << "th tensor failed";
++      delete dst_tensor;
++      return ret;
++    }
++    ConvertTensorsQuantParam(src_tensor, dst_tensor);
++    if (IsContain(model_input_indices, i)) {
++      dst_tensor->set_category(Category::GRAPH_INPUT);
++    }
++    if (IsContain(model_output_indices, i)) {
++      // a tensor is as both input and output, would be treated as an input.
++      if (!dst_tensor->IsGraphInput()) {
++        dst_tensor->set_category(Category::GRAPH_OUTPUT);
++      }
++    }
++
++    ret = CheckTensorValid(dst_tensor);
++    if (ret != RET_OK) {
++      MS_LOG(ERROR) << "Check " << i << "th tensor failed";
++      delete dst_tensor;
++      return ret;
++    }
++
++    this->tensors_.emplace_back(dst_tensor);
++  }
++  return RET_OK;
++}
++
++int CacheSession::Init(const std::shared_ptr<InnerContext> &context) {
++  if (context == nullptr) {
++    MS_LOG(ERROR) << "context is nullptr";
++    return RET_NULL_PTR;
++  }
++  bool expected = false;
++  if (!is_running_.compare_exchange_strong(expected, true)) {
++    MS_LOG(ERROR) << "Not support multi-threading";
++    return RET_ERROR;
++  }
++  context_ = context;
++  auto ret = context_->Init();
++  if (ret != RET_OK) {
++    MS_LOG(ERROR) << "Init Context failed";
++    return ret;
++  }
++  ms_context_ = MSContextFromContext(context);
++  if (ms_context_ == nullptr) {
++    MS_LOG(ERROR) << "transfer context to ms context failed.";
++    return RET_NULL_PTR;
++  }
++
++  auto iter = std::find_if(context_->device_list_.begin(), context_->device_list_.end(),
++                           [](DeviceContext &device) { return device.device_type_ == lite::DT_NNRT; });
++  if(iter == context_->device_list_.end()) {
++    MS_LOG(ERROR) << "Found non NNRT device info";
++    return RET_ERROR;
++  }
++  nnrt_device_info_ = iter->device_info_.nnrt_device_info_;
++
++  const auto &extensions = nnrt_device_info_.extensions_;
++  mindspore::lite::nnrt::ExtensionOptionsParser::Parse(extensions, &extension_options_);
++
++  is_running_.store(false);
++  return RET_OK;
++}
++
++int CacheSession::ParseInputOutputFromModelBuffer(const char *model_buf, LiteModel *model) {
++  const void *meta_graph = nullptr;
++  meta_graph = reinterpret_cast<const void *>(schema::GetMetaGraph(model_buf));
++  assert(meta_graph != nullptr);
++
++  auto status = GenerateModelInputOutput<schema::MetaGraph, schema::CNode>(
++    *reinterpret_cast<const schema::MetaGraph *>(meta_graph), model->graph_);
++  if (status != RET_OK) {
++    MS_LOG(ERROR) << "fail to generate model";
++    return status;
++  }
++  model->buf = const_cast<char *>(model_buf);
++  return RET_OK;
++}
++
++int CacheSession::LoadModelAndCompileByPath(const std::string &model_path, mindspore::ModelType model_type) {
++  size_t model_size;
++  bool use_mmap = IsMmapEnable();
++  auto model_buf = LoadModelByPath(model_path, model_type, &model_size, use_mmap);
++  if (model_buf == nullptr) {
++    MS_LOG(ERROR) << "Read model file failed";
++    return RET_ERROR;
++  }
++
++  Model *model = nullptr;
++  if (extension_options_.cache_path_.empty()) {
++    MS_LOG(ERROR) << "cache path is empty";
++    return RET_ERROR;
++  } else {
++    model = ImportInOutFromBuffer(model_buf, model_size, true, model_type, model_path);
++    dynamic_cast<LiteModel *>(model)->PrepareInnerTensors();
++  }
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "Import model failed";
++    return RET_ERROR;
++  }
++
++  if (use_mmap) {
++    reinterpret_cast<lite::LiteModel *>(model)->model_buf_by_mmap_ = true;
++  } else {
++    MS_LOG(WARNING) << "Memory may exceed the limit of business demands.";
++  }
++  (reinterpret_cast<lite::LiteModel *>(model))->set_keep_model_buf(true);
++  auto ret = CompileGraph(model);
++  if (ret != lite::RET_OK) {
++    MS_LOG(ERROR) << "Compile model failed";
++    model->buf = nullptr;
++    delete model;
++    return RET_ERROR;
++  }
++  set_model(model);
++  return RET_OK;
++}
++
++Model *CacheSession::ImportInOutFromBuffer(const char *model_buf, size_t size, bool take_buf, mindspore::ModelType model_type,
++                               const std::string &path) {
++  MS_LOG(INFO) << "import model from lite model";
++  auto *model = new (std::nothrow) LiteModel(path);
++  if (model == nullptr) {
++    MS_LOG(ERROR) << "new model fail!";
++    return nullptr;
++  }
++
++  auto status = ParseInputOutputFromModelBuffer(model_buf, model);
++  if (status != RET_OK) {
++    MS_LOG(ERROR) << "construct model failed.";
++    delete model;
++    return nullptr;
++  }
++  model->buf = const_cast<char *>(model_buf);
++  model->buf_size_ = size;
++  return model;
++}
++
++int CacheSession::ScheduleToNNRTKernel() {
++  if (!IsKirinNPUWithOnlineInference(nnrt_device_info_.device_id_)) {
++    MS_LOG(ERROR) << "only support NPU_ device.";
++    return RET_ERROR;
++  }
++  auto ret = CreateFullModelKernel();
++  if (ret != kSuccess) {
++    MS_LOG(ERROR) << "Build npu model failed.";
++    return RET_ERROR;
++  }
++  return RET_OK;
++}
++
++bool CacheSession::IsKirinNPUWithOnlineInference(size_t device_id) {
++  const std::string kirin_npu_name_prefix = "NPU_";
++  const char *device_name;
++  auto ret = OH_NNDevice_GetName(device_id, &device_name);
++  if (ret != OH_NN_SUCCESS) {
++    MS_LOG(WARNING) << "Get name of device: " << device_id << " failed, error: " << ret;
++    return false;
++  }
++
++  if (strncmp(kirin_npu_name_prefix.c_str(), device_name, kirin_npu_name_prefix.size()) != 0) {
++    MS_LOG(WARNING) << "strncmp: " << device_id << " failed, device_name: " << device_name;
++    return false;
++  }
++  return true;
++}
++
++Status CacheSession::CreateFullModelKernel() {
++  OH_NNCompilation* nn_compilation = OH_NNCompilation_ConstructForCache();
++  if (nn_compilation == nullptr) {
++    MS_LOG(ERROR) << "Construct NNCompilation failed";
++    return kLiteError;
++  }
++  MS_LOG(DEBUG) << "NNRTDelegate creates NNCompilation success.";
++
++  auto ret_code = InitNNCompilation(nn_compilation);
++  if (ret_code != kSuccess) {
++    MS_LOG(ERROR) << "Init NNCompilation failed";
++    OH_NNCompilation_Destroy(&nn_compilation);
++    return kLiteError;
++  }
++
++  OH_NNExecutor *nn_executor = nullptr;
++  nn_executor = OH_NNExecutor_Construct(nn_compilation);
++  if (nn_executor == nullptr) {
++    MS_LOG(ERROR) << "Construct NNExecutor failed, ret: " << ret_code;
++    OH_NNCompilation_Destroy(&nn_compilation);
++    return kLiteError;
++  }
++  OH_NNCompilation_Destroy(&nn_compilation);
++
++  ms_inputs_ = LiteTensorsToMSTensors(inputs_);
++  ms_outputs_ = LiteTensorsToMSTensors(outputs_);
++  auto nnrt_model_kernel = new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, ms_inputs_, ms_outputs_);
++  if (nnrt_model_kernel == nullptr) {
++    OH_NNExecutor_Destroy(&nn_executor);
++    MS_LOG(ERROR) << "new NNRTModelKernel failed";
++    return kLiteError;
++  }
++  nn_executor_ = nn_executor;
++
++  std::shared_ptr<kernel::Kernel> shared_kernel(nnrt_model_kernel);
++  auto *kernel_exec = new (std::nothrow) kernel::KernelExec(shared_kernel);
++  if (kernel_exec == nullptr) {
++    MS_LOG(ERROR) << "nnrt kernel exec create failed.";
++    return kLiteError;
++  }
++  auto delegate_type = kNumberTypeFloat32;
++  for (auto &input : nnrt_model_kernel->inputs()) {
++    if (static_cast<TypeId>(input.DataType()) == kNumberTypeFloat16) {
++      delegate_type = kNumberTypeFloat16;
++      break;
++    }
++  }
++  kernel::KernelKey delegate_desc{kernel::kDelegate, delegate_type, NHWC, schema::PrimitiveType_NONE, "", ""};
++  kernel_exec->set_desc(delegate_desc);
++  kernel_exec->set_context(context_.get());
++  kernels_.push_back(kernel_exec);
++
++  return kSuccess;
++}
++
++Status CacheSession::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
++  auto ret_code = OH_NNCompilation_SetDevice(nn_compilation, nnrt_device_info_.device_id_);
++  if (ret_code != OH_NN_SUCCESS) {
++    MS_LOG(ERROR) << "NNCompilation set device id failed, ret: " << ret_code;
++    return kLiteError;
++  }
++  ret_code = OH_NNCompilation_SetPerformanceMode(nn_compilation,
++                                                 (OH_NN_PerformanceMode)(nnrt_device_info_.performance_mode_));
++  if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
++    MS_LOG(ERROR) << "NNCompilation set performance mode failed, ret: " << ret_code;
++    return kLiteError;
++  }
++  ret_code = OH_NNCompilation_SetPriority(nn_compilation, (OH_NN_Priority)(nnrt_device_info_.priority_));
++  if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
++    MS_LOG(ERROR) << "NNCompilation set priority failed, ret: " << ret_code;
++    return kLiteError;
++  }
++  ret_code = OH_NNCompilation_EnableFloat16(nn_compilation, nnrt_device_info_.enable_fp16_);
++  if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
++    MS_LOG(ERROR) << "NNCompilation enable fp16 failed, ret: " << ret_code;
++    return kLiteError;
++  }
++
++  if (!extension_options_.cache_path_.empty()) {
++    ret_code = OH_NNCompilation_SetCache(nn_compilation, extension_options_.cache_path_.c_str(),
++                                         extension_options_.cache_version_);
++    if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
++      MS_LOG(ERROR) << "NNCompilation set cache failed, ret: " << ret_code;
++      return kLiteError;
++    }
++  } else {
++    MS_LOG(ERROR) << "NNCompilation must set Cache.";
++    return kLiteError;
++  }
++
++  size_t extension_size = nnrt_device_info_.extensions_.size();
++  for (size_t i = 0; i < extension_size; i++) {
++    auto &src_extensoin = nnrt_device_info_.extensions_[i];
++    ret_code = OH_NNCompilation_AddExtensionConfig(nn_compilation, src_extensoin.name.c_str(),
++                                                   (char *)((void *)src_extensoin.value.data()),
++                                                   src_extensoin.value.size());
++    if (ret_code != OH_NN_SUCCESS) {
++      MS_LOG(ERROR) << "OH_NNCompilation_AddExtensionConfig " << i << ": "<< src_extensoin.name << " failed, ret: "
++                    << ret_code;
++      return kLiteError;
++    }
++  }
++
++  ret_code = OH_NNCompilation_Build(nn_compilation);
++  if (ret_code != OH_NN_SUCCESS) {
++    MS_LOG(ERROR) << "Build NNCompilation failed, ret: " << ret_code;
++    return kLiteError;
++  }
++  return kSuccess;
++}
++
++const char *CacheSession::LoadModelByPath(const std::string &file, mindspore::ModelType model_type, size_t *size, bool use_mmap) {
++  size_t buf_size;
++  char *model_buf;
++  if (use_mmap) {
++    model_buf = reinterpret_cast<char *>(lite::ReadFileByMmap(file.c_str(), &buf_size, false));
++  } else {
++    MS_LOG(WARNING) << "Memory may exceed the limit of business demands.";
++    model_buf = lite::ReadFile(file.c_str(), &buf_size);
++  }
++  if (model_buf == nullptr) {
++    MS_LOG(ERROR) << "The model path is invalid";
++    return model_buf;
++  }
++
++  char *lite_buf = nullptr;
++  auto buf_model_type = LoadModelByBuff(model_buf, buf_size, &lite_buf, size, model_type);
++  if (buf_model_type == mindspore::ModelType::kUnknownType || lite_buf == nullptr) {
++    if (use_mmap) {
++      lite::UnmapMmapBuffer(const_cast<void *>(static_cast<const void *>(model_buf)), buf_size);
++    } else {
++      delete[] model_buf;
++    }
++    model_buf = nullptr;
++    return nullptr;
++  }
++
++  return lite_buf;
++}
++}  // namespace lite
++}  // namespace mindspore
+diff --git a/mindspore/lite/src/litert/cache_session.h b/mindspore/lite/src/litert/cache_session.h
+new file mode 100644
+index 00000000..f0ae185a
+--- /dev/null
++++ b/mindspore/lite/src/litert/cache_session.h
+@@ -0,0 +1,129 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_SRC_LITERT_CACHE_SESSION_H_
++#define MINDSPORE_LITE_SRC_LITERT_CACHE_SESSION_H_
++
++#include "src/litert/lite_session.h"
++#include "src/litert/inner_context.h"
++#include "src/litert/lite_model.h"
++#include "src/litert/delegate/nnrt/extension_options_parser.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime_type.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
++#include "interfaces/innerkits/c/neural_network_runtime_inner.h"
++
++namespace mindspore {
++namespace lite {
++class CacheSession : public LiteSession {
++ public:
++  CacheSession() = default;
++  ~CacheSession() override;
++  int Init(const std::shared_ptr<InnerContext> &context) override;
++  int CompileGraph(Model *model) override;
++  int LoadModelAndCompileByPath(const std::string &model_path, mindspore::ModelType model_type) override;
++  static bool IsKirinNPUWithOnlineInference(size_t device_id);
++  const char *LoadModelByPath(const std::string &file, mindspore::ModelType model_type, size_t *size,
++                              bool use_mmap) override;
++  Model* ImportInOutFromBuffer(const char *model_buf, size_t size, bool take_buf,
++                               mindspore::ModelType model_type = mindspore::ModelType::kMindIR_Lite,
++                               const std::string &path = "");
++
++  template <typename T = schema::MetaGraph>
++  bool ConvertInputOutputTensors(const T &meta_graph, LiteGraph &graph_) {
++    if (meta_graph.allTensors() == nullptr) {
++      MS_LOG(ERROR) << "meta_graph is invalid, please check your model file.";
++      return false;
++    }
++
++    graph_.all_tensors_.resize(meta_graph.allTensors()->size());
++    MS_LOG(INFO) << "convert input/output tensors";
++    for (auto i: graph_.input_indices_) {
++      auto *tensor = meta_graph.allTensors()->template GetAs<schema::Tensor>(i);
++      if (tensor == nullptr) {
++        MS_LOG(ERROR) << i << " the input tensor in metagraph is nullptr";
++        return false;
++      }
++      MS_CHECK_TRUE_RET(tensor->format() >= schema::Format_MIN && tensor->format() <= schema::Format_MAX, false);
++      graph_.all_tensors_[i] = (const_cast<mindspore::schema::Tensor *>(tensor));
++    }
++
++    for (auto i: graph_.output_indices_) {
++      auto *tensor = meta_graph.allTensors()->template GetAs<schema::Tensor>(i);
++      if (tensor == nullptr) {
++        MS_LOG(ERROR) << i << " the output tensor in metagraph is nullptr";
++      }
++      MS_CHECK_TRUE_RET(tensor->format() >= schema::Format_MIN && tensor->format() <= schema::Format_MAX, false);
++      graph_.all_tensors_[i] = (const_cast<mindspore::schema::Tensor *>(tensor));
++    }
++    return true;
++  }
++
++  template <typename T = schema::MetaGraph, typename U = schema::CNode>
++  int GenerateModelInputOutput(const T &meta_graph, LiteGraph &graph_) {
++    if (meta_graph.name() != nullptr) {
++      graph_.name_ = meta_graph.name()->c_str();
++    }
++    if (meta_graph.version() != nullptr) {
++      graph_.version_ = meta_graph.version()->c_str();
++    }
++
++    if (meta_graph.inputIndex() == nullptr || meta_graph.outputIndex() == nullptr ||
++        meta_graph.allTensors() == nullptr) {
++      MS_LOG(ERROR) << "meta_graph is invalid, please check your model file.";
++      return RET_ERROR;
++    }
++
++    // converterInputOutput
++    auto in_count = meta_graph.inputIndex()->size();
++    for (uint32_t i = 0; i < in_count; ++i) {
++      graph_.input_indices_.push_back(meta_graph.inputIndex()->Get(i));
++    }
++    auto out_count = meta_graph.outputIndex()->size();
++    for (uint32_t i = 0; i < out_count; ++i) {
++      graph_.output_indices_.push_back(meta_graph.outputIndex()->Get(i));
++    }
++
++    if (!ConvertInputOutputTensors<T>(meta_graph, graph_)) {
++      MS_LOG(ERROR) << "convert tensor failed";
++      return RET_ERROR;
++    }
++    return RET_OK;
++  }
++
++  int ParseInputOutputFromModelBuffer(const char *model_buf, LiteModel *model);
++  int BindGLTexture2DMemory(const std::map<std::string, unsigned int> &inputGLTexture,
++                            std::map<std::string, unsigned int> *outputGLTexture) override {
++    return RET_ERROR;
++  }
++
++ protected:
++  int ScheduleToNNRTKernel();
++  Status CreateFullModelKernel();
++  Status InitNNCompilation(OH_NNCompilation *nn_compilation) const;
++  int ConvertInOutTensors(const lite::Model *model);
++  int InitExecutor() override;
++  std::vector<mindspore::MSTensor> ms_inputs_;
++  std::vector<mindspore::MSTensor> ms_outputs_;
++
++ private:
++  NNRtDeviceInfo nnrt_device_info_;
++  OH_NNExecutor *nn_executor_{nullptr};
++  nnrt::ExtensionOptions extension_options_;
++};
++}  // namespace lite
++}  // namespace mindspore
++
++#endif  // MINDSPORE_LITE_SRC_LITERT_CACHE_SESSION_H_
+diff --git a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
+index 25509cdc..b76c37e0 100644
+--- a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
++++ b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
+@@ -39,6 +39,11 @@
+ #include "src/common/config_file.h"
+ #include "src/litert/cpu_info.h"
+ #include "src/litert/pack_weight_manager.h"
++#ifdef SUPPORT_NNRT_METAGRAPH
++#include "src/litert/cache_session.h"
++#include "src/litert/delegate/nnrt/extension_options_parser.h"
++#endif
++
+ namespace mindspore {
+ namespace {
+ const char *const kExecutionPlan = "execution_plan";
+@@ -161,7 +166,6 @@ bool ModelImpl::IsEnablePreInference() {
+ #endif
+ Status ModelImpl::Build(const void *model_data, size_t data_size, ModelType model_type,
+                         const std::shared_ptr<Context> &ms_context) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ != nullptr) {
+     MS_LOG(ERROR) << "Model has been called Build";
+     return kLiteModelRebuild;
+@@ -207,7 +211,6 @@ Status ModelImpl::Build(const void *model_data, size_t data_size, ModelType mode
+ 
+ Status ModelImpl::Build(const std::string &model_path, ModelType model_type,
+                         const std::shared_ptr<Context> &ms_context) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ != nullptr) {
+     MS_LOG(ERROR) << "Model has been called Build";
+     return kLiteModelRebuild;
+@@ -243,7 +246,6 @@ Status ModelImpl::Build(const std::string &model_path, ModelType model_type,
+ }
+ 
+ Status ModelImpl::Build() {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ != nullptr) {
+     MS_LOG(ERROR) << "Model has been called Build";
+     return kLiteModelRebuild;
+@@ -373,7 +375,6 @@ Status ModelImpl::RunGraph(const MSKernelCallBack &before, const MSKernelCallBac
+ bool ModelImpl::IsTrainModel() { return (graph_ && graph_->graph_data_ && graph_->graph_data_->IsTrainModel()); }
+ 
+ Status ModelImpl::LoadConfig(const std::string &config_path) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ != nullptr) {
+     MS_LOG(ERROR) << "Model has been called Build, please call LoadConfig before Build.";
+     return kLiteError;
+@@ -396,7 +397,6 @@ Status ModelImpl::LoadConfig(const std::string &config_path) {
+ }
+ 
+ Status ModelImpl::UpdateConfig(const std::string &section, const std::pair<std::string, std::string> &config) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   auto iter = config_info_.find(section);
+   if (iter == config_info_.end()) {
+     if (config_info_.size() >= kMaxSectionNum) {
+@@ -416,7 +416,6 @@ Status ModelImpl::UpdateConfig(const std::string &section, const std::pair<std::
+ 
+ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTensor> *outputs,
+                           const MSKernelCallBack &before, const MSKernelCallBack &after) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   MS_CHECK_TRUE_MSG(session_ != nullptr, kLiteNullptr, "Model has not been called Build, or Model Build has failed.");
+   MS_CHECK_TRUE_MSG(outputs != nullptr, kLiteError, "outputs is nullptr.");
+   auto input_tensors = session_->GetInputs();
+@@ -576,7 +575,6 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
+ }
+ 
+ Status ModelImpl::Predict(const MSKernelCallBack &before, const MSKernelCallBack &after) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -603,7 +601,6 @@ Status ModelImpl::Predict(const MSKernelCallBack &before, const MSKernelCallBack
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetInputs() {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -628,7 +625,6 @@ std::vector<MSTensor> ModelImpl::GetInputs() {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetOutputs() {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -666,7 +662,6 @@ std::vector<MSTensor> ModelImpl::GetOutputs() {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetGradients() const {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -681,7 +676,6 @@ std::vector<MSTensor> ModelImpl::GetGradients() const {
+ }
+ 
+ Status ModelImpl::ApplyGradients(const std::vector<MSTensor> &gradients) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -710,7 +704,6 @@ Status ModelImpl::ApplyGradients(const std::vector<MSTensor> &gradients) {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetFeatureMaps() const {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -725,7 +718,6 @@ std::vector<MSTensor> ModelImpl::GetFeatureMaps() const {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetTrainableParams() const {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -740,7 +732,6 @@ std::vector<MSTensor> ModelImpl::GetTrainableParams() const {
+ }
+ 
+ Status ModelImpl::UpdateFeatureMaps(const std::vector<MSTensor> &new_weights) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -769,7 +760,6 @@ Status ModelImpl::UpdateFeatureMaps(const std::vector<MSTensor> &new_weights) {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetOptimizerParams() const {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -784,7 +774,6 @@ std::vector<MSTensor> ModelImpl::GetOptimizerParams() const {
+ }
+ 
+ Status ModelImpl::SetOptimizerParams(const std::vector<MSTensor> &params) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -813,7 +802,6 @@ Status ModelImpl::SetOptimizerParams(const std::vector<MSTensor> &params) {
+ }
+ 
+ MSTensor ModelImpl::GetInputByTensorName(const std::string &name) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return MSTensor(nullptr);
+@@ -833,7 +821,6 @@ MSTensor ModelImpl::GetInputByTensorName(const std::string &name) {
+ }
+ 
+ std::vector<std::string> ModelImpl::GetOutputTensorNames() {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -842,7 +829,6 @@ std::vector<std::string> ModelImpl::GetOutputTensorNames() {
+ }
+ 
+ MSTensor ModelImpl::GetOutputByTensorName(const std::string &name) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return MSTensor(nullptr);
+@@ -862,7 +848,6 @@ MSTensor ModelImpl::GetOutputByTensorName(const std::string &name) {
+ }
+ 
+ std::vector<MSTensor> ModelImpl::GetOutputsByNodeName(const std::string &name) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return {};
+@@ -892,7 +877,6 @@ std::vector<MSTensor> ModelImpl::GetOutputsByNodeName(const std::string &name) {
+ 
+ Status ModelImpl::BindGLTexture2DMemory(const std::map<std::string, unsigned int> &inputGLTexture,
+                                         std::map<std::string, unsigned int> *outputGLTexture) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   MS_LOG(INFO) << "Bind GLTexture2D to Input MsTensors and Output MsTensors";
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+@@ -907,7 +891,6 @@ Status ModelImpl::BindGLTexture2DMemory(const std::map<std::string, unsigned int
+ }
+ 
+ Status ModelImpl::Resize(const std::vector<MSTensor> &inputs, const std::vector<std::vector<int64_t>> &dims) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -961,7 +944,6 @@ Status ModelImpl::Resize(const std::vector<MSTensor> &inputs, const std::vector<
+ }
+ 
+ Status ModelImpl::UpdateWeights(const std::vector<MSTensor> &new_weights) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -993,7 +975,6 @@ Status ModelImpl::UpdateWeights(const std::vector<MSTensor> &new_weights) {
+ }
+ 
+ Status ModelImpl::SetupVirtualBatch(int virtual_batch_multiplier, float lr, float momentum) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -1003,7 +984,6 @@ Status ModelImpl::SetupVirtualBatch(int virtual_batch_multiplier, float lr, floa
+ }
+ 
+ Status ModelImpl::SetLearningRate(float learning_rate) {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(ERROR) << "Model has not been called Build, or Model Build has failed";
+     return kLiteNullptr;
+@@ -1013,7 +993,6 @@ Status ModelImpl::SetLearningRate(float learning_rate) {
+ }
+ 
+ float ModelImpl::GetLearningRate() {
+-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   if (session_ == nullptr) {
+     MS_LOG(WARNING) << "Model has not been called Build, or Model Build has failed";
+     return 0.0;
+@@ -1022,7 +1001,36 @@ float ModelImpl::GetLearningRate() {
+ }
+ 
+ lite::LiteSession *ModelImpl::CreateLiteSession(const std::shared_ptr<lite::InnerContext> &context) {
+-  auto session = new (std::nothrow) lite::LiteSession();
++  if (context == nullptr) {
++    MS_LOG(ERROR) << "context is nullptr";
++    return nullptr;
++  }
++  lite::LiteSession *session = nullptr;
++#ifdef SUPPORT_NNRT_METAGRAPH
++  auto iter = std::find_if(context->device_list_.begin(), context->device_list_.end(),
++                           [](lite::DeviceContext &device) { return device.device_type_ == lite::DT_NNRT; });
++  if(iter != context->device_list_.end()) {
++    const auto &nnrt_device_info = iter->device_info_.nnrt_device_info_;
++    if (lite::CacheSession::IsKirinNPUWithOnlineInference(nnrt_device_info.device_id_)) {
++      const auto &extensions = nnrt_device_info.extensions_;
++      lite::nnrt::ExtensionOptions extension_options;
++      mindspore::lite::nnrt::ExtensionOptionsParser::Parse(extensions, &extension_options);
++      auto has_cache = OH_NNModel_HasCache(extension_options.cache_path_.c_str(), extension_options.model_name.c_str(),
++                                           extension_options.cache_version_);
++      if (has_cache) {
++        session = reinterpret_cast<lite::LiteSession *>(new (std::nothrow) lite::CacheSession());
++        if (session == nullptr) {
++          MS_LOG(ERROR) << "create cache session failed";
++          return nullptr;
++        }
++      }
++    }
++  }
++#endif
++
++  if (session == nullptr) {
++    session = new (std::nothrow) lite::LiteSession();
++  }
+   if (session == nullptr) {
+     MS_LOG(ERROR) << "create session failed";
+     return nullptr;
+diff --git a/mindspore/lite/src/litert/cxx_api/model/model_impl.h b/mindspore/lite/src/litert/cxx_api/model/model_impl.h
+index 984a9489..81e10e32 100644
+--- a/mindspore/lite/src/litert/cxx_api/model/model_impl.h
++++ b/mindspore/lite/src/litert/cxx_api/model/model_impl.h
+@@ -132,7 +132,6 @@ class ModelImpl {
+   std::shared_ptr<Context> context_ = nullptr;
+   std::shared_ptr<TrainCfg> cfg_ = nullptr;
+   std::vector<Metrics *> metrics_;
+-  mutable std::recursive_mutex mutex_;
+   void SetGraph(const std::shared_ptr<Graph> &graph) { graph_ = graph; }
+   void SetContext(const std::shared_ptr<Context> &context) { context_ = context; }
+   void SetConfig(const std::shared_ptr<TrainCfg> cfg) { cfg_ = cfg; }
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
+new file mode 100644
+index 00000000..a66cd5ea
+--- /dev/null
++++ b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.cc
+@@ -0,0 +1,104 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "extension_options_parser.h"
++#include "stdlib.h"
++#include <map>
++
++namespace mindspore::lite::nnrt {
++namespace {
++const std::map<std::string, mindspore::lite::HiAI_BandMode> kBandModeMap = {
++    {"HIAI_BANDMODE_UNSET", mindspore::lite::HIAI_BANDMODE_UNSET},
++    {"HIAI_BANDMODE_LOW", mindspore::lite::HIAI_BANDMODE_LOW},
++    {"HIAI_BANDMODE_NORMAL", mindspore::lite::HIAI_BANDMODE_NORMAL},
++    {"HIAI_BANDMODE_HIGH", mindspore::lite::HIAI_BANDMODE_HIGH},
++};
++const std::string kCachePath = "CachePath";
++const std::string kCacheVersion = "CacheVersion";
++const std::string kBandMode = "BandMode";
++const std::string kQuantConfigData = "QuantConfigData";
++const std::string kModelName = "ModelName";
++}  // namespace
++
++int ExtensionOptionsParser::Parse(const std::vector<Extension> &extensions, ExtensionOptions *param) {
++  MS_CHECK_TRUE_RET(param != nullptr, RET_ERROR);
++
++  DoParseCachePath(extensions, &param->cache_path_);
++  DoParseCacheVersion(extensions, &param->cache_version_);
++  DoParseBondMode(extensions, &param->band_mode);
++  DoParseQuantConfig(extensions, &param->quant_config, &param->quant_config_size, &param->is_optional_quant_setted);
++  DoParseModelName(extensions, &param->model_name);
++  return RET_OK;
++}
++
++void ExtensionOptionsParser::DoParseCachePath(const std::vector<Extension> &extensions, std::string *cache_path) {
++  MS_CHECK_TRUE_RET_VOID(cache_path != nullptr);
++  auto iter_config = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
++    return extension.name == kCachePath;
++  });
++  if (iter_config != extensions.end()) {
++    *cache_path = std::string(iter_config->value.begin(), iter_config->value.end());
++  }
++}
++
++void ExtensionOptionsParser::DoParseCacheVersion(const std::vector<Extension> &extensions, uint32_t *cache_version) {
++  MS_CHECK_TRUE_RET_VOID(cache_version != nullptr);
++  auto iter_config = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
++    return extension.name == kCacheVersion;
++  });
++  if (iter_config != extensions.end()) {
++    std::string version_str = std::string(iter_config->value.begin(), iter_config->value.end());
++    *cache_version = static_cast<uint32_t>(std::atol(version_str.c_str()));
++  }
++}
++
++void ExtensionOptionsParser::DoParseBondMode(const std::vector<Extension> &extensions, mindspore::lite::HiAI_BandMode *band_mode) {
++  MS_CHECK_TRUE_RET_VOID(band_mode != nullptr);
++  auto iter_config = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
++    return extension.name == kBandMode;
++  });
++  if (iter_config != extensions.end()) {
++    auto iter = kBandModeMap.find(std::string(iter_config->value.begin(), iter_config->value.end()));
++    if (iter != kBandModeMap.end()) {
++      *band_mode = iter->second;
++    }
++  }
++}
++
++void ExtensionOptionsParser::DoParseQuantConfig(const std::vector<Extension> &extensions,
++                                                void **quant_config, size_t *num, bool *quant_setted) {
++  MS_CHECK_TRUE_RET_VOID(quant_config != nullptr);
++  MS_CHECK_TRUE_RET_VOID(num != nullptr);
++  auto iter_config = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
++    return extension.name == kQuantConfigData;
++  });
++  if (iter_config != extensions.end()) {
++    *quant_config = static_cast<void *>(const_cast<uint8_t *>(iter_config->value.data()));
++    *num = iter_config->value.size();
++    *quant_setted = true;
++  }
++}
++
++void ExtensionOptionsParser::DoParseModelName(const std::vector<Extension> &extensions, std::string *model_name) {
++  MS_CHECK_TRUE_RET_VOID(model_name != nullptr);
++  auto iter_config = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
++    return extension.name == kModelName;
++  });
++  if (iter_config != extensions.end()) {
++    *model_name = std::string(iter_config->value.begin(), iter_config->value.end());
++  }
++}
++}  // mindspore::lite::nnrt
+\ No newline at end of file
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.h b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.h
+new file mode 100644
+index 00000000..9a030ad6
+--- /dev/null
++++ b/mindspore/lite/src/litert/delegate/nnrt/extension_options_parser.h
+@@ -0,0 +1,50 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_EXTENSION_OPTIONS_PARSER_H
++#define MINDSPORE_LITE_EXTENSION_OPTIONS_PARSER_H
++
++#include <vector>
++#include "src/litert/inner_context.h"
++#include "hiai_foundation_wrapper.h"
++
++namespace mindspore::lite::nnrt {
++struct ExtensionOptions {
++  std::string cache_path_ = "";
++  uint32_t cache_version_ = 0;
++  mindspore::lite::HiAI_BandMode band_mode{HIAI_BANDMODE_UNSET};
++  void *quant_config;
++  size_t quant_config_size = 0;
++  bool is_optional_quant_setted = false;
++  std::string model_name = "";
++};
++
++class ExtensionOptionsParser {
++public:
++  static int Parse(const std::vector<Extension> &extensions, ExtensionOptions *param);
++
++private:
++  static void DoParseBondMode(const std::vector<Extension> &extensions, mindspore::lite::HiAI_BandMode *band_mode);
++  static void DoParseQuantConfig(const std::vector<Extension> &extensions, void **quant_config, size_t *num,
++                                 bool *quant_setted);
++  static void DoParseCachePath(const std::vector<Extension> &extensions, std::string *cache_path);
++  static void DoParseCacheVersion(const std::vector<Extension> &extensions, uint32_t *cache_version);
++  static void DoParseModelName(const std::vector<Extension> &extensions, std::string *model_name);
++};
++
++}  // namespace mindspore::lite::nnrt
++
++#endif  // MINDSPORE_LITE_EXTENSION_OPTIONS_PARSER_H
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.cc b/mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.cc
+new file mode 100644
+index 00000000..a155b761
+--- /dev/null
++++ b/mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.cc
+@@ -0,0 +1,65 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "hiai_foundation_wrapper.h"
++#include "dlfcn.h"
++#include "src/common/log.h"
++
++namespace mindspore::lite {
++static const char *HIAI_F_LIB = "libhiai_foundation.so";
++
++bool UnLoadHiaiFLibrary(void *handle) {
++  if (handle != nullptr) {
++    if (dlclose(handle) != 0) {
++      MS_LOG(WARNING) << "dlclose failed, error: " << dlerror();
++      return false;
++    }
++    return true;
++  }
++  return true;
++}
++
++bool LoadHiaiFLibraryFromPath(void **handle_ptr) {
++  if (handle_ptr == nullptr) {
++    return false;
++  }
++
++  *handle_ptr = dlopen(HIAI_F_LIB, RTLD_NOW | RTLD_LOCAL);
++  if (*handle_ptr == nullptr) {
++    MS_LOG(WARNING) << "dlopen failed, error: " << dlerror();
++    return false;
++  }
++
++// load function ptr use dlopen and dlsym.
++#define LOAD_HIAIF_FUNCTION_PTR(func_name)                                                    \
++  func_name = reinterpret_cast<func_name##Func>(dlsym(*handle_ptr, #func_name));               \
++  if (func_name == nullptr) {                                                                  \
++    MS_LOG(ERROR) << "load func (" << #func_name << ") from (" << HIAI_F_LIB << ") failed!"; \
++    UnLoadHiaiFLibrary(*handle_ptr);                                                          \
++    return false;                                                                              \
++  }
++
++  LOAD_HIAIF_FUNCTION_PTR(HMS_HiAIOptions_SetQuantConfig);
++  LOAD_HIAIF_FUNCTION_PTR(HMS_HiAIOptions_SetBandMode);
++  return true;
++}
++
++#define HIAIF_DEFINE_FUNC_PTR(func) func##Func func = nullptr
++HIAIF_DEFINE_FUNC_PTR(HMS_HiAIOptions_SetQuantConfig);
++HIAIF_DEFINE_FUNC_PTR(HMS_HiAIOptions_SetBandMode);
++
++#undef LOAD_HIAIF_FUNCTION_PTR
++}  // mindspore::lite
+\ No newline at end of file
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.h b/mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.h
+new file mode 100644
+index 00000000..9231940d
+--- /dev/null
++++ b/mindspore/lite/src/litert/delegate/nnrt/hiai_foundation_wrapper.h
+@@ -0,0 +1,47 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef LITE_HIAI_FOUNDATION_WRAPPER_H
++#define LITE_HIAI_FOUNDATION_WRAPPER_H
++
++#include <string>
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
++
++namespace mindspore::lite {
++bool LoadHiaiFLibraryFromPath(void **handle_ptr);
++bool UnLoadHiaiFLibrary(void *handle);
++
++typedef enum {
++  /** Automatically adjusted by the system. */
++  HIAI_BANDMODE_UNSET = 0,
++  /** Low bandwidth mode. */
++  HIAI_BANDMODE_LOW = 1,
++  /** Medium bandwidth mode. */
++  HIAI_BANDMODE_NORMAL = 2,
++  /** High bandwidth mode. */
++  HIAI_BANDMODE_HIGH = 3,
++} HiAI_BandMode;
++
++using HMS_HiAIOptions_SetQuantConfigFunc = OH_NN_ReturnCode (*)(OH_NNCompilation*, void*, size_t);
++using HMS_HiAIOptions_SetBandModeFunc = OH_NN_ReturnCode (*)(OH_NNCompilation*, HiAI_BandMode);
++
++#define HIAIF_DECLARE_FUNC_PTR(func) extern func##Func func
++HIAIF_DECLARE_FUNC_PTR(HMS_HiAIOptions_SetQuantConfig);
++HIAIF_DECLARE_FUNC_PTR(HMS_HiAIOptions_SetBandMode);
++#undef HIAIF_DECLARE_FUNC_PTR
++}  // mindspore::lite
++
++#endif  // LITE_HIAI_FOUNDATION_WRAPPER_H
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
+index b38fff62..4910343f 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
+@@ -20,6 +20,7 @@
+ #include <map>
+ #include <mutex>
+ #include "src/litert/delegate/nnrt/nnrt_allocator.h"
++#include "src/litert/delegate/nnrt/nnrt_utils.h"
+ #include "src/common/log.h"
+ 
+ namespace mindspore {
+@@ -43,7 +44,42 @@ NNRTAllocator::~NNRTAllocator() {
+   free_list_.clear();
+ }
+ 
+-void *NNRTAllocator::Malloc(size_t size) {
++NN_TensorDesc *NNRTAllocator::CreateNNRtTensorDesc(const std::vector<int> &shape, const TypeId data_type,
++                                                   const Format format, const std::string &name) {
++  auto tensor_desc = OH_NNTensorDesc_Create();
++  if (tensor_desc == nullptr) {
++    MS_LOG(ERROR) << "OH_NNTensorDesc_Create failed, i = " << index_;
++    return nullptr;
++  }
++  OH_NN_ReturnCode ret = OH_NNTensorDesc_SetShape(tensor_desc, shape.data(), shape.size());
++  if (ret != OH_NN_SUCCESS) {
++    MS_LOG(ERROR) << "OH_NNTensorDesc_SetShape failed, i = " << index_ << ", shape: " << shape;
++    OH_NNTensorDesc_Destroy(&tensor_desc);
++    return nullptr;
++  }
++  ret = OH_NNTensorDesc_SetDataType(tensor_desc, CastToNNRtDataType(data_type));
++  if (ret != OH_NN_SUCCESS) {
++    MS_LOG(ERROR) << "OH_NNTensorDesc_SetDataType failed, i = " << index_ << ", data_type: " << data_type;
++    OH_NNTensorDesc_Destroy(&tensor_desc);
++    return nullptr;
++  }
++  ret = OH_NNTensorDesc_SetFormat(tensor_desc, CastToNNRtFormat(format));
++  if (ret != OH_NN_SUCCESS) {
++    MS_LOG(ERROR) << "OH_NNTensorDesc_SetFormat failed, i = " << index_ << ", format: " << format;
++    OH_NNTensorDesc_Destroy(&tensor_desc);
++    return nullptr;
++  }
++  ret = OH_NNTensorDesc_SetName(tensor_desc, name.c_str());
++  if (ret != OH_NN_SUCCESS) {
++    MS_LOG(ERROR) << "OH_NNTensorDesc_SetName failed, i = " << index_ << ", name: " << name;
++    OH_NNTensorDesc_Destroy(&tensor_desc);
++    return nullptr;
++  }
++  return tensor_desc;
++}
++
++void *NNRTAllocator::MallocByDesc(size_t size, const std::vector<int> &shape, const TypeId data_type,
++                                  const Format format, const std::string &name) {
+   std::lock_guard<std::mutex> locker(mutex_);
+   auto iter = free_list_.lower_bound(size);
+   if (iter != free_list_.end()) {
+@@ -60,17 +96,13 @@ void *NNRTAllocator::Malloc(size_t size) {
+     return nullptr;
+   }
+   membuf->ref_count_ = 0;
+-  if (memory_category_ == NNRT_INPUT) {
+-    membuf->tensor_desc_ = OH_NNExecutor_CreateInputTensorDesc(executor_, index_);
+-  } else {
+-    membuf->tensor_desc_ = OH_NNExecutor_CreateOutputTensorDesc(executor_, index_);
+-  }
++  membuf->tensor_desc_ = CreateNNRtTensorDesc(shape, data_type, format, name);
+   if (membuf->tensor_desc_ == nullptr) {
+-    MS_LOG(ERROR) << "OH_NNExecutor_CreateInput/OutputTensorDesc failed, i = " << index_;
++    MS_LOG(ERROR) << "create NN_TensorDesc failed.";
+     delete membuf;
+     return nullptr;
+   }
+-  membuf->tensor_ = OH_NNTensor_CreateWithSize(device_id_, membuf->tensor_desc_, size);
++  membuf->tensor_ = OH_NNTensor_Create(device_id_, membuf->tensor_desc_);
+   if (membuf->tensor_ == nullptr) {
+     MS_LOG(ERROR) << "OH_NNTensor_CreateWithSize failed, i = " << index_;
+     OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
+@@ -91,6 +123,11 @@ void *NNRTAllocator::Malloc(size_t size) {
+   return membuf->data;
+ }
+ 
++void *NNRTAllocator::Malloc(size_t size) {
++  MS_LOG(ERROR) << "NNRt Allocator is not support malloc by size.";
++  return nullptr;
++}
++
+ void NNRTAllocator::Free(void *ptr) {
+   if (ptr == nullptr) {
+     return;
+@@ -143,8 +180,8 @@ int NNRTAllocator::DecRefCount(void *ptr, int ref_count) {
+   auto iter = allocated_list_.find(ptr);
+   if (iter != allocated_list_.end()) {
+     auto membuf = iter->second;
+-    auto ref = std::atomic_fetch_sub(&membuf->ref_count_, ref_count);
+-    return ref;
++    std::atomic_fetch_sub(&membuf->ref_count_, ref_count);
++    return membuf->ref_count_;
+   }
+   return -1;
+ }
+@@ -157,8 +194,8 @@ int NNRTAllocator::IncRefCount(void *ptr, int ref_count) {
+   auto iter = allocated_list_.find(ptr);
+   if (iter != allocated_list_.end()) {
+     auto membuf = iter->second;
+-    auto ref = std::atomic_fetch_add(&membuf->ref_count_, ref_count);
+-    return ref;
++    std::atomic_fetch_add(&membuf->ref_count_, ref_count);
++    return membuf->ref_count_;
+   }
+   return -1;
+ }
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
+index 52e6def7..ef27f307 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
+@@ -40,6 +40,10 @@ class NNRTAllocator : public Allocator {
+   ~NNRTAllocator() override;
+ 
+   void *Malloc(size_t size) override;
++  void *MallocByDesc(size_t size, const std::vector<int> &shape, const TypeId data_type, const Format format,
++                     const std::string &name);
++  NN_TensorDesc *CreateNNRtTensorDesc(const std::vector<int> &shape, const TypeId data_type, const Format format,
++                                      const std::string &name);
+   void Free(void *ptr) override;
+   int RefCount(void *ptr) override;
+   int SetRefCount(void *ptr, int ref_count) override;
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+index a949c910..a49e7449 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+@@ -29,26 +29,19 @@
+ 
+ namespace mindspore {
+ namespace lite {
+-void NNRTDelegate::InitCachePath() {
+-  static const std::string kCachePathName = "CachePath";
+-  static const std::string kCacheVersion = "CacheVersion";
+-
+-  const auto &extensions = nnrt_device_info_.extensions_;
+-
+-  auto iter_path = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
+-    return extension.name == kCachePathName;
+-  });
+-  if (iter_path != extensions.end()) {
+-    cache_path_ = std::string(iter_path->value.begin(), iter_path->value.end());
++Status NNRTDelegate::Init() {
++#ifdef SUPPORT_NNRT_METAGRAPH
++  auto ret = mindspore::lite::LoadHiaiFLibraryFromPath(&hiai_handle_);
++  if (!ret || hiai_handle_ == nullptr) {
++    MS_LOG(WARNING) << "Load HiAI_Foundation so failed.";
+   }
++#endif
++  return kSuccess;
++}
+ 
+-  auto iter_version = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
+-    return extension.name == kCacheVersion;
+-  });
+-  if (iter_version != extensions.end()) {
+-    std::string version_str = std::string(iter_version->value.begin(), iter_version->value.end());
+-    cache_version_ = static_cast<uint32_t>(std::atol(version_str.c_str()));
+-  }
++void NNRTDelegate::InitExtensionOptions() {
++  const auto &extensions = nnrt_device_info_.extensions_;
++  mindspore::lite::nnrt::ExtensionOptionsParser::Parse(extensions, &extension_options_);
+ }
+ 
+ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
+@@ -59,11 +52,15 @@ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
+     return kLiteError;
+   }
+ #ifdef SUPPORT_NNRT_METAGRAPH
+-  if (IsKirinNPU()) {
+-    MS_LOG(DEBUG) << "Choose to build nnrt model with Metagraph";
+-    InitCachePath();
++  InitExtensionOptions();
++  if (IsKirinNPUWithOnlineInference()) {
++    MS_LOG(DEBUG) << "Choose to build online inference model";
+     return BuildKirinNPUModel(model);
+   }
++  if (IsKirinNPUWithOfflineInference()) {
++    MS_LOG(DEBUG) << "Choose to build offline inference model";
++    return BuildOfflineModel(model);
++  }
+ #endif
+ 
+   return BuildNormalModel(model);
+@@ -88,8 +85,8 @@ bool NNRTDelegate::IsCustomModel() const {
+ }
+ 
+ #ifdef SUPPORT_NNRT_METAGRAPH
+-bool NNRTDelegate::IsKirinNPU() const {
+-  const std::string kirin_npu_name_prefix = "NPU_";
++bool NNRTDelegate::CheckNPUPrefix(const std::string prefix_name) const {
++  const std::string kirin_npu_name_prefix = prefix_name;
+   auto device_id = nnrt_device_info_.device_id_;
+   const char *device_name;
+   auto ret = OH_NNDevice_GetName(device_id, &device_name);
+@@ -105,6 +102,14 @@ bool NNRTDelegate::IsKirinNPU() const {
+   return true;
+ }
+ 
++bool NNRTDelegate::IsKirinNPUWithOnlineInference() const {
++  return CheckNPUPrefix("NPU_");
++}
++
++bool NNRTDelegate::IsKirinNPUWithOfflineInference() const {
++  return CheckNPUPrefix("HIAI_F");
++}
++
+ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model) {
+   OH_NNModel *nn_model = OH_NNModel_Construct();
+   if (nn_model == nullptr) {
+@@ -142,6 +147,64 @@ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model)
+   return kSuccess;
+ }
+ 
++namespace {
++constexpr int32_t kNum2 = 2;
++}
++
++Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model) {
++  if (!IsCustomModel()) {
++    MS_LOG(ERROR) << "not third party model";
++    return kLiteNullptr;
++  }
++
++  auto node = lite_graph_->all_nodes_[0];
++  MS_CHECK_TRUE_RET(node != nullptr, kLiteError);
++  auto input_num = node->input_indices_.size();
++  // at least one input and one OM model buffer(as the last constant input)
++  MS_CHECK_TRUE_RET(input_num >= kNum2, kLiteError);
++  MS_CHECK_TRUE_RET(lite_graph_->all_tensors_.size() >= kNum2, kLiteError);
++  auto tensor = lite_graph_->all_tensors_[node->input_indices_[input_num - 1]];
++  MS_CHECK_TRUE_RET(tensor != nullptr, kLiteError);
++  MS_CHECK_TRUE_RET(tensor->data() != nullptr, kLiteError);
++  const uint8_t *model_buf = static_cast<const uint8_t *>(tensor->data()->data());
++  size_t model_size = tensor->data()->size();
++
++  OH_NNCompilation *nn_compilation = OH_NNCompilation_ConstructWithOfflineModelBuffer(model_buf, model_size);
++  if (nn_compilation == nullptr) {
++    MS_LOG(ERROR) << "Construct Offline NNCompilation failed";
++    return kLiteError;
++  }
++  MS_LOG(DEBUG) << "NNRTDelegate creates NNCompilation success.";
++
++  auto ret_code = InitNNCompilation(nn_compilation);
++  if (ret_code != kSuccess) {
++    MS_LOG(ERROR) << "Init NNCompilation failed";
++    OH_NNCompilation_Destroy(&nn_compilation);
++    return kLiteError;
++  }
++  MS_LOG(DEBUG) << "HiAI F InitNNCompilation success";
++
++  OH_NNExecutor *nn_executor = nullptr;
++  nn_executor = OH_NNExecutor_Construct(nn_compilation);
++  if (nn_executor == nullptr) {
++    MS_LOG(ERROR) << "Construct NNExecutor failed, ret: " << ret_code;
++    OH_NNCompilation_Destroy(&nn_compilation);
++    return kLiteError;
++  }
++  OH_NNCompilation_Destroy(&nn_compilation);
++
++  auto nnrt_model_kernel = new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, model->inputs(), model->outputs());
++  if (nnrt_model_kernel == nullptr) {
++    OH_NNExecutor_Destroy(&nn_executor);
++    MS_LOG(ERROR) << "new NNRTModelKernel failed";
++    return kLiteError;
++  }
++  nn_executor_list_.push_back(nn_executor);
++
++  (void)model->Replace(model->BeginKernelIterator(), model->EndKernelIterator(), nnrt_model_kernel);
++  return kSuccess;
++}
++
+ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *model, OH_NNModel *nn_model) {
+   OH_NNCompilation *nn_compilation = OH_NNCompilation_Construct(nn_model);
+   if (nn_compilation == nullptr) {
+@@ -169,7 +232,7 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
+   }
+   OH_NNCompilation_Destroy(&nn_compilation);
+ 
+-  auto nnrt_model_kernel = new (std::nothrow)NNRTModelKernel(nn_executor, nnrt_device_info_.device_id_, model->inputs(), model->outputs());
++  auto nnrt_model_kernel = new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, model->inputs(), model->outputs());
+   if (nnrt_model_kernel == nullptr) {
+     OH_NNExecutor_Destroy(&nn_executor);
+     MS_LOG(ERROR) << "new NNRTModelKernel failed";
+@@ -473,14 +536,43 @@ Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
+     return kLiteError;
+   }
+ 
+-  if (!cache_path_.empty()) { // Set cache path if user indeed set it.
+-    ret_code = OH_NNCompilation_SetCache(nn_compilation, cache_path_.c_str(), cache_version_);
++  if (!extension_options_.cache_path_.empty()) {  // Set cache path if user indeed set it.
++    ret_code = OH_NNCompilation_SetCache(nn_compilation, extension_options_.cache_path_.c_str(),
++                                         extension_options_.cache_version_);
+     if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
+       MS_LOG(ERROR) << "NNCompilation set cache failed, ret: " << ret_code;
+       return kLiteError;
+     }
+   }
+ 
++#ifdef SUPPORT_NNRT_METAGRAPH
++  if (hiai_handle_ != nullptr) {
++    if (extension_options_.band_mode != mindspore::lite::HIAI_BANDMODE_UNSET) {
++      ret_code = mindspore::lite::HMS_HiAIOptions_SetBandMode(nn_compilation, extension_options_.band_mode);
++      if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
++        MS_LOG(ERROR) << "NNCompilation set BandMode failed, ret: " << ret_code;
++        return kLiteError;
++      }
++    }
++
++    if (extension_options_.is_optional_quant_setted) {
++      if (extension_options_.quant_config == nullptr || extension_options_.quant_config_size <= 0) {
++        MS_LOG(ERROR) << "NNCompilation set QuantConfig faild, input quant config is invalid, please make sure buffer "
++                      << "is not null and size > 0.";
++        return kLiteError;
++      }
++      ret_code = mindspore::lite::HMS_HiAIOptions_SetQuantConfig(nn_compilation, extension_options_.quant_config,
++                                                                 extension_options_.quant_config_size);
++      if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
++        MS_LOG(ERROR) << "NNCompilation set QuantConfig failed, ret: " << ret_code;
++        return kLiteError;
++      }
++    }
++  } else {
++    MS_LOG(WARNING) << "hiai_foundation is nullptr.";
++  }
++#endif
++
+   ret_code = OH_NNCompilation_Build(nn_compilation);
+   if (ret_code != OH_NN_SUCCESS) {
+     MS_LOG(ERROR) << "Build NNCompilation failed, ret: " << ret_code;
+@@ -581,7 +673,7 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive>
+       continue ;
+     }
+ 
+-    auto nnrt_model_kernel = new (std::nothrow)NNRTModelKernel(nn_executor, nnrt_device_info_.device_id_, in_tensors, out_tensors);
++    auto nnrt_model_kernel = new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, in_tensors, out_tensors);
+     if (nnrt_model_kernel == nullptr) {
+       MS_LOG(ERROR) << "new NNRTModelKernel failed";
+       return kLiteError;
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+index db2f0ee7..c1adc9f0 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+@@ -22,6 +22,8 @@
+ #include "include/model.h"
+ #include "src/litert/inner_context.h"
+ #include "nnrt_model_kernel.h"
++#include "hiai_foundation_wrapper.h"
++#include "extension_options_parser.h"
+ #include "schema/model_generated.h"
+ #include "interfaces/kits/c/neural_network_runtime/neural_network_runtime_type.h"
+ #include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
+@@ -43,7 +45,7 @@ class NNRTDelegate : public Delegate {
+   NNRTDelegate() = default;
+   NNRTDelegate(const NNRtDeviceInfo &nnrt_device_info) : nnrt_device_info_(nnrt_device_info) {}
+   ~NNRTDelegate() override;
+-  Status Init() override { return kSuccess; }
++  Status Init() override;
+   Status Build(DelegateModel<schema::Primitive> *model) override;
+   void ShallowCopyLiteGraph(const lite::LiteGraph &liteGraph);
+   void FreeLiteGraph(lite::LiteGraph **liteGraph);
+@@ -57,7 +59,7 @@ class NNRTDelegate : public Delegate {
+                                                         const std::vector<bool> &op_supports);
+ 
+  private:
+-  void InitCachePath();
++  void InitExtensionOptions();
+   Status BuildNormalModel(DelegateModel<schema::Primitive> *model);
+   OH_NNModel *CreateFullNNModel();
+   std::vector<bool> QueryOpSupports(OH_NNModel *nn_model);
+@@ -82,21 +84,24 @@ class NNRTDelegate : public Delegate {
+   schema::Tensor *TensorToSchemaTensor(Tensor *lite_tensor, schema::Tensor *schema_tensor);
+ 
+ #ifdef SUPPORT_NNRT_METAGRAPH
+-  bool IsKirinNPU() const;
++  bool CheckNPUPrefix(const std::string prefix_name) const;
++  bool IsKirinNPUWithOnlineInference() const;
++  bool IsKirinNPUWithOfflineInference() const;
+   Status BuildKirinNPUModel(DelegateModel<schema::Primitive> *model);
++  Status BuildOfflineModel(DelegateModel<schema::Primitive> *model);
+   Status CreateFullModelKernel(DelegateModel<schema::Primitive> *model, OH_NNModel *nn_model);
+ #endif
+ 
+   NNRtDeviceInfo nnrt_device_info_;
+   LiteGraph *lite_graph_ = nullptr;
+   const void *meta_graph_ = nullptr;
+-  std::string cache_path_ = "";
+-  uint32_t cache_version_ = 0;
++  nnrt::ExtensionOptions extension_options_;
+   std::vector<OH_NNExecutor *> nn_executor_list_;
+   std::vector<Tensor *> *dequant_src_tensors_;
+   std::map<uint32_t, schema::Tensor *> dequant_schema_tensors_;
+   std::map<schema::Tensor *, void *> dequant_schema_tensors_buffer_map_;
+   std::vector<schema::Tensor *> replaced_schema_tensors_;
++  void *hiai_handle_{nullptr};
+ };
+ }  // namespace lite
+ }  // namespace mindspore
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
+index 2a66d133..1411020b 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
+@@ -17,9 +17,15 @@
+ #include "nnrt_model_kernel.h"
+ #include "nnrt_allocator.h"
+ #include "litert/cxx_api/tensor/tensor_impl.h"
+-int mindspore::NNRTModelKernel::Prepare() {
++
++namespace mindspore{
++namespace {
++constexpr auto kDynamicDims = "DynamicDims";
++}
++
++int NNRTModelKernel::Prepare() {
+   for (size_t i = 0; i < inputs_.size(); i++) {
+-    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor, i, device_id_, lite::NNRT_INPUT);
++    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor_, i, nnrt_device_info_.device_id_, lite::NNRT_INPUT);
+     if (nnrt_allocator == nullptr) {
+       MS_LOG(ERROR) << "Create NNRTAllocator failed";
+       return lite::RET_NULL_PTR;
+@@ -27,7 +33,7 @@ int mindspore::NNRTModelKernel::Prepare() {
+     inputs_[i].SetAllocator(nnrt_allocator);
+   }
+   for (size_t i = 0; i < outputs_.size(); i++) {
+-    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor, i, device_id_, lite::NNRT_OUTPUT);
++    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor_, i, nnrt_device_info_.device_id_, lite::NNRT_OUTPUT);
+     if (nnrt_allocator == nullptr) {
+       MS_LOG(ERROR) << "Create NNRTAllocator failed";
+       return lite::RET_NULL_PTR;
+@@ -37,7 +43,19 @@ int mindspore::NNRTModelKernel::Prepare() {
+   return lite::RET_OK;
+ }
+ 
+-int mindspore::NNRTModelKernel::Execute() {
++int NNRTModelKernel::ReSize() {
++  const auto &extensions = nnrt_device_info_.extensions_;
++  auto iter = std::find_if(extensions.begin(), extensions.end(), [](const lite::Extension &extension) {
++    return extension.name == kDynamicDims;
++  });
++  if (iter != extensions.end() && !iter->value.empty()) {
++    return lite::RET_OK;
++  }
++  MS_LOG(ERROR) << "NNRT only support the resize function when DynamicDims is enabled.";
++  return lite::RET_ERROR;
++}
++
++int NNRTModelKernel::Execute() {
+   MS_CHECK_TRUE_RET(this->outputs().empty() != true, lite::RET_ERROR);
+   zero_copy_ = IS_NNRT_ALLOCATOR(this->outputs()[Index0].allocator());
+ 
+@@ -61,7 +79,7 @@ int mindspore::NNRTModelKernel::Execute() {
+   }
+   MS_LOG(INFO) << "Running NNRtModel Kernel...";
+   OH_NN_ReturnCode ret_code;
+-  ret_code = OH_NNExecutor_RunSync(oh_nn_executor, nn_input_tensors_.data(), nn_input_tensors_.size(),
++  ret_code = OH_NNExecutor_RunSync(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
+                                    nn_output_tensors_.data(), nn_output_tensors_.size());
+ 
+   if (ret_code != OH_NN_SUCCESS) {
+@@ -73,67 +91,11 @@ int mindspore::NNRTModelKernel::Execute() {
+   return lite::RET_OK;
+ }
+ 
+-OH_NN_DataType mindspore::NNRTModelKernel::ConvertDataType(mindspore::DataType data_type) {
+-  OH_NN_DataType oh_data_type;
+-  switch (data_type) {
+-    case DataType::kTypeUnknown:
+-    case DataType::kObjectTypeString:
+-    case DataType::kObjectTypeList:
+-    case DataType::kObjectTypeTuple:
+-    case DataType::kObjectTypeTensorType:
+-    case DataType::kNumberTypeBegin:
+-    case DataType::kNumberTypeEnd:
+-    case DataType::kInvalidType:
+-      oh_data_type = OH_NN_UNKNOWN;
+-      break;
+-    case DataType::kNumberTypeBool:
+-      oh_data_type = OH_NN_BOOL;
+-      break;
+-    case DataType::kNumberTypeInt8:
+-      oh_data_type = OH_NN_INT8;
+-      break;
+-    case DataType::kNumberTypeInt16:
+-      oh_data_type = OH_NN_INT16;
+-      break;
+-    case DataType::kNumberTypeInt32:
+-      oh_data_type = OH_NN_INT32;
+-      break;
+-    case DataType::kNumberTypeInt64:
+-      oh_data_type = OH_NN_INT64;
+-      break;
+-    case DataType::kNumberTypeUInt8:
+-      oh_data_type = OH_NN_UINT8;
+-      break;
+-    case DataType::kNumberTypeUInt16:
+-      oh_data_type = OH_NN_UINT16;
+-      break;
+-    case DataType::kNumberTypeUInt32:
+-      oh_data_type = OH_NN_UINT32;
+-      break;
+-    case DataType::kNumberTypeUInt64:
+-      oh_data_type = OH_NN_UINT64;
+-      break;
+-    case DataType::kNumberTypeFloat16:
+-      oh_data_type = OH_NN_FLOAT16;
+-      break;
+-    case DataType::kNumberTypeFloat32:
+-      oh_data_type = OH_NN_FLOAT32;
+-      break;
+-    case DataType::kNumberTypeFloat64:
+-      oh_data_type = OH_NN_FLOAT64;
+-      break;
+-    default: {
+-      oh_data_type = OH_NN_UNKNOWN;
+-    }
+-  }
+-  return oh_data_type;
+-}
+-
+-int mindspore::NNRTModelKernel::SetInputs() {
++int NNRTModelKernel::SetInputs() {
+   if (!zero_copy_) {
+     OH_NN_ReturnCode ret{OH_NN_FAILED};
+     size_t nn_input_count = 0;
+-    ret = OH_NNExecutor_GetInputCount(oh_nn_executor, &nn_input_count);
++    ret = OH_NNExecutor_GetInputCount(oh_nn_executor_, &nn_input_count);
+     if (ret != OH_NN_SUCCESS) {
+       MS_LOG(ERROR) << "OH_NNExecutor_GetInputCount failed.";
+       return lite::RET_ERROR;
+@@ -143,13 +105,13 @@ int mindspore::NNRTModelKernel::SetInputs() {
+       return lite::RET_ERROR;
+     }
+     for (size_t i = 0; i < nn_input_count; i++) {
+-      NN_TensorDesc *tensor_desc_tmp = OH_NNExecutor_CreateInputTensorDesc(oh_nn_executor, i);
++      NN_TensorDesc *tensor_desc_tmp = OH_NNExecutor_CreateInputTensorDesc(oh_nn_executor_, i);
+       if (tensor_desc_tmp == nullptr) {
+         MS_LOG(ERROR) << "OH_NNExecutor_CreateInputTensorDesc failed, i = " << i;
+         return lite::RET_ERROR;
+       }
+       nn_input_tensor_descs_.emplace_back(tensor_desc_tmp);
+-      NN_Tensor *tensor_tmp = OH_NNTensor_Create(device_id_, tensor_desc_tmp);
++      NN_Tensor *tensor_tmp = OH_NNTensor_Create(nnrt_device_info_.device_id_, tensor_desc_tmp);
+       if (tensor_tmp == nullptr) {
+         MS_LOG(ERROR) << "OH_NNTensor_Create input failed, i = " << i;
+         return lite::RET_ERROR;
+@@ -166,6 +128,10 @@ int mindspore::NNRTModelKernel::SetInputs() {
+     }
+   } else {
+     for (size_t i = 0; i < inputs_.size(); i++) {
++      if (inputs_[i].allocator() == nullptr) {
++        MS_LOG(ERROR) << "NNRTAllocator is nullptr, i = " << i;
++        return lite::RET_ERROR;
++      }
+       void *data = inputs_[i].MutableData();
+       NN_Tensor *tensor_tmp = reinterpret_cast<lite::NNRTAllocator *>(inputs_[i].allocator().get())->GetNNTensor(data);
+       if (tensor_tmp == nullptr) {
+@@ -178,11 +144,11 @@ int mindspore::NNRTModelKernel::SetInputs() {
+   return lite::RET_OK;
+ }
+ 
+-int mindspore::NNRTModelKernel::SetOutputs() {
++int NNRTModelKernel::SetOutputs() {
+   if (!zero_copy_) {
+     OH_NN_ReturnCode ret{OH_NN_FAILED};
+     size_t nn_output_count = 0;
+-    ret = OH_NNExecutor_GetOutputCount(oh_nn_executor, &nn_output_count);
++    ret = OH_NNExecutor_GetOutputCount(oh_nn_executor_, &nn_output_count);
+     if (ret != OH_NN_SUCCESS) {
+       MS_LOG(ERROR) << "OH_NNExecutor_GetOutputCount failed.";
+       return lite::RET_ERROR;
+@@ -192,13 +158,13 @@ int mindspore::NNRTModelKernel::SetOutputs() {
+       return lite::RET_ERROR;
+     }
+     for (size_t i = 0; i < nn_output_count; i++) {
+-      NN_TensorDesc *tensor_desc_tmp = OH_NNExecutor_CreateOutputTensorDesc(oh_nn_executor, i);
++      NN_TensorDesc *tensor_desc_tmp = OH_NNExecutor_CreateOutputTensorDesc(oh_nn_executor_, i);
+       if (tensor_desc_tmp == nullptr) {
+         MS_LOG(ERROR) << "OH_NNExecutor_CreateOutputTensorDesc failed, i = " << i;
+         return lite::RET_ERROR;
+       }
+       nn_output_tensor_descs_.emplace_back(tensor_desc_tmp);
+-      NN_Tensor *tensor_tmp = OH_NNTensor_Create(device_id_, tensor_desc_tmp);
++      NN_Tensor *tensor_tmp = OH_NNTensor_Create(nnrt_device_info_.device_id_, tensor_desc_tmp);
+       if (tensor_tmp == nullptr) {
+         MS_LOG(ERROR) << "OH_NNTensor_Create output failed, i = " << i;
+         return lite::RET_ERROR;
+@@ -210,6 +176,10 @@ int mindspore::NNRTModelKernel::SetOutputs() {
+     }
+   } else {
+     for (size_t i = 0; i < outputs_.size(); i++) {
++      if (outputs_[i].allocator() == nullptr) {
++        MS_LOG(ERROR) << "NNRTAllocator is nullptr, i = " << i;
++        return lite::RET_ERROR;
++      }
+       void *data = outputs_[i].MutableData();
+       NN_Tensor *tensor_tmp = reinterpret_cast<lite::NNRTAllocator *>(outputs_[i].allocator().get())->GetNNTensor(data);
+       if (tensor_tmp == nullptr) {
+@@ -222,7 +192,7 @@ int mindspore::NNRTModelKernel::SetOutputs() {
+   return lite::RET_OK;
+ }
+ 
+-void mindspore::NNRTModelKernel::FreeNNTensor() {
++void NNRTModelKernel::FreeNNTensor() {
+   for (size_t i = 0; i < nn_input_tensors_.size(); i++) {
+     OH_NNTensor_Destroy(&nn_input_tensors_[i]);
+     OH_NNTensorDesc_Destroy(&nn_input_tensor_descs_[i]);
+@@ -232,3 +202,5 @@ void mindspore::NNRTModelKernel::FreeNNTensor() {
+     OH_NNTensorDesc_Destroy(&nn_output_tensor_descs_[i]);
+   }
+ }
++
++}  // namespace mindspore
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
+index 40800a2a..7590d036 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
+@@ -22,6 +22,7 @@
+ #include "include/api/kernel.h"
+ #include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
+ #include "src/common/log_adapter.h"
++#include "src/litert/inner_context.h"
+ #include "include/errorcode.h"
+ 
+ namespace mindspore {
+@@ -31,16 +32,12 @@ class NNRTModelKernel : public kernel::Kernel {
+    * Because nnr can't run single op, but the whole model. So we decide to make the whole model into one kernel.
+    * */
+  public:
+-  NNRTModelKernel(OH_NNExecutor *oh_nn_executor, size_t device_id, const std::vector<mindspore::MSTensor> &inputs,
++  NNRTModelKernel(OH_NNExecutor *oh_nn_executor, lite::NNRtDeviceInfo nnrt_device_info, const std::vector<mindspore::MSTensor> &inputs,
+                   const std::vector<mindspore::MSTensor> &outputs)
+-      : kernel::Kernel(inputs, outputs, nullptr, nullptr), device_id_(device_id), oh_nn_executor(oh_nn_executor) {}
++      : kernel::Kernel(inputs, outputs, nullptr, nullptr), oh_nn_executor_(oh_nn_executor), nnrt_device_info_(nnrt_device_info) {}
+   int Prepare() override;
+   int Execute() override;
+-  int ReSize() override {
+-    MS_LOG(ERROR) << "NNRT does not support the resize function temporarily.";
+-    return lite::RET_ERROR;
+-  };
+-  OH_NN_DataType ConvertDataType(mindspore::DataType data_type);
++  int ReSize() override;
+   int SetInputs();
+   int SetOutputs();
+   void FreeNNTensor();
+@@ -52,8 +49,8 @@ class NNRTModelKernel : public kernel::Kernel {
+   }
+ 
+  protected:
+-  size_t device_id_;
+-  OH_NNExecutor *oh_nn_executor = nullptr;
++  OH_NNExecutor *oh_nn_executor_ = nullptr;
++  lite::NNRtDeviceInfo nnrt_device_info_;
+   std::vector<NN_Tensor *> nn_input_tensors_;
+   std::vector<NN_TensorDesc *> nn_input_tensor_descs_;
+   std::vector<NN_Tensor *> nn_output_tensors_;
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.cc
+new file mode 100644
+index 00000000..049857bb
+--- /dev/null
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.cc
+@@ -0,0 +1,110 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "src/litert/delegate/nnrt/nnrt_utils.h"
++#include <unordered_map>
++
++namespace mindspore::lite {
++OH_NN_Format CastToNNRtFormat(Format format) {
++  const std::unordered_map<Format, OH_NN_Format> kFormatMap = {
++    {Format::NCHW, OH_NN_FORMAT_NCHW},
++    {Format::NHWC, OH_NN_FORMAT_NHWC},
++  };
++  auto iter = kFormatMap.find(format);
++  if (iter == kFormatMap.end()) {
++    return OH_NN_FORMAT_NONE;
++  }
++  return iter->second;
++}
++
++OH_NN_DataType CastToNNRtDataType(TypeId data_type) {
++  OH_NN_DataType oh_data_type;
++  switch (data_type) {
++    case TypeId::kMetaTypeBegin:
++    case TypeId::kMetaTypeType:
++    case TypeId::kMetaTypeAny:
++    case TypeId::kMetaTypeObject:
++    case TypeId::kMetaTypeTypeType:
++    case TypeId::kMetaTypeProblem:
++    case TypeId::kMetaTypeExternal:
++    case TypeId::kMetaTypeNone:
++    case TypeId::kMetaTypeNull:
++    case TypeId::kMetaTypeEllipsis:
++    case TypeId::kMetaTypeEnd:
++    case TypeId::kObjectTypeNumber:
++    case TypeId::kObjectTypeString:
++    case TypeId::kObjectTypeList:
++    case TypeId::kObjectTypeTuple:
++    case TypeId::kObjectTypeSlice:
++    case TypeId::kObjectTypeKeyword:
++    case TypeId::kObjectTypeTensorType:
++    case TypeId::kObjectTypeRowTensorType:
++    case TypeId::kObjectTypeCOOTensorType:
++    case TypeId::kObjectTypeUndeterminedType:
++    case TypeId::kObjectTypeClass:
++    case TypeId::kObjectTypeDictionary:
++    case TypeId::kObjectTypeFunction:
++    case TypeId::kObjectTypeJTagged:
++    case TypeId::kObjectTypeSymbolicKeyType:
++    case TypeId::kObjectTypeEnvType:
++    case TypeId::kObjectTypeRefKey:
++    case TypeId::kObjectTypeRef:
++    case TypeId::kObjectTypeEnd:
++      oh_data_type = OH_NN_UNKNOWN;
++      break;
++    case TypeId::kNumberTypeBool:
++      oh_data_type = OH_NN_BOOL;
++      break;
++    case TypeId::kNumberTypeInt8:
++      oh_data_type = OH_NN_INT8;
++      break;
++    case TypeId::kNumberTypeInt16:
++      oh_data_type = OH_NN_INT16;
++      break;
++    case TypeId::kNumberTypeInt32:
++      oh_data_type = OH_NN_INT32;
++      break;
++    case TypeId::kNumberTypeInt64:
++      oh_data_type = OH_NN_INT64;
++      break;
++    case TypeId::kNumberTypeUInt8:
++      oh_data_type = OH_NN_UINT8;
++      break;
++    case TypeId::kNumberTypeUInt16:
++      oh_data_type = OH_NN_UINT16;
++      break;
++    case TypeId::kNumberTypeUInt32:
++      oh_data_type = OH_NN_UINT32;
++      break;
++    case TypeId::kNumberTypeUInt64:
++      oh_data_type = OH_NN_UINT64;
++      break;
++    case TypeId::kNumberTypeFloat16:
++      oh_data_type = OH_NN_FLOAT16;
++      break;
++    case TypeId::kNumberTypeFloat32:
++      oh_data_type = OH_NN_FLOAT32;
++      break;
++    case TypeId::kNumberTypeFloat64:
++      oh_data_type = OH_NN_FLOAT64;
++      break;
++    default: {
++      oh_data_type = OH_NN_UNKNOWN;
++    }
++  }
++  return oh_data_type;
++}
++}  // namespace mindspore::lite
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.h
+new file mode 100644
+index 00000000..f8055686
+--- /dev/null
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_utils.h
+@@ -0,0 +1,29 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_SRC_RUNTIME_DELEGATE_NNRT_UTILS_H
++#define MINDSPORE_LITE_SRC_RUNTIME_DELEGATE_NNRT_UTILS_H
++
++#include "include/api/format.h"
++#include "ir/dtype/type_id.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
++
++namespace mindspore::lite {
++OH_NN_Format CastToNNRtFormat(Format format);
++OH_NN_DataType CastToNNRtDataType(TypeId data_type);
++}  // namespace mindspore::lite
++
++#endif  // MINDSPORE_LITE_SRC_RUNTIME_DELEGATE_NNRT_UTILS_H
+diff --git a/mindspore/lite/src/litert/kernel/cpu/BUILD.gn b/mindspore/lite/src/litert/kernel/cpu/BUILD.gn
+index 6445d47d..a095bf69 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/BUILD.gn
++++ b/mindspore/lite/src/litert/kernel/cpu/BUILD.gn
+@@ -52,7 +52,6 @@ cpu_kernel_sources = [
+     "fp32/convolution_fp32.cc",
+     "fp32/convolution_im2col_arm32_fp32.cc",
+     "fp32/convolution_im2col_arm64_fp32.cc",
+-    "fp32/convolution_im2col_avx512_fp32.cc",
+     "fp32/convolution_im2col_avx_fp32.cc",
+     "fp32/convolution_im2col_base_fp32.cc",
+     "fp32/convolution_im2col_fp32.cc",
+@@ -90,7 +89,6 @@ cpu_kernel_sources = [
+     "fp32/lstm_non_mindir_fp32.cc",
+     "fp32/matmul_fp32_arm32.cc",
+     "fp32/matmul_fp32_arm64.cc",
+-    "fp32/matmul_fp32_avx512.cc",
+     "fp32/matmul_fp32_avx.cc",
+     "fp32/matmul_fp32_base.cc",
+     "fp32/matmul_fp32.cc",
+@@ -125,7 +123,7 @@ cpu_kernel_sources = [
+ ]
+ 
+ if ((target_cpu != "arm") && (target_cpu != "arm64")) {
+-    cpu_kernel_sources += [ "src/runtime/kernel/cpu/fp32/cast_for_x86_fp16.cc" ]
++    cpu_kernel_sources += [ "fp32/cast_for_x86_fp16.cc" ]
+ }
+ 
+ arm64_cpu_kernel_sources = [
+@@ -148,8 +146,6 @@ sse_avx_avx512_kernel_sources = [
+   "fp32/convolution_im2col_avx_fp32.cc",
+   "fp32/matmul_fp32_avx.cc",
+   "fp32/convolution_winograd_avx_fp32.cc",
+-  "fp32/convolution_im2col_avx512_fp32.cc",
+-  "fp32/matmul_fp32_avx512.cc",
+ ]
+ 
+ fp16_kernel_sources = [
+@@ -272,6 +268,18 @@ control_kernel_sources = [
+     "control/tensorlist_stack.cc",
+ ]
+ 
++# emulator not support avx512
++if (!is_emulator) {
++  cpu_kernel_sources += [
++    "fp32/convolution_im2col_avx512_fp32.cc",
++    "fp32/matmul_fp32_avx512.cc",
++  ]
++  sse_avx_avx512_kernel_sources += [
++    "fp32/convolution_im2col_avx512_fp32.cc",
++    "fp32/matmul_fp32_avx512.cc",
++  ]
++}
++
+ all_cpu_kernel_sources = cpu_kernel_sources
+ all_cpu_kernel_sources += int8_kernel_sources
+ all_cpu_kernel_sources += string_kernel_sources
+@@ -348,6 +356,16 @@ ohos_source_set("cpu_kernel_obj") {
+       "CL_HPP_TARGET_OPENCL_VERSION=120",
+       "CL_HPP_MINIMUM_OPENCL_VERSION=120",
+     ]
++  } else if (target_cpu == "x86_64") {
++    defines += [
++      "ENABLE_SSE",
++      "ENABLE_AVX",
++    ]
++    if (!is_emulator) {
++      defines += [
++        "ENABLE_AVX512",
++      ]
++    }
+   }
+ 
+   cflags_cc = [
+diff --git a/mindspore/lite/src/litert/kernel/cpu/base/constant_of_shape.cc b/mindspore/lite/src/litert/kernel/cpu/base/constant_of_shape.cc
+index d8d24146..94f4a490 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/base/constant_of_shape.cc
++++ b/mindspore/lite/src/litert/kernel/cpu/base/constant_of_shape.cc
+@@ -53,6 +53,10 @@ int ConstantOfShapeCPUKernel::DoExecute(int task_id) {
+       ConstantOfShapeInt32(reinterpret_cast<int32_t *>(output_ptr_), start, start + current_stride,
+                            param_->value_.int32_value_);
+       break;
++    case kNumberTypeBool:
++      ConstantOfShapeBool(reinterpret_cast<bool *>(output_ptr_), start, start + current_stride,
++                           param_->value_.bool_value_);
++      break;
+ #ifdef ENABLE_FP16
+     case kNumberTypeFloat16:
+       ConstantOfShapeFp16(reinterpret_cast<float16_t *>(output_ptr_), start, start + current_stride,
+@@ -100,4 +104,5 @@ REG_KERNEL(kCPU, kNumberTypeFloat32, PrimitiveType_ConstantOfShape, LiteKernelCr
+ REG_KERNEL(kCPU, kNumberTypeFloat16, PrimitiveType_ConstantOfShape, LiteKernelCreator<ConstantOfShapeCPUKernel>)
+ REG_KERNEL(kCPU, kNumberTypeInt32, PrimitiveType_ConstantOfShape, LiteKernelCreator<ConstantOfShapeCPUKernel>)
+ REG_KERNEL(kCPU, kNumberTypeInt64, PrimitiveType_ConstantOfShape, LiteKernelCreator<ConstantOfShapeCPUKernel>)
++REG_KERNEL(kCPU, kNumberTypeBool, PrimitiveType_ConstantOfShape, LiteKernelCreator<ConstantOfShapeCPUKernel>)
+ }  // namespace mindspore::kernel
+diff --git a/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_delegate_fp32.cc b/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_delegate_fp32.cc
+index ea46a415..bd81b957 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_delegate_fp32.cc
++++ b/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_delegate_fp32.cc
+@@ -49,7 +49,9 @@ using mindspore::schema::PrimitiveType_Conv2DFusion;
+ 
+ namespace mindspore::kernel {
+ namespace {
++#ifndef ENABLE_AVX
+ constexpr int kMaxDwConvSWSize = 32;
++#endif
+ }  // namespace
+ 
+ float *ConvolutionDelegateCPUKernel::CopyData(const lite::Tensor *tensor) {
+diff --git a/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_depthwise_slidewindow_x86_fp32.cc b/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_depthwise_slidewindow_x86_fp32.cc
+index fbde537b..d1a43b9a 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_depthwise_slidewindow_x86_fp32.cc
++++ b/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_depthwise_slidewindow_x86_fp32.cc
+@@ -106,7 +106,7 @@ int ConvolutionDepthwiseSWCPUKernelX86::ReSize() {
+   return RET_OK;
+ }
+ 
+-int ConvolutionDepthwiseSWCPUKernelX86::Execute(int task_id) {
++int ConvolutionDepthwiseSWCPUKernelX86::DoExecute(int task_id) {
+   DepthwiseSWAvxFp32(packed_output_, packed_input_, reinterpret_cast<float *>(packed_weight_),
+                      reinterpret_cast<float *>(bias_data_), conv_param_, sliding_, task_id);
+   return RET_OK;
+@@ -114,7 +114,7 @@ int ConvolutionDepthwiseSWCPUKernelX86::Execute(int task_id) {
+ 
+ int ConvDwSWAvxRun(void *cdata, int task_id, float lhs_scale, float rhs_scale) {
+   auto conv_dw = reinterpret_cast<ConvolutionDepthwiseSWCPUKernelX86 *>(cdata);
+-  auto ret = conv_dw->Execute(task_id);
++  auto ret = conv_dw->DoExecute(task_id);
+   if (ret != RET_OK) {
+     MS_LOG(ERROR) << "ConvolutionDepthwiseSWRun in x86 error task_id[" << task_id << "] error_code[" << ret << "]";
+     return RET_ERROR;
+diff --git a/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_depthwise_slidewindow_x86_fp32.h b/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_depthwise_slidewindow_x86_fp32.h
+index e959fe45..928321e5 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_depthwise_slidewindow_x86_fp32.h
++++ b/mindspore/lite/src/litert/kernel/cpu/fp32/convolution_depthwise_slidewindow_x86_fp32.h
+@@ -35,7 +35,7 @@ class ConvolutionDepthwiseSWCPUKernelX86 : public ConvolutionBaseCPUKernel {
+   int ReSize() override;
+   int Run() override;
+ 
+-  int Execute(int task_id);
++  int DoExecute(int task_id);
+ 
+  private:
+   void FreePackedInputOutput();
+diff --git a/mindspore/lite/src/litert/lite_model.cc b/mindspore/lite/src/litert/lite_model.cc
+index 96fb76d0..5ffd5939 100644
+--- a/mindspore/lite/src/litert/lite_model.cc
++++ b/mindspore/lite/src/litert/lite_model.cc
+@@ -539,14 +539,16 @@ bool LiteModel::PrepareInnerTensors() {
+       MS_LOG(ERROR) << "Create SchemaTensorWrapper return nullptr";
+       return false;
+     }
++    if (graph_.all_tensors_.at(i) != nullptr) {
+ #ifdef ENABLE_LITE_HELPER
+-    if (!tensor_wrapper->Init(*(graph_.all_tensors_.at(i)), static_cast<SCHEMA_VERSION>(schema_version_), dir,
+-                              infer_helpers)) {
++      if (!tensor_wrapper->Init(*(graph_.all_tensors_.at(i)), static_cast<SCHEMA_VERSION>(schema_version_), dir,
++                                infer_helpers)) {
+ #else
+-    if (!tensor_wrapper->Init(*(graph_.all_tensors_.at(i)), static_cast<SCHEMA_VERSION>(schema_version_), dir)) {
++      if (!tensor_wrapper->Init(*(graph_.all_tensors_.at(i)), static_cast<SCHEMA_VERSION>(schema_version_), dir)) {
+ #endif
+-      delete tensor_wrapper;
+-      return false;
++        delete tensor_wrapper;
++        return false;
++      }
+     }
+     this->inner_all_tensors_[i] = tensor_wrapper;
+   }
+diff --git a/mindspore/lite/src/litert/lite_model.h b/mindspore/lite/src/litert/lite_model.h
+index 647746a2..c0847c1e 100644
+--- a/mindspore/lite/src/litert/lite_model.h
++++ b/mindspore/lite/src/litert/lite_model.h
+@@ -66,13 +66,13 @@ class MS_API LiteModel : public Model {
+ 
+   static int VersionVerify(flatbuffers::Verifier *verify);
+ 
+- private:
+ #ifdef ENABLE_LITE_HELPER
+   bool PrepareInnerTensors(mindspore::infer::helper::InferHelpers *infer_helpers = nullptr);
+ #else
+   bool PrepareInnerTensors();
+ #endif
+ 
++ private:
+   bool CheckQuantAllInit(const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::QuantParam>> *quant_params);
+ 
+   template <typename T = schema::MetaGraph, typename U = schema::CNode>
+diff --git a/mindspore/lite/src/litert/lite_session.h b/mindspore/lite/src/litert/lite_session.h
+index 2d80cccc..e018847e 100644
+--- a/mindspore/lite/src/litert/lite_session.h
++++ b/mindspore/lite/src/litert/lite_session.h
+@@ -58,10 +58,10 @@ class MS_API LiteSession {
+ #else
+   int LoadModelAndCompileByBuf(const char *model_buf, mindspore::ModelType model_type, const size_t &buf_size);
+ #endif
+-  int LoadModelAndCompileByPath(const std::string &model_path, mindspore::ModelType model_type);
++  virtual int LoadModelAndCompileByPath(const std::string &model_path, mindspore::ModelType model_type);
+   mindspore::ModelType LoadModelByBuff(const char *model_buf, const size_t &buf_size, char **lite_buf, size_t *size,
+                                        mindspore::ModelType model_type);
+-  const char *LoadModelByPath(const std::string &file, mindspore::ModelType model_type, size_t *size, bool use_mmap);
++  virtual const char *LoadModelByPath(const std::string &file, mindspore::ModelType model_type, size_t *size, bool use_mmap);
+   virtual int Init(const std::shared_ptr<InnerContext> &context);
+   virtual int CompileGraph(Model *model);
+   virtual int Resize(const std::vector<mindspore::lite::Tensor *> &inputs, const std::vector<std::vector<int>> &dims);
+@@ -170,10 +170,10 @@ class MS_API LiteSession {
+   static void MarkSharedWeight(const std::vector<kernel::KernelExec *> &kernels);
+   std::string ParseWeightPath();
+   bool IsMmapEnable() const;
++  virtual int InitExecutor();
+ 
+  private:
+   int PreCheck(Model *model);
+-  int InitExecutor();
+   void ResetInputsShape(const std::vector<std::vector<int>> &dims);
+   int InitContext(const std::shared_ptr<InnerContext> &context);
+   int CreateTensorRTDelegate();
+diff --git a/mindspore/lite/src/tensor.cc b/mindspore/lite/src/tensor.cc
+index a7bb1899..9d9a1491 100644
+--- a/mindspore/lite/src/tensor.cc
++++ b/mindspore/lite/src/tensor.cc
+@@ -18,6 +18,9 @@
+ #include <vector>
+ #include <string>
+ #include <utility>
++#ifdef SUPPORT_NNRT
++#include "src/litert/delegate/nnrt/nnrt_allocator.h"
++#endif
+ #include "schema/ops_types_generated.h"
+ #include "securec/include/securec.h"
+ #include "include/errorcode.h"
+@@ -427,7 +430,18 @@ int Tensor::MallocData(const AllocatorPtr allocator) {
+   if (allocator_ == nullptr) {
+     this->tensor_c_.data_ = malloc(data_size);
+   } else {
+-    this->tensor_c_.data_ = allocator_->Malloc(data_size);
++#ifdef SUPPORT_NNRT
++    if (IS_NNRT_ALLOCATOR(allocator_)) {
++      this->tensor_c_.data_ = dynamic_cast<NNRTAllocator *>(allocator_.get())->MallocByDesc(data_size, this->shape(),
++                                                                                            this->data_type(),
++                                                                                            this->format(),
++                                                                                            this->tensor_name());
++    } else {
++#endif
++      this->tensor_c_.data_ = allocator_->Malloc(data_size);
++#ifdef SUPPORT_NNRT
++    }
++#endif
+     allocator_->SetRefCount(this->tensor_c_.data_, 1);
+   }
+   if (this->tensor_c_.data_ == nullptr) {
+diff --git a/mindspore/lite/tools/converter/parser/onnx/onnx_node_parser.cc b/mindspore/lite/tools/converter/parser/onnx/onnx_node_parser.cc
+index 479d8863..4fa4c995 100644
+--- a/mindspore/lite/tools/converter/parser/onnx/onnx_node_parser.cc
++++ b/mindspore/lite/tools/converter/parser/onnx/onnx_node_parser.cc
+@@ -227,7 +227,7 @@ STATUS OnnxNodeParser::SetDataTypeAndValue(const onnx::TensorProto &onnx_tensor,
+       SetTypeAndValueForFloat(onnx_tensor, value, data_count);
+       break;
+     case onnx::TensorProto_DataType_BOOL:
+-      *type = GetDataTypeFromOnnx(onnx::TensorProto_DataType_INT32);
++      *type = GetDataTypeFromOnnx(onnx::TensorProto_DataType_BOOL);
+       SetTypeAndValueForBool(onnx_tensor, value, data_count);
+       break;
+     default:
 -- 
 2.17.1
 
