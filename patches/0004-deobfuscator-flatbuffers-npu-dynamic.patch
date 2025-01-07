@@ -1,32 +1,142 @@
-From bcefb7478b4c90c3d09ce7c089e2cb00cd494c8e Mon Sep 17 00:00:00 2001
-From: chengfeng27 <chengfeng27@huawei.com>
-Date: Tue, 30 Jan 2024 19:55:44 +0800
-Subject: [PATCH] add mindir ops interface
+From 1244797fc64c1be37d14314361b22ebc2ad069be Mon Sep 17 00:00:00 2001
+From: qiandan <756328797@qq.com>
+Date: Tue, 19 Nov 2024 06:45:49 -0500
+Subject: [PATCH] deobfuscator-flatbuffers-npu-dynamic
 
-Signed-off-by: chengfeng27 <chengfeng27@huawei.com>
 ---
- mindspore/lite/BUILD.gn                       |    5 +-
+ cmake/package_lite.cmake                      |   15 -
+ include/c_api/tensor_c.h                      |   15 +
+ mindspore/lite/BUILD.gn                       |   54 +-
+ mindspore/lite/include/model.h                |    7 +-
+ .../lite/include/registry/deobf_processor.h   |   77 +
  mindspore/lite/mindir/BUILD.gn                |   15 +-
- mindspore/lite/mindir/include/mindir.h        |  152 +-
+ mindspore/lite/mindir/include/mindir.h        |  286 +-
  mindspore/lite/mindir/include/mindir_tensor.h |   29 -
- mindspore/lite/mindir/include/mindir_types.h  |   21 +
- mindspore/lite/mindir/src/mindir.cc           | 1179 +++++++++++++
- .../src/mindir_nnrt_lite_graph_to_model.cc    | 1496 ----------------
- .../mindir_nnrt_lite_graph_to_model_v2_0.cc   | 1497 -----------------
+ mindspore/lite/mindir/include/mindir_types.h  |   48 +
+ mindspore/lite/mindir/src/mindir.cc           | 2326 ++++++++++++++++-
+ .../src/mindir_nnrt_lite_graph_to_model.cc    | 1496 -----------
+ .../mindir_nnrt_lite_graph_to_model_v2_0.cc   | 1497 -----------
  mindspore/lite/mindir/src/mindir_tensor.cc    |   80 -
+ mindspore/lite/schema/inner/model_generated.h |   52 +-
+ mindspore/lite/schema/model.fbs               |    2 +
+ mindspore/lite/schema/model_generated.h       |   34 +-
+ mindspore/lite/src/CMakeLists.txt             |    6 +-
+ .../common/ops/populate/custom_populate.cc    |    8 +-
+ mindspore/lite/src/executor/CMakeLists.txt    |    3 -
+ .../graph_executor/litert/CMakeLists.txt      |    3 -
  mindspore/lite/src/litert/c_api/context_c.cc  |    4 +
- .../cpu/fp32_grad/strided_slice_grad.cc       |  124 +-
- .../kernel/cpu/fp32_grad/strided_slice_grad.h |    5 +
- mindspore/lite/src/litert/lite_model.cc       |    4 +-
- 13 files changed, 1446 insertions(+), 3165 deletions(-)
+ mindspore/lite/src/litert/c_api/model_c.cc    |   38 +
+ mindspore/lite/src/litert/c_api/tensor_c.cc   |   32 +
+ .../lite/src/litert/c_api/type_c_private.h    |    3 +
+ .../src/litert/cxx_api/model/model_impl.cc    |   83 +-
+ .../litert/delegate/nnrt/nnrt_allocator.cc    |  168 ++
+ .../src/litert/delegate/nnrt/nnrt_allocator.h |   64 +
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc |   42 +
+ .../src/litert/delegate/nnrt/nnrt_delegate.h  |    2 +
+ .../litert/delegate/nnrt/nnrt_model_kernel.cc |   50 +-
+ .../litert/delegate/nnrt/nnrt_model_kernel.h  |    7 +-
+ .../litert/kernel/cpu/nnacl/nnacl_kernel.cc   |    2 +-
+ mindspore/lite/src/litert/lite_model.cc       |   62 +-
+ mindspore/lite/src/litert/lite_model.h        |   39 +-
+ mindspore/lite/src/litert/mindrt_executor.cc  |   14 +-
+ mindspore/lite/src/train/graph_fusion.cc      |    7 +
+ .../fusion/remove_redundant_tensor.cc         |   89 +
+ .../fusion/remove_redundant_tensor.h          |   36 +
+ mindspore/lite/src/train/train_session.cc     |  130 +-
+ mindspore/lite/src/train/train_session.h      |    3 -
+ mindspore/lite/test/CMakeLists.txt            |    4 -
+ mindspore/lite/tools/converter/converter.cc   |   10 +-
+ .../component/const_blocks/calib_output.cc    |   16 +
+ .../tools/obfuscator/include/deobf_creator.h  |    7 +
+ 44 files changed, 3565 insertions(+), 3400 deletions(-)
+ create mode 100644 mindspore/lite/include/registry/deobf_processor.h
  delete mode 100644 mindspore/lite/mindir/src/mindir_nnrt_lite_graph_to_model.cc
  delete mode 100644 mindspore/lite/mindir/src/mindir_nnrt_lite_graph_to_model_v2_0.cc
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
+ create mode 100644 mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
+ create mode 100644 mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.cc
+ create mode 100644 mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.h
+ create mode 100644 mindspore/lite/tools/obfuscator/include/deobf_creator.h
 
+diff --git a/cmake/package_lite.cmake b/cmake/package_lite.cmake
+index dddfdb67..a766d6cb 100644
+--- a/cmake/package_lite.cmake
++++ b/cmake/package_lite.cmake
+@@ -426,10 +426,6 @@ if(PLATFORM_ARM64)
+                     DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+         endif()
+     endif()
+-    if(MSLITE_ENABLE_MODEL_OBF)
+-        install(FILES ${TOP_DIR}/mindspore/lite/tools/obfuscator/lib/android-aarch64/libmsdeobfuscator-lite.so
+-                DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+-    endif()
+     install(FILES ${TOP_DIR}/mindspore/core/ir/dtype/type_id.h DESTINATION ${RUNTIME_INC_DIR}/ir/dtype
+             COMPONENT ${RUNTIME_COMPONENT_NAME})
+     install(FILES
+@@ -681,10 +677,6 @@ elseif(PLATFORM_ARM32)
+                     DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+         endif()
+     endif()
+-    if(MSLITE_ENABLE_MODEL_OBF)
+-        install(FILES ${TOP_DIR}/mindspore/lite/tools/obfuscator/lib/android-aarch32/libmsdeobfuscator-lite.so
+-                DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+-    endif()
+     install(FILES ${TOP_DIR}/mindspore/core/ir/dtype/type_id.h DESTINATION ${RUNTIME_INC_DIR}/ir/dtype
+             COMPONENT ${RUNTIME_COMPONENT_NAME})
+     install(FILES
+@@ -901,13 +893,6 @@ else()
+                     DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+         endif()
+     endif()
+-    if(MSLITE_ENABLE_MODEL_OBF)
+-        install(FILES ${TOP_DIR}/mindspore/lite/tools/obfuscator/bin/linux-x64/msobfuscator
+-                DESTINATION ${OBFUSCATOR_ROOT_DIR} PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+-                GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE COMPONENT ${RUNTIME_COMPONENT_NAME})
+-        install(FILES ${TOP_DIR}/mindspore/lite/tools/obfuscator/lib/linux-x64/libmsdeobfuscator-lite.so
+-                DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+-    endif()
+     if(MSLITE_ENABLE_RUNTIME_GLOG)
+         install(FILES ${glog_LIBPATH}/${glog_name} DESTINATION ${GLOG_DIR} RENAME libmindspore_glog.so.0
+                 COMPONENT ${RUNTIME_COMPONENT_NAME})
+diff --git a/include/c_api/tensor_c.h b/include/c_api/tensor_c.h
+index 6d2aaab6..2f641725 100644
+--- a/include/c_api/tensor_c.h
++++ b/include/c_api/tensor_c.h
+@@ -154,6 +154,21 @@ OH_AI_API int64_t OH_AI_TensorGetElementNum(const OH_AI_TensorHandle tensor);
+ /// \return The data size of the tensor.
+ OH_AI_API size_t OH_AI_TensorGetDataSize(const OH_AI_TensorHandle tensor);
+ 
++/// \brief Obtain allocator for the tensor.
++///
++/// \param[in] tensor Tensor object handle.
++///
++/// \return The pointer of allocator.
++OH_AI_API void *OH_AI_TensorGetAllocator(OH_AI_TensorHandle tensor);
++
++/// \brief Set allocator for the tensor.
++///
++/// \param[in] tensor Tensor object handle.
++/// \param[in] allocator A pointer to the allocator.
++///
++/// \return OH_AI_STATUS_SUCCESS if success, or detail error code if failed.
++OH_AI_API OH_AI_Status OH_AI_TensorSetAllocator(OH_AI_TensorHandle tensor, void *allocator);
++
+ #ifdef __cplusplus
+ }
+ #endif
 diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
-index d7fe4f55..4a83f498 100644
+index 086c503d..58ee5e51 100644
 --- a/mindspore/lite/BUILD.gn
 +++ b/mindspore/lite/BUILD.gn
-@@ -366,6 +366,7 @@ ohos_shared_library("mindspore_lib") {
+@@ -99,7 +99,6 @@ cxx_api_sources = [
+   "src/litert/cxx_api/model/model_group_impl.cc",
+   "src/litert/cxx_api/model/model_impl.cc",
+   "src/litert/cxx_api/graph/graph.cc",
+-  "src/litert/cxx_api/graph/net_data.cc",
+   "src/litert/cxx_api/tensor/tensor_impl.cc",
+ ]
+ 
+@@ -367,6 +366,7 @@ ohos_shared_library("mindspore_lib") {
      "../core/mindrt/:mindrt_obj",
      "src/litert/kernel/cpu/:cpu_kernel_obj",
      "src/common/:lite_common_mid_obj",
@@ -34,7 +144,15 @@ index d7fe4f55..4a83f498 100644
    ]
  
    sources = all_sources
-@@ -473,7 +474,8 @@ ohos_shared_library("mindspore_lib") {
+@@ -443,6 +443,7 @@ ohos_shared_library("mindspore_lib") {
+       "src/litert/delegate/nnrt/checker/primitive_check.cc",
+       "src/litert/delegate/nnrt/nnrt_delegate.cc",
+       "src/litert/delegate/nnrt/nnrt_model_kernel.cc",
++      "src/litert/delegate/nnrt/nnrt_allocator.cc",
+     ]
+     include_dirs += [
+       "src/delegate/nnrt/include",
+@@ -474,7 +475,8 @@ ohos_shared_library("mindspore_lib") {
  ohos_shared_library("mindspore_ndk") {
    deps = [
      ":mindspore_lib",
@@ -44,7 +162,75 @@ index d7fe4f55..4a83f498 100644
    ]
  
    sources = c_api_sources
-@@ -636,6 +638,7 @@ all_train_sources += fp32_train_kernel_sources
+@@ -532,50 +534,6 @@ ohos_shared_library("mindspore_ndk") {
+ }
+ 
+ # Train library
+-expression_cxx_api_sources = [
+-  "src/litert/cxx_api/expression/net.cc",
+-  "src/litert/cxx_api/expression/net_impl.cc",
+-  "src/litert/cxx_api/expression/node_impl.cc",
+-]
+-
+-expression_op_sources = [
+-  "src/expression/ops/activation.cc",
+-  "src/expression/ops/adam.cc",
+-  "src/expression/ops/addn.cc",
+-  "src/expression/ops/arithmetic.cc",
+-  "src/expression/ops/arithmetic_self.cc",
+-  "src/expression/ops/assign.cc",
+-  "src/expression/ops/batchnorm.cc",
+-  "src/expression/ops/biasadd.cc",
+-  "src/expression/ops/conv.cc",
+-  "src/expression/ops/dense.cc",
+-  "src/expression/ops/depend.cc",
+-  "src/expression/ops/dropout.cc",
+-  "src/expression/ops/flatten.cc",
+-  "src/expression/ops/pooling.cc",
+-  "src/expression/ops/reduce.cc",
+-  "src/expression/ops/reshape.cc",
+-  "src/expression/ops/softmax.cc",
+-  "src/expression/ops/softmaxCE.cc",
+-  "src/expression/ops/tile.cc",
+-  "src/expression/ops/transpose.cc",
+-]
+-
+-all_expression_sources = [
+-  "src/expression/export.cc",
+-  "src/expression/expr.cc",
+-  "src/expression/import.cc",
+-  "src/expression/net.cc",
+-  "src/expression/node.cc",
+-  "src/expression/ops.cc",
+-  "src/expression/ops_utils.cc",
+-  "src/expression/param.cc",
+-  "src/expression/sequential.cc",
+-]
+-
+-all_expression_sources += expression_cxx_api_sources
+-all_expression_sources += expression_op_sources
+-
+ all_train_sources = [
+   # ${API_TRAIN_SRC} is empty.
+   # ${TRAIN_SRC_WITH_MD} is empty.
+@@ -604,6 +562,7 @@ all_train_sources = [
+   "src/train/optimizer/fusion/gru_fusion_pass.cc",
+   "src/train/optimizer/fusion/matmul_add_fusion_pass.cc",
+   "src/train/optimizer/fusion/matmul_matmul_add_fusion_pass.cc",
++  "src/train/optimizer/fusion/remove_redundant_tensor.cc",
+   "src/common/storage.cc",
+   "tools/converter/optimizer.cc",
+   "tools/converter/legacy_optimizer/fusion/fusion_pass.cc",
+@@ -616,8 +575,6 @@ all_train_sources = [
+   "tools/converter/legacy_optimizer/graph/subgraph_node_pass.cc",
+ ]
+ 
+-all_train_sources += all_expression_sources
+-
+ fp16_train_kernel_sources = [
+   "src/litert/kernel/cpu/fp16_grad/activation_fp16_grad.cc",
+   "src/litert/kernel/cpu/fp16_grad/arithmetic_fp16_grad.cc",
+@@ -682,6 +639,7 @@ all_train_sources += fp32_train_kernel_sources
  ohos_shared_library("mindspore_train_lib") {
    deps = [
      ":mindspore_lib",
@@ -52,6 +238,114 @@ index d7fe4f55..4a83f498 100644
    ]
  
    sources = all_train_sources
+diff --git a/mindspore/lite/include/model.h b/mindspore/lite/include/model.h
+index 2a93534d..6acd3da8 100644
+--- a/mindspore/lite/include/model.h
++++ b/mindspore/lite/include/model.h
+@@ -58,12 +58,6 @@ struct MS_API LiteGraph {
+   std::vector<mindspore::schema::Tensor *> all_tensors_;
+   std::vector<Node *> all_nodes_;
+   std::vector<SubGraph *> sub_graphs_;
+-#ifdef ENABLE_MODEL_OBF
+-  std::vector<uint32_t> all_prims_type_;
+-  std::vector<uint32_t> all_nodes_stat_;
+-  bool model_obfuscated_ = false;
+-  std::vector<unsigned char *> deobf_prims_;
+-#endif
+ 
+   std::string ToString() const;
+ };
+@@ -73,6 +67,7 @@ struct MS_API Model {
+   char *buf = nullptr;
+   size_t buf_size_ = 0;
+   LiteModelType model_type_ = mindspore::lite::ModelType_MSLite;
++  void *deobf = nullptr;
+ 
+   /// \brief Static method to create a Model pointer.
+   static Model *Import(const char *model_buf, size_t size);
+diff --git a/mindspore/lite/include/registry/deobf_processor.h b/mindspore/lite/include/registry/deobf_processor.h
+new file mode 100644
+index 00000000..c70735b2
+--- /dev/null
++++ b/mindspore/lite/include/registry/deobf_processor.h
+@@ -0,0 +1,77 @@
++/**
++ * Copyright 2021 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_INCLUDE_REGISTRY_DEOBFPROCESSOR_H_
++#define MINDSPORE_LITE_INCLUDE_REGISTRY_DEOBFPROCESSOR_H_
++
++#include <vector>
++#include <string>
++#include <numeric>
++#include "src/common/prim_util.h"
++#include "src/common/log_adapter.h"
++#include "include/model.h"
++#include "schema/inner/model_generated.h"
++
++namespace mindspore::lite {
++
++  enum DeObfRet : uint32_t {
++    kDeObfFailed = 0,        ///<Deobfuscator failed
++    kNoObf = 1,               ///<The node has not been obfuscated
++    kDeObfSuccess = 2,        ///<Deobfuscate success
++  };
++
++  class DeObfProcessor {
++    public:
++      DeObfProcessor() = default;
++
++      bool GetModelDeObf(const void *meta_graph, Model *model);
++
++      void DeObfuscate(Model *model);
++
++      DeObfRet CreateDeObfNode(const schema::Primitive *&src_prim, int i, int schema__version);
++
++      std::vector<uint32_t> all_prims_type_;
++      std::vector<uint32_t> all_nodes_stat_;
++      bool model_obfuscated_ = false;
++      void *model_deobf = nullptr;
++  };
++
++  typedef void (*ObfCreateFunc)(Model &model);
++
++  class MS_API DeObfRegister {
++    public:
++      static bool (DeObfProcessor::*GetModelDeObfReg)(const void *meta_graph, Model *model);
++      static void (DeObfProcessor::*DeObfuscateReg)(Model *model);
++      static DeObfRet (DeObfProcessor::*CreateDeObfNodeReg)(const schema::Primitive *&src_prim, int i, int schema__version);
++      static void *deobf_handle;
++
++      DeObfRegister() = default;
++      ~DeObfRegister() = default;
++
++      static ObfCreateFunc NewDeObfProcessor;
++
++      static void Fail(Model &model){MS_LOG(INFO) << "DeObfuscator not registered!";}
++
++      MS_API static void RegisterDeObfuscator(ObfCreateFunc func){
++        if(func == nullptr){
++          MS_LOG(WARNING) << "Register invalid deobfuscator";
++          return;
++        }
++        NewDeObfProcessor = func;
++      }
++  };
++}
++#endif
 diff --git a/mindspore/lite/mindir/BUILD.gn b/mindspore/lite/mindir/BUILD.gn
 index b1435ef7..ad4eff84 100644
 --- a/mindspore/lite/mindir/BUILD.gn
@@ -104,7 +398,7 @@ index b1435ef7..ad4eff84 100644
    output_name = "mindir"
    innerapi_tags = [ "platformsdk_indirect" ]
 diff --git a/mindspore/lite/mindir/include/mindir.h b/mindspore/lite/mindir/include/mindir.h
-index f47cad8c..4f633493 100644
+index f47cad8c..7eb3a744 100644
 --- a/mindspore/lite/mindir/include/mindir.h
 +++ b/mindspore/lite/mindir/include/mindir.h
 @@ -19,25 +19,6 @@
@@ -150,7 +444,22 @@ index f47cad8c..4f633493 100644
  // ********** Activation **********
  PrimitivePtr MindIR_Activation_CreatePrimitive(ActivationType activation_type, float alpha, float min_val,
                                                 float max_val, bool approximate);
-@@ -440,6 +411,129 @@ PrimitivePtr MindIR_Unsqueeze_CreatePrimitive(const std::vector<int64_t> &axis);
+@@ -299,11 +270,13 @@ bool MindIR_PReLUFusion_GetChannelShared(ConstPrimitivePtr primitive);
+ void MindIR_PReLUFusion_SetChannelShared(PrimitivePtr *primitive, bool channel_shared);
+ 
+ // ********** QuantDTypeCast **********
+-PrimitivePtr MindIR_QuantDTypeCast_CreatePrimitive(int64_t src_t, int64_t dst_t);
++PrimitivePtr MindIR_QuantDTypeCast_CreatePrimitive(int64_t src_t, int64_t dst_t, int64_t axis);
+ int64_t MindIR_QuantDTypeCast_GetSrcT(ConstPrimitivePtr primitive);
+ void MindIR_QuantDTypeCast_SetSrcT(PrimitivePtr *primitive, int64_t src_t);
+ int64_t MindIR_QuantDTypeCast_GetDstT(ConstPrimitivePtr primitive);
+ void MindIR_QuantDTypeCast_SetDstT(PrimitivePtr *primitive, int64_t dst_t);
++int64_t MindIR_QuantDTypeCast_GetAxis(ConstPrimitivePtr primitive);
++void MindIR_QuantDTypeCast_SetAxis(PrimitivePtr *primitive, int64_t axis);
+ 
+ // ********** ReduceFusion **********
+ PrimitivePtr MindIR_ReduceFusion_CreatePrimitive(bool keep_dims, ReduceMode mode, bool reduce_to_end, float coeff);
+@@ -440,6 +413,259 @@ PrimitivePtr MindIR_Unsqueeze_CreatePrimitive(const std::vector<int64_t> &axis);
  std::vector<int64_t> MindIR_Unsqueeze_GetAxis(ConstPrimitivePtr primitive);
  void MindIR_Unsqueeze_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t> &axis);
  
@@ -277,6 +586,136 @@ index f47cad8c..4f633493 100644
 +float MindIR_Clip_GetMin(ConstPrimitivePtr primitive);
 +void MindIR_Clip_SetMin(PrimitivePtr *primitive, float min);
 +
++// ********** All **********
++PrimitivePtr MindIR_All_CreatePrimitive(int64_t keep_dims);
++int64_t MindIR_All_GetKeepDims(ConstPrimitivePtr primitive);
++void MindIR_All_SetKeepDims(PrimitivePtr *primitive, int64_t keep_dims);
++
++// ********** Assert **********
++PrimitivePtr MindIR_Assert_CreatePrimitive(int64_t summarize);
++int64_t MindIR_Assert_GetSummarize(ConstPrimitivePtr primitive);
++void MindIR_Assert_SetSummarize(PrimitivePtr *primitive, int64_t summarize);
++
++// ********** LogicalAnd **********
++PrimitivePtr MindIR_LogicalAnd_CreatePrimitive();
++
++// ********** LogicalNot **********
++PrimitivePtr MindIR_LogicalNot_CreatePrimitive();
++
++// ********** Cos **********
++PrimitivePtr MindIR_Cos_CreatePrimitive();
++
++// ********** Mod **********
++PrimitivePtr MindIR_Mod_CreatePrimitive();
++
++// ********** Neg **********
++PrimitivePtr MindIR_Neg_CreatePrimitive();
++
++// ********** Reciprocal **********
++PrimitivePtr MindIR_Reciprocal_CreatePrimitive();
++
++// ********** Sin **********
++PrimitivePtr MindIR_Sin_CreatePrimitive();
++
++// ********** Where **********
++PrimitivePtr MindIR_Where_CreatePrimitive();
++
++// ********** Log **********
++PrimitivePtr MindIR_Log_CreatePrimitive();
++
++// ********** LogicalOr **********
++PrimitivePtr MindIR_LogicalOr_CreatePrimitive();
++
++// ********** SparseToDense **********
++PrimitivePtr MindIR_SparseToDense_CreatePrimitive();
++
++// ********** Minimum **********
++PrimitivePtr MindIR_Minimum_CreatePrimitive();
++
++// ********** SpaceToDepth **********
++PrimitivePtr MindIR_SpaceToDepth_CreatePrimitive(int64_t block_size, Format format);
++int64_t MindIR_SpaceToDepth_GetBlockSize(ConstPrimitivePtr primitive);
++void MindIR_SpaceToDepth_SetBlockSize(PrimitivePtr *primitive, int64_t block_size);
++Format MindIR_SpaceToDepth_GetFormat(ConstPrimitivePtr primitive);
++void MindIR_SpaceToDepth_SetFormat(PrimitivePtr *primitive, Format format);
++
++// ********** Round **********
++PrimitivePtr MindIR_Round_CreatePrimitive();
++
++// ********** Ceil **********
++PrimitivePtr MindIR_Ceil_CreatePrimitive();
++
++// ********** Floor **********
++PrimitivePtr MindIR_Floor_CreatePrimitive();
++
++// ********** L2NormalizeFusion **********
++PrimitivePtr MindIR_L2NormalizeFusion_CreatePrimitive(const std::vector<int64_t>& axis, float epsilon, ActivationType activation_type);
++std::vector<int64_t> MindIR_L2NormalizeFusion_GetAxis(ConstPrimitivePtr primitive);
++void MindIR_L2NormalizeFusion_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t>& axis);
++float MindIR_L2NormalizeFusion_GetEpsilon(ConstPrimitivePtr primitive);
++void MindIR_L2NormalizeFusion_SetEpsilon(PrimitivePtr *primitive, float epsilon);
++ActivationType MindIR_L2NormalizeFusion_GetActivationType(ConstPrimitivePtr primitive);
++void MindIR_L2NormalizeFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type);
++
++// ********** LRN **********
++PrimitivePtr MindIR_LRN_CreatePrimitive(int64_t depth_radius, float bias, float alpha, float beta, std::string norm_region);
++int64_t MindIR_LRN_GetDepthRadius(ConstPrimitivePtr primitive);
++void MindIR_LRN_SetDepthRadius(PrimitivePtr *primitive, int64_t depth_radius);
++float MindIR_LRN_GetBias(ConstPrimitivePtr primitive);
++void MindIR_LRN_SetBias(PrimitivePtr *primitive, float bias);
++float MindIR_LRN_GetAlpha(ConstPrimitivePtr primitive);
++void MindIR_LRN_SetAlpha(PrimitivePtr *primitive, float alpha);
++float MindIR_LRN_GetBeta(ConstPrimitivePtr primitive);
++void MindIR_LRN_SetBeta(PrimitivePtr *primitive, float beta);
++std::string MindIR_LRN_GetNormRegion(ConstPrimitivePtr primitive);
++void MindIR_LRN_SetNormRegion(PrimitivePtr *primitive, std::string norm_region);
++
++// ********** LogSoftmax **********
++PrimitivePtr MindIR_LogSoftmax_CreatePrimitive(int64_t axis);
++int64_t MindIR_LogSoftmax_GetAxis(ConstPrimitivePtr primitive);
++void MindIR_LogSoftmax_SetAxis(PrimitivePtr *primitive, int64_t axis);
++
++// ********** Crop **********
++PrimitivePtr MindIR_Crop_CreatePrimitive(int64_t axis, const std::vector<int64_t>& offsets);
++int64_t MindIR_Crop_GetAxis(ConstPrimitivePtr primitive);
++void MindIR_Crop_SetAxis(PrimitivePtr *primitive, int64_t axis);
++std::vector<int64_t> MindIR_Crop_GetOffsets(ConstPrimitivePtr primitive);
++void MindIR_Crop_SetOffsets(PrimitivePtr *primitive, const std::vector<int64_t>& offsets);
++
++// ********** DetectionPostProcess **********
++PrimitivePtr MindIR_DetectionPostProcess_CreatePrimitive(Format format, int64_t input_size, const std::vector<float>& scale, float nms_iou_threshold, float nms_score_threshold, int64_t max_detections, int64_t detections_per_class, int64_t max_classes_per_detection, int64_t num_classes, bool use_regular_nms, bool out_quantized);
++Format MindIR_DetectionPostProcess_GetFormat(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetFormat(PrimitivePtr *primitive, Format format);
++int64_t MindIR_DetectionPostProcess_GetInputSize(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetInputSize(PrimitivePtr *primitive, int64_t input_size);
++std::vector<float> MindIR_DetectionPostProcess_GetScale(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetScale(PrimitivePtr *primitive, const std::vector<float>& scale);
++float MindIR_DetectionPostProcess_GetNmsIouThreshold(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetNmsIouThreshold(PrimitivePtr *primitive, float nms_iou_threshold);
++float MindIR_DetectionPostProcess_GetNmsScoreThreshold(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetNmsScoreThreshold(PrimitivePtr *primitive, float nms_score_threshold);
++int64_t MindIR_DetectionPostProcess_GetMaxDetections(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetMaxDetections(PrimitivePtr *primitive, int64_t max_detections);
++int64_t MindIR_DetectionPostProcess_GetDetectionsPerClass(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetDetectionsPerClass(PrimitivePtr *primitive, int64_t detections_per_class);
++int64_t MindIR_DetectionPostProcess_GetMaxClassesPerDetection(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetMaxClassesPerDetection(PrimitivePtr *primitive, int64_t max_classes_per_detection);
++int64_t MindIR_DetectionPostProcess_GetNumClasses(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetNumClasses(PrimitivePtr *primitive, int64_t num_classes);
++bool MindIR_DetectionPostProcess_GetUseRegularNms(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetUseRegularNms(PrimitivePtr *primitive, bool use_regular_nms);
++bool MindIR_DetectionPostProcess_GetOutQuantized(ConstPrimitivePtr primitive);
++void MindIR_DetectionPostProcess_SetOutQuantized(PrimitivePtr *primitive, bool out_quantized);
++
++// ********** ScatterNd **********
++PrimitivePtr MindIR_ScatterNd_CreatePrimitive();
++
++// ********** Rank **********
++PrimitivePtr MindIR_Rank_CreatePrimitive();
++
++// ********** GatherNd **********
++PrimitivePtr MindIR_GatherNd_CreatePrimitive();
++
  // ********** Custom **********
  std::vector<const mindspore::schema::Attribute *> MindIR_Custom_GetAttr(ConstPrimitivePtr primitive);
  std::string MindIR_Attribute_GetName(const mindspore::schema::Attribute &attr);
@@ -328,38 +767,46 @@ index 836bc8af..c1ac89bf 100644
  std::vector<uint8_t> MindIR_Tensor_GetData(ConstTensorPtr tensor);
  std::vector<QuantParam> MindIR_Tensor_GetQuantParams(ConstTensorPtr tensor);
 diff --git a/mindspore/lite/mindir/include/mindir_types.h b/mindspore/lite/mindir/include/mindir_types.h
-index ad272f8e..3ee6aca1 100644
+index ad272f8e..5744441a 100644
 --- a/mindspore/lite/mindir/include/mindir_types.h
 +++ b/mindspore/lite/mindir/include/mindir_types.h
-@@ -53,34 +53,51 @@ enum QuantType : int8_t {
+@@ -53,46 +53,88 @@ enum QuantType : int8_t {
  
  enum NodeType : uint32_t {
    NODE_TYPE_NONE = 0,
 +  NODE_TYPE_ABS = 1,
    NODE_TYPE_ACTIVATION = 2,
    NODE_TYPE_ADD_FUSION = 5,
++  NODE_TYPE_ALL = 9,
    NODE_TYPE_ARGMAX_FUSION = 11,
++  NODE_TYPE_ASSERT = 13,
    NODE_TYPE_AVG_POOL_FUSION = 17,
    NODE_TYPE_BATCH_TO_SPACE_ND = 22,
    NODE_TYPE_BIAS_ADD = 23,
 +  NODE_TYPE_BROADCAST_TO = 27,
    NODE_TYPE_CAST = 28,
++  NODE_TYPE_CEIL = 29,
 +  NODE_TYPE_CLIP = 30,
    NODE_TYPE_CONCAT = 31,
    NODE_TYPE_CONV2D_FUSION = 35,
    NODE_TYPE_CONV2D_TRANSPOSE_FUSION = 36,
++  NODE_TYPE_COS = 37,
 +  NODE_TYPE_CONSTANT_OF_SHAPE = 38,
++  NODE_TYPE_CROP = 39,
 +  NODE_TYPE_DEPTH_TO_SPACE = 45,
++  NODE_TYPE_DETECTION_POST_PROCESS = 46,
    NODE_TYPE_DIV_FUSION = 47,
    NODE_TYPE_ELTWISE = 52,
 +  NODE_TYPE_EQUAL = 53,
 +  NODE_TYPE_EXPFUSION = 55,
    NODE_TYPE_EXPAND_DIMS = 56,
 +  NODE_TYPE_FLATTEN = 61,
++  NODE_TYPE_FLOOR = 63,
    NODE_TYPE_FILL = 66,
    NODE_TYPE_FULL_CONNECTION = 67,
    NODE_TYPE_FUSED_BATCH_NORM = 68,
    NODE_TYPE_GATHER = 69,
++  NODE_TYPE_GATHER_ND = 70,
 +  NODE_TYPE_GREATER = 71,
 +  NODE_TYPE_GREATER_EQUAL = 72,
 +  NODE_TYPE_INSTANCE_NORM = 74,
@@ -367,23 +814,44 @@ index ad272f8e..3ee6aca1 100644
 +  NODE_TYPE_LEAKY_RELU = 76,
 +  NODE_TYPE_LESS = 77,
    NODE_TYPE_LESS_EQUAL = 78,
++  NODE_TYPE_LOG = 79,
++  NODE_TYPE_LOGICAL_AND = 81,
++  NODE_TYPE_LOGICAL_NOT = 82,
++  NODE_TYPE_LOGICAL_OR = 83,
++  NODE_TYPE_L_R_N = 85,
 +  NODE_TYPE_LSTM = 87,
++  NODE_TYPE_L2_NORMALIZE_FUSION = 88,
    NODE_TYPE_MATMUL_FUSION = 89,
    NODE_TYPE_MAXIMUM = 90,
    NODE_TYPE_MAX_POOL_FUSION = 92,
++  NODE_TYPE_MINIMUM = 96,
++  NODE_TYPE_MOD = 98,
    NODE_TYPE_MUL_FUSION = 99,
++  NODE_TYPE_NEG = 101,
 +  NODE_TYPE_NOT_EQUAL = 103,
    NODE_TYPE_ONE_HOT = 105,
    NODE_TYPE_PAD_FUSION = 107,
    NODE_TYPE_POW_FUSION = 110,
    NODE_TYPE_PRELU_FUSION = 112,
    NODE_TYPE_QUANT_DTYPE_CAST = 113,
++  NODE_TYPE_RANK = 114,
 +  NODE_TYPE_RANGE = 115,
++  NODE_TYPE_RECIPROCAL = 116,
 +  NODE_TYPE_REAL_DIV = 117,
    NODE_TYPE_REDUCE_FUSION = 118,
    NODE_TYPE_RESHAPE = 119,
    NODE_TYPE_RESIZE = 120,
-@@ -93,6 +110,7 @@ enum NodeType : uint32_t {
++  NODE_TYPE_ROUND = 125,
+   NODE_TYPE_RSQRT = 126,
+   NODE_TYPE_SCALE_FUSION = 127,
++  NODE_TYPE_SCATTER_ND = 128,
+   NODE_TYPE_SHAPE = 130,
++  NODE_TYPE_SIN = 133,
+   NODE_TYPE_SLICE_FUSION = 135,
+   NODE_TYPE_SOFTMAX = 138,
+   NODE_TYPE_SPACE_TO_BATCH_ND = 141,
++  NODE_TYPE_SPACE_TO_DEPTH = 142,
++  NODE_TYPE_SPARSE_TO_DENSE = 144,
    NODE_TYPE_SPLIT = 145,
    NODE_TYPE_SQRT = 146,
    NODE_TYPE_SQUEEZE = 147,
@@ -391,21 +859,92 @@ index ad272f8e..3ee6aca1 100644
    NODE_TYPE_SQUARED_DIFFERENCE = 149,
    NODE_TYPE_STACK = 150,
    NODE_TYPE_STRIDED_SLICE = 151,
-@@ -101,6 +119,9 @@ enum NodeType : uint32_t {
+@@ -101,6 +143,11 @@ enum NodeType : uint32_t {
    NODE_TYPE_TOPK_FUSION = 161,
    NODE_TYPE_TRANSPOSE = 162,
    NODE_TYPE_UNSQUEEZE = 165,
 +  NODE_TYPE_UNSTACK = 166,
++  NODE_TYPE_WHERE = 168,
 +  NODE_TYPE_SELECT = 170,
 +  NODE_TYPE_ERF = 178,
++  NODE_TYPE_LOG_SOFTMAX = 189,
    NODE_TYPE_CUSTOM = 191,
  };
  
+@@ -158,6 +205,7 @@ enum ReduceMode : int8_t {
+   REDUCE_MODE_SUM_SQUARE = 5,
+   REDUCE_MODE_ASUM = 6,
+   REDUCE_MODE_ALL = 7,
++  REDUCE_MODE_L2 = 8,
+ };
+ 
+ enum PoolMode : int8_t {
 diff --git a/mindspore/lite/mindir/src/mindir.cc b/mindspore/lite/mindir/src/mindir.cc
-index 374bbef5..36056c59 100644
+index 374bbef5..7041498a 100644
 --- a/mindspore/lite/mindir/src/mindir.cc
 +++ b/mindspore/lite/mindir/src/mindir.cc
-@@ -4339,6 +4339,1185 @@ void MindIR_Unsqueeze_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t
+@@ -2896,9 +2896,9 @@ void MindIR_PReLUFusion_SetChannelShared(PrimitivePtr *primitive, bool channel_s
+ }
+ 
+ // ********** QuantDTypeCast **********
+-PrimitivePtr MindIR_QuantDTypeCast_CreatePrimitive(int64_t src_t, int64_t dst_t) {
++PrimitivePtr MindIR_QuantDTypeCast_CreatePrimitive(int64_t src_t, int64_t dst_t, int64_t axis) {
+   flatbuffers::FlatBufferBuilder fbb;
+-  auto ops_offset = schema::CreateQuantDTypeCast(fbb, src_t, dst_t);
++  auto ops_offset = schema::CreateQuantDTypeCast(fbb, src_t, dst_t, axis);
+   auto prim_offset =
+     schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_QUANT_DTYPE_CAST), ops_offset.o);
+   fbb.Finish(prim_offset);
+@@ -2926,7 +2926,7 @@ void MindIR_QuantDTypeCast_SetSrcT(PrimitivePtr *primitive, int64_t src_t) {
+     auto value = prim->value_as_QuantDTypeCast();
+     if (prim != nullptr && value != nullptr) {
+       flatbuffers::FlatBufferBuilder fbb;
+-      auto ops_offset = schema::CreateQuantDTypeCast(fbb, src_t, value->dst_t());
++      auto ops_offset = schema::CreateQuantDTypeCast(fbb, src_t, value->dst_t(), value->axis());
+       auto prim_offset =
+         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_QUANT_DTYPE_CAST), ops_offset.o);
+       fbb.Finish(prim_offset);
+@@ -2956,7 +2956,38 @@ void MindIR_QuantDTypeCast_SetDstT(PrimitivePtr *primitive, int64_t dst_t) {
+     auto value = prim->value_as_QuantDTypeCast();
+     if (prim != nullptr && value != nullptr) {
+       flatbuffers::FlatBufferBuilder fbb;
+-      auto ops_offset = schema::CreateQuantDTypeCast(fbb, value->src_t(), dst_t);
++      auto ops_offset = schema::CreateQuantDTypeCast(fbb, value->src_t(), dst_t, value->axis());
++      auto prim_offset =
++        schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_QUANT_DTYPE_CAST), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      *primitive = ret_value;
++    }
++  }
++}
++
++int64_t MindIR_QuantDTypeCast_GetAxis(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_QuantDTypeCast();
++    if (prim != nullptr && value != nullptr) {
++      return value->axis();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_QuantDTypeCast_SetAxis(PrimitivePtr *primitive, int64_t axis) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_QuantDTypeCast();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateQuantDTypeCast(fbb, value->src_t(), value->dst_t(), axis);
+       auto prim_offset =
+         schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_QUANT_DTYPE_CAST), ops_offset.o);
+       fbb.Finish(prim_offset);
+@@ -4339,6 +4370,2293 @@ void MindIR_Unsqueeze_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t
    }
  }
  
@@ -1586,6 +2125,1114 @@ index 374bbef5..36056c59 100644
 +      *primitive = ret_value;
 +    }
 +  }
++}
++
++// ********** All **********
++PrimitivePtr MindIR_All_CreatePrimitive(int64_t keep_dims) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateAll(fbb, keep_dims);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ALL), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++int64_t MindIR_All_GetKeepDims(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_All();
++    if (prim != nullptr && value != nullptr) {
++      return value->keep_dims();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_All_SetKeepDims(PrimitivePtr *primitive, int64_t keep_dims) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_All();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateAll(fbb, keep_dims);
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ALL), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      *primitive = ret_value;
++    }
++  }
++}
++
++// ********** Assert **********
++PrimitivePtr MindIR_Assert_CreatePrimitive(int64_t summarize) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateAssert(fbb, summarize);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ASSERT), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++int64_t MindIR_Assert_GetSummarize(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_Assert();
++    if (prim != nullptr && value != nullptr) {
++      return value->summarize();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_Assert_SetSummarize(PrimitivePtr *primitive, int64_t summarize) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_Assert();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateAssert(fbb, summarize);
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ASSERT), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, prim);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      *primitive = ret_value;
++    }
++  }
++}
++
++// ********** LogicalAnd **********
++PrimitivePtr MindIR_LogicalAnd_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateLogicalAnd(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LOGICAL_AND), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** LogicalNot **********
++PrimitivePtr MindIR_LogicalNot_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateLogicalNot(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LOGICAL_NOT), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Cos **********
++PrimitivePtr MindIR_Cos_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateCos(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_COS), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Mod **********
++PrimitivePtr MindIR_Mod_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateMod(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MOD), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Neg **********
++PrimitivePtr MindIR_Neg_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateNeg(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_NEG), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Reciprocal **********
++PrimitivePtr MindIR_Reciprocal_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateReciprocal(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RECIPROCAL), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Sin **********
++PrimitivePtr MindIR_Sin_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateSin(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SIN), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Where **********
++PrimitivePtr MindIR_Where_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateWhere(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_WHERE), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Log **********
++PrimitivePtr MindIR_Log_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateLog(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LOG), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** LogicalOr **********
++PrimitivePtr MindIR_LogicalOr_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateLogicalOr(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LOGICAL_OR), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** SparseToDense **********
++PrimitivePtr MindIR_SparseToDense_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateSparseToDense(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPARSE_TO_DENSE), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Minimum **********
++PrimitivePtr MindIR_Minimum_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateMinimum(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_MINIMUM), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** SpaceToDepth **********
++PrimitivePtr MindIR_SpaceToDepth_CreatePrimitive(int64_t block_size, Format format) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateSpaceToDepth(fbb, block_size, static_cast<schema::Format>(format));
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPACE_TO_DEPTH), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++int64_t MindIR_SpaceToDepth_GetBlockSize(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_SpaceToDepth();
++    if (prim != nullptr && value != nullptr) {
++      return value->block_size();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_SpaceToDepth_SetBlockSize(PrimitivePtr *primitive, int64_t block_size) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_SpaceToDepth();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateSpaceToDepth(fbb, block_size, static_cast<schema::Format>(value->format()));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPACE_TO_DEPTH), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++Format MindIR_SpaceToDepth_GetFormat(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_SpaceToDepth();
++    if (prim != nullptr && value != nullptr) {
++      return static_cast<Format>(value->format());
++    } else {
++      Format en = static_cast<Format>(0);
++      return en;
++    }
++  } else {
++    Format en = static_cast<Format>(0);
++    return en;
++  }
++}
++
++void MindIR_SpaceToDepth_SetFormat(PrimitivePtr *primitive, Format format) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_SpaceToDepth();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateSpaceToDepth(fbb, value->block_size(), static_cast<schema::Format>(format));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SPACE_TO_DEPTH), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++// ********** Round **********
++PrimitivePtr MindIR_Round_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateRound(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_ROUND), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Ceil **********
++PrimitivePtr MindIR_Ceil_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateCeil(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CEIL), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Floor **********
++PrimitivePtr MindIR_Floor_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateFloor(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_FLOOR), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** L2NormalizeFusion **********
++PrimitivePtr MindIR_L2NormalizeFusion_CreatePrimitive(const std::vector<int64_t> &axis, float epsilon, ActivationType activation_type) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateL2NormalizeFusion(fbb, fbb.CreateVector(axis.data(), axis.size()), epsilon, static_cast<schema::ActivationType>(activation_type));
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_L2_NORMALIZE_FUSION), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++std::vector<int64_t> MindIR_L2NormalizeFusion_GetAxis(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_L2NormalizeFusion();
++    if (prim != nullptr && value != nullptr) {
++      std::vector<int64_t> result;
++      auto src = value->axis();
++      result.resize(src->size());
++      std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
++      return result;
++    } else {
++      return {};
++    }
++  } else {
++    return {};
++  }
++}
++
++void MindIR_L2NormalizeFusion_SetAxis(PrimitivePtr *primitive, const std::vector<int64_t> &axis) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_L2NormalizeFusion();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateL2NormalizeFusion(fbb, fbb.CreateVector(axis.data(), axis.size()), value->epsilon(), static_cast<schema::ActivationType>(value->activation_type()));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_L2_NORMALIZE_FUSION), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++float MindIR_L2NormalizeFusion_GetEpsilon(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_L2NormalizeFusion();
++    if (prim != nullptr && value != nullptr) {
++      return value->epsilon();
++    } else {
++      return .0;
++    }
++  } else {
++    return .0;
++  }
++}
++
++void MindIR_L2NormalizeFusion_SetEpsilon(PrimitivePtr *primitive, float epsilon) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_L2NormalizeFusion();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateL2NormalizeFusion(fbb, fbb.CreateVector(value->axis()->data(), value->axis()->size()), epsilon, static_cast<schema::ActivationType>(value->activation_type()));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_L2_NORMALIZE_FUSION), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++ActivationType MindIR_L2NormalizeFusion_GetActivationType(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_L2NormalizeFusion();
++    if (prim != nullptr && value != nullptr) {
++      return static_cast<ActivationType>(value->activation_type());
++    } else {
++      ActivationType en = static_cast<ActivationType>(0);
++      return en;
++    }
++  } else {
++    ActivationType en = static_cast<ActivationType>(0);
++    return en;
++  }
++}
++
++void MindIR_L2NormalizeFusion_SetActivationType(PrimitivePtr *primitive, ActivationType activation_type) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_L2NormalizeFusion();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateL2NormalizeFusion(fbb, fbb.CreateVector(value->axis()->data(), value->axis()->size()), value->epsilon(), static_cast<schema::ActivationType>(activation_type));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_L2_NORMALIZE_FUSION), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++// ********** LRN **********
++PrimitivePtr MindIR_LRN_CreatePrimitive(int64_t depth_radius, float bias, float alpha, float beta, std::string norm_region) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateLRN(fbb, depth_radius, bias, alpha, beta, fbb.CreateString(norm_region));
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_L_R_N), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++int64_t MindIR_LRN_GetDepthRadius(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_LRN();
++    if (prim != nullptr && value != nullptr) {
++      return value->depth_radius();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_LRN_SetDepthRadius(PrimitivePtr *primitive, int64_t depth_radius) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_LRN();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateLRN(fbb, depth_radius, value->bias(), value->alpha(), value->beta(), fbb.CreateString(std::string(value->norm_region()->c_str(), value->norm_region()->size())));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_L_R_N), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++float MindIR_LRN_GetBias(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_LRN();
++    if (prim != nullptr && value != nullptr) {
++      return value->bias();
++    } else {
++      return .0;
++    }
++  } else {
++    return .0;
++  }
++}
++
++void MindIR_LRN_SetBias(PrimitivePtr *primitive, float bias) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_LRN();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateLRN(fbb, value->depth_radius(), bias, value->alpha(), value->beta(), fbb.CreateString(std::string(value->norm_region()->c_str(), value->norm_region()->size())));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_L_R_N), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++float MindIR_LRN_GetAlpha(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_LRN();
++    if (prim != nullptr && value != nullptr) {
++      return value->alpha();
++    } else {
++      return .0;
++    }
++  } else {
++    return .0;
++  }
++}
++
++void MindIR_LRN_SetAlpha(PrimitivePtr *primitive, float alpha) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_LRN();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateLRN(fbb, value->depth_radius(), value->bias(), alpha, value->beta(), fbb.CreateString(std::string(value->norm_region()->c_str(), value->norm_region()->size())));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_L_R_N), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++float MindIR_LRN_GetBeta(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_LRN();
++    if (prim != nullptr && value != nullptr) {
++      return value->beta();
++    } else {
++      return .0;
++    }
++  } else {
++    return .0;
++  }
++}
++
++void MindIR_LRN_SetBeta(PrimitivePtr *primitive, float beta) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_LRN();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateLRN(fbb, value->depth_radius(), value->bias(), value->alpha(), beta, fbb.CreateString(std::string(value->norm_region()->c_str(), value->norm_region()->size())));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_L_R_N), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++std::string MindIR_LRN_GetNormRegion(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_LRN();
++    if (prim != nullptr && value != nullptr) {
++      return std::string(value->norm_region()->c_str(),value->norm_region()->size());
++    } else {
++      return nullptr;
++    }
++  } else {
++    return nullptr;
++  }
++}
++
++void MindIR_LRN_SetNormRegion(PrimitivePtr *primitive, std::string norm_region) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_LRN();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateLRN(fbb, value->depth_radius(), value->bias(), value->alpha(), value->beta(), fbb.CreateString(norm_region));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_L_R_N), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++// ********** LogSoftmax **********
++PrimitivePtr MindIR_LogSoftmax_CreatePrimitive(int64_t axis) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateLogSoftmax(fbb, axis);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LOG_SOFTMAX), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++int64_t MindIR_LogSoftmax_GetAxis(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_LogSoftmax();
++    if (prim != nullptr && value != nullptr) {
++      return value->axis();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_LogSoftmax_SetAxis(PrimitivePtr *primitive, int64_t axis) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_LogSoftmax();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateLogSoftmax(fbb, axis);
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_LOG_SOFTMAX), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++// ********** Crop **********
++PrimitivePtr MindIR_Crop_CreatePrimitive(int64_t axis, const std::vector<int64_t> &offsets) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateCrop(fbb, axis, fbb.CreateVector(offsets.data(), offsets.size()));
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CROP), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++int64_t MindIR_Crop_GetAxis(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_Crop();
++    if (prim != nullptr && value != nullptr) {
++      return value->axis();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_Crop_SetAxis(PrimitivePtr *primitive, int64_t axis) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_Crop();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateCrop(fbb, axis, fbb.CreateVector(value->offsets()->data(), value->offsets()->size()));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CROP), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++std::vector<int64_t> MindIR_Crop_GetOffsets(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_Crop();
++    if (prim != nullptr && value != nullptr) {
++      std::vector<int64_t> result;
++      auto src = value->offsets();
++      result.resize(src->size());
++      std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
++      return result;
++    } else {
++      return {};
++    }
++  } else {
++    return {};
++  }
++}
++
++void MindIR_Crop_SetOffsets(PrimitivePtr *primitive, const std::vector<int64_t> &offsets) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_Crop();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateCrop(fbb, value->axis(), fbb.CreateVector(offsets.data(), offsets.size()));
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_CROP), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++// ********** DetectionPostProcess **********
++PrimitivePtr MindIR_DetectionPostProcess_CreatePrimitive(Format format, int64_t input_size, const std::vector<float> &scale, float nms_iou_threshold, float nms_score_threshold, int64_t max_detections, int64_t detections_per_class, int64_t max_classes_per_detection, int64_t num_classes, bool use_regular_nms, bool out_quantized) {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(format), input_size, fbb.CreateVector(scale.data(), scale.size()), nms_iou_threshold, nms_score_threshold, max_detections, detections_per_class, max_classes_per_detection, num_classes, use_regular_nms, out_quantized);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++Format MindIR_DetectionPostProcess_GetFormat(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      return static_cast<Format>(value->format());
++    } else {
++      Format en = static_cast<Format>(0);
++      return en;
++    }
++  } else {
++    Format en = static_cast<Format>(0);
++    return en;
++  }
++}
++
++void MindIR_DetectionPostProcess_SetFormat(PrimitivePtr *primitive, Format format) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(format), value->input_size(), fbb.CreateVector(value->scale()->data(), value->scale()->size()), value->nms_iou_threshold(), value->nms_score_threshold(), value->max_detections(), value->detections_per_class(), value->max_classes_per_detection(), value->num_classes(), value->use_regular_nms(), value->out_quantized());
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++int64_t MindIR_DetectionPostProcess_GetInputSize(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      return value->input_size();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_DetectionPostProcess_SetInputSize(PrimitivePtr *primitive, int64_t input_size) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(value->format()), input_size, fbb.CreateVector(value->scale()->data(), value->scale()->size()), value->nms_iou_threshold(), value->nms_score_threshold(), value->max_detections(), value->detections_per_class(), value->max_classes_per_detection(), value->num_classes(), value->use_regular_nms(), value->out_quantized());
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++std::vector<float> MindIR_DetectionPostProcess_GetScale(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      std::vector<float> result;
++      auto src = value->scale();
++      result.resize(src->size());
++      std::transform(src->begin(), src->end(), result.begin(), [](float item) { return item; });
++      return result;
++    } else {
++      return {};
++    }
++  } else {
++    return {};
++  }
++}
++
++void MindIR_DetectionPostProcess_SetScale(PrimitivePtr *primitive, const std::vector<float> &scale) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(value->format()), value->input_size(), fbb.CreateVector(scale.data(), scale.size()), value->nms_iou_threshold(), value->nms_score_threshold(), value->max_detections(), value->detections_per_class(), value->max_classes_per_detection(), value->num_classes(), value->use_regular_nms(), value->out_quantized());
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++float MindIR_DetectionPostProcess_GetNmsIouThreshold(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      return value->nms_iou_threshold();
++    } else {
++      return .0;
++    }
++  } else {
++    return .0;
++  }
++}
++
++void MindIR_DetectionPostProcess_SetNmsIouThreshold(PrimitivePtr *primitive, float nms_iou_threshold) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(value->format()), value->input_size(), fbb.CreateVector(value->scale()->data(), value->scale()->size()), nms_iou_threshold, value->nms_score_threshold(), value->max_detections(), value->detections_per_class(), value->max_classes_per_detection(), value->num_classes(), value->use_regular_nms(), value->out_quantized());
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++float MindIR_DetectionPostProcess_GetNmsScoreThreshold(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      return value->nms_score_threshold();
++    } else {
++      return .0;
++    }
++  } else {
++    return .0;
++  }
++}
++
++void MindIR_DetectionPostProcess_SetNmsScoreThreshold(PrimitivePtr *primitive, float nms_score_threshold) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(value->format()), value->input_size(), fbb.CreateVector(value->scale()->data(), value->scale()->size()), value->nms_iou_threshold(), nms_score_threshold, value->max_detections(), value->detections_per_class(), value->max_classes_per_detection(), value->num_classes(), value->use_regular_nms(), value->out_quantized());
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++int64_t MindIR_DetectionPostProcess_GetMaxDetections(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      return value->max_detections();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_DetectionPostProcess_SetMaxDetections(PrimitivePtr *primitive, int64_t max_detections) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(value->format()), value->input_size(), fbb.CreateVector(value->scale()->data(), value->scale()->size()), value->nms_iou_threshold(), value->nms_score_threshold(), max_detections, value->detections_per_class(), value->max_classes_per_detection(), value->num_classes(), value->use_regular_nms(), value->out_quantized());
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++int64_t MindIR_DetectionPostProcess_GetDetectionsPerClass(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      return value->detections_per_class();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_DetectionPostProcess_SetDetectionsPerClass(PrimitivePtr *primitive, int64_t detections_per_class) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(value->format()), value->input_size(), fbb.CreateVector(value->scale()->data(), value->scale()->size()), value->nms_iou_threshold(), value->nms_score_threshold(), value->max_detections(), detections_per_class, value->max_classes_per_detection(), value->num_classes(), value->use_regular_nms(), value->out_quantized());
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++int64_t MindIR_DetectionPostProcess_GetMaxClassesPerDetection(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      return value->max_classes_per_detection();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_DetectionPostProcess_SetMaxClassesPerDetection(PrimitivePtr *primitive, int64_t max_classes_per_detection) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(value->format()), value->input_size(), fbb.CreateVector(value->scale()->data(), value->scale()->size()), value->nms_iou_threshold(), value->nms_score_threshold(), value->max_detections(), value->detections_per_class(), max_classes_per_detection, value->num_classes(), value->use_regular_nms(), value->out_quantized());
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++int64_t MindIR_DetectionPostProcess_GetNumClasses(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      return value->num_classes();
++    } else {
++      return 0;
++    }
++  } else {
++    return 0;
++  }
++}
++
++void MindIR_DetectionPostProcess_SetNumClasses(PrimitivePtr *primitive, int64_t num_classes) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(value->format()), value->input_size(), fbb.CreateVector(value->scale()->data(), value->scale()->size()), value->nms_iou_threshold(), value->nms_score_threshold(), value->max_detections(), value->detections_per_class(), value->max_classes_per_detection(), num_classes, value->use_regular_nms(), value->out_quantized());
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++bool MindIR_DetectionPostProcess_GetUseRegularNms(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      return value->use_regular_nms();
++    } else {
++      return false;
++    }
++  } else {
++    return false;
++  }
++}
++
++void MindIR_DetectionPostProcess_SetUseRegularNms(PrimitivePtr *primitive, bool use_regular_nms) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(value->format()), value->input_size(), fbb.CreateVector(value->scale()->data(), value->scale()->size()), value->nms_iou_threshold(), value->nms_score_threshold(), value->max_detections(), value->detections_per_class(), value->max_classes_per_detection(), value->num_classes(), use_regular_nms, value->out_quantized());
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++bool MindIR_DetectionPostProcess_GetOutQuantized(ConstPrimitivePtr primitive) {
++  if (primitive != nullptr) {
++    auto prim = static_cast<const schema::Primitive *>(primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      return value->out_quantized();
++    } else {
++      return false;
++    }
++  } else {
++    return false;
++  }
++}
++
++void MindIR_DetectionPostProcess_SetOutQuantized(PrimitivePtr *primitive, bool out_quantized) {
++  if (primitive != nullptr && *primitive != nullptr) {
++    auto prim = static_cast<schema::Primitive *>(*primitive);
++    auto value = prim->value_as_DetectionPostProcess();
++    if (prim != nullptr && value != nullptr) {
++      flatbuffers::FlatBufferBuilder fbb;
++      auto ops_offset = schema::CreateDetectionPostProcess(fbb, static_cast<schema::Format>(value->format()), value->input_size(), fbb.CreateVector(value->scale()->data(), value->scale()->size()), value->nms_iou_threshold(), value->nms_score_threshold(), value->max_detections(), value->detections_per_class(), value->max_classes_per_detection(), value->num_classes(), value->use_regular_nms(), out_quantized);
++      auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_DETECTION_POST_PROCESS), ops_offset.o);
++      fbb.Finish(prim_offset);
++      auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++      auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++      free(*primitive);
++      *primitive = ret_value;
++    }
++  }
++}
++
++// ********** ScatterNd **********
++PrimitivePtr MindIR_ScatterNd_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateScatterNd(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_SCATTER_ND), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** Rank **********
++PrimitivePtr MindIR_Rank_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateRank(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_RANK), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
++}
++
++// ********** GatherNd **********
++PrimitivePtr MindIR_GatherNd_CreatePrimitive() {
++  flatbuffers::FlatBufferBuilder fbb;
++  auto ops_offset = schema::CreateGatherNd(fbb);
++  auto prim_offset = schema::CreatePrimitive(fbb, static_cast<schema::PrimitiveType>(NODE_TYPE_GATHER_ND), ops_offset.o);
++  fbb.Finish(prim_offset);
++  auto new_addr = MindIRMemoryManager::GetInstance()->CreatePrimitiveFromBuilder(fbb, nullptr);
++  auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
++  return ret_value;
 +}
 +
  // ********** Custom **********
@@ -4696,11 +6343,373 @@ index 2db4ce8b..9575f8c2 100644
  std::vector<uint8_t> MindIR_Tensor_GetData(ConstTensorPtr tensor) {
    if (tensor != nullptr) {
      auto value = static_cast<const schema::Tensor *>(tensor);
+diff --git a/mindspore/lite/schema/inner/model_generated.h b/mindspore/lite/schema/inner/model_generated.h
+index 3c4eca79..0cde09b4 100644
+--- a/mindspore/lite/schema/inner/model_generated.h
++++ b/mindspore/lite/schema/inner/model_generated.h
+@@ -2668,7 +2668,9 @@ struct MetaGraphT : public flatbuffers::NativeTable {
+   std::vector<std::unique_ptr<mindspore::schema::TensorT>> allTensors{};
+   std::vector<std::unique_ptr<mindspore::schema::SubGraphT>> subGraph{};
+   bool obfuscate = false;
++  bool encrypt = false;
+   std::vector<uint8_t> obfMetaData{};
++  std::vector<uint8_t> decryptTable{};
+ };
+ 
+ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+@@ -2688,7 +2690,9 @@ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+     VT_ALLTENSORS = 18,
+     VT_SUBGRAPH = 20,
+     VT_OBFUSCATE = 22,
+-    VT_OBFMETADATA = 24
++    VT_ENCRYPT = 24,
++    VT_OBFMETADATA = 26,
++    VT_DECRYPTTABLE = 28
+   };
+   const flatbuffers::String *name() const {
+     return GetPointer<const flatbuffers::String *>(VT_NAME);
+@@ -2750,12 +2754,24 @@ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+   bool mutate_obfuscate(bool _obfuscate) {
+     return SetField<uint8_t>(VT_OBFUSCATE, static_cast<uint8_t>(_obfuscate), 0);
+   }
++  bool encrypt() const {
++    return GetField<uint8_t>(VT_ENCRYPT, 0) != 0;
++  }
++  bool mutate_encrypt(bool _encrypt) {
++    return SetField<uint8_t>(VT_ENCRYPT, static_cast<uint8_t>(_encrypt), 0);
++  }
+   const flatbuffers::Vector<uint8_t> *obfMetaData() const {
+     return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_OBFMETADATA);
+   }
+   flatbuffers::Vector<uint8_t> *mutable_obfMetaData() {
+     return GetPointer<flatbuffers::Vector<uint8_t> *>(VT_OBFMETADATA);
+   }
++  const flatbuffers::Vector<uint8_t> *decryptTable() const {
++    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_DECRYPTTABLE);
++  }
++  flatbuffers::Vector<uint8_t> *mutable_decryptTable() {
++    return GetPointer<flatbuffers::Vector<uint8_t> *>(VT_DECRYPTTABLE);
++  }
+   bool Verify(flatbuffers::Verifier &verifier) const {
+     return VerifyTableStart(verifier) &&
+            VerifyOffset(verifier, VT_NAME) &&
+@@ -2778,8 +2794,11 @@ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+            verifier.VerifyVector(subGraph()) &&
+            verifier.VerifyVectorOfTables(subGraph()) &&
+            VerifyField<uint8_t>(verifier, VT_OBFUSCATE) &&
++           VerifyField<uint8_t>(verifier, VT_ENCRYPT) &&
+            VerifyOffset(verifier, VT_OBFMETADATA) &&
+            verifier.VerifyVector(obfMetaData()) &&
++           VerifyOffset(verifier, VT_DECRYPTTABLE) &&
++           verifier.VerifyVector(decryptTable()) &&
+            verifier.EndTable();
+   }
+   MetaGraphT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
+@@ -2821,9 +2840,15 @@ struct MetaGraphBuilder {
+   void add_obfuscate(bool obfuscate) {
+     fbb_.AddElement<uint8_t>(MetaGraph::VT_OBFUSCATE, static_cast<uint8_t>(obfuscate), 0);
+   }
++  void add_encrypt(bool encrypt) {
++    fbb_.AddElement<uint8_t>(MetaGraph::VT_OBFUSCATE, static_cast<uint8_t>(encrypt), 0);
++  }
+   void add_obfMetaData(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> obfMetaData) {
+     fbb_.AddOffset(MetaGraph::VT_OBFMETADATA, obfMetaData);
+   }
++  void add_decryptTable(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> decryptTable) {
++    fbb_.AddOffset(MetaGraph::VT_DECRYPTTABLE, decryptTable);
++  }
+   explicit MetaGraphBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+         : fbb_(_fbb) {
+     start_ = fbb_.StartTable();
+@@ -2847,8 +2872,11 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraph(
+     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Tensor>>> allTensors = 0,
+     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::SubGraph>>> subGraph = 0,
+     bool obfuscate = false,
+-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> obfMetaData = 0) {
++    bool encrypt = false,
++    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> obfMetaData = 0,
++    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> decryptTable = 0) {
+   MetaGraphBuilder builder_(_fbb);
++  builder_.add_decryptTable(decryptTable);
+   builder_.add_obfMetaData(obfMetaData);
+   builder_.add_subGraph(subGraph);
+   builder_.add_allTensors(allTensors);
+@@ -2860,6 +2888,7 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraph(
+   builder_.add_version(version);
+   builder_.add_name(name);
+   builder_.add_obfuscate(obfuscate);
++  builder_.add_encrypt(encrypt);
+   return builder_.Finish();
+ }
+ 
+@@ -2875,7 +2904,9 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraphDirect(
+     const std::vector<flatbuffers::Offset<mindspore::schema::Tensor>> *allTensors = nullptr,
+     const std::vector<flatbuffers::Offset<mindspore::schema::SubGraph>> *subGraph = nullptr,
+     bool obfuscate = false,
+-    const std::vector<uint8_t> *obfMetaData = nullptr) {
++    bool encrypt = false,
++    const std::vector<uint8_t> *obfMetaData = nullptr,
++    const std::vector<uint8_t> *decryptTable = nullptr) {
+   auto name__ = name ? _fbb.CreateString(name) : 0;
+   auto version__ = version ? _fbb.CreateString(version) : 0;
+   auto inputIndex__ = inputIndex ? _fbb.CreateVector<uint32_t>(*inputIndex) : 0;
+@@ -2884,6 +2915,7 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraphDirect(
+   auto allTensors__ = allTensors ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::Tensor>>(*allTensors) : 0;
+   auto subGraph__ = subGraph ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::SubGraph>>(*subGraph) : 0;
+   auto obfMetaData__ = obfMetaData ? _fbb.CreateVector<uint8_t>(*obfMetaData) : 0;
++  auto decryptTable__ = decryptTable ? _fbb.CreateVector<uint8_t>(*decryptTable) : 0;
+   return mindspore::schema::CreateMetaGraph(
+       _fbb,
+       name__,
+@@ -2896,7 +2928,9 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraphDirect(
+       allTensors__,
+       subGraph__,
+       obfuscate,
+-      obfMetaData__);
++      encrypt,
++      obfMetaData__,
++      decryptTable__);
+ }
+ 
+ flatbuffers::Offset<MetaGraph> CreateMetaGraph(flatbuffers::FlatBufferBuilder &_fbb, const MetaGraphT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+@@ -3184,7 +3218,9 @@ inline void MetaGraph::UnPackTo(MetaGraphT *_o, const flatbuffers::resolver_func
+   { auto _e = allTensors(); if (_e) { _o->allTensors.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->allTensors[_i] = std::unique_ptr<mindspore::schema::TensorT>(_e->Get(_i)->UnPack(_resolver)); } } }
+   { auto _e = subGraph(); if (_e) { _o->subGraph.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->subGraph[_i] = std::unique_ptr<mindspore::schema::SubGraphT>(_e->Get(_i)->UnPack(_resolver)); } } }
+   { auto _e = obfuscate(); _o->obfuscate = _e; }
++  { auto _e = encrypt(); _o->encrypt = _e; }
+   { auto _e = obfMetaData(); if (_e) { _o->obfMetaData.resize(_e->size()); std::copy(_e->begin(), _e->end(), _o->obfMetaData.begin()); } }
++  { auto _e = decryptTable(); if (_e) { _o->decryptTable.resize(_e->size()); std::copy(_e->begin(), _e->end(), _o->decryptTable.begin()); } }
+ }
+ 
+ inline flatbuffers::Offset<MetaGraph> MetaGraph::Pack(flatbuffers::FlatBufferBuilder &_fbb, const MetaGraphT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+@@ -3205,7 +3241,9 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraph(flatbuffers::FlatBufferBui
+   auto _allTensors = _o->allTensors.size() ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::Tensor>> (_o->allTensors.size(), [](size_t i, _VectorArgs *__va) { return CreateTensor(*__va->__fbb, __va->__o->allTensors[i].get(), __va->__rehasher); }, &_va ) : 0;
+   auto _subGraph = _o->subGraph.size() ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::SubGraph>> (_o->subGraph.size(), [](size_t i, _VectorArgs *__va) { return CreateSubGraph(*__va->__fbb, __va->__o->subGraph[i].get(), __va->__rehasher); }, &_va ) : 0;
+   auto _obfuscate = _o->obfuscate;
++  auto _encrypt = _o->encrypt;
+   auto _obfMetaData = _o->obfMetaData.size() ? _fbb.CreateVector(_o->obfMetaData) : 0;
++  auto _decryptTable = _o->decryptTable.size() ? _fbb.CreateVector(_o->decryptTable) : 0;
+   return mindspore::schema::CreateMetaGraph(
+       _fbb,
+       _name,
+@@ -3218,7 +3256,9 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraph(flatbuffers::FlatBufferBui
+       _allTensors,
+       _subGraph,
+       _obfuscate,
+-      _obfMetaData);
++      _encrypt,
++      _obfMetaData,
++      _decryptTable);
+ }
+ 
+ inline const flatbuffers::TypeTable *WeightQuantCompressTypeTypeTable() {
+@@ -3381,6 +3421,8 @@ inline const flatbuffers::TypeTable *MetaGraphTypeTable() {
+     { flatbuffers::ET_SEQUENCE, 1, 1 },
+     { flatbuffers::ET_SEQUENCE, 1, 2 },
+     { flatbuffers::ET_BOOL, 0, -1 },
++    { flatbuffers::ET_BOOL, 0, -1 },
++    { flatbuffers::ET_UCHAR, 1, -1 },
+     { flatbuffers::ET_UCHAR, 1, -1 }
+   };
+   static const flatbuffers::TypeFunction type_refs[] = {
+diff --git a/mindspore/lite/schema/model.fbs b/mindspore/lite/schema/model.fbs
+index 0b03db5b..7a221bdc 100644
+--- a/mindspore/lite/schema/model.fbs
++++ b/mindspore/lite/schema/model.fbs
+@@ -116,7 +116,9 @@ table MetaGraph {
+     allTensors: [Tensor]; // weight + input + output
+     subGraph : [SubGraph];
+     obfuscate: bool = false;
++    encrypt : bool = false;
+     obfMetaData: [ubyte];
++    decryptTable: [ubyte];
+ }
+ 
+ root_type MetaGraph;
+diff --git a/mindspore/lite/schema/model_generated.h b/mindspore/lite/schema/model_generated.h
+index 741c43f5..2548bda0 100644
+--- a/mindspore/lite/schema/model_generated.h
++++ b/mindspore/lite/schema/model_generated.h
+@@ -2406,7 +2406,9 @@ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+     VT_ALLTENSORS = 18,
+     VT_SUBGRAPH = 20,
+     VT_OBFUSCATE = 22,
+-    VT_OBFMETADATA = 24
++    VT_ENCRYPT = 24,
++    VT_OBFMETADATA = 26,
++    VT_DECRYPTTABLE = 28
+   };
+   const flatbuffers::String *name() const {
+     return GetPointer<const flatbuffers::String *>(VT_NAME);
+@@ -2438,9 +2440,15 @@ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+   bool obfuscate() const {
+     return GetField<uint8_t>(VT_OBFUSCATE, 0) != 0;
+   }
++  bool encrypt() const {
++    return GetField<uint8_t>(VT_ENCRYPT, 0) != 0;
++  }
+   const flatbuffers::Vector<uint8_t> *obfMetaData() const {
+     return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_OBFMETADATA);
+   }
++  const flatbuffers::Vector<uint8_t> *decryptTable() const {
++    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_DECRYPTTABLE);
++  }
+   bool Verify(flatbuffers::Verifier &verifier) const {
+     return VerifyTableStart(verifier) &&
+            VerifyOffset(verifier, VT_NAME) &&
+@@ -2463,8 +2471,11 @@ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+            verifier.VerifyVector(subGraph()) &&
+            verifier.VerifyVectorOfTables(subGraph()) &&
+            VerifyField<uint8_t>(verifier, VT_OBFUSCATE) &&
++           VerifyField<uint8_t>(verifier, VT_ENCRYPT) &&
+            VerifyOffset(verifier, VT_OBFMETADATA) &&
+            verifier.VerifyVector(obfMetaData()) &&
++           VerifyOffset(verifier, VT_DECRYPTTABLE) &&
++           verifier.VerifyVector(decryptTable()) &&
+            verifier.EndTable();
+   }
+ };
+@@ -2503,9 +2514,15 @@ struct MetaGraphBuilder {
+   void add_obfuscate(bool obfuscate) {
+     fbb_.AddElement<uint8_t>(MetaGraph::VT_OBFUSCATE, static_cast<uint8_t>(obfuscate), 0);
+   }
++  void add_encrypt(bool encrypt) {
++    fbb_.AddElement<uint8_t>(MetaGraph::VT_ENCRYPT, static_cast<uint8_t>(encrypt), 0);
++  }
+   void add_obfMetaData(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> obfMetaData) {
+     fbb_.AddOffset(MetaGraph::VT_OBFMETADATA, obfMetaData);
+   }
++  void add_decryptTable(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> decryptTable) {
++    fbb_.AddOffset(MetaGraph::VT_DECRYPTTABLE, decryptTable);
++  }
+   explicit MetaGraphBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+         : fbb_(_fbb) {
+     start_ = fbb_.StartTable();
+@@ -2529,8 +2546,11 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraph(
+     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Tensor>>> allTensors = 0,
+     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::SubGraph>>> subGraph = 0,
+     bool obfuscate = false,
+-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> obfMetaData = 0) {
++    bool encrypt = false,
++    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> obfMetaData = 0,
++    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> decryptTable = 0) {
+   MetaGraphBuilder builder_(_fbb);
++  builder_.add_decryptTable(decryptTable);
+   builder_.add_obfMetaData(obfMetaData);
+   builder_.add_subGraph(subGraph);
+   builder_.add_allTensors(allTensors);
+@@ -2541,6 +2561,7 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraph(
+   builder_.add_fmkType(fmkType);
+   builder_.add_version(version);
+   builder_.add_name(name);
++  builder_.add_encrypt(encrypt);
+   builder_.add_obfuscate(obfuscate);
+   return builder_.Finish();
+ }
+@@ -2557,7 +2578,9 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraphDirect(
+     const std::vector<flatbuffers::Offset<mindspore::schema::Tensor>> *allTensors = nullptr,
+     const std::vector<flatbuffers::Offset<mindspore::schema::SubGraph>> *subGraph = nullptr,
+     bool obfuscate = false,
+-    const std::vector<uint8_t> *obfMetaData = nullptr) {
++    bool encrypt = false,
++    const std::vector<uint8_t> *obfMetaData = nullptr,
++    const std::vector<uint8_t> *decryptTable = nullptr) {
+   auto name__ = name ? _fbb.CreateString(name) : 0;
+   auto version__ = version ? _fbb.CreateString(version) : 0;
+   auto inputIndex__ = inputIndex ? _fbb.CreateVector<uint32_t>(*inputIndex) : 0;
+@@ -2566,6 +2589,7 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraphDirect(
+   auto allTensors__ = allTensors ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::Tensor>>(*allTensors) : 0;
+   auto subGraph__ = subGraph ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::SubGraph>>(*subGraph) : 0;
+   auto obfMetaData__ = obfMetaData ? _fbb.CreateVector<uint8_t>(*obfMetaData) : 0;
++  auto decryptTable__ = decryptTable ? _fbb.CreateVector<uint8_t>(*decryptTable) : 0;
+   return mindspore::schema::CreateMetaGraph(
+       _fbb,
+       name__,
+@@ -2578,7 +2602,9 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraphDirect(
+       allTensors__,
+       subGraph__,
+       obfuscate,
+-      obfMetaData__);
++      encrypt,
++      obfMetaData__,
++      decryptTable__);
+ }
+ 
+ inline const mindspore::schema::MetaGraph *GetMetaGraph(const void *buf) {
+diff --git a/mindspore/lite/src/CMakeLists.txt b/mindspore/lite/src/CMakeLists.txt
+index 8743684f..437ac2db 100644
+--- a/mindspore/lite/src/CMakeLists.txt
++++ b/mindspore/lite/src/CMakeLists.txt
+@@ -318,6 +318,7 @@ set(TRAIN_SRC
+         ${CMAKE_CURRENT_SOURCE_DIR}/train/optimizer/fusion/gru_fusion_pass.cc
+         ${CMAKE_CURRENT_SOURCE_DIR}/train/optimizer/fusion/matmul_activation_fusion_pass.cc
+         ${CMAKE_CURRENT_SOURCE_DIR}/train/optimizer/fusion/reshape_gather_reshape_fusion_pass.cc
++        ${CMAKE_CURRENT_SOURCE_DIR}/train/optimizer/fusion/remove_redundant_tensor.cc
+         ${CMAKE_CURRENT_SOURCE_DIR}/train/optimizer/fusion/matmul_matmul_add_fusion_pass.cc
+         ${CMAKE_CURRENT_SOURCE_DIR}/train/optimizer/fusion/matmul_add_fusion_pass.cc
+         ${TOOLS_DIR}/converter/optimizer.cc
+@@ -639,11 +640,6 @@ if(NOT WIN32)
+     target_link_libraries(mindspore-lite dl)
+ endif()
+ 
+-if(MSLITE_ENABLE_MODEL_OBF)
+-    target_link_libraries(mindspore-lite ${OBF_LIB_DIR}/libmsdeobfuscator-lite.so)
+-    target_link_libraries(mindspore-lite_static ${OBF_LIB_DIR}/libmsdeobfuscator-lite.so)
+-endif()
+-
+ if(MSLITE_ENABLE_KERNEL_EXECUTOR)
+     target_link_libraries(mindspore-lite mindspore_core)
+     target_link_libraries(mindspore-lite_static mindspore_core)
+diff --git a/mindspore/lite/src/common/ops/populate/custom_populate.cc b/mindspore/lite/src/common/ops/populate/custom_populate.cc
+index 17a13f13..3010c784 100644
+--- a/mindspore/lite/src/common/ops/populate/custom_populate.cc
++++ b/mindspore/lite/src/common/ops/populate/custom_populate.cc
+@@ -123,13 +123,13 @@ OpParameter *CreateCustomGruParameter() {
+ }
+ 
+ OpParameter *CreateCustomTensorScatterMaxParameter() {
+-  auto *param = static_cast<CustomTensorScatterMaxParameter *>(malloc(sizeof(CustomTensorScatterMaxParameter)));
++  auto *param = static_cast<ScatterNDParameter *>(malloc(sizeof(ScatterNDParameter)));
+   if (param == nullptr) {
+-    MS_LOG(ERROR) << "malloc CustomTensorScatterMaxParameter failed.";
++    MS_LOG(ERROR) << "malloc ScatterNDParameter failed.";
+     return nullptr;
+   }
+-  memset(param, 0, sizeof(CustomTensorScatterMaxParameter));
+-  param->op_parameter_.type_ = PrimType_Inner_CustomTensorScatterMax;
++  memset(param, 0, sizeof(ScatterNDParameter));
++  param->op_parameter.type_ = PrimType_Inner_CustomTensorScatterMax;
+   return reinterpret_cast<OpParameter *>(param);
+ }
+ 
+diff --git a/mindspore/lite/src/executor/CMakeLists.txt b/mindspore/lite/src/executor/CMakeLists.txt
+index 4b03a7dc..d6294ee1 100644
+--- a/mindspore/lite/src/executor/CMakeLists.txt
++++ b/mindspore/lite/src/executor/CMakeLists.txt
+@@ -291,7 +291,4 @@ if(NOT MSLITE_SIMPLEST_CLOUD_INFERENCE)
+         target_link_libraries(lite-unified-executor dl)
+     endif()
+ 
+-    if(ENABLE_MODEL_OBF)
+-        target_link_libraries(lite-unified-executor ${OBF_LIB_DIR}/libmsdeobfuscator-lite.so)
+-    endif()
+ endif()
+diff --git a/mindspore/lite/src/extendrt/delegate/graph_executor/litert/CMakeLists.txt b/mindspore/lite/src/extendrt/delegate/graph_executor/litert/CMakeLists.txt
+index 416e2096..0fbdfb32 100644
+--- a/mindspore/lite/src/extendrt/delegate/graph_executor/litert/CMakeLists.txt
++++ b/mindspore/lite/src/extendrt/delegate/graph_executor/litert/CMakeLists.txt
+@@ -302,6 +302,3 @@ if(NOT WIN32)
+     target_link_libraries(msplugin-ge-litert dl)
+ endif()
+ 
+-if(ENABLE_MODEL_OBF)
+-    target_link_libraries(msplugin-ge-litert ${OBF_LIB_DIR}/libmsdeobfuscator-lite.so)
+-endif()
 diff --git a/mindspore/lite/src/litert/c_api/context_c.cc b/mindspore/lite/src/litert/c_api/context_c.cc
-index c5f825aa..bde0460c 100644
+index d45a9c90..febdeb22 100644
 --- a/mindspore/lite/src/litert/c_api/context_c.cc
 +++ b/mindspore/lite/src/litert/c_api/context_c.cc
-@@ -324,6 +324,10 @@ NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num) {
+@@ -322,6 +322,10 @@ NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num) {
  
      const char *name = nullptr;
      (void)OH_NNDevice_GetName(all_device_ids[i], &name);
@@ -4711,211 +6720,709 @@ index c5f825aa..bde0460c 100644
      desc[i].device_name[127] = '\0';
      strncpy(desc[i].device_name, name, 127);
    }
-diff --git a/mindspore/lite/src/litert/kernel/cpu/fp32_grad/strided_slice_grad.cc b/mindspore/lite/src/litert/kernel/cpu/fp32_grad/strided_slice_grad.cc
-index 91094658..91bbd39a 100644
---- a/mindspore/lite/src/litert/kernel/cpu/fp32_grad/strided_slice_grad.cc
-+++ b/mindspore/lite/src/litert/kernel/cpu/fp32_grad/strided_slice_grad.cc
-@@ -18,6 +18,7 @@
- #include "src/litert/kernel/cpu/fp32_grad/strided_slice_grad.h"
+diff --git a/mindspore/lite/src/litert/c_api/model_c.cc b/mindspore/lite/src/litert/c_api/model_c.cc
+index 902b3938..6aab0e59 100644
+--- a/mindspore/lite/src/litert/c_api/model_c.cc
++++ b/mindspore/lite/src/litert/c_api/model_c.cc
+@@ -14,6 +14,7 @@
+  * limitations under the License.
+  */
+ #include "include/c_api/model_c.h"
++#include "type_c_private.h"
  #include <vector>
- #include <algorithm>
-+#include <utility>
- #include "schema/model_generated.h"
- #include "src/litert/kernel_registry.h"
- #include "nnacl/fp32_grad/strided_slice_grad.h"
-@@ -55,7 +56,6 @@ void StridedSliceGradCPUKernel::FillEmptyDims() {
-   int32_t begins[DIMENSION_8D];
-   int32_t ends[DIMENSION_8D];
-   int32_t strides[DIMENSION_8D];
--  int32_t input_shape[DIMENSION_8D];
-   int32_t i;
- 
-   // invert the order of the dimension and fill defout outsize actual ranae
-@@ -63,19 +63,10 @@ void StridedSliceGradCPUKernel::FillEmptyDims() {
-     begins[i] = param_->begins_[i];
-     ends[i] = param_->ends_[i];
-     strides[i] = param_->strides_[i];
--    input_shape[i] = param_->in_shape_[i];
-   }
- 
--  int32_t real_index = param_->in_shape_length_ - 1;
--  for (i = DIMENSION_8D - 1; i >= 0; --i) {
--    if (real_index >= 0) {
--      param_->in_shape_[i] = input_shape[real_index--];
--    } else {
--      param_->in_shape_[i] = 1;
--    }
--  }
-   int out_shape_length = in_tensors_.at(1)->shape().at(0);
--  real_index = out_shape_length - 1;
-+  int32_t real_index = out_shape_length - 1;
-   for (i = DIMENSION_8D - 1; i >= 0; --i) {
-     if (real_index >= 0) {
-       param_->begins_[i] = begins[real_index];
-@@ -87,17 +78,15 @@ void StridedSliceGradCPUKernel::FillEmptyDims() {
-       param_->strides_[i] = 1;
+ #include <cstdint>
+ #include "include/api/context.h"
+@@ -42,6 +43,11 @@ class ModelC {
+         delete out;
+       }
      }
-   }
--  param_->num_axes_ = DIMENSION_8D;
--  param_->in_shape_length_ = DIMENSION_8D;
--
-   for (i = 0; i < DIMENSION_8D; ++i) {
--    if (param_->begins_[i] < 0) {
--      param_->begins_[i] += param_->in_shape_[i];
--    }
--    if (param_->ends_[i] < 0) {
--      param_->ends_[i] += param_->in_shape_[i];
-+    int ax = param_->ends_[i] - param_->begins_[i];
-+    if (ax < 0) {
-+      ax = 0;
-     }
-+    param_->in_shape_[i] = ax;
-   }
-+  param_->num_axes_ = DIMENSION_8D;
-+  param_->in_shape_length_ = DIMENSION_8D;
- }
- 
- void StridedSliceGradCPUKernel::FillOutputDim() {
-@@ -115,6 +104,24 @@ void StridedSliceGradCPUKernel::FillOutputDim() {
- int StridedSliceGradCPUKernel::ReSize() {
-   FillEmptyDims();
-   FillOutputDim();
-+  for (int32_t i = 0; i < DIMENSION_8D; ++i) {
-+    if (param_->ends_[i] == 0 && param_->begins_[i] < 0) {
-+      param_->ends_[i] += output_shape_[i];
-+    }
-+    if (param_->ends_[i] < 0) {
-+      param_->ends_[i] = (param_->ends_[i] + output_shape_[i]) < 0 ? 0 : param_->ends_[i] + output_shape_[i];
-+    }
-+    if (param_->ends_[i] > output_shape_[i]) {
-+      param_->ends_[i] = output_shape_[i];
-+    }
-+    if (param_->begins_[i] < 0) {
-+      auto k = param_->begins_[i] + output_shape_[i];
-+      param_->begins_[i] = k < 0 ? 0 : k;
-+    }
-+    if (param_->begins_[i] > output_shape_[i]) {
-+      param_->begins_[i] = output_shape_[i];
-+    }
-+  }
-   return RET_OK;
- }
- 
-@@ -142,20 +149,81 @@ int StridedSliceGradCPUKernel::DoExecute(int task_id) {
-   auto input = in_tensors_.at(0);
-   auto output = out_tensors_.at(0);
- 
--  int *po = output_shape_.data();
--  auto dx = reinterpret_cast<float *>(output->MutableData());
--  auto dy = reinterpret_cast<float *>(input->MutableData());
--  CHECK_NULL_RETURN(po);
-+  auto *dx = reinterpret_cast<float *>(output->MutableData());
-+  auto *dy = reinterpret_cast<float *>(input->MutableData());
-   CHECK_NULL_RETURN(dx);
-   CHECK_NULL_RETURN(dy);
--  std::fill(dx, dx + output->ElementsNum(), 0.f);
--  auto ret = DoStridedSliceGrad(dy, dx, po, param_);
--  if (ret != RET_OK) {
--    MS_LOG(ERROR) << "StridedSliceGrad error error_code[" << ret << "]";
--    return RET_ERROR;
-+  return CalStridedSliceGrad(dy, dx);
-+}
 +
-+int StridedSliceGradCPUKernel::CalStridedSliceGrad(float *input, float *output) {
-+  int input_num = 1;
-+  for (int le = 0; le < DIMENSION_8D; le++) {
-+    input_num = input_num * param_->in_shape_[le];
-+  }
-+  int output_num = 1;
-+  for (int len = 0; len < DIMENSION_8D; len++) {
-+    output_num = output_num * output_shape_[len];
-+  }
-+
-+  if (input_num == 0) {
-+    res_arr_ = reinterpret_cast<float *>(ms_context_->allocator->Malloc(sizeof(float) * output_num));
-+    for (int res_len = 0; res_len < output_num; res_len++) {
-+      res_arr_[res_len] = static_cast<float>(0);
-+    }
-+    memcpy(output, res_arr_, output_num * sizeof(float));
-+    FreeRunBuffer();
-+    return RET_OK;
++    // In zero copy scene where user will call set or get allocator function, but when model is destroyed, the allocator
++    // table will not be freed, and its size continues to grow causing memory leak, so when ModelC is destroyed, clean
++    // allocator table.
++    CleanAllocatorTable();
    }
+ 
+   MSTensor **GetInputs(size_t *input_num);
+@@ -261,10 +267,42 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+   mindspore::MSKernelCallBack before_call_back = impl->TransCallBack(before);
+   mindspore::MSKernelCallBack after_call_back = impl->TransCallBack(after);
+   std::vector<mindspore::MSTensor> ms_tensor_outputs;
 +
-+  int temp_num = input_num;
-+  int max_num = input_num;
-+  int step = 1;
-+  for (int i = DIMENSION_8D - 1; i >= 0; --i) {
-+    temp_num = static_cast<int>(temp_num * output_shape_[i] / param_->in_shape_[i]);
-+    max_num = MSMAX(max_num, temp_num);
-+  }
-+  temp_input_ = reinterpret_cast<float *>(ms_context_->allocator->Malloc(sizeof(float) * max_num));
-+  memset(temp_input_, 0, max_num * sizeof(float));
-+  memcpy(temp_input_, input, input_num * sizeof(float));
-+  temp_ = reinterpret_cast<float *>(ms_context_->allocator->Malloc(max_num * sizeof(float)));
-+  temp_num = input_num;
-+  for (int i = DIMENSION_8D - 1; i >= 0; --i) {
-+    temp_num = static_cast<int>(temp_num * output_shape_[i] / param_->in_shape_[i]);
-+    memset(temp_, 0, sizeof(float) * temp_num);
-+    int start1 = 0;
-+    int start2 = 0;
-+    while (start1 < temp_num) {
-+      int id = 0;
-+      for (int k = param_->begins_[i]; param_->strides_[i] > 0 ? k < param_->ends_[i] : k > param_->ends_[i];
-+           k += param_->strides_[i], id++) {
-+        memcpy(temp_ + start1 + k * step, temp_input_ + start2 + id * step, step * sizeof(float));
++  bool all_has_data = false;
++
++  size_t output_num;
++  (void)impl->GetOutputs(&output_num);
++  auto handle_num = outputs->handle_num;
++  if (handle_num == output_num) {
++    MS_LOG(INFO) << "use user provided output";
++    for (size_t i = 0; i < output_num; i++) {
++      if (outputs->handle_list[i] == nullptr) {
++        MS_LOG(ERROR) << "user provided output array handle_list[" << i << "] is nullptr";
++        return OH_AI_STATUS_LITE_NULLPTR;
 +      }
-+      start1 += output_shape_[i] * step;
-+      start2 += param_->in_shape_[i] * step;
++      ms_tensor_outputs.push_back(*static_cast<mindspore::MSTensor *>(outputs->handle_list[i]));
 +    }
-+    step *= output_shape_[i];
-+    std::swap(temp_input_, temp_);
++
++    all_has_data = std::all_of(ms_tensor_outputs.begin(), ms_tensor_outputs.end(), [](const mindspore::MSTensor &t) {
++      return t.Data() != nullptr;
++    });
++
++    if (!all_has_data) {
++      ms_tensor_outputs.clear();
++    }
++
 +  }
-+  memcpy(output, temp_input_, output_num * sizeof(float));
-+  FreeRunBuffer();
-   return RET_OK;
++
+   auto ret = impl->model_->Predict(ms_tensor_inputs, &ms_tensor_outputs, before_call_back, after_call_back);
+   if (!ret.IsOk()) {
+     MS_LOG(ERROR) << "Predict fail, ret :" << ret;
++    return static_cast<OH_AI_Status>(ret.StatusCode());
+   }
++
++  if (handle_num == output_num && all_has_data) {
++    return OH_AI_STATUS_SUCCESS;
++  }
++
+   outputs->handle_list = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&(outputs->handle_num)));
+   return static_cast<OH_AI_Status>(ret.StatusCode());
+ }
+diff --git a/mindspore/lite/src/litert/c_api/tensor_c.cc b/mindspore/lite/src/litert/c_api/tensor_c.cc
+index 4b1e6aff..fc3814dd 100644
+--- a/mindspore/lite/src/litert/c_api/tensor_c.cc
++++ b/mindspore/lite/src/litert/c_api/tensor_c.cc
+@@ -13,11 +13,18 @@
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
++#include <unordered_map>
+ #include "include/c_api/tensor_c.h"
+ #include "include/api/status.h"
+ #include "src/tensor.h"
+ #include "src/litert/cxx_api/tensor/tensor_impl.h"
+ 
++static std::unordered_map<void *, std::weak_ptr<mindspore::Allocator>> allocator_table;
++
++void CleanAllocatorTable() {
++  allocator_table.clear();
++}
++
+ OH_AI_TensorHandle OH_AI_TensorCreate(const char *name, OH_AI_DataType type, const int64_t *shape, size_t shape_num,
+                                       const void *data, size_t data_len) {
+   if (name == nullptr || shape == nullptr) {
+@@ -208,3 +215,28 @@ size_t OH_AI_TensorGetDataSize(const OH_AI_TensorHandle tensor) {
+   auto impl = static_cast<mindspore::MSTensor *>(tensor);
+   return impl->DataSize();
+ }
++
++OH_AI_Status OH_AI_TensorSetAllocator(OH_AI_TensorHandle tensor, void *allocator) {
++  if (tensor == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return OH_AI_STATUS_LITE_NULLPTR;
++  }
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
++  if (allocator_table.count(allocator) == 0) {
++    MS_LOG(ERROR) << "the input allocator does not belong to framework";
++    return OH_AI_STATUS_LITE_PARAM_INVALID;
++  }
++  std::static_pointer_cast<mindspore::LiteTensorImpl>(impl->impl())->set_own_data(true);
++  impl->SetAllocator(allocator_table[allocator].lock());
++  return OH_AI_STATUS_SUCCESS;
++}
++
++void *OH_AI_TensorGetAllocator(const OH_AI_TensorHandle tensor) {
++  if (tensor == nullptr) {
++    MS_LOG(ERROR) << "param is nullptr.";
++    return nullptr;
++  }
++  auto impl = static_cast<mindspore::MSTensor *>(tensor);
++  allocator_table[impl->allocator().get()] = impl->allocator();
++  return impl->allocator().get();
++}
+diff --git a/mindspore/lite/src/litert/c_api/type_c_private.h b/mindspore/lite/src/litert/c_api/type_c_private.h
+index 2d3b3883..1a76820d 100644
+--- a/mindspore/lite/src/litert/c_api/type_c_private.h
++++ b/mindspore/lite/src/litert/c_api/type_c_private.h
+@@ -36,5 +36,8 @@ struct NNRTDeviceDesc {
+ 
+ #ifdef __cplusplus
+ }
++
++void CleanAllocatorTable();
++
+ #endif
+ #endif  // MINDSPORE_LITE_SRC_LITERT_C_API_TYPE_C_PRIVATE_H_
+diff --git a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
+index 8a7f0587..25509cdc 100644
+--- a/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
++++ b/mindspore/lite/src/litert/cxx_api/model/model_impl.cc
+@@ -478,19 +478,64 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
+           input->set_shape(truncate_shape);
+ #endif
+         }
+-        // Mali GPU tensor can't manipulate CPU memory which the user provides.
+-        // When model input is GPU tensor and user input is NOT GPU data,
+-        if (IS_OPENCL_ALLOCATOR(input->allocator()) && (!IS_OPENCL_ALLOCATOR(user_input.allocator()))) {
+-          // Use outside CPU data to fill GPU Tensor.
+-          auto dst_data = input->MutableData();
+-          auto src_data = user_input.MutableData();
+-          (void)memcpy(dst_data, src_data, input->Size());
+-        } else {
++        if (user_input.allocator() == input->allocator()) {
+           input->set_data(user_input.MutableData());
++          input->set_own_data(false);
++        } else {
++          void *user_data = user_input.MutableData();
++          if (user_data == nullptr) {
++            MS_LOG(ERROR) << "user data is nullptr";
++            return kLiteNullptr;
++          }
++          void *input_data = input->MutableData();
++          if (input_data == nullptr) {
++            MS_LOG(ERROR) << "input data is nullptr";
++            return kLiteNullptr;
++          }
++          memcpy(input_data, user_data, input->Size());
+         }
+       }
+     }
+   }
++
++  auto ori_output_tensors = GetOutputs();
++  std::vector<bool> copy_output_data;
++  copy_output_data.resize(ori_output_tensors.size(), false);
++  if (outputs->empty()) {
++    MS_LOG(INFO) << "user provided output is empty";
++  } else if (outputs->size() != ori_output_tensors.size()) {
++    MS_LOG(ERROR) << "user provided output size is not equal to model's output size";
++    return kLiteError;
++  } else {
++    for (size_t i = 0; i < ori_output_tensors.size(); i++) {
++      auto ori_output = ori_output_tensors[i];
++      auto lite_impl = std::static_pointer_cast<LiteTensorImpl>(ori_output.impl());
++      MS_CHECK_TRUE_RET(lite_impl != nullptr, kLiteNullptr);
++      auto ori_out_tensor = static_cast<lite::Tensor *>(lite_impl->lite_tensor());
++      MS_CHECK_TRUE_RET(ori_out_tensor != nullptr, kLiteNullptr);
++
++      auto user_output = (*outputs)[i];
++      auto user_lite_impl = std::static_pointer_cast<LiteTensorImpl>(user_output.impl());
++      MS_CHECK_TRUE_RET(user_lite_impl != nullptr, kLiteNullptr);
++      auto user_out_tensor = user_lite_impl->lite_tensor();
++      if (ori_out_tensor == user_out_tensor) {
++        continue;
++      }
++
++      void *user_out_data = nullptr;
++      if (user_output.DataSize() > 0) {
++        user_out_data = user_output.MutableData();
++      }
++      if (ori_out_tensor->allocator() == user_output.allocator() && user_out_data != nullptr) {
++        MS_LOG(INFO) << "use user data";
++        ori_out_tensor->set_data(user_out_data);
++        ori_out_tensor->set_own_data(false);
++      } else {
++        copy_output_data[i] = true;
++      }
++    }
++  }
++  
+   auto ret = RunGraph(before, after);
+   ResetTensorData(old_data, input_tensors);
+   if (ret != kSuccess) {
+@@ -498,6 +543,28 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
+     return ret;
+   }
+   MS_LOG(DEBUG) << "Run graph success.";
++
++  for (size_t i = 0; i < copy_output_data.size(); i++) {
++    if (!copy_output_data[i]) {
++      continue;
++    }
++    auto ori_output = ori_output_tensors[i];
++    auto ori_out_data = ori_output.MutableData();
++    MS_CHECK_TRUE_RET(ori_out_data != nullptr, kLiteNullptr);
++    auto user_output = (*outputs)[i];
++    MS_CHECK_TRUE_RET(user_output.MutableData() != nullptr, kLiteNullptr);
++    if (user_output.DataSize() >= ori_output.DataSize()) {
++      memcpy(user_output.MutableData(), ori_out_data, ori_output.DataSize());
++    } else {
++      MS_LOG(ERROR) << "user out data size is less than model's output data size";
++      return kLiteError;
++    }
++  }
++
++  if (outputs->size() == ori_output_tensors.size()) {
++    return kSuccess;
++  }
++
+   auto res = GetOutputs();
+   if (res.empty()) {
+     MS_LOG(DEBUG) << "Empty outputs.";
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
+new file mode 100644
+index 00000000..f79c1682
+--- /dev/null
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
+@@ -0,0 +1,168 @@
++/**
++ * Copyright 2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include <memory>
++#include <atomic>
++#include <unordered_map>
++#include <map>
++#include <mutex>
++#include "src/litert/delegate/nnrt/nnrt_allocator.h"
++#include "src/common/log.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
++
++namespace mindspore {
++namespace lite {
++NNRTAllocator::~NNRTAllocator() {
++  std::lock_guard<std::mutex> locker(mutex_);
++  for (auto &it : allocated_list_) {
++    auto membuf = it.second;
++    if (memory_category_ == NNRT_INPUT) {
++      OH_NNExecutor_DestroyInputMemory(executor_, index_, &(membuf->memory_));
++    } else {
++      OH_NNExecutor_DestroyOutputMemory(executor_, index_, &(membuf->memory_));
++    }
++    free(membuf);
++  }
++  allocated_list_.clear();
++
++  for (auto &it : free_list_) {
++    auto membuf = it.second;
++    if (memory_category_ == NNRT_INPUT) {
++      OH_NNExecutor_DestroyInputMemory(executor_, index_, &(membuf->memory_));
++    } else {
++      OH_NNExecutor_DestroyOutputMemory(executor_, index_, &(membuf->memory_));
++    }
++    free(membuf);
++  }
++  free_list_.clear();
++}
++
++void *NNRTAllocator::Malloc(size_t size) {
++  std::lock_guard<std::mutex> locker(mutex_);
++  auto iter = free_list_.lower_bound(size);
++  if (iter != free_list_.end()) {
++    auto membuf = iter->second;
++    membuf->ref_count_ = 0;
++    (void)free_list_.erase(iter);
++    allocated_list_[membuf->memory_->data] = membuf;
++    return membuf->memory_->data;
++  }
++
++  auto membuf = new (std::nothrow) MemBuf();
++  if (membuf == nullptr) {
++    MS_LOG(ERROR) << "new Membuf failed.";
++    return nullptr;
++  }
++
++  membuf->ref_count_ = 0;
++  if (memory_category_ == NNRT_INPUT) {
++    membuf->memory_ = OH_NNExecutor_AllocateInputMemory(executor_, index_, size);
++  } else {
++    membuf->memory_ = OH_NNExecutor_AllocateOutputMemory(executor_, index_, size);
++  }
++
++  if (membuf->memory_ == nullptr) {
++    MS_LOG(ERROR) << "malloc OH_NN_Memory return nullptr";
++    return nullptr;
++  }
++  if (membuf->memory_->data == nullptr) {
++    MS_LOG(ERROR) << "malloc OH_NN_Memory return nullptr";
++    if (memory_category_ == NNRT_INPUT) {
++      OH_NNExecutor_DestroyInputMemory(executor_, index_, &(membuf->memory_));
++    } else {
++      OH_NNExecutor_DestroyOutputMemory(executor_, index_, &(membuf->memory_));
++    }
++    return nullptr;
++  }
++
++  allocated_list_[membuf->memory_->data] = membuf;
++  return membuf->memory_->data;
++}
++
++void NNRTAllocator::Free(void *ptr) {
++  if (ptr == nullptr) {
++    return;
++  }
++
++  std::lock_guard<std::mutex> locker(mutex_);
++  auto iter = allocated_list_.find(ptr);
++  if (iter == allocated_list_.end()) {
++    return;
++  }
++  auto membuf = iter->second;
++  membuf->ref_count_ = 0;
++  (void)allocated_list_.erase(iter);
++  (void)free_list_.insert(std::make_pair(membuf->memory_->length, membuf));
++}
++
++int NNRTAllocator::RefCount(void *ptr) {
++  if (ptr == nullptr) {
++    return -1;
++  }
++  std::lock_guard<std::mutex> locker(mutex_);
++  auto iter = allocated_list_.find(ptr);
++  if (iter != allocated_list_.end()) {
++    auto membuf = iter->second;
++    int ref_count = std::atomic_load(&membuf->ref_count_);
++    return ref_count;
++  }
++  return -1;
++}
++
++int NNRTAllocator::SetRefCount(void *ptr, int ref_count) {
++  if (ptr == nullptr) {
++    return -1;
++  }
++  std::lock_guard<std::mutex> locker(mutex_);
++  auto iter = allocated_list_.find(ptr);
++  if (iter != allocated_list_.end()) {
++    auto membuf = iter->second;
++    std::atomic_store(&membuf->ref_count_, ref_count);
++    return ref_count;
++  }
++  return -1;
++}
++
++int NNRTAllocator::DecRefCount(void *ptr, int ref_count) {
++  if (ptr == nullptr) {
++    return -1;
++  }
++  std::lock_guard<std::mutex> locker(mutex_);
++  auto iter = allocated_list_.find(ptr);
++  if (iter != allocated_list_.end()) {
++    auto membuf = iter->second;
++    auto ref = std::atomic_fetch_sub(&membuf->ref_count_, ref_count);
++    return ref;
++  }
++  return -1;
++}
++
++int NNRTAllocator::IncRefCount(void *ptr, int ref_count) {
++  if (ptr == nullptr) {
++    return -1;
++  }
++  std::lock_guard<std::mutex> locker(mutex_);
++  auto iter = allocated_list_.find(ptr);
++  if (iter != allocated_list_.end()) {
++    auto membuf = iter->second;
++    auto ref = std::atomic_fetch_add(&membuf->ref_count_, ref_count);
++    return ref;
++  }
++  return -1;
++}
++
++}  // namespace lite
++}  // namespace mindspore
+\ No newline at end of file
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
+new file mode 100644
+index 00000000..f6721369
+--- /dev/null
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
+@@ -0,0 +1,64 @@
++/**
++* Copyright 2023 Huawei Technologies Co., Ltd
++*
++* Licensed under the Apache License, Version 2.0 (the "License");
++* you may not use this file except in compliance with the License.
++* You may obtain a copy of the License at
++*
++* http://www.apache.org/licenses/LICENSE-2.0
++*
++* Unless required by applicable law or agreed to in writing, software
++* distributed under the License is distributed on an "AS IS" BASIS,
++* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++* See the License for the specific language governing permissions and
++* limitations under the License.
++ */
++#ifndef MINDSPORE_LITE_SRC_RUNTIME_DELEGATE_NNRT_NNRT_ALLOCATOR_H_
++#define MINDSPORE_LITE_SRC_RUNTIME_DELEGATE_NNRT_NNRT_ALLOCATOR_H_
++
++#include <vector>
++#include <map>
++#include <atomic>
++#include <unordered_map>
++#include <map>
++#include <mutex>
++#include "include/api/allocator.h"
++struct OH_NN_Memory;
++struct OH_NNExecutor;
++
++namespace mindspore {
++namespace lite {
++enum MemoryCategory { NNRT_INPUT, NNRT_OUTPUT };
++
++class NNRTAllocator : public Allocator {
++ public:
++  NNRTAllocator(OH_NNExecutor *executor, int index, MemoryCategory memory_category)
++      : index_(index), memory_category_(memory_category), executor_(executor) {}
++  ~NNRTAllocator() override;
++
++  void *Malloc(size_t size) override;
++  void Free(void *ptr) override;
++  int RefCount(void *ptr) override;
++  int SetRefCount(void *ptr, int ref_count) override;
++  int DecRefCount(void *ptr, int ref_count) override;
++  int IncRefCount(void *ptr, int ref_count) override;
++
++ private:
++  struct MemBuf {
++    std::atomic_int ref_count_{0};
++    OH_NN_Memory *memory_{nullptr};
++  };
++
++  int index_{0};
++  MemoryCategory memory_category_{NNRT_INPUT};
++  OH_NNExecutor *executor_{nullptr};
++  std::mutex mutex_;
++  // <membuf->memory_->data, membuf>
++  std::unordered_map<void *, MemBuf *> allocated_list_;
++  std::multimap<size_t, MemBuf *> free_list_;
++};
++
++}  // namespace lite
++}  // namespace mindspore
++
++#endif  // MINDSPORE_LITE_SRC_RUNTIME_DELEGATE_NNRT_NNRT_ALLOCATOR_H_
+\ No newline at end of file
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+index 9f012e76..ca195af4 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+@@ -131,6 +131,7 @@ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model)
+   } else {
+     SetKirinModelInputsAndOutputs(nn_model);
+     auto ret = OH_NNModel_BuildFromMetaGraph(nn_model, meta_graph_, extensions.data(), extensions.size());
++    FreeLiteGraph(&lite_graph_);
+     if (ret != OH_NN_SUCCESS) {
+       MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
+       OH_NNModel_Destroy(&nn_model);
+@@ -209,6 +210,8 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
+     MS_LOG(ERROR) << "new NNRTModelKernel failed";
+     return kLiteError;
+   }
++  nn_executor_list_.push_back(nn_executor);
++
+   model->Replace(model->BeginKernelIterator(), model->EndKernelIterator(), nnrt_model_kernel);
+   return kSuccess;
+ }
+@@ -618,6 +621,7 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive>
+       MS_LOG(ERROR) << "new NNRTModelKernel failed";
+       return kLiteError;
+     }
++    nn_executor_list_.push_back(nn_executor);
+     OH_NNCompilation_Destroy(&nn_compilation);
+     OH_NNModel_Destroy(&nn_model);
+     nnrt_subgraph_kernels->push_back(nnrt_model_kernel);
+@@ -817,7 +821,45 @@ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
+   MS_LOG(INFO) << "ShallowCopyLiteGraph success.";
  }
  
-+void StridedSliceGradCPUKernel::FreeRunBuffer() {
-+  if (res_arr_ != nullptr) {
-+    ms_context_->allocator->Free(res_arr_);
-+    res_arr_ = nullptr;
-+  }
-+  if (temp_input_ != nullptr) {
-+    ms_context_->allocator->Free(temp_input_);
-+    temp_input_ = nullptr;
-+  }
-+  if (temp_ != nullptr) {
-+    ms_context_->allocator->Free(temp_);
-+    temp_ = nullptr;
++void NNRTDelegate::FreeLiteGraph(lite::LiteGraph **liteGraph) {
++  if (liteGraph != nullptr && *liteGraph != nullptr) {
++    MS_LOG(INFO) << "start to free LiteGraph.";
++    auto graph = *liteGraph;
++    graph->name_.clear();
++    graph->input_indices_.clear();
++    graph->output_indices_.clear();
++    MS_LOG(INFO) << "Destroying  nodes.";
++    // node
++    for (size_t idx = 0; idx < graph->all_nodes_.size(); idx++) {
++      if (graph->all_nodes_[idx] != nullptr) {
++        delete graph->all_nodes_[idx];
++        graph->all_nodes_[idx] = nullptr;
++      }
++    }
++    MS_LOG(INFO) << "Destroying  subgraphs.";
++    // subgraph
++    for (size_t idx = 0; idx < graph->sub_graphs_.size(); idx++) {
++      if (graph->sub_graphs_[idx] != nullptr) {
++        delete graph->sub_graphs_[idx];
++        graph->sub_graphs_[idx] = nullptr;
++      }
++    }
++    // graph
++    delete graph;
++    *liteGraph = nullptr;
++  } else {
++    MS_LOG(WARNING) << "nnrt_lite_graph is nullptr, no need to free.";
 +  }
 +}
 +
- REG_KERNEL(kCPU, kNumberTypeFloat32, PrimitiveType_StridedSliceGrad, LiteKernelCreator<StridedSliceGradCPUKernel>)
- }  // namespace mindspore::kernel
-diff --git a/mindspore/lite/src/litert/kernel/cpu/fp32_grad/strided_slice_grad.h b/mindspore/lite/src/litert/kernel/cpu/fp32_grad/strided_slice_grad.h
-index 25d6f855..f34dd20d 100644
---- a/mindspore/lite/src/litert/kernel/cpu/fp32_grad/strided_slice_grad.h
-+++ b/mindspore/lite/src/litert/kernel/cpu/fp32_grad/strided_slice_grad.h
-@@ -40,9 +40,14 @@ class StridedSliceGradCPUKernel : public LiteKernel {
-   void FillEmptyDims();
-   void FillOutputDim();
-   void ParseMasks();
-+  int CalStridedSliceGrad(float *input, float *output);
-+  void FreeRunBuffer();
- 
-   StridedSliceParameter *param_;
-   std::vector<int> output_shape_;
-+  float *res_arr_ = nullptr;
-+  float *temp_input_ = nullptr;
-+  float *temp_ = nullptr;
+ NNRTDelegate::~NNRTDelegate() {
++  for (size_t i = 0; i < nn_executor_list_.size(); i++) {
++    if (nn_executor_list_[i] != nullptr) {
++      MS_LOG(INFO) << "start NNExecutor Destroy.";
++      OH_NNExecutor_Destroy(&(nn_executor_list_[i]));
++      MS_LOG(INFO) << "Destroy NNExecutor Finish.";
++    }
++  }
+   if (lite_graph_ != nullptr) {
+     MS_LOG(ERROR) << "Delete NNRTDelegate.";
+   }
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+index 52626339..4cf357d6 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+@@ -46,6 +46,7 @@ class NNRTDelegate : public Delegate {
+   Status Init() override { return kSuccess; }
+   Status Build(DelegateModel<schema::Primitive> *model) override;
+   void ShallowCopyLiteGraph(const lite::LiteGraph &liteGraph);
++  void FreeLiteGraph(lite::LiteGraph **liteGraph);
+   void SetMetaGraph(const void *meta_graph) {
+     meta_graph_ = meta_graph;
+   }
+@@ -88,6 +89,7 @@ class NNRTDelegate : public Delegate {
+   const void *meta_graph_ = nullptr;
+   std::string cache_path_ = "";
+   uint32_t cache_version_ = 0;
++  std::vector<OH_NNExecutor *> nn_executor_list_;
  };
- }  // namespace mindspore::kernel
+ }  // namespace lite
+ }  // namespace mindspore
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
+index 67443e08..f83632dd 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
+@@ -15,8 +15,33 @@
+  */
+ #include <include/errorcode.h>
+ #include "nnrt_model_kernel.h"
+-int mindspore::NNRTModelKernel::Prepare() { return 0; }
++#include "nnrt_allocator.h"
++#include "litert/cxx_api/tensor/tensor_impl.h"
++int mindspore::NNRTModelKernel::Prepare() {
++  for (size_t i = 0; i < inputs_.size(); i++) {
++    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor, i, lite::NNRT_INPUT);
++    if (nnrt_allocator == nullptr) {
++      MS_LOG(ERROR) << "Create NNRTAllocator failed";
++      return lite::RET_NULL_PTR;
++    }
++    inputs_[i].SetAllocator(nnrt_allocator);
++  }
++  for (size_t i = 0; i < outputs_.size(); i++) {
++    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor, i, lite::NNRT_OUTPUT);
++    if (nnrt_allocator == nullptr) {
++      MS_LOG(ERROR) << "Create NNRTAllocator failed";
++      return lite::RET_NULL_PTR;
++    }
++    outputs_[i].SetAllocator(nnrt_allocator);
++  }
++  return lite::RET_OK;
++}
++
+ int mindspore::NNRTModelKernel::Execute() {
++  MS_CHECK_TRUE_RET(this->outputs().empty() != true, lite::RET_ERROR);
++  zero_copy_ = this->outputs()[Index0].allocator() != nullptr;
++
++
+   lite::STATUS ret_val = PrepareInputs();
+   if (ret_val != lite::RET_OK) {
+     MS_LOG(ERROR) << "NNRTModelKernel PrepareInputs failed, STATUS is " << ret_val;
+@@ -142,9 +167,17 @@ int mindspore::NNRTModelKernel::PrepareInputs() {
+     oprend->dimensions = dimensions_list.data();
+     oprend->quantParam = quant_param;
+     oprend->type = OH_NN_TENSOR;
+-    MS_LOG_INFO << "input tensor: " << tensor.Name() << ", data: " << (void *)tensor.MutableData() << ", size: " << tensor.DataSize();
+-    OH_NN_ReturnCode ret_code =
+-      OH_NNExecutor_SetInput(oh_nn_executor, i, oprend, tensor.MutableData(), tensor.DataSize());
++    MS_LOG_INFO << "input tensor: " << tensor.Name() << ", data: " << (void *)tensor.MutableData()
++                << ", size: " << tensor.DataSize();
++
++    OH_NN_ReturnCode ret_code;
++    if (zero_copy_) {
++      OH_NN_Memory mem{tensor.MutableData(), tensor.DataSize()};
++      ret_code = OH_NNExecutor_SetInputWithMemory(oh_nn_executor, i, oprend, &mem);
++    } else {
++      ret_code = OH_NNExecutor_SetInput(oh_nn_executor, i, oprend, tensor.MutableData(), tensor.DataSize());
++    }
++
+     delete (oprend);
+ 
+     if (!tmp_quant_param.empty()) {
+@@ -165,7 +198,14 @@ int mindspore::NNRTModelKernel::TransferOutputs() {
+   auto output_tensors = this->outputs();
+   for (size_t i = 0; i < output_tensors.size(); i++) {
+     auto tensor = output_tensors[i];
+-    OH_NN_ReturnCode ret_code = OH_NNExecutor_SetOutput(oh_nn_executor, i, tensor.MutableData(), tensor.DataSize());
++
++    OH_NN_ReturnCode ret_code;
++    if (zero_copy_) {
++      OH_NN_Memory mem{tensor.MutableData(), tensor.DataSize()};
++      ret_code = OH_NNExecutor_SetOutputWithMemory(oh_nn_executor, i, &mem);
++    } else {
++      ret_code = OH_NNExecutor_SetOutput(oh_nn_executor, i, tensor.MutableData(), tensor.DataSize());
++    }
+     if (ret_code != OH_NN_SUCCESS) {
+       MS_LOG(ERROR) << "NNExecutor SetOutput failed, current out tensor is" << tensor.Name()
+                     << ", OH_NN_ReturnCode = " << ret_code;
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
+index ea15f7ca..33df925c 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
+@@ -44,13 +44,14 @@ class NNRTModelKernel : public kernel::Kernel {
+   int PrepareInputs();
+   int TransferOutputs();
+   ~NNRTModelKernel() override {
+-    MS_LOG(INFO) << "start NNExecutor Destroy.";
+-    OH_NNExecutor_Destroy(&oh_nn_executor);
+-    MS_LOG(INFO) << "start NNExecutor Finish.";
++    MS_LOG(INFO) << "NNRTModelKernel Destroy.";
+   }
+ 
+  protected:
+   OH_NNExecutor *oh_nn_executor = nullptr;
++
++ private:
++  bool zero_copy_{false};
+ };
+ }  // namespace mindspore
+ 
+diff --git a/mindspore/lite/src/litert/kernel/cpu/nnacl/nnacl_kernel.cc b/mindspore/lite/src/litert/kernel/cpu/nnacl/nnacl_kernel.cc
+index e970b97c..3aa647ec 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/nnacl/nnacl_kernel.cc
++++ b/mindspore/lite/src/litert/kernel/cpu/nnacl/nnacl_kernel.cc
+@@ -109,7 +109,7 @@ int NNACLKernel::OptimizeDataCopy() {
+ 
+   if (input_tensor->allocator() == nullptr || input_tensor->allocator() != output_tensor->allocator() ||
+       input_tensor->allocator() != ms_context_->allocator || /* runtime allocator */
+-      op_parameter_->is_train_session_) {
++      op_parameter_->is_train_session_ || !output_tensor->own_data()) {
+     return NNACLKernel::Run();
+   }
  
 diff --git a/mindspore/lite/src/litert/lite_model.cc b/mindspore/lite/src/litert/lite_model.cc
-index bcb9cb70..af9b1f8d 100644
+index fc488704..96fb76d0 100644
 --- a/mindspore/lite/src/litert/lite_model.cc
 +++ b/mindspore/lite/src/litert/lite_model.cc
-@@ -66,7 +66,9 @@ void LiteModel::Free() {
+@@ -33,6 +33,7 @@
+ #include "src/tensor.h"
+ #include "extendrt/mindir_loader/model_loader.h"
+ #include "src/common/mmap_utils.h"
++#include <dlfcn.h>
+ 
+ namespace mindspore::lite {
+ namespace {
+@@ -66,16 +67,15 @@ void LiteModel::Free() {
    node_bufs_.resize(0);
  
    for (auto *schema_tensor_wrapper : inner_all_tensors_) {
@@ -4926,6 +7433,589 @@ index bcb9cb70..af9b1f8d 100644
    }
    inner_all_tensors_.clear();
  
+-#ifdef ENABLE_MODEL_OBF
+-  for (auto &prim : graph_.deobf_prims_) {
+-    free(prim);
++  if(this->deobf != nullptr){
++    delete(reinterpret_cast<DeObfProcessor *>(this->deobf));
+   }
+-  graph_.deobf_prims_.resize(0);
+-#endif
+ }
+ 
+ void LiteModel::Destroy() {
+@@ -387,6 +387,12 @@ bool LiteModel::ModelVerify() const {
+ 
+   return NodeVerify() == RET_OK && SubGraphVerify() == RET_OK;
+ }
++//static variable used for deobfuscator
++ObfCreateFunc DeObfRegister::NewDeObfProcessor = DeObfRegister::Fail;
++bool (DeObfProcessor::*DeObfRegister::GetModelDeObfReg)(const void *meta_graph, Model *model);
++void (DeObfProcessor::*DeObfRegister::DeObfuscateReg)(Model *model);
++DeObfRet (DeObfProcessor::*DeObfRegister::CreateDeObfNodeReg)(const schema::Primitive *&src_prim, int i, int schema__version);
++void *DeObfRegister::deobf_handle = nullptr;
+ 
+ int LiteModel::GenerateModelByVersion() {
+   if (this->buf == nullptr) {
+@@ -399,33 +405,37 @@ int LiteModel::GenerateModelByVersion() {
+   }
+   MS_ASSERT(meta_graph != nullptr);
+   int status = RET_ERROR;
+-#ifdef ENABLE_MODEL_OBF
+-  DeObfuscator *model_deobf = nullptr;
+-#endif
++  if(dlopen("libdeobfuscator_lib.z.so", RTLD_NOLOAD) == nullptr) {
++    DeObfRegister::deobf_handle = dlopen("libdeobfuscator_lib.z.so", RTLD_NOW | RTLD_GLOBAL);
++  }
++  if(DeObfRegister::deobf_handle == nullptr) {
++    MS_LOG(WARNING) << "Deobfuscate ability is disabled, so obfuscated models can not be executed.";
++  } else {
++    auto CreateDeObfFunc = reinterpret_cast<ObfCreateFunc>(dlsym(DeObfRegister::deobf_handle, "CreateDeObfFunc"));
++    if (CreateDeObfFunc == nullptr) {
++      MS_LOG(WARNING) << "cannot fetch CreateDeObfFunc";
++    } else {
++      DeObfRegister::RegisterDeObfuscator(CreateDeObfFunc);
++      DeObfRegister::NewDeObfProcessor(*this);
++    }
++  }
+   if (schema_version_ == SCHEMA_VERSION::SCHEMA_CUR) {
+-#ifdef ENABLE_MODEL_OBF
+-    if (IsMetaGraphObfuscated<schema::MetaGraph>(*reinterpret_cast<const schema::MetaGraph *>(meta_graph))) {
+-      model_deobf = GetModelDeObfuscator<schema::MetaGraph>(*reinterpret_cast<const schema::MetaGraph *>(meta_graph),
+-                                                            this, this->buf_size_);
+-      this->graph_.model_obfuscated_ = true;
+-      if (model_deobf == nullptr) {
++    if(this->deobf != nullptr) {
++      auto deobf_ptr = reinterpret_cast<DeObfProcessor *>(this->deobf);
++      auto ret = (deobf_ptr->*DeObfRegister::GetModelDeObfReg)(meta_graph, this);
++      if(!ret){
+         return RET_ERROR;
+       }
+     }
+-#endif
+     status = GenerateModel<schema::MetaGraph, schema::CNode>(*reinterpret_cast<const schema::MetaGraph *>(meta_graph));
+   }
+-#ifdef ENABLE_MODEL_OBF
+-  if (this->graph_.model_obfuscated_) {
+-    MS_ASSERT(model_deobf != nullptr);
+-    status = DeObfuscateModel(this, model_deobf);
+-    if (status != RET_OK) {
+-      MS_LOG(ERROR) << "deobfuscate model wrong.";
+-      std::cerr << "deobfuscate model wrong." << std::endl;
+-    }
+-    delete (model_deobf);
++  if(this->deobf != nullptr) {
++    auto deobf_ptr = reinterpret_cast<DeObfProcessor *>(this->deobf);
++    (deobf_ptr->*DeObfRegister::DeObfuscateReg)(this);
++  }
++  if(DeObfRegister::deobf_handle != nullptr) {
++    dlclose(DeObfRegister::deobf_handle);
+   }
+-#endif
+   if (IsVersionGreaterThan(GetShortVersionStr(this->graph_.version_), GetShortVersionStr(Version()))) {
+     MS_LOG(WARNING) << "The current model version " << this->graph_.version_
+                     << " is later than the inference engine version " << Version()
+diff --git a/mindspore/lite/src/litert/lite_model.h b/mindspore/lite/src/litert/lite_model.h
+index 635b529a..647746a2 100644
+--- a/mindspore/lite/src/litert/lite_model.h
++++ b/mindspore/lite/src/litert/lite_model.h
+@@ -29,13 +29,11 @@
+ #include "src/litert/schema_tensor_wrapper.h"
+ #include "nnacl/op_base.h"
+ #include "src/common/prim_util.h"
+-#ifdef ENABLE_MODEL_OBF
+-#include "tools/obfuscator/include/deobfuscator.h"
+-#endif
+ #include "include/api/types.h"
+ #ifdef ENABLE_LITE_HELPER
+ #include "src/common/helper/infer_helpers.h"
+ #endif
++#include "include/registry/deobf_processor.h"
+ 
+ namespace mindspore {
+ namespace lite {
+@@ -147,38 +145,23 @@ class MS_API LiteModel : public Model {
+       auto c_node = meta_graph.nodes()->template GetAs<U>(i);
+       MS_CHECK_TRUE_MSG(c_node != nullptr, false, "get as cnode fail!");
+       node->node_type_ = GetPrimitiveType(c_node->primitive(), schema_version_);
+-#ifdef ENABLE_MODEL_OBF
+-      auto src_prim = reinterpret_cast<const schema::Primitive *>(c_node->primitive());
+-      if (src_prim == nullptr) {
+-        delete node;
+-        return false;
+-      }
+-      auto src_prim_type = src_prim->value_type();
+-      unsigned char *dst_prim = nullptr;
+-      if (src_prim_type == schema::PrimitiveType_GenOP) {
+-        if (i >= this->graph_.all_nodes_stat_.size() || i >= this->graph_.all_prims_type_.size()) {
++      if(this->deobf != nullptr){
++        auto src_prim = reinterpret_cast<const schema::Primitive *>(c_node->primitive());
++        auto deobf_ptr = reinterpret_cast<DeObfProcessor *>(this->deobf);
++        DeObfRet ret = (deobf_ptr->*DeObfRegister::CreateDeObfNodeReg)(src_prim,i,schema_version_);
++        if(ret == kDeObfFailed){
+           delete node;
+           return false;
+         }
+-        auto src_node_stat = this->graph_.all_nodes_stat_[i];
+-        auto dst_prim_type = this->graph_.all_prims_type_[i];
+-        auto ret = DeObfuscatePrimitive(src_prim, src_node_stat, &dst_prim, schema::PrimitiveType(dst_prim_type));
+-        if (!ret) {
+-          MS_LOG(ERROR) << "Deobfuscate primitive failed!";
+-          delete node;
+-          return false;
+-        }
+-        if (dst_prim == nullptr) {
++        if(ret == kNoObf){
+           this->graph_.all_nodes_.push_back(node);
+           continue;
+         }
+-        this->graph_.deobf_prims_.push_back(dst_prim);
+-        src_prim = reinterpret_cast<const schema::Primitive *>(flatbuffers::GetRoot<schema::Primitive>(dst_prim));
++        node->primitive_ = const_cast<schema::Primitive *>(src_prim);
++      }
++      else{
++        node->primitive_ = c_node->primitive();
+       }
+-      node->primitive_ = const_cast<schema::Primitive *>(src_prim);
+-#else
+-      node->primitive_ = c_node->primitive();
+-#endif
+       auto status = SetQuantType(meta_graph, c_node, node);
+       if (status == RET_ERROR) {
+         return false;
+diff --git a/mindspore/lite/src/litert/mindrt_executor.cc b/mindspore/lite/src/litert/mindrt_executor.cc
+index 7162ea69..d39003f9 100644
+--- a/mindspore/lite/src/litert/mindrt_executor.cc
++++ b/mindspore/lite/src/litert/mindrt_executor.cc
+@@ -310,14 +310,22 @@ void MindrtExecutor::FreeOutputTensor() {
+     if (dst_tensor->data_type() == kNumberTypeGLUInt && src_tensor->data_type() == kNumberTypeGLUInt) {
+       continue;
+     }
+-    if (dst_tensor->allocator() != nullptr) {
++
++    if ((dst_tensor->allocator() != nullptr && dst_tensor->own_data()) || dst_tensor->data() == nullptr) {
++      MS_LOG(DEBUG) << "free data";
+       dst_tensor->FreeData();
+-    } else {
+-      if (dst_tensor->data_type() == src_tensor->data_type()) {
++    } else if (dst_tensor->data() != nullptr && dst_tensor->data_type() == src_tensor->data_type()) {
++      if (dst_tensor->allocator() == nullptr) {
+         /* user set graph-output-tensor from outside */
++        MS_LOG(DEBUG) << "user set graph-output-tensor from outside";
+         src_tensor->set_data(dst_tensor->data());
+         src_tensor->set_own_data(false);
+         src_tensor->set_allocator(nullptr);
++      } else if (dst_tensor->allocator() == src_tensor->allocator()) {
++        /* nnrt npu zero copy scene */
++        MS_LOG(DEBUG) << "zero copy data";
++        src_tensor->set_data(dst_tensor->data());
++        src_tensor->set_own_data(dst_tensor->own_data());
+       }
+     }
+   }
+diff --git a/mindspore/lite/src/train/graph_fusion.cc b/mindspore/lite/src/train/graph_fusion.cc
+index 44be29a3..aad0af86 100644
+--- a/mindspore/lite/src/train/graph_fusion.cc
++++ b/mindspore/lite/src/train/graph_fusion.cc
+@@ -27,6 +27,7 @@
+ #include "tools/converter/legacy_optimizer/graph/isolated_node_remove_pass.h"
+ #include "tools/converter/legacy_optimizer/graph/subgraph_node_pass.h"
+ #include "src/train/optimizer/fusion/matmul_add_fusion_pass.h"
++#include "src/train/optimizer/fusion/remove_redundant_tensor.h"
+ 
+ namespace mindspore {
+ namespace lite {
+@@ -64,6 +65,12 @@ STATUS GraphFusion::Run(schema::MetaGraphT *graph) {
+     MS_LOG(ERROR) << "graph fusion failed.";
+     return RET_ERROR;
+   }
++  auto opt_tensor = new (std::nothrow) RemoveRedundantTensor();
++  MS_CHECK_TRUE_MSG(opt_tensor != nullptr, RET_NULL_PTR, "Create RemoveRedundantTensor failed.");
++  if (opt_tensor->Run(graph) != RET_OK) {
++    MS_LOG(ERROR) << "Do RemoveRedundantTensor failed.";
++    return RET_ERROR;
++  }
+   return RET_OK;
+ }
+ }  // namespace lite
+diff --git a/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.cc b/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.cc
+new file mode 100644
+index 00000000..e74e78e2
+--- /dev/null
++++ b/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.cc
+@@ -0,0 +1,89 @@
++/**
++ * Copyright 2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "src/train/optimizer/fusion/remove_redundant_tensor.h"
++#include <map>
++#include "src/common/log_adapter.h"
++#include "nnacl/op_base.h"
++
++namespace mindspore {
++namespace lite {
++STATUS RemoveRedundantTensor::Run(schema::MetaGraphT *graph) {
++  if (graph == nullptr) {
++    MS_LOG(ERROR) << "The graph is a nullptr.";
++    return RET_NULL_PTR;
++  }
++  std::map<uint32_t, uint32_t> index_map;
++  uint32_t index = 0;
++  auto graph_input_index = graph->inputIndex;
++  graph->inputIndex.clear();
++  for (auto input_index : graph_input_index) {
++    if (index_map.find(input_index) == index_map.end()) {
++      index_map[input_index] = index;
++      ++index;
++    }
++    graph->inputIndex.push_back(index_map[input_index]);
++  }
++  for (auto &node : graph->nodes) {
++    auto node_in_index = node->inputIndex;
++    node->inputIndex.clear();
++    for (auto in_index : node_in_index) {
++      if (index_map.find(in_index) == index_map.end()) {
++        index_map[in_index] = index;
++        ++index;
++      }
++      node->inputIndex.push_back(index_map[in_index]);
++    }
++    auto node_out_index = node->outputIndex;
++    node->outputIndex.clear();
++    for (auto out_index : node_out_index) {
++      if (index_map.find(out_index) == index_map.end()) {
++        index_map[out_index] = index;
++        ++index;
++      }
++      node->outputIndex.push_back(index_map[out_index]);
++    }
++  }
++  auto graph_output_index = graph->outputIndex;
++  graph->outputIndex.clear();
++  for (auto output_index : graph_output_index) {
++    if (index_map.find(output_index) == index_map.end()) {
++      index_map[output_index] = index;
++      ++index;
++    }
++    graph->outputIndex.push_back(index_map[output_index]);
++  }
++  std::vector<std::unique_ptr<mindspore::schema::TensorT>> old_tensors;
++  old_tensors.swap(graph->allTensors);
++  graph->allTensors.resize(index_map.size());
++  for (size_t i = 0; i < old_tensors.size(); ++i) {
++    if (index_map.find(i) == index_map.end()) {
++      continue;
++    }
++    graph->allTensors[index_map[i]].swap(old_tensors[i]);
++  }
++  if (!graph->subGraph.empty()) {
++    graph->subGraph[0]->inputIndices = graph->inputIndex;
++    graph->subGraph[0]->outputIndices = graph->outputIndex;
++    graph->subGraph[0]->tensorIndices = {};
++    for (uint32_t i = 0; i < index; ++i) {
++      graph->subGraph[0]->tensorIndices.push_back(i);
++    }
++  }
++  return RET_OK;
++}
++}  // namespace lite
++}  // namespace mindspore
+diff --git a/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.h b/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.h
+new file mode 100644
+index 00000000..8da58dc5
+--- /dev/null
++++ b/mindspore/lite/src/train/optimizer/fusion/remove_redundant_tensor.h
+@@ -0,0 +1,36 @@
++/**
++ * Copyright 2023 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_TOOLS_CONVERTER_LEGACY_OPTIMIZER_FUSION_REMOVE_REDUNDANT_TENSOR_H_
++#define MINDSPORE_LITE_TOOLS_CONVERTER_LEGACY_OPTIMIZER_FUSION_REMOVE_REDUNDANT_TENSOR_H_
++
++#include "include/errorcode.h"
++#include "schema/inner/model_generated.h"
++
++namespace mindspore {
++namespace lite {
++class RemoveRedundantTensor {
++ public:
++  RemoveRedundantTensor() = default;
++
++  ~RemoveRedundantTensor() = default;
++
++  STATUS Run(schema::MetaGraphT *graph);
++};
++}  // namespace lite
++}  // namespace mindspore
++
++#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_LEGACY_OPTIMIZER_FUSION_REMOVE_REDUNDANT_TENSOR_H_
+diff --git a/mindspore/lite/src/train/train_session.cc b/mindspore/lite/src/train/train_session.cc
+index 79444a00..b3753bbd 100644
+--- a/mindspore/lite/src/train/train_session.cc
++++ b/mindspore/lite/src/train/train_session.cc
+@@ -1221,77 +1221,6 @@ int TrainSession::FindExportKernels(std::vector<kernel::KernelExec *> *export_ke
+   return RET_OK;
+ }
+ 
+-template <typename DestType>
+-int TrainSession::ExportByDifferentType(DestType destination, ModelType model_type, QuantizationType quant_type,
+-                                        bool orig_train_state, std::vector<std::string> output_tensor_name) {
+-  float obf_ratio = ModelRecoverObfuscate();
+-  TrainExport texport(destination);
+-  int status = texport.ExportInit(model_.get()->graph_.name_, model_.get()->graph_.version_);
+-  TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Fail to init export");
+-  if (!output_tensor_name.empty()) {
+-    if (model_type == MT_INFERENCE) {
+-      std::vector<kernel::KernelExec *> export_kernels = {};
+-      status = FindExportKernels(&export_kernels, output_tensor_name, const_fold_kernels_);
+-      TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "FindExportKernels failed.");
+-      status = texport.ExportNet(export_kernels, tensors_, const_output_tensors_, output_tensor_name, model_.get(),
+-                                 quant_type);
+-    } else {
+-      MS_LOG(WARNING) << "Train model does not support to export selected output tensor, and all of the train kernels "
+-                         "tensors will be exported";
+-    }
+-  } else {
+-    if (quant_type == QT_NONE) {
+-      if ((!model_buff_changed_) && (model_type == MT_TRAIN) &&
+-          std::all_of(model_->graph_.all_nodes_.begin(), model_->graph_.all_nodes_.end(), [](const LiteGraph::Node *n) {
+-            return n->quant_type_ == schema::QuantType::QuantType_QUANT_NONE;
+-          })) {
+-        status = texport.SaveModel(model_.get(), destination);
+-        TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Failed to save model");
+-        if (orig_train_state) {
+-          status = Train();
+-          TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Train failed.");
+-        }
+-        if (!FloatCompare(obf_ratio, 1.0)) {
+-          ModelDeObfuscate(obf_ratio);
+-        }
+-        return status;
+-      }
+-      status = texport.ExportNet(
+-        (model_type == MT_TRAIN) ? train_kernels_ : const_fold_kernels_, tensors_, const_output_tensors_,
+-        (model_type == MT_TRAIN) ? train_output_tensor_names_ : eval_output_tensor_names_, model_.get(), quant_type);
+-
+-    } else {
+-      status = texport.ExportNet((model_type == MT_TRAIN) ? train_kernels_ : inference_kernels_, tensors_, {},
+-                                 (model_type == MT_TRAIN) ? train_output_tensor_names_ : eval_output_tensor_names_,
+-                                 model_.get(), quant_type);
+-    }
+-  }
+-  TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Fail to export Network.");
+-  if (model_type == MT_INFERENCE) {
+-    status = texport.TrainModelDrop();
+-    TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "TrainModelDrop failed.");
+-    status = texport.TrainModelFusion();
+-    TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "TrainModelFusion failed.");
+-  }
+-  if constexpr (std::is_same_v<DestType, const std::string &>) {
+-    status = texport.SaveToFile();
+-    if (status != RET_OK) {
+-      MS_LOG(ERROR) << "failed to save to " << destination;
+-      if (!FloatCompare(obf_ratio, 1.0)) {
+-        ModelDeObfuscate(obf_ratio);
+-      }
+-      return status;
+-    }
+-  } else {
+-    status = texport.SaveToBuffer();
+-  }
+-  if (!FloatCompare(obf_ratio, 1.0)) {
+-    ModelDeObfuscate(obf_ratio);
+-  }
+-  TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "failed to save to file or model buffer.");
+-  return RET_OK;
+-}
+-
+ template <typename DestType>
+ int TrainSession::ExportInner(DestType destination, ModelType model_type, QuantizationType quant_type,
+                               FormatType format, std::vector<std::string> out_put_tensor_name) {
+@@ -1317,19 +1246,56 @@ int TrainSession::ExportInner(DestType destination, ModelType model_type, Quanti
+   MS_CHECK_FALSE_MSG(format != FT_FLATBUFFERS, RET_ERROR, "File name cannot be empty");
+ 
+   bool orig_train_state = IsTrain();
+-  // Find and prepare a list of kernels which are const folded
+-  MS_CHECK_TRUE_MSG(FindConstFoldedKernels() == RET_OK, RET_ERROR, "FindConstFoldedKernels failed.");
+-  auto status =
+-    ExportByDifferentType<DestType>(destination, model_type, quant_type, orig_train_state, out_put_tensor_name);
+-  if (status != RET_OK) {
+-    MS_LOG(ERROR) << "Fail to export by different type";
+-    return status;
++  TrainExport texport(destination);
++  int status = texport.ExportInit(model_.get()->graph_.name_, model_.get()->graph_.version_);
++  TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Fail to init export");
++
++  if (!out_put_tensor_name.empty() && model_type == MT_INFERENCE) {
++    std::vector<kernel::KernelExec *> export_kernels = {};
++    status = FindExportKernels(&export_kernels, out_put_tensor_name, const_fold_kernels_);
++    TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "FindExportKernels failed.");
++    status =
++        texport.ExportNet(export_kernels, tensors_, const_output_tensors_, out_put_tensor_name, model_.get(), quant_type);
++  } else {
++    if ((!model_buff_changed_) && (quant_type == QT_NONE) && (model_type == MT_TRAIN) &&
++        std::all_of(model_->graph_.all_nodes_.begin(), model_->graph_.all_nodes_.end(), [](const LiteGraph::Node *n) {
++          return n->quant_type_ == schema::QuantType::QuantType_QUANT_NONE;
++        })) {
++      status = texport.SaveModel(model_.get(), destination);
++      if (orig_train_state) Train();
++      return status;
++    } else {
++      if (quant_type == QT_NONE) {
++        status = texport.ExportNet(
++            (model_type == MT_TRAIN) ? train_kernels_ : const_fold_kernels_, tensors_, const_output_tensors_,
++            (model_type == MT_TRAIN) ? train_output_tensor_names_ : eval_output_tensor_names_, model_.get(), quant_type);
++      } else {
++        status = texport.ExportNet((model_type == MT_TRAIN) ? train_kernels_ : inference_kernels_, tensors_, {},
++                                   (model_type == MT_TRAIN) ? train_output_tensor_names_ : eval_output_tensor_names_,
++                                   model_.get(), quant_type);
++      }
++    }
+   }
+-  if (orig_train_state) {
+-    status = Train();
+-    TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Train failed");
++  TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "Fail to export Network.");
++
++  if (model_type == MT_INFERENCE) {
++    status = texport.TrainModelDrop();
++    TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "TrainModelDrop failed.");
++    status = texport.TrainModelFusion();
++    TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "TrainModelFusion failed.");
+   }
+-  return RET_OK;
++  if constexpr (std::is_same_v<DestType, const std::string &>) {
++    status = texport.SaveToFile();
++    if (status != RET_OK) {
++      MS_LOG(ERROR) << "failed to save to " << destination;
++      return status;
++    }
++  } else {
++    status = texport.SaveToBuffer();
++    TRAIN_SESSION_CHECK_FALSE_MSG(status != RET_OK, status, "fail to save to model buffer.");
++  }
++  if (orig_train_state) Train();
++  return status;
+ }
+ 
+ int TrainSession::Export(const std::string &file_name, ModelType model_type, QuantizationType quant_type,
+diff --git a/mindspore/lite/src/train/train_session.h b/mindspore/lite/src/train/train_session.h
+index b2b78798..1982da79 100644
+--- a/mindspore/lite/src/train/train_session.h
++++ b/mindspore/lite/src/train/train_session.h
+@@ -176,9 +176,6 @@ class TrainSession : virtual public lite::LiteSession {
+                                 const std::unordered_map<lite::Tensor *, size_t> &offset_map,
+                                 std::unordered_map<lite::Tensor *, int> *ref_count, uint32_t input_idx);
+   template <typename DestType>
+-  int ExportByDifferentType(DestType destination, ModelType model_type, QuantizationType quant_type,
+-                            bool orig_train_state, std::vector<std::string> output_tensor_name = {});
+-  template <typename DestType>
+   int ExportInner(DestType destination, ModelType model_type, QuantizationType quant_type, FormatType,
+                   std::vector<std::string> out_put_tensor_name = {});
+   lite::Tensor *FindObfTensor();
+diff --git a/mindspore/lite/test/CMakeLists.txt b/mindspore/lite/test/CMakeLists.txt
+index aca48fc5..de1ed7db 100644
+--- a/mindspore/lite/test/CMakeLists.txt
++++ b/mindspore/lite/test/CMakeLists.txt
+@@ -243,10 +243,6 @@ if(MSLITE_ENABLE_CONVERTER)
+                                     onnx_parser_mid tf_parser_mid third_party_parser_mid)
+ endif()
+ 
+-if(MSLITE_ENABLE_MODEL_OBF)
+-    target_link_libraries(lite-test ${OBF_LIB_DIR}/libmsdeobfuscator-lite.so)
+-endif()
+-
+ if(MSLITE_ENABLE_KERNEL_EXECUTOR)
+     target_link_libraries(lite-test kernel_executor)
+ endif()
+diff --git a/mindspore/lite/tools/converter/converter.cc b/mindspore/lite/tools/converter/converter.cc
+index 16e957de..71e3b828 100644
+--- a/mindspore/lite/tools/converter/converter.cc
++++ b/mindspore/lite/tools/converter/converter.cc
+@@ -455,10 +455,12 @@ int ConverterImpl::InitConfigParam(const std::shared_ptr<ConverterPara> &param,
+       MS_LOG(ERROR) << "Parse mixed bit weight quant param failed.";
+       return ret;
+     }
+-    ret = lite::ThirdPartyParamParser::Parse(config_parser.GetThirdPartyModelString(), &param->thirdPartyModelParam);
+-    if (ret != RET_OK) {
+-      MS_LOG(ERROR) << "Parse third party param failed.";
+-      return ret;
++    if (param->fmk_type == converter::kFmkTypeThirdParty) {
++      ret = lite::ThirdPartyParamParser::Parse(config_parser.GetThirdPartyModelString(), &param->thirdPartyModelParam);
++      if (ret != RET_OK) {
++        MS_LOG(ERROR) << "Parse third party param failed.";
++        return ret;
++      }
+     }
+     ret = InitExtendedIntegrationInfo(param, config_parser);
+     if (ret != RET_OK) {
+diff --git a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/calib_output.cc b/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/calib_output.cc
+index cc2f8a6c..8c06b2d8 100644
+--- a/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/calib_output.cc
++++ b/mindspore/lite/tools/converter/micro/coder/generator/component/const_blocks/calib_output.cc
+@@ -473,6 +473,22 @@ int CompareOutputs(MSTensorHandleArray *outputs, TensorArray *tensor_array) {
+         }
+         break;
+       }
++#ifdef ENABLE_FP16
++      case OH_AI_DATATYPE_NUMBERTYPE_FLOAT16: {
++        float16_t *float16_output = (float16_t *)output->data;
++        for (size_t j = 0; j < elements; ++j) {
++          if (isnan(float16_output[j]) || isinf(float16_output[j]) || isnan(calib[i].data_[j]) ||
++              isinf(calib[i].data_[j])) {
++            printf("error, output data is nan or inf\n");
++            return OH_AI_STATUS_LITE_ERROR;
++          }
++          dot += float16_output[j] * calib[i].data_[j];
++          normx += float16_output[j] * float16_output[j];
++          normy += calib[i].data_[j] * calib[i].data_[j];
++        }
++        break;
++      }
++#endif
+       case OH_AI_DATATYPE_NUMBERTYPE_INT8: {
+         int8_t *int_output = (int8_t *)output->data;
+         for (size_t j = 0; j < elements; ++j) {
+diff --git a/mindspore/lite/tools/obfuscator/include/deobf_creator.h b/mindspore/lite/tools/obfuscator/include/deobf_creator.h
+new file mode 100644
+index 00000000..506eccd8
+--- /dev/null
++++ b/mindspore/lite/tools/obfuscator/include/deobf_creator.h
+@@ -0,0 +1,7 @@
++#include "include/registry/deobf_processor.h"
++
++namespace mindspore::lite{
++
++    extern "C" void CreateDeObfFunc(Model &model);
++
++}//mindspore::lite
+\ No newline at end of file
 -- 
 2.17.1
 

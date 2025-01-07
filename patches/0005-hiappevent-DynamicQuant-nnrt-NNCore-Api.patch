@@ -1,0 +1,2615 @@
+From 33794eddcead5dd045c7e20490ce0145ab4a7465 Mon Sep 17 00:00:00 2001
+From: qiandan <756328797@qq.com>
+Date: Tue, 19 Nov 2024 22:28:31 -0500
+Subject: [PATCH] hiappevent-DynamicQuant-nnrt-NNCore-Api
+
+---
+ mindspore/lite/BUILD.gn                       |   2 +
+ mindspore/lite/mindir/include/mindir_tensor.h |   6 +-
+ mindspore/lite/mindir/include/mindir_types.h  |  28 ++-
+ mindspore/lite/mindir/inner_headers/utils.h   |   2 +-
+ mindspore/lite/mindir/src/mindir.cc           |  93 +++++++++
+ mindspore/lite/mindir/src/mindir_tensor.cc    |  14 +-
+ mindspore/lite/mindir/src/utils.cc            |  27 ++-
+ mindspore/lite/schema/inner/ops_generated.h   |   5 +-
+ mindspore/lite/src/common/BUILD.gn            |   5 +
+ .../src/common/hi_app_event/handler_thread.cc | 143 +++++++++++++
+ .../src/common/hi_app_event/handler_thread.h  | 102 ++++++++++
+ .../src/common/hi_app_event/hi_app_event.cc   |  80 ++++++++
+ .../src/common/hi_app_event/hi_app_event.h    |  31 +++
+ .../hi_app_event/hi_app_event_config.cc       |  57 ++++++
+ .../common/hi_app_event/hi_app_event_config.h |  45 +++++
+ mindspore/lite/src/common/utils.h             |   1 +
+ mindspore/lite/src/litert/c_api/model_c.cc    |  19 +-
+ .../lite/src/litert/cxx_api/model/model.cc    |  96 ++++++++-
+ .../delegate/nnrt/checker/primitive_check.cc  | 115 -----------
+ .../delegate/nnrt/checker/primitive_check.h   |   1 -
+ .../litert/delegate/nnrt/nnrt_allocator.cc    |  64 +++---
+ .../src/litert/delegate/nnrt/nnrt_allocator.h |  20 +-
+ .../src/litert/delegate/nnrt/nnrt_delegate.cc | 190 ++++++++++++------
+ .../src/litert/delegate/nnrt/nnrt_delegate.h  |  13 +-
+ .../litert/delegate/nnrt/nnrt_model_kernel.cc | 190 ++++++++++--------
+ .../litert/delegate/nnrt/nnrt_model_kernel.h  |  17 +-
+ mindspore/lite/src/litert/kernel/cpu/BUILD.gn |   1 +
+ .../src/litert/kernel/cpu/base/custom_base.cc |  14 +-
+ .../litert/kernel/cpu/int8/activation_int8.cc |   4 +
+ .../litert/kernel/cpu/int8/argminmax_int8.cc  |  35 ++--
+ .../src/litert/kernel/cpu/int8/sigmoid_int8.h |   2 +-
+ .../src/litert/kernel/cpu/int8/swish_int8.cc  |  67 ++++++
+ .../src/litert/kernel/cpu/int8/swish_int8.h   |  38 ++++
+ mindspore/lite/src/litert/scheduler.cc        |  10 +-
+ mindspore/lite/src/tensor.h                   |   2 +
+ .../lite/tools/optimizer/fusion/glu_fusion.h  |   4 +-
+ 36 files changed, 1161 insertions(+), 382 deletions(-)
+ create mode 100644 mindspore/lite/src/common/hi_app_event/handler_thread.cc
+ create mode 100644 mindspore/lite/src/common/hi_app_event/handler_thread.h
+ create mode 100644 mindspore/lite/src/common/hi_app_event/hi_app_event.cc
+ create mode 100644 mindspore/lite/src/common/hi_app_event/hi_app_event.h
+ create mode 100644 mindspore/lite/src/common/hi_app_event/hi_app_event_config.cc
+ create mode 100644 mindspore/lite/src/common/hi_app_event/hi_app_event_config.h
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/int8/swish_int8.cc
+ create mode 100644 mindspore/lite/src/litert/kernel/cpu/int8/swish_int8.h
+
+diff --git a/mindspore/lite/BUILD.gn b/mindspore/lite/BUILD.gn
+index 58ee5e51..6f7f85e9 100644
+--- a/mindspore/lite/BUILD.gn
++++ b/mindspore/lite/BUILD.gn
+@@ -397,6 +397,7 @@ ohos_shared_library("mindspore_lib") {
+     "RUNTIME_PASS_CLIP",
+     "ENABLE_MULTI_LAYOUT",
+     "VERSION_STR=\"2.1.0\"",
++    "ENABLE_HI_APP_EVENT",
+   ]
+ 
+   if (target_cpu == "arm") {
+@@ -506,6 +507,7 @@ ohos_shared_library("mindspore_ndk") {
+     "RUNTIME_PASS_CLIP",
+     "ENABLE_MULTI_LAYOUT",
+     "VERSION_STR=\"2.1.0\"",
++    "ENABLE_HI_APP_EVENT",
+   ]
+ 
+   configs = [
+diff --git a/mindspore/lite/mindir/include/mindir_tensor.h b/mindspore/lite/mindir/include/mindir_tensor.h
+index c1ac89bf..43c1478c 100644
+--- a/mindspore/lite/mindir/include/mindir_tensor.h
++++ b/mindspore/lite/mindir/include/mindir_tensor.h
+@@ -8,9 +8,9 @@ namespace lite {
+ 
+ // ********** Tensor **********
+ TensorPtr MindIR_Tensor_Create();
+-TensorPtr MindIR_Tensor_Create(const std::string &name, DataType data_type, const std::vector<int32_t> &dims,
+-                               Format format, const std::vector<uint8_t> &data,
+-                               const std::vector<QuantParam> &quant_params);
++TensorPtr MindIR_Tensor_Create(const char *name, DataType data_type, const int32_t *dims, uint32_t dims_size,
++                               Format format, const uint8_t *data, uint32_t data_size,
++                               const QuantParam *quant_params, uint32_t quant_params_size);
+ std::string MindIR_Tensor_GetName(ConstTensorPtr tensor);
+ void MindIR_Tensor_SetName(TensorPtr *tensor, const std::string &name);
+ DataType MindIR_Tensor_GetDataType(ConstTensorPtr tensor);
+diff --git a/mindspore/lite/mindir/include/mindir_types.h b/mindspore/lite/mindir/include/mindir_types.h
+index 5744441a..196995fa 100644
+--- a/mindspore/lite/mindir/include/mindir_types.h
++++ b/mindspore/lite/mindir/include/mindir_types.h
+@@ -44,11 +44,35 @@ enum DataType : int8_t {
+ enum Format : int8_t {
+   FORMAT_NCHW = 0,
+   FORMAT_NHWC = 1,
++  FORMAT_NHWC4 = 2,
++  FORMAT_HWKC = 3,
++  FORMAT_HWCK = 4,
++  FORMAT_KCHW = 5,
++  FORMAT_CKHW = 6,
++  FORMAT_KHWC = 7,
++  FORMAT_CHWK = 8,
++  FORMAT_HW = 9,
++  FORMAT_HW4 = 10,
++  FORMAT_NC = 11,
++  FORMAT_NC4 = 12,
++  FORMAT_NC4HW4 = 13,
++  FORMAT_NUM_OF_FORMAT = 14,
++  FORMAT_NCDHW = 15,
++  FORMAT_NWC = 16,
++  FORMAT_NCW = 17,
++  FORMAT_NC8HW8 = 18,
++  FORMAT_MIN = FORMAT_NCHW,
++  FORMAT_MAX = FORMAT_NC8HW8
+ };
+ 
+ enum QuantType : int8_t {
+-  QUANT_TYPE_NONE,
+-  QUANT_TYPE_ALL,
++  QUANT_TYPE_NONE = 0,
++  QUANT_TYPE_AWARETRAINING = 1,
++  QUANT_TYPE_WEIGHTQUANT = 2,
++  QUANT_TYPE_POSTTRAINING = 3,
++  QUANT_TYPE_WEIGHT = 4,
++  QUANT_TYPE_ALL = 5,
++  QUANT_TYPE_DYNAMIC = 6
+ };
+ 
+ enum NodeType : uint32_t {
+diff --git a/mindspore/lite/mindir/inner_headers/utils.h b/mindspore/lite/mindir/inner_headers/utils.h
+index 0e6eb35d..0d150f80 100644
+--- a/mindspore/lite/mindir/inner_headers/utils.h
++++ b/mindspore/lite/mindir/inner_headers/utils.h
+@@ -17,7 +17,7 @@ flatbuffers::Offset<schema::Vec2D> CreateVec2D(flatbuffers::FlatBufferBuilder &f
+ mindspore::schema::PrimitiveType MindIR_GetPrimitiveType(PrimitivePtr prim);
+ 
+ flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<schema::QuantParam>>> ConvertQuantParams(
+-  flatbuffers::FlatBufferBuilder &fbb, const std::vector<QuantParam> &quant_params);
++  flatbuffers::FlatBufferBuilder &fbb, const QuantParam *quant_params, uint32_t quant_params_size);
+ 
+ flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<schema::QuantParam>>> ConvertQuantParams(
+   flatbuffers::FlatBufferBuilder &fbb,
+diff --git a/mindspore/lite/mindir/src/mindir.cc b/mindspore/lite/mindir/src/mindir.cc
+index 7041498a..a1f86671 100644
+--- a/mindspore/lite/mindir/src/mindir.cc
++++ b/mindspore/lite/mindir/src/mindir.cc
+@@ -398,6 +398,9 @@ std::vector<int64_t> MindIR_AvgPoolFusion_GetKernelSize(ConstPrimitivePtr primit
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->kernel_size();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -437,6 +440,9 @@ std::vector<int64_t> MindIR_AvgPoolFusion_GetStrides(ConstPrimitivePtr primitive
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->strides();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -476,6 +482,9 @@ std::vector<int64_t> MindIR_AvgPoolFusion_GetPad(ConstPrimitivePtr primitive) {
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->pad();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -712,6 +721,9 @@ std::vector<int64_t> MindIR_BatchToSpaceND_GetBlockShape(ConstPrimitivePtr primi
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->block_shape();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -747,6 +759,9 @@ std::vector<std::vector<int64_t>> MindIR_BatchToSpaceND_GetCrops(ConstPrimitiveP
+     if (prim != nullptr && value != nullptr) {
+       std::vector<std::vector<int64_t>> out;
+       auto src = value->crops();
++      if (src == nullptr) {
++        return {};
++      }
+       for (auto sub_list : *src->data()) {
+         std::vector<int64_t> result_tmp;
+         result_tmp.resize(sub_list->data()->size());
+@@ -871,6 +886,9 @@ std::vector<int64_t> MindIR_Conv2DFusion_GetKernelSize(ConstPrimitivePtr primiti
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->kernel_size();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -911,6 +929,9 @@ std::vector<int64_t> MindIR_Conv2DFusion_GetStride(ConstPrimitivePtr primitive)
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->stride();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -952,6 +973,9 @@ std::vector<int64_t> MindIR_Conv2DFusion_GetDilation(ConstPrimitivePtr primitive
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->dilation();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -1030,6 +1054,9 @@ std::vector<int64_t> MindIR_Conv2DFusion_GetPadList(ConstPrimitivePtr primitive)
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->pad_list();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -1281,6 +1308,9 @@ std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetKernelSize(ConstPrimitivePt
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->kernel_size();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -1322,6 +1352,9 @@ std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetStride(ConstPrimitivePtr pr
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->stride();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -1364,6 +1397,9 @@ std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetDilation(ConstPrimitivePtr
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->dilation();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -1444,6 +1480,9 @@ std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetPadList(ConstPrimitivePtr p
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->pad_list();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -1640,6 +1679,9 @@ std::vector<int64_t> MindIR_Conv2dTransposeFusion_GetOutputPaddings(ConstPrimiti
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->output_paddings();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -2273,6 +2315,9 @@ std::vector<int64_t> MindIR_MaxPoolFusion_GetKernelSize(ConstPrimitivePtr primit
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->kernel_size();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -2312,6 +2357,9 @@ std::vector<int64_t> MindIR_MaxPoolFusion_GetStrides(ConstPrimitivePtr primitive
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->strides();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -2351,6 +2399,9 @@ std::vector<int64_t> MindIR_MaxPoolFusion_GetPad(ConstPrimitivePtr primitive) {
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->pad();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -2680,6 +2731,9 @@ std::vector<std::vector<int64_t>> MindIR_PadFusion_GetPaddings(ConstPrimitivePtr
+     if (prim != nullptr && value != nullptr) {
+       std::vector<std::vector<int64_t>> out;
+       auto src = value->paddings();
++      if (src == nullptr) {
++        return {};
++      }
+       for (auto sub_list : *src->data()) {
+         std::vector<int64_t> result_tmp;
+         result_tmp.resize(sub_list->data()->size());
+@@ -3601,6 +3655,9 @@ std::vector<int64_t> MindIR_SliceFusion_GetAxes(ConstPrimitivePtr primitive) {
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->axes();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -3646,6 +3703,9 @@ std::vector<int64_t> MindIR_Softmax_GetAxis(ConstPrimitivePtr primitive) {
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->axis();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -3694,6 +3754,9 @@ std::vector<int64_t> MindIR_SpaceToBatchND_GetBlockShape(ConstPrimitivePtr primi
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->block_shape();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -3729,6 +3792,9 @@ std::vector<std::vector<int64_t>> MindIR_SpaceToBatchND_GetPaddings(ConstPrimiti
+     if (prim != nullptr && value != nullptr) {
+       std::vector<std::vector<int64_t>> out;
+       auto src = value->paddings();
++      if (src == nullptr) {
++        return {};
++      }
+       for (auto sub_list : *src->data()) {
+         std::vector<int64_t> result_tmp;
+         result_tmp.resize(sub_list->data()->size());
+@@ -3812,6 +3878,9 @@ std::vector<int64_t> MindIR_Split_GetSizeSplits(ConstPrimitivePtr primitive) {
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->size_splits();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -3912,6 +3981,9 @@ std::vector<int64_t> MindIR_Squeeze_GetAxis(ConstPrimitivePtr primitive) {
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->axis();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -4212,6 +4284,9 @@ std::vector<int64_t> MindIR_TileFusion_GetDims(ConstPrimitivePtr primitive) {
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->dims();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -4342,6 +4417,9 @@ std::vector<int64_t> MindIR_Unsqueeze_GetAxis(ConstPrimitivePtr primitive) {
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->axis();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -4399,6 +4477,9 @@ std::vector<int64_t> MindIR_BroadcastTo_GetShape(ConstPrimitivePtr primitive) {
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->shape();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -4477,6 +4558,9 @@ std::vector<float> MindIR_ConstantOfShape_GetValue(ConstPrimitivePtr primitive)
+     if (prim != nullptr && value_ != nullptr) {
+       std::vector<float> result;
+       auto src = value_->value();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](float item) { return item; });
+       return result;
+@@ -5889,6 +5973,9 @@ std::vector<int64_t> MindIR_L2NormalizeFusion_GetAxis(ConstPrimitivePtr primitiv
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->axis();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -6238,6 +6325,9 @@ std::vector<int64_t> MindIR_Crop_GetOffsets(ConstPrimitivePtr primitive) {
+     if (prim != nullptr && value != nullptr) {
+       std::vector<int64_t> result;
+       auto src = value->offsets();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](int64_t item) { return item; });
+       return result;
+@@ -6348,6 +6438,9 @@ std::vector<float> MindIR_DetectionPostProcess_GetScale(ConstPrimitivePtr primit
+     if (prim != nullptr && value != nullptr) {
+       std::vector<float> result;
+       auto src = value->scale();
++      if (src == nullptr) {
++        return {};
++      }
+       result.resize(src->size());
+       std::transform(src->begin(), src->end(), result.begin(), [](float item) { return item; });
+       return result;
+diff --git a/mindspore/lite/mindir/src/mindir_tensor.cc b/mindspore/lite/mindir/src/mindir_tensor.cc
+index 9575f8c2..8888e2c9 100644
+--- a/mindspore/lite/mindir/src/mindir_tensor.cc
++++ b/mindspore/lite/mindir/src/mindir_tensor.cc
+@@ -36,15 +36,15 @@ TensorPtr MindIR_Tensor_Create() {
+   return ret_value;
+ }
+ 
+-TensorPtr MindIR_Tensor_Create(const std::string &name, DataType data_type, const std::vector<int32_t> &dims,
+-                               Format format, const std::vector<uint8_t> &data,
+-                               const std::vector<QuantParam> &quant_params) {
++TensorPtr MindIR_Tensor_Create(const char *name, DataType data_type, const int32_t *dims, uint32_t dims_size,
++                               Format format, const uint8_t *data, uint32_t data_size,
++                               const QuantParam *quant_params, uint32_t quant_params_size) {
+   flatbuffers::FlatBufferBuilder fbb;
+ 
+   auto ops_offset =
+-    schema::CreateTensor(fbb, 0, data_type, fbb.CreateVector(dims.data(), dims.size()),
+-                         static_cast<schema::Format>(format), 0, 0, fbb.CreateVector(data.data(), data.size()),
+-                         ConvertQuantParams(fbb, quant_params), 0, fbb.CreateString(name.c_str(), name.size()));
++    schema::CreateTensor(fbb, 0, data_type, fbb.CreateVector(dims, dims_size),
++                         static_cast<schema::Format>(format), 0, 0, fbb.CreateVector(data, data_size),
++                         ConvertQuantParams(fbb, quant_params, quant_params_size), 0, fbb.CreateString(name, strlen(name)));
+   fbb.Finish(ops_offset);
+   auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, nullptr);
+   auto ret_value = flatbuffers::GetMutableRoot<schema::Tensor>(new_addr);
+@@ -332,7 +332,7 @@ void MindIR_Tensor_SetQuantParams(TensorPtr *tensor, const std::vector<QuantPara
+       }
+       auto ops_offset =
+         schema::CreateTensor(fbb, 0, value->dataType(), dims, static_cast<schema::Format>(value->format()), 0, 0, data,
+-                             ConvertQuantParams(fbb, quant_params), 0, name);
++                             ConvertQuantParams(fbb, quant_params.data(), quant_params.size()), 0, name);
+       fbb.Finish(ops_offset);
+       auto new_addr = MindIRMemoryManager::GetInstance()->CreateTensorFromBuilder(fbb, value);
+       auto ret_value = flatbuffers::GetMutableRoot<schema::Primitive>(new_addr);
+diff --git a/mindspore/lite/mindir/src/utils.cc b/mindspore/lite/mindir/src/utils.cc
+index b044f414..870802a9 100644
+--- a/mindspore/lite/mindir/src/utils.cc
++++ b/mindspore/lite/mindir/src/utils.cc
+@@ -63,21 +63,24 @@ flatbuffers::Offset<schema::Vec2D> CreateVec2D(flatbuffers::FlatBufferBuilder &f
+ }
+ flatbuffers::Offset<schema::Vec2D> CreateVec2D(flatbuffers::FlatBufferBuilder &fbb,
+                                                const mindspore::schema::Vec2D *data) {
+-  auto data_inner = data->data();
+   std::vector<flatbuffers::Offset<schema::Vec>> vet2d;
+-  vet2d.reserve(data_inner->size());
+-  for (const auto data_one : *data_inner) {
+-    vet2d.emplace_back(schema::CreateVec(fbb, fbb.CreateVector(data_one->data()->data(), data_one->data()->size())));
++  if (data != nullptr) {
++    auto data_inner = data->data();
++    vet2d.reserve(data_inner->size());
++    for (const auto data_one : *data_inner) {
++      vet2d.emplace_back(schema::CreateVec(fbb, fbb.CreateVector(data_one->data()->data(), data_one->data()->size())));
++    }
+   }
+   flatbuffers::Offset<schema::Vec2D> v2d = schema::CreateVec2D(fbb, fbb.CreateVector(vet2d));
+   return v2d;
+ }
+ 
+ flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<schema::QuantParam>>> ConvertQuantParams(
+-  flatbuffers::FlatBufferBuilder &fbb, const std::vector<QuantParam> &quant_params) {
++  flatbuffers::FlatBufferBuilder &fbb, const QuantParam *quant_params, uint32_t quant_params_size) {
+   std::vector<flatbuffers::Offset<mindspore::schema::QuantParam>> tmp_vec;
+-  tmp_vec.reserve(quant_params.size());
+-  for (auto q_param : quant_params) {
++  tmp_vec.reserve(quant_params_size);
++  for (uint32_t i = 0; i < quant_params_size; i++) {
++  QuantParam q_param = quant_params[i];
+     tmp_vec.emplace_back(schema::CreateQuantParam(fbb, q_param.scale, q_param.zeroPoint, 0, 0, true, q_param.numBits));
+   }
+   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<schema::QuantParam>>> ret_quant_param =
+@@ -89,10 +92,12 @@ flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<schema::QuantParam>>
+   flatbuffers::FlatBufferBuilder &fbb,
+   const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::QuantParam>> *quant_params) {
+   std::vector<flatbuffers::Offset<mindspore::schema::QuantParam>> tmp_vec;
+-  tmp_vec.reserve(quant_params->size());
+-  for (auto q_param : *quant_params) {
+-    tmp_vec.emplace_back(
+-      schema::CreateQuantParam(fbb, q_param->scale(), q_param->zeroPoint(), 0, 0, true, q_param->numBits()));
++  if (quant_params != nullptr && quant_params->size() != 0) {
++    tmp_vec.reserve(quant_params->size());
++    for (auto q_param : *quant_params) {
++      tmp_vec.emplace_back(
++        schema::CreateQuantParam(fbb, q_param->scale(), q_param->zeroPoint(), 0, 0, true, q_param->numBits()));
++    }
+   }
+   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<schema::QuantParam>>> ret_quant_param =
+     fbb.CreateVector(tmp_vec.data(), tmp_vec.size());
+diff --git a/mindspore/lite/schema/inner/ops_generated.h b/mindspore/lite/schema/inner/ops_generated.h
+index 539935f0..60f0ba17 100644
+--- a/mindspore/lite/schema/inner/ops_generated.h
++++ b/mindspore/lite/schema/inner/ops_generated.h
+@@ -33681,10 +33681,11 @@ inline const flatbuffers::TypeTable *LSTMGradTypeTable() {
+     { flatbuffers::ET_LONG, 0, -1 },
+     { flatbuffers::ET_FLOAT, 0, -1 },
+     { flatbuffers::ET_FLOAT, 0, -1 },
+-    { flatbuffers::ET_FLOAT, 0, -1 }
++    { flatbuffers::ET_FLOAT, 0, -1 },
++    { flatbuffers::ET_LONG, 0, -1 }
+   };
+   static const flatbuffers::TypeTable tt = {
+-    flatbuffers::ST_TABLE, 9, type_codes, nullptr, nullptr, nullptr, nullptr
++    flatbuffers::ST_TABLE, 10, type_codes, nullptr, nullptr, nullptr, nullptr
+   };
+   return &tt;
+ }
+diff --git a/mindspore/lite/src/common/BUILD.gn b/mindspore/lite/src/common/BUILD.gn
+index 8bb14a30..e08e09ce 100644
+--- a/mindspore/lite/src/common/BUILD.gn
++++ b/mindspore/lite/src/common/BUILD.gn
+@@ -17,6 +17,9 @@ lite_src_common_mid_sources = [
+   "random_data_generator.cc",
+   "string_util.cc",
+   "dynamic_library_loader.cc",
++  "hi_app_event/hi_app_event.cc",
++  "hi_app_event/hi_app_event_config.cc",
++  "hi_app_event/handler_thread.cc",
+ ]
+ 
+ ohos_source_set("lite_common_mid_obj") {
+@@ -36,6 +39,7 @@ ohos_source_set("lite_common_mid_obj") {
+ 
+   external_deps = [
+     "hilog:libhilog",
++    "hiappevent:hiappevent_innerapi",
+   ]
+ 
+   configs = [
+@@ -48,6 +52,7 @@ ohos_source_set("lite_common_mid_obj") {
+     "MS_COMPILE_OHOS",
+     "PRIMITIVE_WRITEABLE",
+     "VERSION_STR=\"2.1.0\"",
++    "ENABLE_HI_APP_EVENT",
+   ]
+   if (target_cpu == "arm") {
+     defines += [
+diff --git a/mindspore/lite/src/common/hi_app_event/handler_thread.cc b/mindspore/lite/src/common/hi_app_event/handler_thread.cc
+new file mode 100644
+index 00000000..a84504c0
+--- /dev/null
++++ b/mindspore/lite/src/common/hi_app_event/handler_thread.cc
+@@ -0,0 +1,143 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "handler_thread.h"
++
++namespace mindspore {
++namespace lite {
++HandlerThread::Handler::Handler(HandlerThread& aLooper)
++    : assigned_looper_(aLooper)
++{ }
++
++bool HandlerThread::Handler::Post(HandlerThread::Runnable && aRunnable)
++{
++  return assigned_looper_.Post("", std::move(aRunnable));
++}
++
++bool HandlerThread::Handler::Post(std::string key, HandlerThread::Runnable && aRunnable)
++{
++  return assigned_looper_.Post(key, std::move(aRunnable));
++}
++
++HandlerThread::HandlerThread()
++    : running_(false),
++      abort_requested_(false),
++      runnables_(),
++      runnables_mutex_(),
++      handler_(std::make_shared< Handler >(*this))
++{ }
++
++HandlerThread::~HandlerThread()
++{
++  AbortAndJoin();
++}
++
++bool HandlerThread::Running() const
++{
++  return running_.load();
++}
++
++bool HandlerThread::Run()
++{
++  thread_ = std::thread(&HandlerThread::RunFunc, this);
++
++  return true;
++}
++
++void HandlerThread::Stop()
++{
++  AbortAndJoin();
++}
++
++std::shared_ptr < HandlerThread::Handler > HandlerThread::GetHandler()
++{
++  return handler_;
++}
++
++void HandlerThread::RunFunc()
++{
++  running_.store(true);
++
++  (void)pthread_setname_np(pthread_self(), "OS_MSEvent");
++  while (abort_requested_.load() == false) {
++    Runnable r = Next();
++    if (r != nullptr) {
++      r();
++    } else {
++      std::unique_lock<std::mutex> lock{mutex_};
++      condition_.wait(lock);
++    }
++  }
++
++  running_.store(false);
++}
++
++void HandlerThread::AbortAndJoin()
++{
++  abort_requested_.store(true);
++  condition_.notify_one();
++  if (thread_.joinable()) {
++    thread_.join();
++  }
++}
++
++HandlerThread::Runnable HandlerThread::Next()
++{
++  std::lock_guard guard(runnables_mutex_);
++
++  if (runnables_.empty()) {
++    return nullptr;
++  }
++  std::shared_ptr<Message> msg = runnables_.front();
++  Runnable runnable = msg->r;
++  runnables_.pop_front();
++  return runnable;
++}
++
++class IsSameKey {
++public:
++  std::string key_;
++
++  bool operator()(std::shared_ptr < HandlerThread::Message > obj)
++  {
++    return obj->key == key_;
++  }
++
++  explicit IsSameKey(std::string key) { key_ = key; }
++};
++
++bool HandlerThread::Post(std::string key, Runnable && aRunnable)
++{
++  if (not Running()) {
++    std::cout << "Denying insertion, as the looper is not running.\n";
++    return false;
++  }
++
++  std::lock_guard guard(runnables_mutex_);
++  if (!key.empty()) {
++    runnables_.remove_if(IsSameKey(key));
++  }
++  auto msg = std::make_shared<Message>();
++  msg->key = key;
++  msg->r = std::move(aRunnable);
++  runnables_.push_back(msg);
++  std::unique_lock<std::mutex> lock{mutex_};
++  condition_.notify_one();
++
++  return true;
++}
++}  // mindspore
++}  // lite
+\ No newline at end of file
+diff --git a/mindspore/lite/src/common/hi_app_event/handler_thread.h b/mindspore/lite/src/common/hi_app_event/handler_thread.h
+new file mode 100644
+index 00000000..91e5cc19
+--- /dev/null
++++ b/mindspore/lite/src/common/hi_app_event/handler_thread.h
+@@ -0,0 +1,102 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef LITE_HANDLER_THREAD_H
++#define LITE_HANDLER_THREAD_H
++
++#include <list>
++#include <thread>
++#include <atomic>
++#include <memory>
++#include <functional>
++#include <stdexcept>
++#include <mutex>
++#include <queue>
++#include <iostream>
++#include <string>
++#include <condition_variable>
++
++namespace mindspore {
++namespace lite {
++
++class HandlerThread {
++public:
++  using Runnable = std::function<void()>;
++
++  struct Message {
++    std::string key;
++    Runnable r;
++  };
++
++  class Handler {
++    friend class HandlerThread; // Allow the looper to access the private constructor.
++
++  public:
++    bool Post(HandlerThread::Runnable &&aRunnable);
++
++    /**
++     * 在该线程抛出一个任务，并会移除当前任务等待队列中相同key值的任务
++     * @param key 任务的唯一标志
++     * @param aRunnable 待执行的任务
++     * @return true成功，false失败
++     */
++    bool Post(std::string key, HandlerThread::Runnable && aRunnable);
++
++  public: // construction, since we want the looper to expose it's dispatcher exclusively!
++    explicit Handler(HandlerThread &aLooper);
++
++  private:
++    HandlerThread &assigned_looper_;
++  };
++
++public:
++  HandlerThread();
++
++  ~HandlerThread();
++
++  bool Running() const;
++
++  bool Run();
++
++  void Stop();
++
++  std::shared_ptr<Handler> GetHandler();
++
++private:
++  void RunFunc();
++
++  void AbortAndJoin();
++
++  Runnable Next();
++
++  bool Post(std::string key, HandlerThread::Runnable && aRunnable);
++
++private:
++  std::thread thread_;
++  std::atomic_bool running_;
++  std::atomic_bool abort_requested_;
++
++  std::list<std::shared_ptr<Message>> runnables_;
++  std::recursive_mutex runnables_mutex_;
++
++  std::shared_ptr<Handler> handler_;
++
++  std::mutex mutex_;
++  std::condition_variable condition_;
++};
++}  // mindspore
++}  // lite
++#endif  // LITE_HANDLER_THREAD_H
+diff --git a/mindspore/lite/src/common/hi_app_event/hi_app_event.cc b/mindspore/lite/src/common/hi_app_event/hi_app_event.cc
+new file mode 100644
+index 00000000..ab46cde3
+--- /dev/null
++++ b/mindspore/lite/src/common/hi_app_event/hi_app_event.cc
+@@ -0,0 +1,80 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifdef ENABLE_HI_APP_EVENT
++#include "src/common/hi_app_event/hi_app_event.h"
++#include "src/common/hi_app_event/hi_app_event_config.h"
++#include "app_event.h"
++#include "app_event_processor_mgr.h"
++#include <time.h>
++#include <cstdlib>
++
++namespace mindspore {
++namespace lite {
++namespace {
++constexpr auto kName = "ha_app_event";
++constexpr auto kAppId = "com_huawei_hmos_sdk_ocg";
++constexpr int32_t kTimeOut = 90;
++constexpr int32_t kCondRow = 30;
++constexpr auto kDomain = "api_diagnostic";
++constexpr auto kEventName = "api_exec_end";
++constexpr auto kSdkName = "MindSporeLiteKit";
++constexpr int64_t kAppEventNotHapErrCode = -200;
++static int64_t process_id = -1;
++}
++
++int64_t HiAppEventAddProcessor() {
++  std::srand(std::time(NULL));
++  OHOS::HiviewDFX::HiAppEvent::ReportConfig config;
++  config.name = kName;
++  config.appId = kAppId;
++  config.routeInfo = "AUTO";
++  config.triggerCond.timeout = kTimeOut;
++  config.triggerCond.row = kCondRow;
++  config.eventConfigs.clear();
++  {
++    OHOS::HiviewDFX::HiAppEvent::EventConfig event;
++    event.domain = kDomain;
++    event.name = kEventName;
++    event.isRealTime = false;
++    config.eventConfigs.push_back(event);
++  }
++  if (process_id == -1) {
++    process_id = OHOS::HiviewDFX::HiAppEvent::AppEventProcessorMgr::AddProcessor(config);
++  }
++  return process_id;
++}
++
++void HiAppEventWriteEndEvent(const int result, const int err_code, const std::string &api_name,
++                             const uint64_t begin_time, const std::string &devices) {
++  if (process_id == kAppEventNotHapErrCode) {
++    return;
++  }
++  OHOS::HiviewDFX::HiAppEvent::Event event(kDomain, kEventName, OHOS::HiviewDFX::HiAppEvent::BEHAVIOR);
++  event.AddParam("trans_id", "transId_" + std::to_string(std::rand() + HiAppEventConfig::GetInstance()->GetTimeMs()));
++  event.AddParam("api_name", api_name);
++  event.AddParam("sdk_name", std::string(kSdkName));
++  event.AddParam("begin_time", static_cast<int64_t>(begin_time));
++  event.AddParam("end_time", static_cast<int64_t>(HiAppEventConfig::GetInstance()->GetTimeMs()));
++  event.AddParam("result", result);
++  event.AddParam("error_code", std::to_string(err_code));
++  event.AddParam("context_devices", devices);
++  event.AddParam("api_language", HiAppEventConfig::GetInstance()->GetApiLanguage());
++  OHOS::HiviewDFX::HiAppEvent::Write(event);
++}
++}  // namespace lite
++}  // namespace mindspore
++#endif
+diff --git a/mindspore/lite/src/common/hi_app_event/hi_app_event.h b/mindspore/lite/src/common/hi_app_event/hi_app_event.h
+new file mode 100644
+index 00000000..a5de1ad3
+--- /dev/null
++++ b/mindspore/lite/src/common/hi_app_event/hi_app_event.h
+@@ -0,0 +1,31 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_HI_APP_EVENT_H_
++#define MINDSPORE_LITE_HI_APP_EVENT_H_
++
++#ifdef ENABLE_HI_APP_EVENT
++#include <string>
++
++namespace mindspore {
++namespace lite {
++int64_t HiAppEventAddProcessor();
++void HiAppEventWriteEndEvent(const int result, const int err_code, const std::string &api_name,
++                             const uint64_t begin_time, const std::string &devices = "None");
++}  // namespace lite
++}  // namespace mindspore
++#endif
++#endif  // MINDSPORE_LITE_HI_APP_EVENT_H_
+diff --git a/mindspore/lite/src/common/hi_app_event/hi_app_event_config.cc b/mindspore/lite/src/common/hi_app_event/hi_app_event_config.cc
+new file mode 100644
+index 00000000..c488cd86
+--- /dev/null
++++ b/mindspore/lite/src/common/hi_app_event/hi_app_event_config.cc
+@@ -0,0 +1,57 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifdef ENABLE_HI_APP_EVENT
++#include "src/common/hi_app_event/hi_app_event_config.h"
++#include <ctime>
++
++namespace mindspore {
++namespace lite {
++HiAppEventConfig *HiAppEventConfig::GetInstance() {
++  static HiAppEventConfig instance;
++  return &instance;
++}
++
++HiAppEventConfig::HiAppEventConfig() {
++  if (handler_thread_ == nullptr) {
++    handler_thread_ = std::make_unique<HandlerThread>();
++    handler_thread_->Run();
++    handler_ = handler_thread_->GetHandler();
++  }
++}
++
++HiAppEventConfig::~HiAppEventConfig() {
++}
++
++void HiAppEventConfig::Post(std::function<void()> &&f) {
++  handler_->Post(std::move(f));
++}
++
++void HiAppEventConfig::SetApiLanguage(const std::string &api_language) {
++  api_language_ = api_language;
++}
++
++uint64_t HiAppEventConfig::GetTimeMs() {
++  struct timespec ts = {0, 0};
++  if (clock_gettime(CLOCK_REALTIME, &ts) != 0) {
++    return 0;
++  }
++  uint64_t ret_val = static_cast<uint64_t>(ts.tv_sec * 1000LL + ts.tv_nsec / 1000000);
++  return ret_val;
++}
++}  // namespace lite
++}  // namespace mindspore
++#endif
+diff --git a/mindspore/lite/src/common/hi_app_event/hi_app_event_config.h b/mindspore/lite/src/common/hi_app_event/hi_app_event_config.h
+new file mode 100644
+index 00000000..57bee08d
+--- /dev/null
++++ b/mindspore/lite/src/common/hi_app_event/hi_app_event_config.h
+@@ -0,0 +1,45 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_HI_APP_EVENT_CONFIG_H_
++#define MINDSPORE_LITE_HI_APP_EVENT_CONFIG_H_
++
++#ifdef ENABLE_HI_APP_EVENT
++#include <string>
++#include "handler_thread.h"
++
++namespace mindspore {
++namespace lite {
++class HiAppEventConfig {
++public:
++  static HiAppEventConfig *GetInstance();
++  const std::string &GetApiLanguage() const { return api_language_; }
++  void SetApiLanguage(const std::string &api_language);
++  uint64_t GetTimeMs();
++  void Post(std::function<void()> &&f);
++
++private:
++  HiAppEventConfig();
++  ~HiAppEventConfig();
++
++  std::string api_language_ = "ts_api";
++  std::unique_ptr<HandlerThread> handler_thread_{nullptr};
++  std::shared_ptr<HandlerThread::Handler> handler_{nullptr};
++};
++}  // namespace lite
++}  // namespace mindspore
++#endif
++#endif  // MINDSPORE_LITE_HI_APP_EVENT_CONFIG_H_
+diff --git a/mindspore/lite/src/common/utils.h b/mindspore/lite/src/common/utils.h
+index 49dd6348..9b9f9721 100644
+--- a/mindspore/lite/src/common/utils.h
++++ b/mindspore/lite/src/common/utils.h
+@@ -25,6 +25,7 @@
+ #include <cmath>
+ #include <string>
+ #include <utility>
++#include <regex>
+ #include <algorithm>
+ #include <map>
+ #include "src/common/log_adapter.h"
+diff --git a/mindspore/lite/src/litert/c_api/model_c.cc b/mindspore/lite/src/litert/c_api/model_c.cc
+index 6aab0e59..345cd6b3 100644
+--- a/mindspore/lite/src/litert/c_api/model_c.cc
++++ b/mindspore/lite/src/litert/c_api/model_c.cc
+@@ -22,6 +22,9 @@
+ #include "include/api/types.h"
+ #include "src/litert/cxx_api/tensor/tensor_impl.h"
+ #include "src/litert/cxx_api/model/model_impl.h"
++#ifdef ENABLE_HI_APP_EVENT
++#include "src/common/hi_app_event/hi_app_event_config.h"
++#endif
+ 
+ namespace mindspore {
+ class ModelC {
+@@ -144,6 +147,9 @@ mindspore::MSKernelCallBack ModelC::TransCallBack(const OH_AI_KernelCallBack &ms
+ }  // namespace mindspore
+ 
+ OH_AI_ModelHandle OH_AI_ModelCreate() {
++#ifdef ENABLE_HI_APP_EVENT
++  mindspore::lite::HiAppEventConfig::GetInstance()->SetApiLanguage("c_api");
++#endif
+   auto impl = new (std::nothrow) mindspore::ModelC();
+   if (impl == nullptr) {
+     MS_LOG(ERROR) << "Model implement is nullptr.";
+@@ -268,8 +274,6 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+   mindspore::MSKernelCallBack after_call_back = impl->TransCallBack(after);
+   std::vector<mindspore::MSTensor> ms_tensor_outputs;
+ 
+-  bool all_has_data = false;
+-
+   size_t output_num;
+   (void)impl->GetOutputs(&output_num);
+   auto handle_num = outputs->handle_num;
+@@ -282,15 +286,6 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+       }
+       ms_tensor_outputs.push_back(*static_cast<mindspore::MSTensor *>(outputs->handle_list[i]));
+     }
+-
+-    all_has_data = std::all_of(ms_tensor_outputs.begin(), ms_tensor_outputs.end(), [](const mindspore::MSTensor &t) {
+-      return t.Data() != nullptr;
+-    });
+-
+-    if (!all_has_data) {
+-      ms_tensor_outputs.clear();
+-    }
+-
+   }
+ 
+   auto ret = impl->model_->Predict(ms_tensor_inputs, &ms_tensor_outputs, before_call_back, after_call_back);
+@@ -299,7 +294,7 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
+     return static_cast<OH_AI_Status>(ret.StatusCode());
+   }
+ 
+-  if (handle_num == output_num && all_has_data) {
++  if (handle_num == output_num) {
+     return OH_AI_STATUS_SUCCESS;
+   }
+ 
+diff --git a/mindspore/lite/src/litert/cxx_api/model/model.cc b/mindspore/lite/src/litert/cxx_api/model/model.cc
+index b8451bf7..88152e0e 100644
+--- a/mindspore/lite/src/litert/cxx_api/model/model.cc
++++ b/mindspore/lite/src/litert/cxx_api/model/model.cc
+@@ -37,6 +37,10 @@
+ #include "src/common/decrypt.h"
+ #include "src/common/file_utils.h"
+ #endif
++#ifdef ENABLE_HI_APP_EVENT
++#include "src/common/hi_app_event/hi_app_event.h"
++#include "src/common/hi_app_event/hi_app_event_config.h"
++#endif
+ 
+ namespace mindspore {
+ #ifdef USE_GLOG
+@@ -124,6 +128,13 @@ Status Model::Build(const void *model_data, size_t data_size, ModelType model_ty
+ 
+ Status Model::Build(const void *model_data, size_t data_size, ModelType model_type,
+                     const std::shared_ptr<Context> &model_context) {
++#ifdef ENABLE_HI_APP_EVENT
++  uint64_t begin_time = mindspore::lite::HiAppEventConfig::GetInstance()->GetTimeMs();
++  std::string devices;
++  for (auto device : model_context->MutableDeviceInfo()) {
++    devices += std::to_string(device->GetDeviceType()) + " ";
++  }
++#endif
+   if (impl_ == nullptr) {
+     MS_LOG(ERROR) << "Model implement is null.";
+     return kLiteNullptr;
+@@ -153,6 +164,12 @@ Status Model::Build(const void *model_data, size_t data_size, ModelType model_ty
+   }
+ #endif
+   ret = impl_->Build(model_data, data_size, model_type, model_context);
++#ifdef ENABLE_HI_APP_EVENT
++  mindspore::lite::HiAppEventConfig::GetInstance()->Post([ret, begin_time, devices] {
++    (void)mindspore::lite::HiAppEventWriteEndEvent(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelBuild", begin_time,
++                                                   devices);
++  });
++#endif
+   if (ret != kSuccess) {
+     return ret;
+   }
+@@ -230,6 +247,13 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
+ 
+ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
+                     const std::shared_ptr<Context> &model_context) {
++#ifdef ENABLE_HI_APP_EVENT
++  uint64_t begin_time = mindspore::lite::HiAppEventConfig::GetInstance()->GetTimeMs();
++  std::string devices;
++  for (auto device : model_context->MutableDeviceInfo()) {
++    devices += std::to_string(device->GetDeviceType()) + " ";
++  }
++#endif
+   if (impl_ == nullptr) {
+     MS_LOG(ERROR) << "Model implement is null.";
+     return kLiteNullptr;
+@@ -259,6 +283,12 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
+   }
+ #endif
+   ret = impl_->Build(CharToString(model_path), model_type, model_context);
++#ifdef ENABLE_HI_APP_EVENT
++  mindspore::lite::HiAppEventConfig::GetInstance()->Post([ret, begin_time, devices] {
++    (void)mindspore::lite::HiAppEventWriteEndEvent(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelBuildFromFile",
++                                                   begin_time, devices);
++  });
++#endif
+   if (ret != kSuccess) {
+     return ret;
+   }
+@@ -267,6 +297,13 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
+ 
+ Status Model::Build(GraphCell graph, const std::shared_ptr<Context> &model_context,
+                     const std::shared_ptr<TrainCfg> &train_cfg) {
++#ifdef ENABLE_HI_APP_EVENT
++  uint64_t begin_time = mindspore::lite::HiAppEventConfig::GetInstance()->GetTimeMs();
++  std::string devices;
++  for (auto device : model_context->MutableDeviceInfo()) {
++    devices += std::to_string(device->GetDeviceType()) + " ";
++  }
++#endif
+   std::stringstream err_msg;
+   if (impl_ == nullptr) {
+     MS_LOG(ERROR) << "Model implement is null.";
+@@ -312,15 +349,31 @@ Status Model::Build(GraphCell graph, const std::shared_ptr<Context> &model_conte
+   impl_->SetContext(model_context);
+   impl_->SetGraph(graph.GetGraph());
+   impl_->SetConfig(train_cfg);
+-  return impl_->Build();
++  auto ret = impl_->Build();
++#ifdef ENABLE_HI_APP_EVENT
++  mindspore::lite::HiAppEventConfig::GetInstance()->Post([ret, begin_time, devices] {
++    (void)mindspore::lite::HiAppEventWriteEndEvent(ret.StatusCode(), ret.StatusCode(), "OH_AI_TrainModelBuildFromFile",
++                                                   begin_time, devices);
++  });
++#endif
++  return ret;
+ }
+ 
+ Status Model::Resize(const std::vector<MSTensor> &inputs, const std::vector<std::vector<int64_t>> &dims) {
++#ifdef ENABLE_HI_APP_EVENT
++  uint64_t begin_time = mindspore::lite::HiAppEventConfig::GetInstance()->GetTimeMs();
++#endif
+   if (impl_ == nullptr) {
+     MS_LOG(ERROR) << "Model implement is null.";
+     return kLiteNullptr;
+   }
+-  return impl_->Resize(inputs, dims);
++  auto ret = impl_->Resize(inputs, dims);
++#ifdef ENABLE_HI_APP_EVENT
++  mindspore::lite::HiAppEventConfig::GetInstance()->Post([ret, begin_time] {
++    (void)mindspore::lite::HiAppEventWriteEndEvent(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelResize", begin_time);
++  });
++#endif
++  return ret;
+ }
+ 
+ Status Model::UpdateWeights(const std::vector<MSTensor> &new_weights) {
+@@ -332,22 +385,40 @@ Status Model::UpdateWeights(const std::vector<MSTensor> &new_weights) {
+ }
+ 
+ Status Model::RunStep(const MSKernelCallBack &before, const MSKernelCallBack &after) {
++#ifdef ENABLE_HI_APP_EVENT
++  uint64_t begin_time = mindspore::lite::HiAppEventConfig::GetInstance()->GetTimeMs();
++#endif
+   if (impl_ == nullptr) {
+     MS_LOG(ERROR) << "Model implement is null.";
+     return kLiteNullptr;
+   }
+   auto inputs = impl_->GetInputs();
+   auto outputs = impl_->GetOutputs();
+-  return impl_->Predict(inputs, &outputs, before, after);
++  auto ret = impl_->Predict(inputs, &outputs, before, after);
++#ifdef ENABLE_HI_APP_EVENT
++  mindspore::lite::HiAppEventConfig::GetInstance()->Post([ret, begin_time] {
++    (void)mindspore::lite::HiAppEventWriteEndEvent(ret.StatusCode(), ret.StatusCode(), "OH_AI_RunStep", begin_time);
++  });
++#endif
++  return ret;
+ }
+ 
+ Status Model::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTensor> *outputs,
+                       const MSKernelCallBack &before, const MSKernelCallBack &after) {
++#ifdef ENABLE_HI_APP_EVENT
++  uint64_t begin_time = mindspore::lite::HiAppEventConfig::GetInstance()->GetTimeMs();
++#endif
+   if (impl_ == nullptr) {
+     MS_LOG(ERROR) << "Model implement is null.";
+     return kLiteNullptr;
+   }
+-  return impl_->Predict(inputs, outputs, before, after);
++  auto ret = impl_->Predict(inputs, outputs, before, after);
++#ifdef ENABLE_HI_APP_EVENT
++  mindspore::lite::HiAppEventConfig::GetInstance()->Post([ret, begin_time] {
++    mindspore::lite::HiAppEventWriteEndEvent(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelPredict", begin_time);
++  });
++#endif
++  return ret;
+ }
+ 
+ Status Model::Predict(const MSKernelCallBack &before, const MSKernelCallBack &after) {
+@@ -375,6 +446,10 @@ bool Model::HasPreprocess() {
+ }
+ 
+ Model::Model() {
++#ifdef ENABLE_HI_APP_EVENT
++  (void)mindspore::lite::HiAppEventAddProcessor();
++  uint64_t begin_time = mindspore::lite::HiAppEventConfig::GetInstance()->GetTimeMs();
++#endif
+ #ifdef USE_GLOG
+   mindspore::mindspore_log_init();
+ #endif
+@@ -382,6 +457,11 @@ Model::Model() {
+   if (impl_ == nullptr) {
+     MS_LOG(ERROR) << "Failed to create ModelImpl";
+   }
++#ifdef ENABLE_HI_APP_EVENT
++  mindspore::lite::HiAppEventConfig::GetInstance()->Post([begin_time] {
++    (void)mindspore::lite::HiAppEventWriteEndEvent(RET_OK, RET_OK, "OH_AI_ModelCreate", begin_time);
++  });
++#endif
+ }
+ 
+ Model::~Model() {}
+@@ -489,11 +569,19 @@ Status Model::UpdateConfig(const std::vector<char> &section,
+ }
+ 
+ Status Model::SetTrainMode(bool train) {
++#ifdef ENABLE_HI_APP_EVENT
++  uint64_t begin_time = mindspore::lite::HiAppEventConfig::GetInstance()->GetTimeMs();
++#endif
+   if ((impl_ == nullptr) || (impl_->session_ == nullptr)) {
+     MS_LOG(ERROR) << "Model is null.";
+     return kLiteUninitializedObj;
+   }
+   auto ret = (train) ? impl_->session_->Train() : impl_->session_->Eval();
++#ifdef ENABLE_HI_APP_EVENT
++  mindspore::lite::HiAppEventConfig::GetInstance()->Post([begin_time] {
++    (void)mindspore::lite::HiAppEventWriteEndEvent(RET_OK, RET_OK, "OH_AI_ModelSetTrainMode", begin_time);
++  });
++#endif
+   return (ret == mindspore::lite::RET_OK) ? kSuccess : kLiteError;
+ }
+ 
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc b/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc
+index 6b191c8e..67d60f1b 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.cc
+@@ -7,121 +7,6 @@
+ #include "src/common/utils.h"
+ namespace mindspore {
+ namespace lite {
+-
+-Status CheckPrimitiveSupported(const schema::Primitive *primitive) {
+-  if (primitive != nullptr) {
+-    auto prim = primitive;
+-    auto type = prim->value_type();
+-    switch (type) {
+-      case schema::PrimitiveType_Activation:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_AddFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_ArgMaxFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_AvgPoolFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_BatchToSpaceND:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_BiasAdd:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Cast:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Concat:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Conv2DFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Conv2dTransposeFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_DivFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Eltwise:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_ExpandDims:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Fill:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_FullConnection:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_FusedBatchNorm:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Gather:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_LayerNormFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_LessEqual:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_MatMulFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Maximum:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_MaxPoolFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_MulFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_OneHot:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_PadFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_PowFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_PReLUFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_QuantDTypeCast:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_ReduceFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Reshape:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Resize:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Rsqrt:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_ScaleFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Shape:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_SliceFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Softmax:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_SpaceToBatchND:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Split:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Sqrt:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_SquaredDifference:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Squeeze:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Stack:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_StridedSlice:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_SubFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_TileFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_TopKFusion:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Transpose:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Unsqueeze:
+-        return mindspore::kSuccess;
+-      case schema::PrimitiveType_Custom:
+-        return mindspore::kSuccess;
+-      default: {
+-        MS_LOG(WARNING) << "No primitive type :" << (int)(type);
+-        return mindspore::kLiteSuccessExit;
+-      }
+-    }
+-    return mindspore::kSuccess;
+-  } else {
+-    MS_LOG(ERROR) << "primitive is nullptr.";
+-    return mindspore::kLiteError;
+-  }
+-}
+ namespace {
+ bool NeedBitUppackCheck(const schema::Tensor &src_tensor) {
+   if (src_tensor.enableHuffmanCode()) {
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.h b/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.h
+index dbdd812c..46b812c0 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/checker/primitive_check.h
+@@ -4,7 +4,6 @@
+ #include "include/api/status.h"
+ namespace mindspore {
+ namespace lite {
+-Status CheckPrimitiveSupported(const schema::Primitive *primitive);
+ Status CheckTensorSupported(const schema::Tensor *primitive);
+ }  // namespace lite
+ }  // namespace mindspore
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
+index f79c1682..b38fff62 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.cc
+@@ -21,7 +21,6 @@
+ #include <mutex>
+ #include "src/litert/delegate/nnrt/nnrt_allocator.h"
+ #include "src/common/log.h"
+-#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
+ 
+ namespace mindspore {
+ namespace lite {
+@@ -29,23 +28,17 @@ NNRTAllocator::~NNRTAllocator() {
+   std::lock_guard<std::mutex> locker(mutex_);
+   for (auto &it : allocated_list_) {
+     auto membuf = it.second;
+-    if (memory_category_ == NNRT_INPUT) {
+-      OH_NNExecutor_DestroyInputMemory(executor_, index_, &(membuf->memory_));
+-    } else {
+-      OH_NNExecutor_DestroyOutputMemory(executor_, index_, &(membuf->memory_));
+-    }
+-    free(membuf);
++    OH_NNTensor_Destroy(&membuf->tensor_);
++    OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
++    delete membuf;
+   }
+   allocated_list_.clear();
+ 
+   for (auto &it : free_list_) {
+     auto membuf = it.second;
+-    if (memory_category_ == NNRT_INPUT) {
+-      OH_NNExecutor_DestroyInputMemory(executor_, index_, &(membuf->memory_));
+-    } else {
+-      OH_NNExecutor_DestroyOutputMemory(executor_, index_, &(membuf->memory_));
+-    }
+-    free(membuf);
++    OH_NNTensor_Destroy(&membuf->tensor_);
++    OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
++    delete membuf;
+   }
+   free_list_.clear();
+ }
+@@ -57,8 +50,8 @@ void *NNRTAllocator::Malloc(size_t size) {
+     auto membuf = iter->second;
+     membuf->ref_count_ = 0;
+     (void)free_list_.erase(iter);
+-    allocated_list_[membuf->memory_->data] = membuf;
+-    return membuf->memory_->data;
++    allocated_list_[membuf->data] = membuf;
++    return membuf->data;
+   }
+ 
+   auto membuf = new (std::nothrow) MemBuf();
+@@ -66,30 +59,36 @@ void *NNRTAllocator::Malloc(size_t size) {
+     MS_LOG(ERROR) << "new Membuf failed.";
+     return nullptr;
+   }
+-
+   membuf->ref_count_ = 0;
+   if (memory_category_ == NNRT_INPUT) {
+-    membuf->memory_ = OH_NNExecutor_AllocateInputMemory(executor_, index_, size);
++    membuf->tensor_desc_ = OH_NNExecutor_CreateInputTensorDesc(executor_, index_);
+   } else {
+-    membuf->memory_ = OH_NNExecutor_AllocateOutputMemory(executor_, index_, size);
++    membuf->tensor_desc_ = OH_NNExecutor_CreateOutputTensorDesc(executor_, index_);
+   }
+-
+-  if (membuf->memory_ == nullptr) {
+-    MS_LOG(ERROR) << "malloc OH_NN_Memory return nullptr";
++  if (membuf->tensor_desc_ == nullptr) {
++    MS_LOG(ERROR) << "OH_NNExecutor_CreateInput/OutputTensorDesc failed, i = " << index_;
++    delete membuf;
++    return nullptr;
++  }
++  membuf->tensor_ = OH_NNTensor_CreateWithSize(device_id_, membuf->tensor_desc_, size);
++  if (membuf->tensor_ == nullptr) {
++    MS_LOG(ERROR) << "OH_NNTensor_CreateWithSize failed, i = " << index_;
++    OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
++    delete membuf;
+     return nullptr;
+   }
+-  if (membuf->memory_->data == nullptr) {
+-    MS_LOG(ERROR) << "malloc OH_NN_Memory return nullptr";
+-    if (memory_category_ == NNRT_INPUT) {
+-      OH_NNExecutor_DestroyInputMemory(executor_, index_, &(membuf->memory_));
+-    } else {
+-      OH_NNExecutor_DestroyOutputMemory(executor_, index_, &(membuf->memory_));
+-    }
++  membuf->data = OH_NNTensor_GetDataBuffer(membuf->tensor_);
++  if (membuf->data == nullptr) {
++    MS_LOG(ERROR) << "OH_NNTensor_GetDataBuffer failed, i = " << index_;
++    OH_NNTensor_Destroy(&membuf->tensor_);
++    OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
++    delete membuf;
+     return nullptr;
+   }
+ 
+-  allocated_list_[membuf->memory_->data] = membuf;
+-  return membuf->memory_->data;
++  membuf->size = size;
++  allocated_list_[membuf->data] = membuf;
++  return membuf->data;
+ }
+ 
+ void NNRTAllocator::Free(void *ptr) {
+@@ -105,12 +104,12 @@ void NNRTAllocator::Free(void *ptr) {
+   auto membuf = iter->second;
+   membuf->ref_count_ = 0;
+   (void)allocated_list_.erase(iter);
+-  (void)free_list_.insert(std::make_pair(membuf->memory_->length, membuf));
++  (void)free_list_.insert(std::make_pair(membuf->size, membuf));
+ }
+ 
+ int NNRTAllocator::RefCount(void *ptr) {
+   if (ptr == nullptr) {
+-    return -1;
++    return NNRT_ALLOCATION;
+   }
+   std::lock_guard<std::mutex> locker(mutex_);
+   auto iter = allocated_list_.find(ptr);
+@@ -163,6 +162,5 @@ int NNRTAllocator::IncRefCount(void *ptr, int ref_count) {
+   }
+   return -1;
+ }
+-
+ }  // namespace lite
+ }  // namespace mindspore
+\ No newline at end of file
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
+index f6721369..52e6def7 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_allocator.h
+@@ -23,6 +23,9 @@
+ #include <map>
+ #include <mutex>
+ #include "include/api/allocator.h"
++#include "src/tensor.h"
++#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
++
+ struct OH_NN_Memory;
+ struct OH_NNExecutor;
+ 
+@@ -32,8 +35,8 @@ enum MemoryCategory { NNRT_INPUT, NNRT_OUTPUT };
+ 
+ class NNRTAllocator : public Allocator {
+  public:
+-  NNRTAllocator(OH_NNExecutor *executor, int index, MemoryCategory memory_category)
+-      : index_(index), memory_category_(memory_category), executor_(executor) {}
++  NNRTAllocator(OH_NNExecutor *executor, int index, size_t device_id, MemoryCategory memory_category)
++      : index_(index), device_id_(device_id), memory_category_(memory_category), executor_(executor) {}
+   ~NNRTAllocator() override;
+ 
+   void *Malloc(size_t size) override;
+@@ -42,14 +45,25 @@ class NNRTAllocator : public Allocator {
+   int SetRefCount(void *ptr, int ref_count) override;
+   int DecRefCount(void *ptr, int ref_count) override;
+   int IncRefCount(void *ptr, int ref_count) override;
++  NN_Tensor *GetNNTensor(void *ptr) {
++    auto iter = allocated_list_.find(ptr);
++    if (iter != allocated_list_.end()) {
++      return iter->second->tensor_;
++    }
++    return nullptr;
++  }
+ 
+  private:
+   struct MemBuf {
+     std::atomic_int ref_count_{0};
+-    OH_NN_Memory *memory_{nullptr};
++    NN_TensorDesc *tensor_desc_{nullptr};
++    NN_Tensor *tensor_{nullptr};
++    void *data{nullptr};
++    size_t size{0};
+   };
+ 
+   int index_{0};
++  size_t device_id_{0};
+   MemoryCategory memory_category_{NNRT_INPUT};
+   OH_NNExecutor *executor_{nullptr};
+   std::mutex mutex_;
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+index ca195af4..a949c910 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.cc
+@@ -52,6 +52,12 @@ void NNRTDelegate::InitCachePath() {
+ }
+ 
+ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
++  // dequant litegraph
++  auto ret_dequant = DequantLiteGraph(lite_graph_);
++  if (ret_dequant != kSuccess) {
++    MS_LOG(ERROR) << "Dequant litegraph failed.";
++    return kLiteError;
++  }
+ #ifdef SUPPORT_NNRT_METAGRAPH
+   if (IsKirinNPU()) {
+     MS_LOG(DEBUG) << "Choose to build nnrt model with Metagraph";
+@@ -121,22 +127,11 @@ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model)
+     MS_LOG_DEBUG << "set extension, item name: " << dst_extension.name << ", value size: " << dst_extension.valueSize;
+   }
+ 
+-  if (IsCustomModel()) {
+-    auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, lite_graph_);
+-    if (ret != OH_NN_SUCCESS) {
+-      MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
+-      OH_NNModel_Destroy(&nn_model);
+-      return kLiteError;
+-    }
+-  } else {
+-    SetKirinModelInputsAndOutputs(nn_model);
+-    auto ret = OH_NNModel_BuildFromMetaGraph(nn_model, meta_graph_, extensions.data(), extensions.size());
+-    FreeLiteGraph(&lite_graph_);
+-    if (ret != OH_NN_SUCCESS) {
+-      MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
+-      OH_NNModel_Destroy(&nn_model);
+-      return kLiteError;
+-    }
++  auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, lite_graph_, extensions.data(), extensions.size());
++  if (ret != OH_NN_SUCCESS) {
++    MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
++    OH_NNModel_Destroy(&nn_model);
++    return kLiteError;
+   }
+ 
+   auto ret2 =  CreateFullModelKernel(model, nn_model);
+@@ -147,36 +142,6 @@ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model)
+   return kSuccess;
+ }
+ 
+-std::vector<OH_NN_TensorInfo> NNRTDelegate::CreateNNTensorInfos(const std::vector<uint32_t> &indices) const {
+-  std::vector<OH_NN_TensorInfo> nn_tensor_infos;
+-  for (auto index: indices) {
+-    auto tensor = lite_graph_->all_tensors_[index];
+-    auto shape = tensor->dims();
+-    auto data_type = tensor->dataType();
+-    auto name = tensor->name();
+-    auto format = tensor->format();
+-
+-    OH_NN_TensorInfo info;
+-    info.dataType = CastToNNRTDataType(static_cast<mindspore::DataType>(data_type));
+-    info.dimensions = shape->data();
+-    info.dimensionCount = shape->size();
+-    strcpy(info.name, name->c_str());
+-    info.format = CastToNNRTFormat(static_cast<Format>(format));
+-    nn_tensor_infos.push_back(info);
+-  }
+-  return nn_tensor_infos;
+-}
+-
+-Status NNRTDelegate::SetKirinModelInputsAndOutputs(OH_NNModel *nn_model) {
+-  std::vector<OH_NN_TensorInfo> inputInfos;
+-  std::vector<OH_NN_TensorInfo> outputInfos;
+-  auto input_infos = CreateNNTensorInfos(lite_graph_->input_indices_);
+-  auto output_infos = CreateNNTensorInfos(lite_graph_->output_indices_);
+-  OH_NNModel_SetInputsAndOutputsInfo(nn_model, input_infos.data(), input_infos.size(), output_infos.data(),
+-                                     output_infos.size());
+-  return kSuccess;
+-}
+-
+ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *model, OH_NNModel *nn_model) {
+   OH_NNCompilation *nn_compilation = OH_NNCompilation_Construct(nn_model);
+   if (nn_compilation == nullptr) {
+@@ -204,7 +169,7 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
+   }
+   OH_NNCompilation_Destroy(&nn_compilation);
+ 
+-  auto nnrt_model_kernel = new (std::nothrow)NNRTModelKernel(nn_executor, model->inputs(), model->outputs());
++  auto nnrt_model_kernel = new (std::nothrow)NNRTModelKernel(nn_executor, nnrt_device_info_.device_id_, model->inputs(), model->outputs());
+   if (nnrt_model_kernel == nullptr) {
+     OH_NNExecutor_Destroy(&nn_executor);
+     MS_LOG(ERROR) << "new NNRTModelKernel failed";
+@@ -277,7 +242,7 @@ OH_NNModel *NNRTDelegate::CreateFullNNModel() {
+     return nullptr;
+   }
+ 
+-  auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, lite_graph_);
++  auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, lite_graph_, nullptr, 0);
+   if (ret != OH_NN_SUCCESS) {
+     MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
+     OH_NNModel_Destroy(&nn_model);
+@@ -531,7 +496,7 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive>
+     auto sub_lite_graph = sub_lite_graphs[i];
+ 
+     OH_NNModel *nn_model = OH_NNModel_Construct();
+-    auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, sub_lite_graph);
++    auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, sub_lite_graph, nullptr, 0);
+     if (ret != OH_NN_SUCCESS) {
+       MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
+       OH_NNModel_Destroy(&nn_model);
+@@ -616,7 +581,7 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive>
+       continue ;
+     }
+ 
+-    auto nnrt_model_kernel = new (std::nothrow)NNRTModelKernel(nn_executor, in_tensors, out_tensors);
++    auto nnrt_model_kernel = new (std::nothrow)NNRTModelKernel(nn_executor, nnrt_device_info_.device_id_, in_tensors, out_tensors);
+     if (nnrt_model_kernel == nullptr) {
+       MS_LOG(ERROR) << "new NNRTModelKernel failed";
+       return kLiteError;
+@@ -735,10 +700,6 @@ OH_NN_DataType NNRTDelegate::CastToNNRTDataType(DataType data_type) {
+   return iter->second;
+ }
+ 
+-OH_NN_Format NNRTDelegate::CastToNNRTFormat(Format format) {
+-  return OH_NN_FORMAT_NHWC;
+-}
+-
+ Status NNRTDelegate::PrepareOutputs(DelegateModel<schema::Primitive> *model,
+                                     OH_NNExecutor *oh_nn_executor) {
+   auto output_tensors = model->outputs();
+@@ -754,15 +715,113 @@ Status NNRTDelegate::PrepareOutputs(DelegateModel<schema::Primitive> *model,
+   return kSuccess;
+ }
+ 
+-void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
+-  Status ret;
+-  for (auto node : lite_graph.all_nodes_) {
+-    ret = lite::CheckPrimitiveSupported(static_cast<const schema::Primitive *>(node->primitive_));
+-    if (ret == kLiteError) {
+-      MS_LOG(ERROR) << " primitive supported check failed.";
+-      return;
++schema::Tensor *NNRTDelegate::TensorToSchemaTensor(Tensor *lite_tensor, schema::Tensor *schema_tensor) {
++  flatbuffers::FlatBufferBuilder fbb(1024);
++  auto shape = lite_tensor->shape();
++  std::vector<int32_t> dim_vec(shape.begin(), shape.end());
++
++  auto quant_params = lite_tensor->quant_params();
++  std::vector<flatbuffers::Offset<mindspore::schema::QuantParam>> quant_vec;
++  quant_vec.reserve(quant_params.size());
++  for (auto q_param : quant_params) {
++    quant_vec.emplace_back(schema::CreateQuantParam(fbb, q_param.scale, q_param.zeroPoint, 0, 0, true, q_param.bitNum));
++  }
++  auto quant_clusters = lite_tensor->quant_clusters();
++
++  auto external_data = schema_tensor->externalData();
++  std::vector<flatbuffers::Offset<mindspore::schema::ExternalData>> external_data_vec;
++  if (external_data != nullptr) {
++    for (auto ed : *external_data) {
++      external_data_vec.emplace_back(schema::CreateExternalDataDirect(fbb, ed->checkSum()->c_str(), ed->location()->c_str(), 0, ed->length()));
++    }
++  }
++  uint8_t *data_src = reinterpret_cast<uint8_t *>(lite_tensor->data());
++  std::vector<uint8_t> data_vec(data_src, data_src + lite_tensor->Size());
++  auto tensor_offset = schema::CreateTensorDirect(fbb, schema_tensor->nodeType(), lite_tensor->data_type(), &dim_vec,
++                                                  schema_tensor->format(), 0, 0, &data_vec, &quant_vec,
++                                                  &quant_clusters, schema_tensor->name()->c_str(),
++                                                  schema_tensor->enableHuffmanCode(),
++                                                  mindspore::schema::WeightQuantCompressType_NONE, &external_data_vec);
++  fbb.Finish(tensor_offset);
++
++  auto buf = fbb.GetBufferPointer();
++  if (buf == nullptr) {
++    MS_LOG(ERROR) << "GetBufferPointer return nullptr";
++    fbb.Clear();
++    return nullptr;
++  }
++  size_t byte_num = fbb.GetSize();
++  auto tensor_buf = reinterpret_cast<char *>(malloc(byte_num));
++  if (tensor_buf == nullptr) {
++    MS_LOG(ERROR) << "malloc primitive_buf_ failed";
++    fbb.Clear();
++    return nullptr;
++  }
++  memcpy(tensor_buf, buf, fbb.GetSize());
++  auto tensor = flatbuffers::GetRoot<schema::Tensor>(tensor_buf);
++  fbb.Clear();
++  if (tensor != nullptr) {
++    // use to free tensor_buf
++    auto iter = dequant_schema_tensors_buffer_map_.find(const_cast<schema::Tensor *>(tensor));
++    if (iter != dequant_schema_tensors_buffer_map_.end()) {
++      MS_LOG(ERROR) << "schema tensor is duplicated.";
++      return nullptr;
++    }
++    dequant_schema_tensors_buffer_map_[const_cast<schema::Tensor *>(tensor)] = tensor_buf;
++  }
++  return const_cast<schema::Tensor *>(tensor);
++}
++
++int NNRTDelegate::DequantNodeInputs(LiteGraph::Node *node) {
++  auto in_size = node->input_indices_.size();
++  int ret = RET_OK;
++  for (size_t i = 0; i < in_size; i++) {
++    auto tensor_index = node->input_indices_[i];
++    auto *src_tensor = lite_graph_->all_tensors_[tensor_index];
++    auto input = dequant_src_tensors_->at(tensor_index);
++    if (!input->IsConst() || !(src_tensor->dataType() == kNumberTypeInt8 ||
++        src_tensor->dataType() == kNumberTypeInt16 || src_tensor->dataType() == kNumberTypeInt32)) {
++      continue;
++    }
++    auto dst_tensor = TensorToSchemaTensor(input, src_tensor);
++    if (dst_tensor != nullptr) {
++      dequant_schema_tensors_.emplace(tensor_index, dst_tensor);
++      replaced_schema_tensors_.emplace_back(src_tensor);
++    } else {
++      MS_LOG(ERROR) << "create dequant schema tensor failed, node: " << node->name_ << ", tensor_index: "
++                    << tensor_index;
++      ret = RET_ERROR;
++      break;
+     }
+   }
++  return ret;
++}
++
++Status NNRTDelegate::DequantLiteGraph(LiteGraph *lite_graph) {
++  for (auto node_index : lite_graph->sub_graphs_[0]->node_indices_) {
++    auto node = lite_graph->all_nodes_[node_index];
++
++    if (node->quant_type_ != static_cast<int>(schema::QuantType_QUANT_WEIGHT)) {
++      continue;
++    }
++    auto ret = DequantNodeInputs(node);
++    if (ret != RET_OK) {
++      MS_LOG(ERROR) << "Dequant node failed: " << ret << ", node_name: " << node->name_;
++      for (auto iter : dequant_schema_tensors_) {
++        delete iter.second;
++        iter.second = nullptr;
++      }
++      return kLiteNotSupport;
++    }
++    node->quant_type_ = schema::QuantType_QUANT_NONE;
++  }
++  for (auto iter : dequant_schema_tensors_) {
++    lite_graph_->all_tensors_[iter.first] = iter.second;
++  }
++  return kSuccess;
++}
++
++void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
+   std::vector<LiteGraph::Node *> node_list;
+   node_list.reserve(lite_graph.all_nodes_.size());
+   // copy node
+@@ -798,7 +857,7 @@ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
+     subgraph_list.emplace_back(new_subgraph);
+   }
+   for (auto tensor : lite_graph.all_tensors_) {
+-    ret = lite::CheckTensorSupported(static_cast<const schema::Tensor *>(tensor));
++    Status ret = lite::CheckTensorSupported(static_cast<const schema::Tensor *>(tensor));
+     if (ret == kLiteError) {
+       MS_LOG(ERROR) << "tensor supported check failed.";
+       return;
+@@ -863,6 +922,13 @@ NNRTDelegate::~NNRTDelegate() {
+   if (lite_graph_ != nullptr) {
+     MS_LOG(ERROR) << "Delete NNRTDelegate.";
+   }
++  for (auto iter : dequant_schema_tensors_buffer_map_) {
++    if (iter.second != nullptr) {
++      free(iter.second);
++      iter.second = nullptr;
++    }
++  }
++  dequant_schema_tensors_buffer_map_.clear();
+ }
+ }  // namespace lite
+ }  // namespace mindspore
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+index 4cf357d6..db2f0ee7 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_delegate.h
+@@ -50,6 +50,9 @@ class NNRTDelegate : public Delegate {
+   void SetMetaGraph(const void *meta_graph) {
+     meta_graph_ = meta_graph;
+   }
++  void SetDequantTensors(std::vector<Tensor *> *src_tensors) {
++    dequant_src_tensors_ = src_tensors;
++  }
+   static std::vector<NNRTOpRange> GetNNRTSubgraphRanges(DelegateModel<schema::Primitive> *model,
+                                                         const std::vector<bool> &op_supports);
+ 
+@@ -73,14 +76,14 @@ class NNRTDelegate : public Delegate {
+   Status PrepareOutputs(DelegateModel<schema::Primitive> *model, OH_NNExecutor *oh_nn_executor);
+   Status InitNNCompilation(OH_NNCompilation *nn_compilation) const;
+   static OH_NN_DataType CastToNNRTDataType(mindspore::DataType data_type);
+-  static OH_NN_Format CastToNNRTFormat(Format format);
+   bool IsCustomModel() const;
++  Status DequantLiteGraph(LiteGraph *lite_graph);
++  int DequantNodeInputs(LiteGraph::Node *node);
++  schema::Tensor *TensorToSchemaTensor(Tensor *lite_tensor, schema::Tensor *schema_tensor);
+ 
+ #ifdef SUPPORT_NNRT_METAGRAPH
+   bool IsKirinNPU() const;
+   Status BuildKirinNPUModel(DelegateModel<schema::Primitive> *model);
+-  Status SetKirinModelInputsAndOutputs(OH_NNModel *nn_model);
+-  std::vector<OH_NN_TensorInfo> CreateNNTensorInfos(const std::vector<uint32_t> &indices) const;
+   Status CreateFullModelKernel(DelegateModel<schema::Primitive> *model, OH_NNModel *nn_model);
+ #endif
+ 
+@@ -90,6 +93,10 @@ class NNRTDelegate : public Delegate {
+   std::string cache_path_ = "";
+   uint32_t cache_version_ = 0;
+   std::vector<OH_NNExecutor *> nn_executor_list_;
++  std::vector<Tensor *> *dequant_src_tensors_;
++  std::map<uint32_t, schema::Tensor *> dequant_schema_tensors_;
++  std::map<schema::Tensor *, void *> dequant_schema_tensors_buffer_map_;
++  std::vector<schema::Tensor *> replaced_schema_tensors_;
+ };
+ }  // namespace lite
+ }  // namespace mindspore
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
+index f83632dd..2a66d133 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.cc
+@@ -19,7 +19,7 @@
+ #include "litert/cxx_api/tensor/tensor_impl.h"
+ int mindspore::NNRTModelKernel::Prepare() {
+   for (size_t i = 0; i < inputs_.size(); i++) {
+-    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor, i, lite::NNRT_INPUT);
++    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor, i, device_id_, lite::NNRT_INPUT);
+     if (nnrt_allocator == nullptr) {
+       MS_LOG(ERROR) << "Create NNRTAllocator failed";
+       return lite::RET_NULL_PTR;
+@@ -27,7 +27,7 @@ int mindspore::NNRTModelKernel::Prepare() {
+     inputs_[i].SetAllocator(nnrt_allocator);
+   }
+   for (size_t i = 0; i < outputs_.size(); i++) {
+-    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor, i, lite::NNRT_OUTPUT);
++    auto nnrt_allocator = std::make_shared<lite::NNRTAllocator>(oh_nn_executor, i, device_id_, lite::NNRT_OUTPUT);
+     if (nnrt_allocator == nullptr) {
+       MS_LOG(ERROR) << "Create NNRTAllocator failed";
+       return lite::RET_NULL_PTR;
+@@ -39,25 +39,33 @@ int mindspore::NNRTModelKernel::Prepare() {
+ 
+ int mindspore::NNRTModelKernel::Execute() {
+   MS_CHECK_TRUE_RET(this->outputs().empty() != true, lite::RET_ERROR);
+-  zero_copy_ = this->outputs()[Index0].allocator() != nullptr;
++  zero_copy_ = IS_NNRT_ALLOCATOR(this->outputs()[Index0].allocator());
+ 
++  if (!zero_copy_) {
++    FreeNNTensor();
++  }
++  nn_input_tensors_.clear();
++  nn_output_tensors_.clear();
++  nn_input_tensor_descs_.clear();
++  nn_output_tensor_descs_.clear();
+ 
+-  lite::STATUS ret_val = PrepareInputs();
++  lite::STATUS ret_val = SetInputs();
+   if (ret_val != lite::RET_OK) {
+-    MS_LOG(ERROR) << "NNRTModelKernel PrepareInputs failed, STATUS is " << ret_val;
++    MS_LOG(ERROR) << "NNRTModelKernel SetInputs failed, STATUS is " << ret_val;
+     return ret_val;
+   }
+-  ret_val = TransferOutputs();
++  ret_val = SetOutputs();
+   if (ret_val != lite::RET_OK) {
+-    MS_LOG(ERROR) << "NNRTModelKernel TransferOutputs failed, STATUS is " << ret_val;
++    MS_LOG(ERROR) << "NNRTModelKernel SetOutputs failed, STATUS is " << ret_val;
+     return ret_val;
+   }
+   MS_LOG(INFO) << "Running NNRtModel Kernel...";
+   OH_NN_ReturnCode ret_code;
+-  ret_code = OH_NNExecutor_Run(this->oh_nn_executor);
++  ret_code = OH_NNExecutor_RunSync(oh_nn_executor, nn_input_tensors_.data(), nn_input_tensors_.size(),
++                                   nn_output_tensors_.data(), nn_output_tensors_.size());
+ 
+   if (ret_code != OH_NN_SUCCESS) {
+-    MS_LOG(ERROR) << "NNExecutor Run failed, OH_NN_ReturnCode = " << ret_code;
++    MS_LOG(ERROR) << "OH_NNExecutor_RunSync Run failed, OH_NN_ReturnCode = " << ret_code;
+     return lite::RET_ERROR;
+   }
+   MS_LOG(INFO) << "Run NNRtModel Kernel success.";
+@@ -120,97 +128,107 @@ OH_NN_DataType mindspore::NNRTModelKernel::ConvertDataType(mindspore::DataType d
+   }
+   return oh_data_type;
+ }
+-int mindspore::NNRTModelKernel::PrepareInputs() {
+-  auto input_tensors = this->inputs();
+-  for (size_t i = 0; i < input_tensors.size(); i++) {
+-    auto tensor = input_tensors[i];
+-    auto tensor_shape = tensor.Shape();
+-    auto tmp_quant_param = tensor.QuantParams();
+-    OH_NN_QuantParam *quant_param = nullptr;
+-    std::vector<uint32_t> bit_num;
+-    std::vector<double> scale;
+-    std::vector<int32_t> zero_point;
+-    if (!tmp_quant_param.empty()) {
+-      quant_param = (new (std::nothrow) OH_NN_QuantParam);
+-      if (quant_param == nullptr) {
+-        MS_LOG(ERROR) << "new OH_NN_QuantParam failed.";
+-        return lite::RET_NULL_PTR;
+-      }
+-      for (auto qparam : tmp_quant_param) {
+-        bit_num.emplace_back(qparam.bit_num);
+-        scale.emplace_back(qparam.scale);
+-        zero_point.emplace_back(qparam.zero_point);
+-      }
+-      quant_param->quantCount = tmp_quant_param.size();
+-      quant_param->numBits = bit_num.data();
+-      quant_param->scale = scale.data();
+-      quant_param->zeroPoint = zero_point.data();
++
++int mindspore::NNRTModelKernel::SetInputs() {
++  if (!zero_copy_) {
++    OH_NN_ReturnCode ret{OH_NN_FAILED};
++    size_t nn_input_count = 0;
++    ret = OH_NNExecutor_GetInputCount(oh_nn_executor, &nn_input_count);
++    if (ret != OH_NN_SUCCESS) {
++      MS_LOG(ERROR) << "OH_NNExecutor_GetInputCount failed.";
++      return lite::RET_ERROR;
+     }
+-    auto oprend = new (std::nothrow) OH_NN_Tensor;
+-    if (oprend == nullptr) {
+-      MS_LOG(ERROR) << "new OH_NN_Tensor Failed";
++    if (nn_input_count != inputs_.size()) {
++      MS_LOG(ERROR) << "input count is not equal between ms and nnrt.";
+       return lite::RET_ERROR;
+     }
+-    oprend->dataType = ConvertDataType(tensor.DataType());
+-    oprend->dimensionCount = tensor_shape.size();
+-
+-    std::vector<int32_t> dimensions_list;
+-    for (auto shape : tensor_shape) {
+-      if (shape < INT32_MAX) {
+-        dimensions_list.emplace_back(static_cast<int32_t>(shape));
+-      } else {
+-        MS_LOG(ERROR) << "NNExecutor SetInput failed,tensor dimension is is too large, max dim = " << INT32_MAX
+-                      << ", but get dimension = " << shape;
++    for (size_t i = 0; i < nn_input_count; i++) {
++      NN_TensorDesc *tensor_desc_tmp = OH_NNExecutor_CreateInputTensorDesc(oh_nn_executor, i);
++      if (tensor_desc_tmp == nullptr) {
++        MS_LOG(ERROR) << "OH_NNExecutor_CreateInputTensorDesc failed, i = " << i;
+         return lite::RET_ERROR;
+       }
++      nn_input_tensor_descs_.emplace_back(tensor_desc_tmp);
++      NN_Tensor *tensor_tmp = OH_NNTensor_Create(device_id_, tensor_desc_tmp);
++      if (tensor_tmp == nullptr) {
++        MS_LOG(ERROR) << "OH_NNTensor_Create input failed, i = " << i;
++        return lite::RET_ERROR;
++      }
++      nn_input_tensors_.emplace_back(tensor_tmp);
++      void *nn_data = OH_NNTensor_GetDataBuffer(nn_input_tensors_[i]);
++      size_t tensor_size;
++      ret = OH_NNTensorDesc_GetByteSize(tensor_desc_tmp, &tensor_size);
++      if (ret != OH_NN_SUCCESS || tensor_size != inputs_[i].DataSize()) {
++        MS_LOG(ERROR) << "NN_Tensor size is not equal to MSTensor, i = " << i;
++        return lite::RET_ERROR;
++      }
++      memcpy(nn_data, inputs_[i].MutableData(), inputs_[i].DataSize());
+     }
+-    oprend->dimensions = dimensions_list.data();
+-    oprend->quantParam = quant_param;
+-    oprend->type = OH_NN_TENSOR;
+-    MS_LOG_INFO << "input tensor: " << tensor.Name() << ", data: " << (void *)tensor.MutableData()
+-                << ", size: " << tensor.DataSize();
+-
+-    OH_NN_ReturnCode ret_code;
+-    if (zero_copy_) {
+-      OH_NN_Memory mem{tensor.MutableData(), tensor.DataSize()};
+-      ret_code = OH_NNExecutor_SetInputWithMemory(oh_nn_executor, i, oprend, &mem);
+-    } else {
+-      ret_code = OH_NNExecutor_SetInput(oh_nn_executor, i, oprend, tensor.MutableData(), tensor.DataSize());
+-    }
+-
+-    delete (oprend);
+-
+-    if (!tmp_quant_param.empty()) {
+-      free(quant_param);
+-      quant_param = nullptr;
+-    }
+-
+-    if (ret_code != OH_NN_SUCCESS) {
+-      MS_LOG(ERROR) << "NNExecutor SetInput failed, current input tensor is" << tensor.Name()
+-                    << "OH_NN_ReturnCode = " << ret_code;
+-      return lite::RET_ERROR;
++  } else {
++    for (size_t i = 0; i < inputs_.size(); i++) {
++      void *data = inputs_[i].MutableData();
++      NN_Tensor *tensor_tmp = reinterpret_cast<lite::NNRTAllocator *>(inputs_[i].allocator().get())->GetNNTensor(data);
++      if (tensor_tmp == nullptr) {
++        MS_LOG(ERROR) << "NNRTAllocator GetNNTensor failed, i = " << i;
++        return lite::RET_ERROR;
++      }
++      nn_input_tensors_.emplace_back(tensor_tmp);
+     }
+   }
+-
+   return lite::RET_OK;
+ }
+-int mindspore::NNRTModelKernel::TransferOutputs() {
+-  auto output_tensors = this->outputs();
+-  for (size_t i = 0; i < output_tensors.size(); i++) {
+-    auto tensor = output_tensors[i];
+ 
+-    OH_NN_ReturnCode ret_code;
+-    if (zero_copy_) {
+-      OH_NN_Memory mem{tensor.MutableData(), tensor.DataSize()};
+-      ret_code = OH_NNExecutor_SetOutputWithMemory(oh_nn_executor, i, &mem);
+-    } else {
+-      ret_code = OH_NNExecutor_SetOutput(oh_nn_executor, i, tensor.MutableData(), tensor.DataSize());
++int mindspore::NNRTModelKernel::SetOutputs() {
++  if (!zero_copy_) {
++    OH_NN_ReturnCode ret{OH_NN_FAILED};
++    size_t nn_output_count = 0;
++    ret = OH_NNExecutor_GetOutputCount(oh_nn_executor, &nn_output_count);
++    if (ret != OH_NN_SUCCESS) {
++      MS_LOG(ERROR) << "OH_NNExecutor_GetOutputCount failed.";
++      return lite::RET_ERROR;
+     }
+-    if (ret_code != OH_NN_SUCCESS) {
+-      MS_LOG(ERROR) << "NNExecutor SetOutput failed, current out tensor is" << tensor.Name()
+-                    << ", OH_NN_ReturnCode = " << ret_code;
++    if (nn_output_count != outputs_.size()) {
++      MS_LOG(ERROR) << "output count is not equal between ms and nnrt.";
+       return lite::RET_ERROR;
+     }
++    for (size_t i = 0; i < nn_output_count; i++) {
++      NN_TensorDesc *tensor_desc_tmp = OH_NNExecutor_CreateOutputTensorDesc(oh_nn_executor, i);
++      if (tensor_desc_tmp == nullptr) {
++        MS_LOG(ERROR) << "OH_NNExecutor_CreateOutputTensorDesc failed, i = " << i;
++        return lite::RET_ERROR;
++      }
++      nn_output_tensor_descs_.emplace_back(tensor_desc_tmp);
++      NN_Tensor *tensor_tmp = OH_NNTensor_Create(device_id_, tensor_desc_tmp);
++      if (tensor_tmp == nullptr) {
++        MS_LOG(ERROR) << "OH_NNTensor_Create output failed, i = " << i;
++        return lite::RET_ERROR;
++      }
++      nn_output_tensors_.emplace_back(tensor_tmp);
++      auto data = OH_NNTensor_GetDataBuffer(nn_output_tensors_[i]);
++      reinterpret_cast<LiteTensorImpl *>(outputs_[i].impl().get())->lite_tensor()->FreeData();
++      outputs_[i].SetData(data, false);
++    }
++  } else {
++    for (size_t i = 0; i < outputs_.size(); i++) {
++      void *data = outputs_[i].MutableData();
++      NN_Tensor *tensor_tmp = reinterpret_cast<lite::NNRTAllocator *>(outputs_[i].allocator().get())->GetNNTensor(data);
++      if (tensor_tmp == nullptr) {
++        MS_LOG(ERROR) << "NNRTAllocator GetNNTensor failed, i = " << i;
++        return lite::RET_ERROR;
++      }
++      nn_output_tensors_.emplace_back(tensor_tmp);
++    }
+   }
+   return lite::RET_OK;
+ }
++
++void mindspore::NNRTModelKernel::FreeNNTensor() {
++  for (size_t i = 0; i < nn_input_tensors_.size(); i++) {
++    OH_NNTensor_Destroy(&nn_input_tensors_[i]);
++    OH_NNTensorDesc_Destroy(&nn_input_tensor_descs_[i]);
++  }
++  for (size_t i = 0; i < nn_output_tensors_.size(); i++) {
++    OH_NNTensor_Destroy(&nn_output_tensors_[i]);
++    OH_NNTensorDesc_Destroy(&nn_output_tensor_descs_[i]);
++  }
++}
+diff --git a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
+index 33df925c..40800a2a 100644
+--- a/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
++++ b/mindspore/lite/src/litert/delegate/nnrt/nnrt_model_kernel.h
+@@ -31,9 +31,9 @@ class NNRTModelKernel : public kernel::Kernel {
+    * Because nnr can't run single op, but the whole model. So we decide to make the whole model into one kernel.
+    * */
+  public:
+-  NNRTModelKernel(OH_NNExecutor *oh_nn_executor, const std::vector<mindspore::MSTensor> &inputs,
++  NNRTModelKernel(OH_NNExecutor *oh_nn_executor, size_t device_id, const std::vector<mindspore::MSTensor> &inputs,
+                   const std::vector<mindspore::MSTensor> &outputs)
+-      : kernel::Kernel(inputs, outputs, nullptr, nullptr), oh_nn_executor(oh_nn_executor) {}
++      : kernel::Kernel(inputs, outputs, nullptr, nullptr), device_id_(device_id), oh_nn_executor(oh_nn_executor) {}
+   int Prepare() override;
+   int Execute() override;
+   int ReSize() override {
+@@ -41,14 +41,23 @@ class NNRTModelKernel : public kernel::Kernel {
+     return lite::RET_ERROR;
+   };
+   OH_NN_DataType ConvertDataType(mindspore::DataType data_type);
+-  int PrepareInputs();
+-  int TransferOutputs();
++  int SetInputs();
++  int SetOutputs();
++  void FreeNNTensor();
+   ~NNRTModelKernel() override {
++    if (!zero_copy_) {
++      FreeNNTensor();
++    }
+     MS_LOG(INFO) << "NNRTModelKernel Destroy.";
+   }
+ 
+  protected:
++  size_t device_id_;
+   OH_NNExecutor *oh_nn_executor = nullptr;
++  std::vector<NN_Tensor *> nn_input_tensors_;
++  std::vector<NN_TensorDesc *> nn_input_tensor_descs_;
++  std::vector<NN_Tensor *> nn_output_tensors_;
++  std::vector<NN_TensorDesc *> nn_output_tensor_descs_;
+ 
+  private:
+   bool zero_copy_{false};
+diff --git a/mindspore/lite/src/litert/kernel/cpu/BUILD.gn b/mindspore/lite/src/litert/kernel/cpu/BUILD.gn
+index a63b31dc..6445d47d 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/BUILD.gn
++++ b/mindspore/lite/src/litert/kernel/cpu/BUILD.gn
+@@ -245,6 +245,7 @@ int8_kernel_sources = [
+     "int8/split_int8.cc",
+     "int8/squeeze_int8.cc",
+     "int8/sub_int8.cc",
++    "int8/swish_int8.cc",
+     "int8/tanh_int8.cc",
+     "int8/topk_int8.cc",
+     "int8/transpose_int8.cc",
+diff --git a/mindspore/lite/src/litert/kernel/cpu/base/custom_base.cc b/mindspore/lite/src/litert/kernel/cpu/base/custom_base.cc
+index 9921e063..0459c417 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/base/custom_base.cc
++++ b/mindspore/lite/src/litert/kernel/cpu/base/custom_base.cc
+@@ -28,19 +28,15 @@ using mindspore::lite::RET_OK;
+ using mindspore::schema::PrimitiveType_Custom;
+ 
+ namespace mindspore::kernel {
+-int CustomBaseCPUKernel::Prepare() {
+-  return RET_OK;
+-}
++int CustomBaseCPUKernel::Prepare() { return RET_OK; }
+ 
+-int CustomBaseCPUKernel::ReSize() {
+-  return RET_OK;
+-}
++int CustomBaseCPUKernel::ReSize() { return RET_OK; }
+ 
+-int CustomBaseCPUKernel::Run() {
+-  return RET_OK;
+-}
++int CustomBaseCPUKernel::Run() { return RET_OK; }
+ 
+ REG_KERNEL(kCPU, kNumberTypeInt32, PrimType_Inner_ThirdPartyModel, LiteKernelCreator<CustomBaseCPUKernel>)
+ REG_KERNEL(kCPU, kNumberTypeFloat32, PrimType_Inner_ThirdPartyModel, LiteKernelCreator<CustomBaseCPUKernel>)
++REG_KERNEL(kCPU, kNumberTypeInt8, PrimType_Inner_ThirdPartyModel, LiteKernelCreator<CustomBaseCPUKernel>)
++REG_KERNEL(kCPU, kNumberTypeUInt8, PrimType_Inner_ThirdPartyModel, LiteKernelCreator<CustomBaseCPUKernel>)
+ REG_KERNEL(kCPU, kNumberTypeBool, PrimType_Inner_ThirdPartyModel, LiteKernelCreator<CustomBaseCPUKernel>)
+ }  // namespace mindspore::kernel
+diff --git a/mindspore/lite/src/litert/kernel/cpu/int8/activation_int8.cc b/mindspore/lite/src/litert/kernel/cpu/int8/activation_int8.cc
+index 9bc410e7..10b6cd5a 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/int8/activation_int8.cc
++++ b/mindspore/lite/src/litert/kernel/cpu/int8/activation_int8.cc
+@@ -16,6 +16,7 @@
+ 
+ #include "src/litert/kernel/cpu/int8/relux_int8.h"
+ #include "src/litert/kernel/cpu/int8/hswish_int8.h"
++#include "src/litert/kernel/cpu/int8/swish_int8.h"
+ #include "src/litert/kernel/cpu/int8/sigmoid_int8.h"
+ #include "src/litert/kernel/cpu/int8/tanh_int8.h"
+ #include "src/litert/kernel/cpu/int8/leaky_relu_int8.h"
+@@ -50,6 +51,9 @@ kernel::LiteKernel *CpuActivationInt8KernelCreator(const std::vector<lite::Tenso
+     case schema::ActivationType_HSWISH:
+       kernel = new (std::nothrow) HswishInt8CPUKernel(parameter, inputs, outputs, ctx);
+       break;
++    case schema::ActivationType_SWISH:
++      kernel = new (std::nothrow) SwishInt8CPUKernel(parameter, inputs, outputs, ctx);
++      break;
+     case schema::ActivationType_SIGMOID:
+       kernel = new (std::nothrow) SigmoidInt8CPUKernel(parameter, inputs, outputs, ctx);
+       break;
+diff --git a/mindspore/lite/src/litert/kernel/cpu/int8/argminmax_int8.cc b/mindspore/lite/src/litert/kernel/cpu/int8/argminmax_int8.cc
+index b5018909..7cb872d9 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/int8/argminmax_int8.cc
++++ b/mindspore/lite/src/litert/kernel/cpu/int8/argminmax_int8.cc
+@@ -47,12 +47,6 @@ int ArgMinMaxInt8CPUKernel::Prepare() {
+   CHECK_LESS_RETURN(out_tensors_.size(), C1NUM);
+   CHECK_NULL_RETURN(in_tensors_[0]);
+   CHECK_NULL_RETURN(out_tensors_[0]);
+-  if (in_tensors_[0]->data_type() != mindspore::kNumberTypeInt8 ||
+-      out_tensors_[0]->data_type() != mindspore::kNumberTypeInt8) {
+-    MS_LOG(ERROR) << "Datatype error, input0 data_type is " << in_tensors_[0]->data_type() << ", output data_type is "
+-                  << out_tensors_[0]->data_type();
+-    return RET_ERROR;
+-  }
+   in_quant_arg_ = reinterpret_cast<QuantArg *>(malloc(sizeof(QuantArg)));
+   if (in_quant_arg_ == nullptr) {
+     MS_LOG(ERROR) << "Malloc QuantArg for argmin or argmax int8 op failed!";
+@@ -64,18 +58,7 @@ int ArgMinMaxInt8CPUKernel::Prepare() {
+   in_quant_arg_->scale_ = in_quant_args.front().scale;
+   in_quant_arg_->zp_ = in_quant_args.front().zeroPoint;
+ 
+-  auto *out_tensor = out_tensors_.at(kOutputIndex);
+-  auto out_quant_args = out_tensor->quant_params();
+-  CHECK_LESS_RETURN(out_quant_args.size(), 1);
+-  out_quant_arg_ = reinterpret_cast<QuantArg *>(malloc(sizeof(QuantArg)));
+-  out_quant_arg_->scale_ = out_quant_args.front().scale;
+-  out_quant_arg_->zp_ = out_quant_args.front().zeroPoint;
+-  if (out_quant_arg_ == nullptr) {
+-    MS_LOG(ERROR) << "Malloc QuantArg for argmin or argmax int8 op failed!";
+-    return RET_ERROR;
+-  }
+-
+-  compute_param_ = reinterpret_cast<ArgMinMaxComputeParam *>(sizeof(ArgMinMaxComputeParam));
++  compute_param_ = reinterpret_cast<ArgMinMaxComputeParam *>(malloc(sizeof(ArgMinMaxComputeParam)));
+   if (compute_param_ == nullptr) {
+     MS_LOG(ERROR) << "Malloc ArgMinMaxComputeParam for argmin or argmax int8 op failed!";
+     return RET_ERROR;
+@@ -87,6 +70,22 @@ int ArgMinMaxInt8CPUKernel::Prepare() {
+   compute_param_->out_value_ = param->out_value_;
+   compute_param_->keep_dims_ = param->keep_dims_;
+ 
++  out_quant_arg_ = reinterpret_cast<QuantArg *>(malloc(sizeof(QuantArg)));
++  if (out_quant_arg_ == nullptr) {
++    MS_LOG(ERROR) << "Malloc QuantArg for argmin or argmax int8 op failed!";
++    return RET_ERROR;
++  }
++  if (out_tensors_.size() == Num2 || compute_param_->out_value_) {
++    auto *out_tensor = out_tensors_.at(kOutputIndex);
++    auto out_quant_args = out_tensor->quant_params();
++    CHECK_LESS_RETURN(out_quant_args.size(), 1);
++    out_quant_arg_->scale_ = out_quant_args.front().scale;
++    out_quant_arg_->zp_ = out_quant_args.front().zeroPoint;
++  } else {  // set default quant value
++    out_quant_arg_->scale_ = 1.0f;
++    out_quant_arg_->zp_ = 0;
++  }
++
+   if (!InferShapeDone()) {
+     return RET_OK;
+   }
+diff --git a/mindspore/lite/src/litert/kernel/cpu/int8/sigmoid_int8.h b/mindspore/lite/src/litert/kernel/cpu/int8/sigmoid_int8.h
+index 1f383ae6..9080852f 100644
+--- a/mindspore/lite/src/litert/kernel/cpu/int8/sigmoid_int8.h
++++ b/mindspore/lite/src/litert/kernel/cpu/int8/sigmoid_int8.h
+@@ -34,7 +34,7 @@ class SigmoidInt8CPUKernel : public LiteKernel {
+   int Run() override;
+   int DoActivation(int task_id);
+ 
+- private:
++ protected:
+   int8_t table_list_[256]{0};
+ };
+ }  // namespace mindspore::kernel
+diff --git a/mindspore/lite/src/litert/kernel/cpu/int8/swish_int8.cc b/mindspore/lite/src/litert/kernel/cpu/int8/swish_int8.cc
+new file mode 100644
+index 00000000..501793af
+--- /dev/null
++++ b/mindspore/lite/src/litert/kernel/cpu/int8/swish_int8.cc
+@@ -0,0 +1,67 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "src/litert/kernel/cpu/int8/swish_int8.h"
++#include <limits>
++#include <algorithm>
++#include "nnacl/int8/quantize.h"
++#include "src/litert/kernel_registry.h"
++#include "include/errorcode.h"
++
++using mindspore::kernel::KERNEL_ARCH;
++using mindspore::lite::KernelRegistrar;
++using mindspore::lite::RET_ERROR;
++using mindspore::lite::RET_OK;
++using mindspore::schema::ActivationType_SIGMOID;
++
++namespace mindspore::kernel {
++//  Calculate the quantization results of 0-255 in advance
++void CalculateSwishTableList(int8_t *table, const float input_scale, const int32_t input_zp, const float output_scale,
++                             const int32_t output_zp) {
++  int32_t min_value = std::numeric_limits<int8_t>::min();
++  int32_t max_value = std::numeric_limits<int8_t>::max();
++  for (int i = min_value; i < max_value; ++i) {
++    const float real_input_value = input_scale * (i - input_zp);
++    const float sigmoid_value = 1.0f / (1.0f + std::exp(-real_input_value));
++    const int32_t quantized = (std::round(real_input_value * sigmoid_value / output_scale) + output_zp);
++    int8_t out_value = static_cast<int8_t>(std::max(std::min(quantized, max_value), min_value));
++    uint8_t index = static_cast<uint8_t>(i);
++    table[index] = out_value;
++  }
++}
++
++int SwishInt8CPUKernel::Prepare() {
++  CHECK_LESS_RETURN(in_tensors_.size(), C1NUM);
++  CHECK_LESS_RETURN(out_tensors_.size(), C1NUM);
++  CHECK_NULL_RETURN(in_tensors_[0]);
++  CHECK_NULL_RETURN(out_tensors_[0]);
++  if (in_tensors_[0]->data_type() != mindspore::kNumberTypeInt8 ||
++      out_tensors_[0]->data_type() != mindspore::kNumberTypeInt8) {
++    MS_LOG(ERROR) << "Datatype error, input0 data_type is " << in_tensors_[0]->data_type() << ", output data_type is "
++                  << out_tensors_[0]->data_type();
++    return RET_ERROR;
++  }
++  lite::Tensor *input = in_tensors_.at(0);
++  lite::Tensor *output = out_tensors_.at(0);
++  MS_CHECK_TRUE_RET(!input->quant_params().empty() && !output->quant_params().empty(), RET_ERROR);
++  const float input_scale = input->quant_params().front().scale;
++  const int32_t input_zp = input->quant_params().front().zeroPoint;
++  const float output_scale = output->quant_params().front().scale;
++  const int32_t output_zp = output->quant_params().front().zeroPoint;
++  CalculateSwishTableList(table_list_, input_scale, input_zp, output_scale, output_zp);
++  return RET_OK;
++}
++}  // namespace mindspore::kernel
+diff --git a/mindspore/lite/src/litert/kernel/cpu/int8/swish_int8.h b/mindspore/lite/src/litert/kernel/cpu/int8/swish_int8.h
+new file mode 100644
+index 00000000..7b8ef9ca
+--- /dev/null
++++ b/mindspore/lite/src/litert/kernel/cpu/int8/swish_int8.h
+@@ -0,0 +1,38 @@
++/**
++ * Copyright 2024 Huawei Technologies Co., Ltd
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MINDSPORE_LITE_SRC_RUNTIME_KERNEL_CPU_INT8_SWISH_INT8_H_
++#define MINDSPORE_LITE_SRC_RUNTIME_KERNEL_CPU_INT8_SWISH_INT8_H_
++
++#include <vector>
++#include "src/litert/lite_kernel.h"
++#include "src/litert/kernel/cpu/int8/sigmoid_int8.h"
++#include "nnacl/int8/softmax_int8.h"
++#include "nnacl/int8/quantize.h"
++
++namespace mindspore::kernel {
++class SwishInt8CPUKernel : public SigmoidInt8CPUKernel {
++ public:
++  SwishInt8CPUKernel(OpParameter *parameter, const std::vector<lite::Tensor *> &inputs,
++                     const std::vector<lite::Tensor *> &outputs, const lite::InnerContext *ctx)
++      : SigmoidInt8CPUKernel(parameter, inputs, outputs, ctx) {}
++  ~SwishInt8CPUKernel() override = default;
++
++  int Prepare() override;
++};
++}  // namespace mindspore::kernel
++
++#endif  // MINDSPORE_LITE_SRC_RUNTIME_KERNEL_CPU_INT8_SWISH_INT8_H_
+diff --git a/mindspore/lite/src/litert/scheduler.cc b/mindspore/lite/src/litert/scheduler.cc
+index 7fb4507f..3aecfbe7 100644
+--- a/mindspore/lite/src/litert/scheduler.cc
++++ b/mindspore/lite/src/litert/scheduler.cc
+@@ -516,9 +516,10 @@ int Scheduler::ReplaceDelegateKernels(std::vector<kernel::KernelExec *> *dst_ker
+   if (context_->IsDeviceTypeEnabled(DT_NNRT)) {
+     auto delegate = static_cast<NNRTDelegate *>(delegate_.get());
+     delegate->ShallowCopyLiteGraph(this->src_model_->graph_);
+-    void *meta_graph = reinterpret_cast<void*>(const_cast<mindspore::schema::MetaGraph *>(
+-      mindspore::schema::GetMetaGraph(this->src_model_->buf)));
++    void *meta_graph = reinterpret_cast<void *>(
++      const_cast<mindspore::schema::MetaGraph *>(mindspore::schema::GetMetaGraph(this->src_model_->buf)));
+     delegate->SetMetaGraph(meta_graph);
++    delegate->SetDequantTensors(this->src_tensors_);
+   }
+ #endif
+ 
+@@ -870,7 +871,9 @@ int Scheduler::InferSubGraphShape(size_t subgraph_index) {
+   infer_subgraph_index_.push_back(subgraph_index);
+   auto subgraph = src_model_->graph_.sub_graphs_.at(subgraph_index);
+   int subgraph_infershape_ret = RET_OK;
+-  for (auto node_index : subgraph->node_indices_) {
++  auto node_indexes = subgraph->node_indices_;
++  for (size_t i = 0; i < node_indexes.size(); ++i) {
++    auto node_index = node_indexes[i];
+     auto node = src_model_->graph_.all_nodes_[node_index];
+     MS_ASSERT(node != nullptr);
+     auto *primitive = node->primitive_;
+@@ -882,6 +885,7 @@ int Scheduler::InferSubGraphShape(size_t subgraph_index) {
+       // convert shape to built-in shape
+       MS_CHECK_TRUE_RET(node->input_indices_.size() == 1, RET_ERROR);
+       shape_fusion_pass_->Run(node, subgraph_index);
++      node_indexes = subgraph->node_indices_;
+     }
+     auto ret = InferNodeShape(node);
+     if (ret == RET_INFER_INVALID) {
+diff --git a/mindspore/lite/src/tensor.h b/mindspore/lite/src/tensor.h
+index 823e2380..6d78d9c5 100644
+--- a/mindspore/lite/src/tensor.h
++++ b/mindspore/lite/src/tensor.h
+@@ -38,10 +38,12 @@ namespace lite {
+ #define STATIC_ALLOCATION -271964
+ #define RUNTIME_REFCOUNT 0x9999
+ #define OPENCL_ALLOCATOR_REFCOUNT -10000
++#define NNRT_ALLOCATION -10001
+ #define IS_STATIC_ALLOCATOR(allocator) ((allocator != nullptr) && (allocator->RefCount(nullptr) == STATIC_ALLOCATION))
+ #define IS_RUNTIME_ALLOCATOR(allocator) ((allocator != nullptr) && (allocator->RefCount(nullptr) == RUNTIME_REFCOUNT))
+ #define IS_OPENCL_ALLOCATOR(allocator) \
+   ((allocator != nullptr) && (allocator->RefCount(nullptr) == OPENCL_ALLOCATOR_REFCOUNT))
++#define IS_NNRT_ALLOCATOR(allocator) ((allocator != nullptr) && (allocator->RefCount(nullptr) == NNRT_ALLOCATION))
+ 
+ struct LiteQuantParam {
+   double scale;
+diff --git a/mindspore/lite/tools/optimizer/fusion/glu_fusion.h b/mindspore/lite/tools/optimizer/fusion/glu_fusion.h
+index 5e6a7e79..513a49d9 100644
+--- a/mindspore/lite/tools/optimizer/fusion/glu_fusion.h
++++ b/mindspore/lite/tools/optimizer/fusion/glu_fusion.h
+@@ -1,5 +1,5 @@
+ /**
+- * Copyright 2021 Huawei Technologies Co., Ltd
++ * Copyright 2021~2024 Huawei Technologies Co., Ltd
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+@@ -26,7 +26,7 @@ namespace mindspore {
+ namespace opt {
+ class GLUFusion : public LitePatternProcessPass {
+  public:
+-  explicit GLUFusion(const std::string &name = "glu_fusion", bool multigraph = true)
++  explicit GLUFusion(const std::string &name = "GLUFusion", bool multigraph = true)
+       : LitePatternProcessPass(name, multigraph) {}
+ 
+   ~GLUFusion() override = default;
+-- 
+2.17.1
+

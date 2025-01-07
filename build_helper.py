@@ -22,62 +22,27 @@ import argparse
 import hashlib
 import subprocess
 
+
 def extract_source(in_zip_path, out_src_path):
     "depress source code form release package"
     print('Extracting zipped release package...')
     f = zipfile.ZipFile(in_zip_path, "r")
     f.extractall(path=out_src_path)
-    old_src_dir = out_src_path + "/mindspore-v2.1.0/"
+    old_src_dir = out_src_path + "/mindspore-v2.3.0/"
     new_src_dir = out_src_path + "/source/"
     os.rename(old_src_dir, new_src_dir)
     print("Done extraction.")
 
+
 def do_patch(patch_dir, target_dir):
     patches = [
         '0001-build-gn-c-api-for-OHOS.patch',
-        '0002-train-and-build.patch',
-        '0003-add-js-api.patch',
-        '0004-cross-compile-ndkso-fp16-nnrt-train_capi.patch',
-        '0005-micro-for-ohos.patch',
-        '0006-remove-lite-expression-fix-double-loadso.patch',
-        '0007-deobfuscator.patch',
-        '0008-upgrade-flatbuffers-fix_crash.patch',
-        '0009-npu-zero-copy.patch',
-        '0010-micro-dynamic-shape-support-discrete-value.patch',
-        '0011-fix-npu-infer-memory-leak-delete-liteGraph.patch',
-        '0012-add-mindir-ops.patch',
-        '0013-hiappevent.patch',
-        '0014-DynamicQuant-strategy-optimization.patch',
-        '0015-bugfix-for-cpu-kernel.patch',
-        '0016-bugfix-for-argminmax-swish-int8-and-vad-asan.patch',
-        '0017-bugfix-for-onnx-parser.patch',
-        '0018-nnrt-litegraph-dequant.patch',
-        '0019-adaper-NNCore-Api.patch',
-        '0020-fix-ocr-gcn-model-crash.patch',
-        '0021-add-mindir-ops.patch',
-        '0022-adapter-HiAI-Foundation-NPU.patch',
-        '0023-support-x86-emulator-build.patch',
-        '0024-fix-gcn-model-squeeze-transpose-infershape-not-do.patch',
-        '0025-support-kirin-npu-dynamic-dims.patch',
-        '0026-fix-depthwise-conv-kernel.patch',
-        '0027-reduce-memory-when-npu-compilation-with-cache.patch',
-        '0028-fix-onnx-parser-and-cpu-kernel.patch',
-        '0029-remove-recursive-lock.patch',
-        '0030-generate-flatbuffer-notice.patch',
-        '0031-fix-matmul-assemble-can-not-protect-stack-in-mutil-thread.patch',
-        '0032-fix-for-concat-bool-type.patch',
-        '0033-fix-nullptr-etal.patch',
-        '0034-fix-semicolon-and-nullptr-etal.patch',
-        '0035-fix-ArgMaxFusion_get_max_parameter_uninitialized.patch',
-        '0036-fix-split-non-uniform-split.patch',
-        '0037-fix-for-fuzz-problem.patch',
-        '0038-refactor-nnrt-allocator-to-singleton.patch',
-        '0039-add-compile-option-SP-extensions-white-list.patch',
-        '0040-fix-context-double-free.patch',
-        '0041-fix-MutableData-memory-leak.patch',
-        '0042-scatterND-indices-illegal.patch',
-        '0043-fix-too-many-hi-app-event-reports.patch',
-        '0044-fix-multi-thread-nnrt-infer-failed.patch',
+        '0002-train-js-api-ndkso-fp16-nnrt.patch',
+        '0003-micro-for-ohos.patch',
+        '0004-deobfuscator-flatbuffers-npu-dynamic.patch',
+        '0005-hiappevent-DynamicQuant-nnrt-NNCore-Api.patch',
+        '0006-mindir-NPU-x86-emulator-dynamic-dims.patch',
+        '0007-fix-matmul-split-scatterND-fuzz.patch',
     ]
 
     cwd = os.getcwd()
@@ -97,6 +62,7 @@ def do_patch(patch_dir, target_dir):
         print('Done')
     os.chdir(cwd)
 
+
 def create_status_file(out_src_path):
     with open("{0}/.status".format(out_src_path), 'w+') as f:
         f.write('ok')
@@ -112,7 +78,7 @@ def compute_md5(file):
 def save_md5s(folder_path, out_path):
     files_list = []
     for file_name in os.listdir(folder_path):
-        if (file_name.endswith(".patch")):
+        if file_name.endswith(".patch"):
             files_list.append(file_name)
 
     os.makedirs(out_path, exist_ok=True)
@@ -128,12 +94,12 @@ def md5_changed(patch_path, md5_path):
     patch_list = []
     md5_list = []
     for file_name in os.listdir(patch_path):
-        if (file_name.endswith(".patch")):
+        if file_name.endswith(".patch"):
             patch_list.append(file_name)
     for file_name in os.listdir(md5_path):
-        if (file_name.endswith(".md5")):
+        if file_name.endswith(".md5"):
             md5_list.append(file_name)
-    if (len(patch_list) != len(md5_list)):
+    if len(patch_list) != len(md5_list):
         return True
 
     for md5_file in md5_list:
@@ -141,7 +107,7 @@ def md5_changed(patch_path, md5_path):
             return True
         with open(os.path.join(md5_path, md5_file), 'r') as f:
             origin_v = f.read().strip()
-            if (origin_v != compute_md5(os.path.join(patch_path, md5_file.replace(".md5", ".patch")))):
+            if origin_v != compute_md5(os.path.join(patch_path, md5_file.replace(".md5", ".patch"))):
                 return True
     return False
 
@@ -187,4 +153,3 @@ def main_work():
 
 if __name__ == "__main__":
     main_work()
-
