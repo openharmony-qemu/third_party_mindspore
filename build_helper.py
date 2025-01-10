@@ -43,6 +43,7 @@ def do_patch(patch_dir, target_dir):
         '0005-hiappevent-DynamicQuant-nnrt-NNCore-Api.patch',
         '0006-mindir-NPU-x86-emulator-dynamic-dims.patch',
         '0007-fix-matmul-split-scatterND-fuzz.patch',
+        '0008-fix-hi-app-event-report-negative-timestamp.patch',
     ]
 
     cwd = os.getcwd()
