@@ -192,6 +192,10 @@ OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, s
   }
   mindspore::ContextC *context = static_cast<mindspore::ContextC *>(model_context);
   auto impl = static_cast<mindspore::ModelC *>(model);
+  if (impl->context_.get() != context->context_ && context->owned_by_model_) {
+    MS_LOG(ERROR) << "context is owned by other model.";
+    return OH_AI_STATUS_LITE_PARAM_INVALID;
+  }
   if (impl->context_.get() != context->context_) {
     impl->context_.reset(context->context_);
     context->owned_by_model_ = true;
@@ -212,6 +216,10 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
   }
   mindspore::ContextC *context = static_cast<mindspore::ContextC *>(model_context);
   auto impl = static_cast<mindspore::ModelC *>(model);
+  if (impl->context_.get() != context->context_ && context->owned_by_model_) {
+    MS_LOG(ERROR) << "context is owned by other model.";
+    return OH_AI_STATUS_LITE_PARAM_INVALID;
+  }
   if (impl->context_.get() != context->context_) {
     impl->context_.reset(context->context_);
     context->owned_by_model_ = true;
@@ -464,6 +472,10 @@ OH_AI_Status OH_AI_TrainModelBuild(OH_AI_ModelHandle model, const void *model_da
   }
   auto context = static_cast<mindspore::ContextC *>(model_context);
   auto build_train_cfg = static_cast<mindspore::TrainCfg *>(train_cfg);
+  if (impl->context_.get() != context->context_ && context->owned_by_model_) {
+    MS_LOG(ERROR) << "context is owned by other model.";
+    return OH_AI_STATUS_LITE_PARAM_INVALID;
+  }
   if (impl->context_.get() != context->context_) {
     impl->context_.reset(context->context_);
     context->owned_by_model_ = true;
@@ -496,6 +508,10 @@ OH_AI_Status OH_AI_TrainModelBuildFromFile(OH_AI_ModelHandle model, const char *
   }
   auto context = static_cast<mindspore::ContextC *>(model_context);
   auto build_train_cfg = static_cast<mindspore::TrainCfg *>(train_cfg);
+  if (impl->context_.get() != context->context_ && context->owned_by_model_) {
+    MS_LOG(ERROR) << "context is owned by other model.";
+    return OH_AI_STATUS_LITE_PARAM_INVALID;
+  }
   if (impl->context_.get() != context->context_) {
     impl->context_.reset(context->context_);
     context->owned_by_model_ = true;
