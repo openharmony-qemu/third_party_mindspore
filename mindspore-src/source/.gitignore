@@ -1,9 +1,10 @@
 # MindSpore
 build/
+!scripts/build
 mindspore/lib
 output
 *.ir
-*.patch
+#*.patch
 st_tests
 kernel_meta/
 somas_meta/
