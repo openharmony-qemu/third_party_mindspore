@@ -46,14 +46,16 @@ OH_AI_ContextHandle OH_AI_ContextCreate() {
 }
 
 void OH_AI_ContextDestroy(OH_AI_ContextHandle *context) {
-  if (context != nullptr && *context != nullptr) {
-    auto impl = static_cast<mindspore::ContextC *>(*context);
-    if (impl->owned_by_model_) {
-      impl->context_ = nullptr;
-    }
-    delete impl;
-    *context = nullptr;
+  if (context == nullptr || *context == nullptr) {
+    MS_LOG(ERROR) << "context is nullptr.";
+    return;
   }
+  auto impl = static_cast<mindspore::ContextC *>(*context);
+  if (impl->owned_by_model_) {
+    impl->context_ = nullptr;
+  }
+  delete impl;
+  *context = nullptr;
 }
 
 void OH_AI_ContextSetThreadNum(OH_AI_ContextHandle context, int32_t thread_num) {
@@ -174,16 +176,22 @@ OH_AI_DeviceInfoHandle OH_AI_DeviceInfoCreate(OH_AI_DeviceType device_type) {
 }
 
 void OH_AI_DeviceInfoDestroy(OH_AI_DeviceInfoHandle *device_info) {
-  if (device_info != nullptr && *device_info != nullptr) {
-    auto impl = static_cast<mindspore::DeviceInfoContext *>(*device_info);
-    delete impl;
-    *device_info = nullptr;
+  if (device_info == nullptr || *device_info == nullptr) {
+    MS_LOG(ERROR) << "device_info is nullptr.";
+    return;
   }
+  auto impl = static_cast<mindspore::DeviceInfoContext *>(*device_info);
+  delete impl;
+  *device_info = nullptr;
 }
 
 void OH_AI_DeviceInfoSetProvider(OH_AI_DeviceInfoHandle device_info, const char *provider) {
   if (device_info == nullptr) {
     MS_LOG(ERROR) << "device_info is nullptr.";
+    return;
+  }
+  if (provider == nullptr) {
+    MS_LOG(ERROR) << "provider is nullptr.";
     return;
   }
   auto impl = static_cast<mindspore::DeviceInfoContext *>(device_info);
@@ -211,6 +219,10 @@ const char *OH_AI_DeviceInfoGetProvider(const OH_AI_DeviceInfoHandle device_info
 void OH_AI_DeviceInfoSetProviderDevice(OH_AI_DeviceInfoHandle device_info, const char *device) {
   if (device_info == nullptr) {
     MS_LOG(ERROR) << "device_info is nullptr.";
+    return;
+  }
+  if (device == nullptr) {
+    MS_LOG(ERROR) << "device is nullptr.";
     return;
   }
   auto impl = static_cast<mindspore::DeviceInfoContext *>(device_info);
@@ -413,7 +425,10 @@ OH_AI_DeviceInfoHandle OH_AI_CreateNNRTDeviceInfoByName(const char *name) {
     MS_LOG(ERROR) << "Get all device desc failed";
     return nullptr;
   }
-
+  if (name == nullptr) {
+    MS_LOG(ERROR) << "NNRT device name is nullptr";
+    return nullptr;
+  }
   OH_AI_DeviceInfoHandle handle = nullptr;
   for (size_t i = 0; i < num; i++) {
     if (strncmp(desc[i].device_name, name, NNRT_DEVICE_NAME_MAX - 1) == 0) {
