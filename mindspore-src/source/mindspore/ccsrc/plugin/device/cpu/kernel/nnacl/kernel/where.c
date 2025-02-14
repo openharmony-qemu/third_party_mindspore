@@ -216,7 +216,7 @@ int WhereRunWithTripleInputs(WhereStruct *where) {
   }
   if (((condition_nums != 1) && (condition_nums != num_max)) || ((x_num != 1) && (x_num != num_max)) ||
       ((y_num != 1) && (y_num != num_max))) {
-    if (condition_nums != GetElementNum(y) && condition->shape_size_ != y->shape_size_) {
+    if (condition_nums != GetElementNum(y)) {
       int ret = WhereBroadCastForInput(where, condition, x, y, &condition_broadcast_buf, &x_broadcast_buf,
                                        &y_broadcast_buf, output);
       if (ret != NNACL_OK) {
