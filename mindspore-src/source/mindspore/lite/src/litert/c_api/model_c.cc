@@ -163,11 +163,13 @@ OH_AI_ModelHandle OH_AI_ModelCreate() {
 }
 
 void OH_AI_ModelDestroy(OH_AI_ModelHandle *model) {
-  if (model != nullptr && *model != nullptr) {
-    auto impl = static_cast<mindspore::ModelC *>(*model);
-    delete impl;
-    *model = nullptr;
+  if (model == nullptr || *model == nullptr) {
+    MS_LOG(ERROR) << "model is nullptr.";
+    return;
   }
+  auto impl = static_cast<mindspore::ModelC *>(*model);
+  delete impl;
+  *model = nullptr;
 }
 
 void OH_AI_ModelSetWorkspace(OH_AI_ModelHandle model, void *workspace, size_t workspace_size) {

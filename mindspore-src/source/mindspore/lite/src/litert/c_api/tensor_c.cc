@@ -71,11 +71,13 @@ OH_AI_TensorHandle OH_AI_TensorCreate(const char *name, OH_AI_DataType type, con
 }
 
 void OH_AI_TensorDestroy(OH_AI_TensorHandle *tensor) {
-  if (tensor != nullptr && *tensor != nullptr) {
-    auto impl = static_cast<mindspore::MSTensor *>(*tensor);
-    delete impl;
-    *tensor = nullptr;
+  if (tensor == nullptr || *tensor == nullptr) {
+    MS_LOG(ERROR) << "tensor is nullptr.";
+    return;
   }
+  auto impl = static_cast<mindspore::MSTensor *>(*tensor);
+  delete impl;
+  *tensor = nullptr;
 }
 
 OH_AI_TensorHandle OH_AI_TensorClone(OH_AI_TensorHandle tensor) {
