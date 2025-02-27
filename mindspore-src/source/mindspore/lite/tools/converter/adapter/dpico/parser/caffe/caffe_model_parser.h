@@ -24,7 +24,7 @@
 #include <unordered_map>
 #include "include/registry/model_parser.h"
 #include "include/registry/model_parser_registry.h"
-#include "./pico_caffe.pb.h"
+#include "pico_caffe.pb.h"
 
 using STATUS = int;
 namespace mindspore::lite {

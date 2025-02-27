@@ -29,7 +29,7 @@
 #include "mindspore/core/utils/ms_context.h"
 #include "mindspore/ccsrc/runtime/hardware/device_context.h"
 #include "mindspore/ccsrc/runtime/hardware/device_context_manager.h"
-#include "./internal_kernel.h"
+#include "internal_kernel.h"
 
 namespace mindspore::kernel {
 

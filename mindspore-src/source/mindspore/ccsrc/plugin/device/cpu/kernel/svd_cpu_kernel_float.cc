@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "./svd_cpu_kernel_function.h"
+#include "svd_cpu_kernel_function.h"
 
 template <typename T>
 Eigen::BDCSVD<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> SVDFloat(

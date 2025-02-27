@@ -23,7 +23,7 @@
 #include <map>
 #include <string>
 #include "src/custom_creator.h"
-#include "./op_enum_public.h"
+#include "op_enum_public.h"
 #include "include/registry/pass_base.h"
 #include "include/errorcode.h"
 #include "src/graph_split_info.h"

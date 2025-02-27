@@ -15,8 +15,8 @@
 
 #include "gtest/gtest.h"
 #include <random>
-#include "../utils/model_utils.h"
-#include "../utils/common.h"
+#include "utils/model_utils.h"
+#include "utils/common.h"
 
 class MSLiteNnrtTest: public testing::Test {
   protected:

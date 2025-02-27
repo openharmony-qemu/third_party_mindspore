@@ -19,7 +19,7 @@
 #include <string>
 #include "common/op_attr.h"
 #include "ops/custom.h"
-#include "./onnx.pb.h"
+#include "onnx.pb.h"
 #include "include/registry/node_parser_registry.h"
 #include "mindapi/base/logging.h"
 

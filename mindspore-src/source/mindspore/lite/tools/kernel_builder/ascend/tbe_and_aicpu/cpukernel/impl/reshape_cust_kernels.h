@@ -16,7 +16,7 @@
 #ifndef _AICPU_RESHAPE_CUST_KERNELS_H_
 #define _AICPU_RESHAPE_CUST_KERNELS_H_
 
-#include "./cpu_kernel.h"
+#include "cpu_kernel.h"
 
 namespace aicpu {
 class ReshapeCustCpuKernel : public CpuKernel {

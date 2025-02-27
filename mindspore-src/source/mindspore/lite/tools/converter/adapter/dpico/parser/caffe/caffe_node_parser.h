@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <memory>
 #include "google/protobuf/message.h"
-#include "./pico_caffe.pb.h"
+#include "pico_caffe.pb.h"
 #include "common/anf_util.h"
 #include "ops/base_operator.h"
 

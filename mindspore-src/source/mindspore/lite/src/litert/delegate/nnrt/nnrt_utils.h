@@ -19,7 +19,7 @@
 
 #include "include/api/format.h"
 #include "ir/dtype/type_id.h"
-#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
+#include "neural_network_runtime/neural_network_runtime.h"
 
 namespace mindspore::lite {
 OH_NN_Format CastToNNRtFormat(Format format);

@@ -17,7 +17,7 @@
 #define OHOS_MINDSPORE_TEST_FUZZTEST_DATA_H
 
 #include "securec.h"
-#include "../utils/log.h"
+#include "utils/log.h"
 
 class Data {
 public:

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "./kv_cache_mgr.h"
+#include "kv_cache_mgr.h"
 namespace ge {
 IMPLEMT_COMMON_INFERFUNC(KVCacheMgrInferShape) {
   TensorDesc past_des = op.GetInputDescByName("past");

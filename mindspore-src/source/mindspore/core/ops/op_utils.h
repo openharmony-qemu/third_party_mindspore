@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "./op_name.h"
+#include "op_name.h"
 #include "include/api/visible.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/shape_vector.h"

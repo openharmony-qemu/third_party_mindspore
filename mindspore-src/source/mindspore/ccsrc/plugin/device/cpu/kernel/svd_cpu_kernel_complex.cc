@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "./svd_cpu_kernel_function.h"
+#include "svd_cpu_kernel_function.h"
 using f_complex = std::complex<float>;
 using d_complex = std::complex<double>;
 

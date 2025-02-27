@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 
-#include "./tinyxml2.h"
+#include "tinyxml2.h"
 #include "opencv2/opencv.hpp"
 #include "utils/ms_utils.h"
 #include "minddata/dataset/core/cv_tensor.h"

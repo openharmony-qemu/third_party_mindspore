@@ -28,7 +28,7 @@
 #include <algorithm>
 #include <set>
 #include "error_util.h"
-#include "./vector_proto_profiling.h"
+#include "vector_proto_profiling.h"
 #include "op_common_util.h"
 
 namespace ge {

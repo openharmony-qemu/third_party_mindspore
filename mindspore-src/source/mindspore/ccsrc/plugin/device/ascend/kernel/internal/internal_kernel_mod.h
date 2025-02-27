@@ -24,7 +24,7 @@
 #include <utility>
 
 #include "kernel/kernel.h"
-#include "./internal_kernel.h"
+#include "internal_kernel.h"
 #include "plugin/factory/ms_factory.h"
 #include "plugin/device/ascend/kernel/internal/tiling_cache.h"
 #include "utils/ms_context.h"

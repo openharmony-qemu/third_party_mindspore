@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "./flash_attention.h"
+#include "flash_attention.h"
 namespace ge {
 IMPLEMT_COMMON_INFERFUNC(FlashAttentionInferShape) {
   TensorDesc output_desc = op.GetOutputDescByName("y");

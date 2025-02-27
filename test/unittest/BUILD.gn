@@ -16,7 +16,10 @@ import("//build/test.gni")
 module_output_path = "mindspore/"
 
 config("module_private_config") {
-  include_dirs = [ "//third_party/mindspore/mindspore-src/source/" ]
+  include_dirs = [
+    "../",
+    "//third_party/mindspore/mindspore-src/source/",
+  ]
 }
 
 ohos_unittest("MindSporeUnitTest") {
@@ -33,12 +36,14 @@ ohos_unittest("MindSporeUnitTest") {
   configs = [ ":module_private_config" ]
 
   deps = [
-    "//third_party/googletest:gmock",
-    "//third_party/googletest:gtest",
     "//third_party/mindspore/mindspore-src/source/mindspore/lite:mindspore_ndk",
   ]
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock",
+    "googletest:gtest",
+  ]
 }
 
 group("unit_test") {

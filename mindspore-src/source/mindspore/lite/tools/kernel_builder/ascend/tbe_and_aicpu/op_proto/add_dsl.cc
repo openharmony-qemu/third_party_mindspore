@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "./add_dsl.h"
+#include "add_dsl.h"
 namespace ge {
 IMPLEMT_COMMON_INFERFUNC(AddDSLInferShape) { return GRAPH_SUCCESS; }
 

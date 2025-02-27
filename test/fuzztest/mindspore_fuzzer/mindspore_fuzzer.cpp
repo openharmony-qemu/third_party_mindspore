@@ -18,10 +18,10 @@
 #include <stdint.h>
 #include <iostream>
 #include "mindspore_fuzzer.h"
-#include "../data.h"
+#include "fuzztest/data.h"
 #include "include/c_api/context_c.h"
 #include "include/c_api/model_c.h"
-#include "../../utils/model_utils.h"
+#include "utils/model_utils.h"
 #include "context_c_fuzzer.h"
 
 bool MSPreparedModelFuzzTest(const uint8_t* data, size_t size) {

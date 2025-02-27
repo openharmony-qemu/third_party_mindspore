@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-#include "./tinyxml2.h"
+#include "tinyxml2.h"
 #include "minddata/dataset/core/tensor.h"
 
 #include "minddata/dataset/engine/data_schema.h"

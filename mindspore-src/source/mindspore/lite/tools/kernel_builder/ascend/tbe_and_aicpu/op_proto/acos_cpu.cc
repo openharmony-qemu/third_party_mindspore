@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "./acos_cpu.h"
+#include "acos_cpu.h"
 namespace ge {
 IMPLEMT_COMMON_INFERFUNC(AcosCpuInferShape) { return GRAPH_SUCCESS; }
 

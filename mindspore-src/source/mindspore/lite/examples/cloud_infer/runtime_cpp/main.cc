@@ -21,7 +21,7 @@
 #include <thread>
 #include <algorithm>
 #include <vector>
-#include "./flags.h"
+#include "flags.h"
 #include "include/api/model.h"
 #include "include/api/context.h"
 #include "include/api/types.h"

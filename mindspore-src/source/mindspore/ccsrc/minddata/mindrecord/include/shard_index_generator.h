@@ -26,7 +26,7 @@
 #include <utility>
 #include <vector>
 #include "minddata/mindrecord/include/shard_header.h"
-#include "./sqlite3.h"
+#include "sqlite3.h"
 
 namespace mindspore {
 namespace mindrecord {

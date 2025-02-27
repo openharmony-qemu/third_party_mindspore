@@ -32,8 +32,8 @@
 #include <utility>
 #include <vector>
 
-#include "./jpeglib.h"
-#include "./jerror.h"
+#include "jpeglib.h"
+#include "jerror.h"
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "minddata/dataset/core/tensor.h"

@@ -25,7 +25,7 @@
 #include "src/litert/delegate/nnrt/hiai_foundation_wrapper.h"
 #endif
 #ifdef SUPPORT_NNRT
-#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
+#include "neural_network_runtime/neural_network_runtime.h"
 #endif
 
 // ================ Context ================

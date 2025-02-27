@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "./add_tik.h"
+#include "add_tik.h"
 namespace ge {
 IMPLEMT_COMMON_INFERFUNC(AddTikInferShape) { return GRAPH_SUCCESS; }
 

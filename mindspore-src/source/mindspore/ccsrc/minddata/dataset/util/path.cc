@@ -25,7 +25,7 @@
 #define stat _stat64  //  for file size exceeds (1<<31)-1 bytes
 #endif
 
-#include "./securec.h"
+#include "securec.h"
 #ifndef BUILD_LITE
 #include "mindspore/core/utils/file_utils.h"
 #else

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "./generate_eod_mask_kernels.h"
+#include "generate_eod_mask_kernels.h"
 #include <Eigen/Dense>
 #include <map>
 #include <thread>

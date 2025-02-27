@@ -23,7 +23,7 @@
 #include "mindapi/ir/func_graph.h"
 #include "ops/custom.h"
 #include "src/graph_split_info.h"
-#include "./op_enum_public.h"
+#include "op_enum_public.h"
 #include "include/errorcode.h"
 
 using mindspore::lite::STATUS;

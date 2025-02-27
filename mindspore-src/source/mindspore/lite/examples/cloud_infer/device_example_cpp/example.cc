@@ -25,7 +25,7 @@
 #include "include/api/status.h"
 #include "include/api/types.h"
 
-#include "./mem_gpu.h"
+#include "mem_gpu.h"
 
 namespace {
 constexpr int kNumPrintOfOutData = 50;

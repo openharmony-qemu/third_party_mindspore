@@ -23,8 +23,8 @@
 #include "include/c_api/data_type_c.h"
 #include "include/c_api/tensor_c.h"
 #include "include/c_api/format_c.h"
-#include "../utils/common.h"
-#include "../utils/model_utils.h"
+#include "utils/common.h"
+#include "utils/model_utils.h"
 
 class MSLiteTest: public testing::Test {
 protected:

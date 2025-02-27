@@ -19,8 +19,8 @@
 #include <string>
 #include "ops/custom.h"
 #include "common/op_attr.h"
-#include "./extended_attr.h"
-#include "./pico_caffe.pb.h"
+#include "extended_attr.h"
+#include "pico_caffe.pb.h"
 #include "op/custom_operator.h"
 
 namespace mindspore {
