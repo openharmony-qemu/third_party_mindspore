@@ -6,6 +6,13 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+// Ensure the included flatbuffers.h is the same version as when this file was
+// generated, otherwise it may not be compatible.
+static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
+              FLATBUFFERS_VERSION_MINOR == 3 &&
+              FLATBUFFERS_VERSION_REVISION == 25,
+             "Non-compatible flatbuffers version included");
+
 namespace mindspore {
 namespace schema {
 
@@ -21,13 +28,13 @@ struct GpuCache;
 struct GpuCacheBuilder;
 struct GpuCacheT;
 
-inline const flatbuffers::TypeTable *TuneParamTypeTable();
+inline const ::flatbuffers::TypeTable *TuneParamTypeTable();
 
-inline const flatbuffers::TypeTable *ProgramBinaryTypeTable();
+inline const ::flatbuffers::TypeTable *ProgramBinaryTypeTable();
 
-inline const flatbuffers::TypeTable *GpuCacheTypeTable();
+inline const ::flatbuffers::TypeTable *GpuCacheTypeTable();
 
-struct TuneParamT : public flatbuffers::NativeTable {
+struct TuneParamT : public ::flatbuffers::NativeTable {
   typedef TuneParam TableType;
   std::vector<int32_t> local{};
   std::vector<int32_t> block{};
@@ -35,10 +42,10 @@ struct TuneParamT : public flatbuffers::NativeTable {
   std::vector<int32_t> opPara{};
 };
 
-struct TuneParam FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct TuneParam FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef TuneParamT NativeTableType;
   typedef TuneParamBuilder Builder;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return TuneParamTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -47,31 +54,31 @@ struct TuneParam FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_SHAPE = 8,
     VT_OPPARA = 10
   };
-  const flatbuffers::Vector<int32_t> *local() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_LOCAL);
+  const ::flatbuffers::Vector<int32_t> *local() const {
+    return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_LOCAL);
   }
-  flatbuffers::Vector<int32_t> *mutable_local() {
-    return GetPointer<flatbuffers::Vector<int32_t> *>(VT_LOCAL);
+  ::flatbuffers::Vector<int32_t> *mutable_local() {
+    return GetPointer<::flatbuffers::Vector<int32_t> *>(VT_LOCAL);
   }
-  const flatbuffers::Vector<int32_t> *block() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_BLOCK);
+  const ::flatbuffers::Vector<int32_t> *block() const {
+    return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_BLOCK);
   }
-  flatbuffers::Vector<int32_t> *mutable_block() {
-    return GetPointer<flatbuffers::Vector<int32_t> *>(VT_BLOCK);
+  ::flatbuffers::Vector<int32_t> *mutable_block() {
+    return GetPointer<::flatbuffers::Vector<int32_t> *>(VT_BLOCK);
   }
-  const flatbuffers::Vector<int32_t> *shape() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_SHAPE);
+  const ::flatbuffers::Vector<int32_t> *shape() const {
+    return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_SHAPE);
   }
-  flatbuffers::Vector<int32_t> *mutable_shape() {
-    return GetPointer<flatbuffers::Vector<int32_t> *>(VT_SHAPE);
+  ::flatbuffers::Vector<int32_t> *mutable_shape() {
+    return GetPointer<::flatbuffers::Vector<int32_t> *>(VT_SHAPE);
   }
-  const flatbuffers::Vector<int32_t> *opPara() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_OPPARA);
+  const ::flatbuffers::Vector<int32_t> *opPara() const {
+    return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_OPPARA);
   }
-  flatbuffers::Vector<int32_t> *mutable_opPara() {
-    return GetPointer<flatbuffers::Vector<int32_t> *>(VT_OPPARA);
+  ::flatbuffers::Vector<int32_t> *mutable_opPara() {
+    return GetPointer<::flatbuffers::Vector<int32_t> *>(VT_OPPARA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_LOCAL) &&
            verifier.VerifyVector(local()) &&
@@ -83,44 +90,44 @@ struct TuneParam FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(opPara()) &&
            verifier.EndTable();
   }
-  TuneParamT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(TuneParamT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<TuneParam> Pack(flatbuffers::FlatBufferBuilder &_fbb, const TuneParamT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  TuneParamT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(TuneParamT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<TuneParam> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TuneParamT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct TuneParamBuilder {
   typedef TuneParam Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_local(flatbuffers::Offset<flatbuffers::Vector<int32_t>> local) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_local(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> local) {
     fbb_.AddOffset(TuneParam::VT_LOCAL, local);
   }
-  void add_block(flatbuffers::Offset<flatbuffers::Vector<int32_t>> block) {
+  void add_block(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> block) {
     fbb_.AddOffset(TuneParam::VT_BLOCK, block);
   }
-  void add_shape(flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape) {
+  void add_shape(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> shape) {
     fbb_.AddOffset(TuneParam::VT_SHAPE, shape);
   }
-  void add_opPara(flatbuffers::Offset<flatbuffers::Vector<int32_t>> opPara) {
+  void add_opPara(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> opPara) {
     fbb_.AddOffset(TuneParam::VT_OPPARA, opPara);
   }
-  explicit TuneParamBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit TuneParamBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<TuneParam> Finish() {
+  ::flatbuffers::Offset<TuneParam> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<TuneParam>(end);
+    auto o = ::flatbuffers::Offset<TuneParam>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<TuneParam> CreateTuneParam(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> local = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> block = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> opPara = 0) {
+inline ::flatbuffers::Offset<TuneParam> CreateTuneParam(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> local = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> block = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> shape = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> opPara = 0) {
   TuneParamBuilder builder_(_fbb);
   builder_.add_opPara(opPara);
   builder_.add_shape(shape);
@@ -129,8 +136,8 @@ inline flatbuffers::Offset<TuneParam> CreateTuneParam(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<TuneParam> CreateTuneParamDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<TuneParam> CreateTuneParamDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int32_t> *local = nullptr,
     const std::vector<int32_t> *block = nullptr,
     const std::vector<int32_t> *shape = nullptr,
@@ -147,20 +154,24 @@ inline flatbuffers::Offset<TuneParam> CreateTuneParamDirect(
       opPara__);
 }
 
-flatbuffers::Offset<TuneParam> CreateTuneParam(flatbuffers::FlatBufferBuilder &_fbb, const TuneParamT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<TuneParam> CreateTuneParam(::flatbuffers::FlatBufferBuilder &_fbb, const TuneParamT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct ProgramBinaryT : public flatbuffers::NativeTable {
+struct ProgramBinaryT : public ::flatbuffers::NativeTable {
   typedef ProgramBinary TableType;
   std::string program_name{};
   std::string build_option{};
   std::unique_ptr<mindspore::schema::TuneParamT> tune{};
   std::vector<uint8_t> data{};
+  ProgramBinaryT() = default;
+  ProgramBinaryT(const ProgramBinaryT &o);
+  ProgramBinaryT(ProgramBinaryT&&) FLATBUFFERS_NOEXCEPT = default;
+  ProgramBinaryT &operator=(ProgramBinaryT o) FLATBUFFERS_NOEXCEPT;
 };
 
-struct ProgramBinary FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct ProgramBinary FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef ProgramBinaryT NativeTableType;
   typedef ProgramBinaryBuilder Builder;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return ProgramBinaryTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -169,17 +180,17 @@ struct ProgramBinary FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_TUNE = 8,
     VT_DATA = 10
   };
-  const flatbuffers::String *program_name() const {
-    return GetPointer<const flatbuffers::String *>(VT_PROGRAM_NAME);
+  const ::flatbuffers::String *program_name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_PROGRAM_NAME);
   }
-  flatbuffers::String *mutable_program_name() {
-    return GetPointer<flatbuffers::String *>(VT_PROGRAM_NAME);
+  ::flatbuffers::String *mutable_program_name() {
+    return GetPointer<::flatbuffers::String *>(VT_PROGRAM_NAME);
   }
-  const flatbuffers::String *build_option() const {
-    return GetPointer<const flatbuffers::String *>(VT_BUILD_OPTION);
+  const ::flatbuffers::String *build_option() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_BUILD_OPTION);
   }
-  flatbuffers::String *mutable_build_option() {
-    return GetPointer<flatbuffers::String *>(VT_BUILD_OPTION);
+  ::flatbuffers::String *mutable_build_option() {
+    return GetPointer<::flatbuffers::String *>(VT_BUILD_OPTION);
   }
   const mindspore::schema::TuneParam *tune() const {
     return GetPointer<const mindspore::schema::TuneParam *>(VT_TUNE);
@@ -187,13 +198,13 @@ struct ProgramBinary FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   mindspore::schema::TuneParam *mutable_tune() {
     return GetPointer<mindspore::schema::TuneParam *>(VT_TUNE);
   }
-  const flatbuffers::Vector<uint8_t> *data() const {
-    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_DATA);
+  const ::flatbuffers::Vector<uint8_t> *data() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_DATA);
   }
-  flatbuffers::Vector<uint8_t> *mutable_data() {
-    return GetPointer<flatbuffers::Vector<uint8_t> *>(VT_DATA);
+  ::flatbuffers::Vector<uint8_t> *mutable_data() {
+    return GetPointer<::flatbuffers::Vector<uint8_t> *>(VT_DATA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_PROGRAM_NAME) &&
            verifier.VerifyString(program_name()) &&
@@ -205,44 +216,44 @@ struct ProgramBinary FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(data()) &&
            verifier.EndTable();
   }
-  ProgramBinaryT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(ProgramBinaryT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<ProgramBinary> Pack(flatbuffers::FlatBufferBuilder &_fbb, const ProgramBinaryT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  ProgramBinaryT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(ProgramBinaryT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<ProgramBinary> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const ProgramBinaryT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct ProgramBinaryBuilder {
   typedef ProgramBinary Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_program_name(flatbuffers::Offset<flatbuffers::String> program_name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_program_name(::flatbuffers::Offset<::flatbuffers::String> program_name) {
     fbb_.AddOffset(ProgramBinary::VT_PROGRAM_NAME, program_name);
   }
-  void add_build_option(flatbuffers::Offset<flatbuffers::String> build_option) {
+  void add_build_option(::flatbuffers::Offset<::flatbuffers::String> build_option) {
     fbb_.AddOffset(ProgramBinary::VT_BUILD_OPTION, build_option);
   }
-  void add_tune(flatbuffers::Offset<mindspore::schema::TuneParam> tune) {
+  void add_tune(::flatbuffers::Offset<mindspore::schema::TuneParam> tune) {
     fbb_.AddOffset(ProgramBinary::VT_TUNE, tune);
   }
-  void add_data(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data) {
+  void add_data(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> data) {
     fbb_.AddOffset(ProgramBinary::VT_DATA, data);
   }
-  explicit ProgramBinaryBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit ProgramBinaryBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<ProgramBinary> Finish() {
+  ::flatbuffers::Offset<ProgramBinary> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<ProgramBinary>(end);
+    auto o = ::flatbuffers::Offset<ProgramBinary>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<ProgramBinary> CreateProgramBinary(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> program_name = 0,
-    flatbuffers::Offset<flatbuffers::String> build_option = 0,
-    flatbuffers::Offset<mindspore::schema::TuneParam> tune = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data = 0) {
+inline ::flatbuffers::Offset<ProgramBinary> CreateProgramBinary(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> program_name = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> build_option = 0,
+    ::flatbuffers::Offset<mindspore::schema::TuneParam> tune = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> data = 0) {
   ProgramBinaryBuilder builder_(_fbb);
   builder_.add_data(data);
   builder_.add_tune(tune);
@@ -251,11 +262,11 @@ inline flatbuffers::Offset<ProgramBinary> CreateProgramBinary(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<ProgramBinary> CreateProgramBinaryDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<ProgramBinary> CreateProgramBinaryDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *program_name = nullptr,
     const char *build_option = nullptr,
-    flatbuffers::Offset<mindspore::schema::TuneParam> tune = 0,
+    ::flatbuffers::Offset<mindspore::schema::TuneParam> tune = 0,
     const std::vector<uint8_t> *data = nullptr) {
   auto program_name__ = program_name ? _fbb.CreateString(program_name) : 0;
   auto build_option__ = build_option ? _fbb.CreateString(build_option) : 0;
@@ -268,19 +279,23 @@ inline flatbuffers::Offset<ProgramBinary> CreateProgramBinaryDirect(
       data__);
 }
 
-flatbuffers::Offset<ProgramBinary> CreateProgramBinary(flatbuffers::FlatBufferBuilder &_fbb, const ProgramBinaryT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<ProgramBinary> CreateProgramBinary(::flatbuffers::FlatBufferBuilder &_fbb, const ProgramBinaryT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct GpuCacheT : public flatbuffers::NativeTable {
+struct GpuCacheT : public ::flatbuffers::NativeTable {
   typedef GpuCache TableType;
   std::string name{};
   std::string version{};
   std::vector<std::unique_ptr<mindspore::schema::ProgramBinaryT>> allBins{};
+  GpuCacheT() = default;
+  GpuCacheT(const GpuCacheT &o);
+  GpuCacheT(GpuCacheT&&) FLATBUFFERS_NOEXCEPT = default;
+  GpuCacheT &operator=(GpuCacheT o) FLATBUFFERS_NOEXCEPT;
 };
 
-struct GpuCache FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct GpuCache FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef GpuCacheT NativeTableType;
   typedef GpuCacheBuilder Builder;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return GpuCacheTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -288,25 +303,25 @@ struct GpuCache FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_VERSION = 6,
     VT_ALLBINS = 8
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  flatbuffers::String *mutable_name() {
-    return GetPointer<flatbuffers::String *>(VT_NAME);
+  ::flatbuffers::String *mutable_name() {
+    return GetPointer<::flatbuffers::String *>(VT_NAME);
   }
-  const flatbuffers::String *version() const {
-    return GetPointer<const flatbuffers::String *>(VT_VERSION);
+  const ::flatbuffers::String *version() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_VERSION);
   }
-  flatbuffers::String *mutable_version() {
-    return GetPointer<flatbuffers::String *>(VT_VERSION);
+  ::flatbuffers::String *mutable_version() {
+    return GetPointer<::flatbuffers::String *>(VT_VERSION);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>> *allBins() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>> *>(VT_ALLBINS);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>> *allBins() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>> *>(VT_ALLBINS);
   }
-  flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>> *mutable_allBins() {
-    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>> *>(VT_ALLBINS);
+  ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>> *mutable_allBins() {
+    return GetPointer<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>> *>(VT_ALLBINS);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -317,40 +332,40 @@ struct GpuCache FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVectorOfTables(allBins()) &&
            verifier.EndTable();
   }
-  GpuCacheT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(GpuCacheT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<GpuCache> Pack(flatbuffers::FlatBufferBuilder &_fbb, const GpuCacheT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  GpuCacheT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(GpuCacheT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<GpuCache> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const GpuCacheT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct GpuCacheBuilder {
   typedef GpuCache Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(GpuCache::VT_NAME, name);
   }
-  void add_version(flatbuffers::Offset<flatbuffers::String> version) {
+  void add_version(::flatbuffers::Offset<::flatbuffers::String> version) {
     fbb_.AddOffset(GpuCache::VT_VERSION, version);
   }
-  void add_allBins(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>>> allBins) {
+  void add_allBins(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>>> allBins) {
     fbb_.AddOffset(GpuCache::VT_ALLBINS, allBins);
   }
-  explicit GpuCacheBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit GpuCacheBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<GpuCache> Finish() {
+  ::flatbuffers::Offset<GpuCache> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<GpuCache>(end);
+    auto o = ::flatbuffers::Offset<GpuCache>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<GpuCache> CreateGpuCache(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<flatbuffers::String> version = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>>> allBins = 0) {
+inline ::flatbuffers::Offset<GpuCache> CreateGpuCache(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> version = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>>> allBins = 0) {
   GpuCacheBuilder builder_(_fbb);
   builder_.add_allBins(allBins);
   builder_.add_version(version);
@@ -358,14 +373,14 @@ inline flatbuffers::Offset<GpuCache> CreateGpuCache(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<GpuCache> CreateGpuCacheDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<GpuCache> CreateGpuCacheDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     const char *version = nullptr,
-    const std::vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>> *allBins = nullptr) {
+    const std::vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>> *allBins = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   auto version__ = version ? _fbb.CreateString(version) : 0;
-  auto allBins__ = allBins ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::ProgramBinary>>(*allBins) : 0;
+  auto allBins__ = allBins ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>>(*allBins) : 0;
   return mindspore::schema::CreateGpuCache(
       _fbb,
       name__,
@@ -373,31 +388,31 @@ inline flatbuffers::Offset<GpuCache> CreateGpuCacheDirect(
       allBins__);
 }
 
-flatbuffers::Offset<GpuCache> CreateGpuCache(flatbuffers::FlatBufferBuilder &_fbb, const GpuCacheT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<GpuCache> CreateGpuCache(::flatbuffers::FlatBufferBuilder &_fbb, const GpuCacheT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-inline TuneParamT *TuneParam::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+inline TuneParamT *TuneParam::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
   auto _o = std::unique_ptr<TuneParamT>(new TuneParamT());
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void TuneParam::UnPackTo(TuneParamT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void TuneParam::UnPackTo(TuneParamT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = local(); if (_e) { _o->local.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->local[_i] = _e->Get(_i); } } }
-  { auto _e = block(); if (_e) { _o->block.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->block[_i] = _e->Get(_i); } } }
-  { auto _e = shape(); if (_e) { _o->shape.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->shape[_i] = _e->Get(_i); } } }
-  { auto _e = opPara(); if (_e) { _o->opPara.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->opPara[_i] = _e->Get(_i); } } }
+  { auto _e = local(); if (_e) { _o->local.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->local[_i] = _e->Get(_i); } } else { _o->local.resize(0); } }
+  { auto _e = block(); if (_e) { _o->block.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->block[_i] = _e->Get(_i); } } else { _o->block.resize(0); } }
+  { auto _e = shape(); if (_e) { _o->shape.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->shape[_i] = _e->Get(_i); } } else { _o->shape.resize(0); } }
+  { auto _e = opPara(); if (_e) { _o->opPara.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->opPara[_i] = _e->Get(_i); } } else { _o->opPara.resize(0); } }
 }
 
-inline flatbuffers::Offset<TuneParam> TuneParam::Pack(flatbuffers::FlatBufferBuilder &_fbb, const TuneParamT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<TuneParam> TuneParam::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TuneParamT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   return CreateTuneParam(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<TuneParam> CreateTuneParam(flatbuffers::FlatBufferBuilder &_fbb, const TuneParamT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<TuneParam> CreateTuneParam(::flatbuffers::FlatBufferBuilder &_fbb, const TuneParamT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const TuneParamT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const TuneParamT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _local = _o->local.size() ? _fbb.CreateVector(_o->local) : 0;
   auto _block = _o->block.size() ? _fbb.CreateVector(_o->block) : 0;
   auto _shape = _o->shape.size() ? _fbb.CreateVector(_o->shape) : 0;
@@ -410,29 +425,44 @@ inline flatbuffers::Offset<TuneParam> CreateTuneParam(flatbuffers::FlatBufferBui
       _opPara);
 }
 
-inline ProgramBinaryT *ProgramBinary::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+inline ProgramBinaryT::ProgramBinaryT(const ProgramBinaryT &o)
+      : program_name(o.program_name),
+        build_option(o.build_option),
+        tune((o.tune) ? new mindspore::schema::TuneParamT(*o.tune) : nullptr),
+        data(o.data) {
+}
+
+inline ProgramBinaryT &ProgramBinaryT::operator=(ProgramBinaryT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(program_name, o.program_name);
+  std::swap(build_option, o.build_option);
+  std::swap(tune, o.tune);
+  std::swap(data, o.data);
+  return *this;
+}
+
+inline ProgramBinaryT *ProgramBinary::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
   auto _o = std::unique_ptr<ProgramBinaryT>(new ProgramBinaryT());
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void ProgramBinary::UnPackTo(ProgramBinaryT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void ProgramBinary::UnPackTo(ProgramBinaryT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = program_name(); if (_e) _o->program_name = _e->str(); }
   { auto _e = build_option(); if (_e) _o->build_option = _e->str(); }
-  { auto _e = tune(); if (_e) _o->tune = std::unique_ptr<mindspore::schema::TuneParamT>(_e->UnPack(_resolver)); }
+  { auto _e = tune(); if (_e) { if(_o->tune) { _e->UnPackTo(_o->tune.get(), _resolver); } else { _o->tune = std::unique_ptr<mindspore::schema::TuneParamT>(_e->UnPack(_resolver)); } } else if (_o->tune) { _o->tune.reset(); } }
   { auto _e = data(); if (_e) { _o->data.resize(_e->size()); std::copy(_e->begin(), _e->end(), _o->data.begin()); } }
 }
 
-inline flatbuffers::Offset<ProgramBinary> ProgramBinary::Pack(flatbuffers::FlatBufferBuilder &_fbb, const ProgramBinaryT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<ProgramBinary> ProgramBinary::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const ProgramBinaryT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   return CreateProgramBinary(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<ProgramBinary> CreateProgramBinary(flatbuffers::FlatBufferBuilder &_fbb, const ProgramBinaryT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<ProgramBinary> CreateProgramBinary(::flatbuffers::FlatBufferBuilder &_fbb, const ProgramBinaryT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const ProgramBinaryT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const ProgramBinaryT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _program_name = _o->program_name.empty() ? 0 : _fbb.CreateString(_o->program_name);
   auto _build_option = _o->build_option.empty() ? 0 : _fbb.CreateString(_o->build_option);
   auto _tune = _o->tune ? CreateTuneParam(_fbb, _o->tune.get(), _rehasher) : 0;
@@ -445,31 +475,45 @@ inline flatbuffers::Offset<ProgramBinary> CreateProgramBinary(flatbuffers::FlatB
       _data);
 }
 
-inline GpuCacheT *GpuCache::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+inline GpuCacheT::GpuCacheT(const GpuCacheT &o)
+      : name(o.name),
+        version(o.version) {
+  allBins.reserve(o.allBins.size());
+  for (const auto &allBins_ : o.allBins) { allBins.emplace_back((allBins_) ? new mindspore::schema::ProgramBinaryT(*allBins_) : nullptr); }
+}
+
+inline GpuCacheT &GpuCacheT::operator=(GpuCacheT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(name, o.name);
+  std::swap(version, o.version);
+  std::swap(allBins, o.allBins);
+  return *this;
+}
+
+inline GpuCacheT *GpuCache::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
   auto _o = std::unique_ptr<GpuCacheT>(new GpuCacheT());
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void GpuCache::UnPackTo(GpuCacheT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void GpuCache::UnPackTo(GpuCacheT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = name(); if (_e) _o->name = _e->str(); }
   { auto _e = version(); if (_e) _o->version = _e->str(); }
-  { auto _e = allBins(); if (_e) { _o->allBins.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->allBins[_i] = std::unique_ptr<mindspore::schema::ProgramBinaryT>(_e->Get(_i)->UnPack(_resolver)); } } }
+  { auto _e = allBins(); if (_e) { _o->allBins.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->allBins[_i]) { _e->Get(_i)->UnPackTo(_o->allBins[_i].get(), _resolver); } else { _o->allBins[_i] = std::unique_ptr<mindspore::schema::ProgramBinaryT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->allBins.resize(0); } }
 }
 
-inline flatbuffers::Offset<GpuCache> GpuCache::Pack(flatbuffers::FlatBufferBuilder &_fbb, const GpuCacheT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<GpuCache> GpuCache::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const GpuCacheT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   return CreateGpuCache(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<GpuCache> CreateGpuCache(flatbuffers::FlatBufferBuilder &_fbb, const GpuCacheT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<GpuCache> CreateGpuCache(::flatbuffers::FlatBufferBuilder &_fbb, const GpuCacheT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const GpuCacheT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const GpuCacheT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _name = _o->name.empty() ? 0 : _fbb.CreateString(_o->name);
   auto _version = _o->version.empty() ? 0 : _fbb.CreateString(_o->version);
-  auto _allBins = _o->allBins.size() ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::ProgramBinary>> (_o->allBins.size(), [](size_t i, _VectorArgs *__va) { return CreateProgramBinary(*__va->__fbb, __va->__o->allBins[i].get(), __va->__rehasher); }, &_va ) : 0;
+  auto _allBins = _o->allBins.size() ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>> (_o->allBins.size(), [](size_t i, _VectorArgs *__va) { return CreateProgramBinary(*__va->__fbb, __va->__o->allBins[i].get(), __va->__rehasher); }, &_va ) : 0;
   return mindspore::schema::CreateGpuCache(
       _fbb,
       _name,
@@ -477,93 +521,114 @@ inline flatbuffers::Offset<GpuCache> CreateGpuCache(flatbuffers::FlatBufferBuild
       _allBins);
 }
 
-inline const flatbuffers::TypeTable *TuneParamTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_INT, 1, -1 },
-    { flatbuffers::ET_INT, 1, -1 },
-    { flatbuffers::ET_INT, 1, -1 },
-    { flatbuffers::ET_INT, 1, -1 }
+inline const ::flatbuffers::TypeTable *TuneParamTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_INT, 1, -1 },
+    { ::flatbuffers::ET_INT, 1, -1 },
+    { ::flatbuffers::ET_INT, 1, -1 },
+    { ::flatbuffers::ET_INT, 1, -1 }
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 4, type_codes, nullptr, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "local",
+    "block",
+    "shape",
+    "opPara"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 4, type_codes, nullptr, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *ProgramBinaryTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_STRING, 0, -1 },
-    { flatbuffers::ET_STRING, 0, -1 },
-    { flatbuffers::ET_SEQUENCE, 0, 0 },
-    { flatbuffers::ET_UCHAR, 1, -1 }
+inline const ::flatbuffers::TypeTable *ProgramBinaryTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_STRING, 0, -1 },
+    { ::flatbuffers::ET_STRING, 0, -1 },
+    { ::flatbuffers::ET_SEQUENCE, 0, 0 },
+    { ::flatbuffers::ET_UCHAR, 1, -1 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::TuneParamTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 4, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "program_name",
+    "build_option",
+    "tune",
+    "data"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 4, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *GpuCacheTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_STRING, 0, -1 },
-    { flatbuffers::ET_STRING, 0, -1 },
-    { flatbuffers::ET_SEQUENCE, 1, 0 }
+inline const ::flatbuffers::TypeTable *GpuCacheTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_STRING, 0, -1 },
+    { ::flatbuffers::ET_STRING, 0, -1 },
+    { ::flatbuffers::ET_SEQUENCE, 1, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::ProgramBinaryTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 3, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "name",
+    "version",
+    "allBins"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 3, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
 inline const mindspore::schema::GpuCache *GetGpuCache(const void *buf) {
-  return flatbuffers::GetRoot<mindspore::schema::GpuCache>(buf);
+  return ::flatbuffers::GetRoot<mindspore::schema::GpuCache>(buf);
 }
 
 inline const mindspore::schema::GpuCache *GetSizePrefixedGpuCache(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<mindspore::schema::GpuCache>(buf);
+  return ::flatbuffers::GetSizePrefixedRoot<mindspore::schema::GpuCache>(buf);
 }
 
 inline GpuCache *GetMutableGpuCache(void *buf) {
-  return flatbuffers::GetMutableRoot<GpuCache>(buf);
+  return ::flatbuffers::GetMutableRoot<GpuCache>(buf);
+}
+
+inline mindspore::schema::GpuCache *GetMutableSizePrefixedGpuCache(void *buf) {
+  return ::flatbuffers::GetMutableSizePrefixedRoot<mindspore::schema::GpuCache>(buf);
 }
 
 inline bool VerifyGpuCacheBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<mindspore::schema::GpuCache>(nullptr);
 }
 
 inline bool VerifySizePrefixedGpuCacheBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifySizePrefixedBuffer<mindspore::schema::GpuCache>(nullptr);
 }
 
 inline void FinishGpuCacheBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<mindspore::schema::GpuCache> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<mindspore::schema::GpuCache> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedGpuCacheBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<mindspore::schema::GpuCache> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<mindspore::schema::GpuCache> root) {
   fbb.FinishSizePrefixed(root);
 }
 
 inline std::unique_ptr<mindspore::schema::GpuCacheT> UnPackGpuCache(
     const void *buf,
-    const flatbuffers::resolver_function_t *res = nullptr) {
+    const ::flatbuffers::resolver_function_t *res = nullptr) {
   return std::unique_ptr<mindspore::schema::GpuCacheT>(GetGpuCache(buf)->UnPack(res));
 }
 
 inline std::unique_ptr<mindspore::schema::GpuCacheT> UnPackSizePrefixedGpuCache(
     const void *buf,
-    const flatbuffers::resolver_function_t *res = nullptr) {
+    const ::flatbuffers::resolver_function_t *res = nullptr) {
   return std::unique_ptr<mindspore::schema::GpuCacheT>(GetSizePrefixedGpuCache(buf)->UnPack(res));
 }
 

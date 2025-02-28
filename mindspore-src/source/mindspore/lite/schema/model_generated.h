@@ -6,7 +6,13 @@
 
 #include "flatbuffers/flatbuffers.h"
 
-#include "ops_types_generated.h"
+// Ensure the included flatbuffers.h is the same version as when this file was
+// generated, otherwise it may not be compatible.
+static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
+              FLATBUFFERS_VERSION_MINOR == 3 &&
+              FLATBUFFERS_VERSION_REVISION == 25,
+             "Non-compatible flatbuffers version included");
+
 #include "ops_generated.h"
 
 namespace mindspore {
@@ -73,7 +79,7 @@ inline const char * const *EnumNamesWeightQuantCompressType() {
 }
 
 inline const char *EnumNameWeightQuantCompressType(WeightQuantCompressType e) {
-  if (flatbuffers::IsOutRange(e, WeightQuantCompressType_NONE, WeightQuantCompressType_FSE_INFER)) return "";
+  if (::flatbuffers::IsOutRange(e, WeightQuantCompressType_NONE, WeightQuantCompressType_FSE_INFER)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesWeightQuantCompressType()[index];
 }
@@ -118,12 +124,12 @@ inline const char * const *EnumNamesQuantType() {
 }
 
 inline const char *EnumNameQuantType(QuantType e) {
-  if (flatbuffers::IsOutRange(e, QuantType_QUANT_NONE, QuantType_QUANT_DYNAMIC)) return "";
+  if (::flatbuffers::IsOutRange(e, QuantType_QUANT_NONE, QuantType_QUANT_DYNAMIC)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesQuantType()[index];
 }
 
-struct QuantParam FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct QuantParam FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef QuantParamBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_SCALE = 4,
@@ -175,28 +181,28 @@ struct QuantParam FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t multiplier() const {
     return GetField<int32_t>(VT_MULTIPLIER, 1);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<double>(verifier, VT_SCALE) &&
-           VerifyField<int32_t>(verifier, VT_ZEROPOINT) &&
-           VerifyField<double>(verifier, VT_MIN) &&
-           VerifyField<double>(verifier, VT_MAX) &&
-           VerifyField<uint8_t>(verifier, VT_NARROWRANGE) &&
-           VerifyField<int32_t>(verifier, VT_NUMBITS) &&
-           VerifyField<uint8_t>(verifier, VT_INITED) &&
-           VerifyField<float>(verifier, VT_VARCORR) &&
-           VerifyField<float>(verifier, VT_MEANCORR) &&
-           VerifyField<int32_t>(verifier, VT_DSTDTYPE) &&
-           VerifyField<int32_t>(verifier, VT_ROUNDTYPE) &&
-           VerifyField<int32_t>(verifier, VT_MULTIPLIER) &&
+           VerifyField<double>(verifier, VT_SCALE, 8) &&
+           VerifyField<int32_t>(verifier, VT_ZEROPOINT, 4) &&
+           VerifyField<double>(verifier, VT_MIN, 8) &&
+           VerifyField<double>(verifier, VT_MAX, 8) &&
+           VerifyField<uint8_t>(verifier, VT_NARROWRANGE, 1) &&
+           VerifyField<int32_t>(verifier, VT_NUMBITS, 4) &&
+           VerifyField<uint8_t>(verifier, VT_INITED, 1) &&
+           VerifyField<float>(verifier, VT_VARCORR, 4) &&
+           VerifyField<float>(verifier, VT_MEANCORR, 4) &&
+           VerifyField<int32_t>(verifier, VT_DSTDTYPE, 4) &&
+           VerifyField<int32_t>(verifier, VT_ROUNDTYPE, 4) &&
+           VerifyField<int32_t>(verifier, VT_MULTIPLIER, 4) &&
            verifier.EndTable();
   }
 };
 
 struct QuantParamBuilder {
   typedef QuantParam Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
   void add_scale(double scale) {
     fbb_.AddElement<double>(QuantParam::VT_SCALE, scale, 1.0);
   }
@@ -233,19 +239,19 @@ struct QuantParamBuilder {
   void add_multiplier(int32_t multiplier) {
     fbb_.AddElement<int32_t>(QuantParam::VT_MULTIPLIER, multiplier, 1);
   }
-  explicit QuantParamBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit QuantParamBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<QuantParam> Finish() {
+  ::flatbuffers::Offset<QuantParam> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<QuantParam>(end);
+    auto o = ::flatbuffers::Offset<QuantParam>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<QuantParam> CreateQuantParam(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<QuantParam> CreateQuantParam(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     double scale = 1.0,
     int32_t zeroPoint = 0,
     double min = 0.0,
@@ -274,7 +280,7 @@ inline flatbuffers::Offset<QuantParam> CreateQuantParam(
   return builder_.Finish();
 }
 
-struct ExternalData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct ExternalData FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef ExternalDataBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_CHECKSUM = 4,
@@ -282,11 +288,11 @@ struct ExternalData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_OFFSET = 8,
     VT_LENGTH = 10
   };
-  const flatbuffers::String *checkSum() const {
-    return GetPointer<const flatbuffers::String *>(VT_CHECKSUM);
+  const ::flatbuffers::String *checkSum() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_CHECKSUM);
   }
-  const flatbuffers::String *location() const {
-    return GetPointer<const flatbuffers::String *>(VT_LOCATION);
+  const ::flatbuffers::String *location() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_LOCATION);
   }
   int64_t offset() const {
     return GetField<int64_t>(VT_OFFSET, 0);
@@ -294,26 +300,26 @@ struct ExternalData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int64_t length() const {
     return GetField<int64_t>(VT_LENGTH, -1LL);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_CHECKSUM) &&
            verifier.VerifyString(checkSum()) &&
            VerifyOffset(verifier, VT_LOCATION) &&
            verifier.VerifyString(location()) &&
-           VerifyField<int64_t>(verifier, VT_OFFSET) &&
-           VerifyField<int64_t>(verifier, VT_LENGTH) &&
+           VerifyField<int64_t>(verifier, VT_OFFSET, 8) &&
+           VerifyField<int64_t>(verifier, VT_LENGTH, 8) &&
            verifier.EndTable();
   }
 };
 
 struct ExternalDataBuilder {
   typedef ExternalData Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_checkSum(flatbuffers::Offset<flatbuffers::String> checkSum) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_checkSum(::flatbuffers::Offset<::flatbuffers::String> checkSum) {
     fbb_.AddOffset(ExternalData::VT_CHECKSUM, checkSum);
   }
-  void add_location(flatbuffers::Offset<flatbuffers::String> location) {
+  void add_location(::flatbuffers::Offset<::flatbuffers::String> location) {
     fbb_.AddOffset(ExternalData::VT_LOCATION, location);
   }
   void add_offset(int64_t offset) {
@@ -322,21 +328,21 @@ struct ExternalDataBuilder {
   void add_length(int64_t length) {
     fbb_.AddElement<int64_t>(ExternalData::VT_LENGTH, length, -1LL);
   }
-  explicit ExternalDataBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit ExternalDataBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<ExternalData> Finish() {
+  ::flatbuffers::Offset<ExternalData> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<ExternalData>(end);
+    auto o = ::flatbuffers::Offset<ExternalData>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<ExternalData> CreateExternalData(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> checkSum = 0,
-    flatbuffers::Offset<flatbuffers::String> location = 0,
+inline ::flatbuffers::Offset<ExternalData> CreateExternalData(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> checkSum = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> location = 0,
     int64_t offset = 0,
     int64_t length = -1LL) {
   ExternalDataBuilder builder_(_fbb);
@@ -347,8 +353,8 @@ inline flatbuffers::Offset<ExternalData> CreateExternalData(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<ExternalData> CreateExternalDataDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<ExternalData> CreateExternalDataDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *checkSum = nullptr,
     const char *location = nullptr,
     int64_t offset = 0,
@@ -363,7 +369,7 @@ inline flatbuffers::Offset<ExternalData> CreateExternalDataDirect(
       length);
 }
 
-struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Tensor FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef TensorBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NODETYPE = 4,
@@ -386,8 +392,8 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t dataType() const {
     return GetField<int32_t>(VT_DATATYPE, 0);
   }
-  const flatbuffers::Vector<int32_t> *dims() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_DIMS);
+  const ::flatbuffers::Vector<int32_t> *dims() const {
+    return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_DIMS);
   }
   mindspore::schema::Format format() const {
     return static_cast<mindspore::schema::Format>(GetField<int32_t>(VT_FORMAT, 0));
@@ -398,17 +404,17 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t offset() const {
     return GetField<int32_t>(VT_OFFSET, 0);
   }
-  const flatbuffers::Vector<uint8_t> *data() const {
-    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_DATA);
+  const ::flatbuffers::Vector<uint8_t> *data() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_DATA);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::QuantParam>> *quantParams() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::QuantParam>> *>(VT_QUANTPARAMS);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::QuantParam>> *quantParams() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::QuantParam>> *>(VT_QUANTPARAMS);
   }
-  const flatbuffers::Vector<float> *quantClusters() const {
-    return GetPointer<const flatbuffers::Vector<float> *>(VT_QUANTCLUSTERS);
+  const ::flatbuffers::Vector<float> *quantClusters() const {
+    return GetPointer<const ::flatbuffers::Vector<float> *>(VT_QUANTCLUSTERS);
   }
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
   bool enableHuffmanCode() const {
     return GetField<uint8_t>(VT_ENABLEHUFFMANCODE, 0) != 0;
@@ -416,18 +422,18 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   mindspore::schema::WeightQuantCompressType weightQuantCompressType() const {
     return static_cast<mindspore::schema::WeightQuantCompressType>(GetField<int32_t>(VT_WEIGHTQUANTCOMPRESSTYPE, 0));
   }
-  const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ExternalData>> *externalData() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ExternalData>> *>(VT_EXTERNALDATA);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ExternalData>> *externalData() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ExternalData>> *>(VT_EXTERNALDATA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_NODETYPE) &&
-           VerifyField<int32_t>(verifier, VT_DATATYPE) &&
+           VerifyField<int32_t>(verifier, VT_NODETYPE, 4) &&
+           VerifyField<int32_t>(verifier, VT_DATATYPE, 4) &&
            VerifyOffset(verifier, VT_DIMS) &&
            verifier.VerifyVector(dims()) &&
-           VerifyField<int32_t>(verifier, VT_FORMAT) &&
-           VerifyField<int32_t>(verifier, VT_REFCOUNT) &&
-           VerifyField<int32_t>(verifier, VT_OFFSET) &&
+           VerifyField<int32_t>(verifier, VT_FORMAT, 4) &&
+           VerifyField<int32_t>(verifier, VT_REFCOUNT, 4) &&
+           VerifyField<int32_t>(verifier, VT_OFFSET, 4) &&
            VerifyOffset(verifier, VT_DATA) &&
            verifier.VerifyVector(data()) &&
            VerifyOffset(verifier, VT_QUANTPARAMS) &&
@@ -437,8 +443,8 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(quantClusters()) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
-           VerifyField<uint8_t>(verifier, VT_ENABLEHUFFMANCODE) &&
-           VerifyField<int32_t>(verifier, VT_WEIGHTQUANTCOMPRESSTYPE) &&
+           VerifyField<uint8_t>(verifier, VT_ENABLEHUFFMANCODE, 1) &&
+           VerifyField<int32_t>(verifier, VT_WEIGHTQUANTCOMPRESSTYPE, 4) &&
            VerifyOffset(verifier, VT_EXTERNALDATA) &&
            verifier.VerifyVector(externalData()) &&
            verifier.VerifyVectorOfTables(externalData()) &&
@@ -448,15 +454,15 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct TensorBuilder {
   typedef Tensor Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
   void add_nodeType(int32_t nodeType) {
     fbb_.AddElement<int32_t>(Tensor::VT_NODETYPE, nodeType, 0);
   }
   void add_dataType(int32_t dataType) {
     fbb_.AddElement<int32_t>(Tensor::VT_DATATYPE, dataType, 0);
   }
-  void add_dims(flatbuffers::Offset<flatbuffers::Vector<int32_t>> dims) {
+  void add_dims(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> dims) {
     fbb_.AddOffset(Tensor::VT_DIMS, dims);
   }
   void add_format(mindspore::schema::Format format) {
@@ -468,16 +474,16 @@ struct TensorBuilder {
   void add_offset(int32_t offset) {
     fbb_.AddElement<int32_t>(Tensor::VT_OFFSET, offset, 0);
   }
-  void add_data(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data) {
+  void add_data(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> data) {
     fbb_.AddOffset(Tensor::VT_DATA, data);
   }
-  void add_quantParams(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::QuantParam>>> quantParams) {
+  void add_quantParams(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::QuantParam>>> quantParams) {
     fbb_.AddOffset(Tensor::VT_QUANTPARAMS, quantParams);
   }
-  void add_quantClusters(flatbuffers::Offset<flatbuffers::Vector<float>> quantClusters) {
+  void add_quantClusters(::flatbuffers::Offset<::flatbuffers::Vector<float>> quantClusters) {
     fbb_.AddOffset(Tensor::VT_QUANTCLUSTERS, quantClusters);
   }
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(Tensor::VT_NAME, name);
   }
   void add_enableHuffmanCode(bool enableHuffmanCode) {
@@ -486,35 +492,35 @@ struct TensorBuilder {
   void add_weightQuantCompressType(mindspore::schema::WeightQuantCompressType weightQuantCompressType) {
     fbb_.AddElement<int32_t>(Tensor::VT_WEIGHTQUANTCOMPRESSTYPE, static_cast<int32_t>(weightQuantCompressType), 0);
   }
-  void add_externalData(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ExternalData>>> externalData) {
+  void add_externalData(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ExternalData>>> externalData) {
     fbb_.AddOffset(Tensor::VT_EXTERNALDATA, externalData);
   }
-  explicit TensorBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit TensorBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Tensor> Finish() {
+  ::flatbuffers::Offset<Tensor> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Tensor>(end);
+    auto o = ::flatbuffers::Offset<Tensor>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Tensor> CreateTensor(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<Tensor> CreateTensor(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     int32_t nodeType = 0,
     int32_t dataType = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> dims = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> dims = 0,
     mindspore::schema::Format format = mindspore::schema::Format_NCHW,
     int32_t refCount = 0,
     int32_t offset = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::QuantParam>>> quantParams = 0,
-    flatbuffers::Offset<flatbuffers::Vector<float>> quantClusters = 0,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> data = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::QuantParam>>> quantParams = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<float>> quantClusters = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
     bool enableHuffmanCode = false,
     mindspore::schema::WeightQuantCompressType weightQuantCompressType = mindspore::schema::WeightQuantCompressType_NONE,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ExternalData>>> externalData = 0) {
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ExternalData>>> externalData = 0) {
   TensorBuilder builder_(_fbb);
   builder_.add_externalData(externalData);
   builder_.add_weightQuantCompressType(weightQuantCompressType);
@@ -532,8 +538,8 @@ inline flatbuffers::Offset<Tensor> CreateTensor(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Tensor> CreateTensorDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<Tensor> CreateTensorDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     int32_t nodeType = 0,
     int32_t dataType = 0,
     const std::vector<int32_t> *dims = nullptr,
@@ -541,18 +547,18 @@ inline flatbuffers::Offset<Tensor> CreateTensorDirect(
     int32_t refCount = 0,
     int32_t offset = 0,
     const std::vector<uint8_t> *data = nullptr,
-    const std::vector<flatbuffers::Offset<mindspore::schema::QuantParam>> *quantParams = nullptr,
+    const std::vector<::flatbuffers::Offset<mindspore::schema::QuantParam>> *quantParams = nullptr,
     const std::vector<float> *quantClusters = nullptr,
     const char *name = nullptr,
     bool enableHuffmanCode = false,
     mindspore::schema::WeightQuantCompressType weightQuantCompressType = mindspore::schema::WeightQuantCompressType_NONE,
-    const std::vector<flatbuffers::Offset<mindspore::schema::ExternalData>> *externalData = nullptr) {
+    const std::vector<::flatbuffers::Offset<mindspore::schema::ExternalData>> *externalData = nullptr) {
   auto dims__ = dims ? _fbb.CreateVector<int32_t>(*dims) : 0;
   auto data__ = data ? _fbb.CreateVector<uint8_t>(*data) : 0;
-  auto quantParams__ = quantParams ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::QuantParam>>(*quantParams) : 0;
+  auto quantParams__ = quantParams ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::QuantParam>>(*quantParams) : 0;
   auto quantClusters__ = quantClusters ? _fbb.CreateVector<float>(*quantClusters) : 0;
   auto name__ = name ? _fbb.CreateString(name) : 0;
-  auto externalData__ = externalData ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::ExternalData>>(*externalData) : 0;
+  auto externalData__ = externalData ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::ExternalData>>(*externalData) : 0;
   return mindspore::schema::CreateTensor(
       _fbb,
       nodeType,
@@ -570,7 +576,7 @@ inline flatbuffers::Offset<Tensor> CreateTensorDirect(
       externalData__);
 }
 
-struct Primitive FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Primitive FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef PrimitiveBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_VALUE_TYPE = 4,
@@ -1246,9 +1252,9 @@ struct Primitive FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const mindspore::schema::FillV2 *value_as_FillV2() const {
     return value_type() == mindspore::schema::PrimitiveType_FillV2 ? static_cast<const mindspore::schema::FillV2 *>(value()) : nullptr;
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint8_t>(verifier, VT_VALUE_TYPE) &&
+           VerifyField<uint8_t>(verifier, VT_VALUE_TYPE, 1) &&
            VerifyOffset(verifier, VT_VALUE) &&
            VerifyPrimitiveType(verifier, value(), value_type()) &&
            verifier.EndTable();
@@ -2141,36 +2147,36 @@ template<> inline const mindspore::schema::FillV2 *Primitive::value_as<mindspore
 
 struct PrimitiveBuilder {
   typedef Primitive Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
   void add_value_type(mindspore::schema::PrimitiveType value_type) {
     fbb_.AddElement<uint8_t>(Primitive::VT_VALUE_TYPE, static_cast<uint8_t>(value_type), 0);
   }
-  void add_value(flatbuffers::Offset<void> value) {
+  void add_value(::flatbuffers::Offset<void> value) {
     fbb_.AddOffset(Primitive::VT_VALUE, value);
   }
-  explicit PrimitiveBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit PrimitiveBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Primitive> Finish() {
+  ::flatbuffers::Offset<Primitive> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Primitive>(end);
+    auto o = ::flatbuffers::Offset<Primitive>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Primitive> CreatePrimitive(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<Primitive> CreatePrimitive(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     mindspore::schema::PrimitiveType value_type = mindspore::schema::PrimitiveType_NONE,
-    flatbuffers::Offset<void> value = 0) {
+    ::flatbuffers::Offset<void> value = 0) {
   PrimitiveBuilder builder_(_fbb);
   builder_.add_value(value);
   builder_.add_value_type(value_type);
   return builder_.Finish();
 }
 
-struct CNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct CNode FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef CNodeBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
@@ -2180,17 +2186,17 @@ struct CNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_QUANTTYPE = 14,
     VT_DEVICETYPE = 16
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
   const mindspore::schema::Primitive *primitive() const {
     return GetPointer<const mindspore::schema::Primitive *>(VT_PRIMITIVE);
   }
-  const flatbuffers::Vector<uint32_t> *inputIndex() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_INPUTINDEX);
+  const ::flatbuffers::Vector<uint32_t> *inputIndex() const {
+    return GetPointer<const ::flatbuffers::Vector<uint32_t> *>(VT_INPUTINDEX);
   }
-  const flatbuffers::Vector<uint32_t> *outputIndex() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_OUTPUTINDEX);
+  const ::flatbuffers::Vector<uint32_t> *outputIndex() const {
+    return GetPointer<const ::flatbuffers::Vector<uint32_t> *>(VT_OUTPUTINDEX);
   }
   mindspore::schema::QuantType quantType() const {
     return static_cast<mindspore::schema::QuantType>(GetField<int32_t>(VT_QUANTTYPE, 0));
@@ -2198,7 +2204,7 @@ struct CNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t deviceType() const {
     return GetField<int32_t>(VT_DEVICETYPE, -1);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -2208,26 +2214,26 @@ struct CNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(inputIndex()) &&
            VerifyOffset(verifier, VT_OUTPUTINDEX) &&
            verifier.VerifyVector(outputIndex()) &&
-           VerifyField<int32_t>(verifier, VT_QUANTTYPE) &&
-           VerifyField<int32_t>(verifier, VT_DEVICETYPE) &&
+           VerifyField<int32_t>(verifier, VT_QUANTTYPE, 4) &&
+           VerifyField<int32_t>(verifier, VT_DEVICETYPE, 4) &&
            verifier.EndTable();
   }
 };
 
 struct CNodeBuilder {
   typedef CNode Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(CNode::VT_NAME, name);
   }
-  void add_primitive(flatbuffers::Offset<mindspore::schema::Primitive> primitive) {
+  void add_primitive(::flatbuffers::Offset<mindspore::schema::Primitive> primitive) {
     fbb_.AddOffset(CNode::VT_PRIMITIVE, primitive);
   }
-  void add_inputIndex(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> inputIndex) {
+  void add_inputIndex(::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> inputIndex) {
     fbb_.AddOffset(CNode::VT_INPUTINDEX, inputIndex);
   }
-  void add_outputIndex(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> outputIndex) {
+  void add_outputIndex(::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> outputIndex) {
     fbb_.AddOffset(CNode::VT_OUTPUTINDEX, outputIndex);
   }
   void add_quantType(mindspore::schema::QuantType quantType) {
@@ -2236,23 +2242,23 @@ struct CNodeBuilder {
   void add_deviceType(int32_t deviceType) {
     fbb_.AddElement<int32_t>(CNode::VT_DEVICETYPE, deviceType, -1);
   }
-  explicit CNodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit CNodeBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<CNode> Finish() {
+  ::flatbuffers::Offset<CNode> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<CNode>(end);
+    auto o = ::flatbuffers::Offset<CNode>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<CNode> CreateCNode(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<mindspore::schema::Primitive> primitive = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> inputIndex = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> outputIndex = 0,
+inline ::flatbuffers::Offset<CNode> CreateCNode(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<mindspore::schema::Primitive> primitive = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> inputIndex = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> outputIndex = 0,
     mindspore::schema::QuantType quantType = mindspore::schema::QuantType_QUANT_NONE,
     int32_t deviceType = -1) {
   CNodeBuilder builder_(_fbb);
@@ -2265,10 +2271,10 @@ inline flatbuffers::Offset<CNode> CreateCNode(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<CNode> CreateCNodeDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<CNode> CreateCNodeDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
-    flatbuffers::Offset<mindspore::schema::Primitive> primitive = 0,
+    ::flatbuffers::Offset<mindspore::schema::Primitive> primitive = 0,
     const std::vector<uint32_t> *inputIndex = nullptr,
     const std::vector<uint32_t> *outputIndex = nullptr,
     mindspore::schema::QuantType quantType = mindspore::schema::QuantType_QUANT_NONE,
@@ -2286,7 +2292,7 @@ inline flatbuffers::Offset<CNode> CreateCNodeDirect(
       deviceType);
 }
 
-struct SubGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct SubGraph FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef SubGraphBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
@@ -2295,22 +2301,22 @@ struct SubGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_NODEINDICES = 10,
     VT_TENSORINDICES = 12
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  const flatbuffers::Vector<uint32_t> *inputIndices() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_INPUTINDICES);
+  const ::flatbuffers::Vector<uint32_t> *inputIndices() const {
+    return GetPointer<const ::flatbuffers::Vector<uint32_t> *>(VT_INPUTINDICES);
   }
-  const flatbuffers::Vector<uint32_t> *outputIndices() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_OUTPUTINDICES);
+  const ::flatbuffers::Vector<uint32_t> *outputIndices() const {
+    return GetPointer<const ::flatbuffers::Vector<uint32_t> *>(VT_OUTPUTINDICES);
   }
-  const flatbuffers::Vector<uint32_t> *nodeIndices() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_NODEINDICES);
+  const ::flatbuffers::Vector<uint32_t> *nodeIndices() const {
+    return GetPointer<const ::flatbuffers::Vector<uint32_t> *>(VT_NODEINDICES);
   }
-  const flatbuffers::Vector<uint32_t> *tensorIndices() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_TENSORINDICES);
+  const ::flatbuffers::Vector<uint32_t> *tensorIndices() const {
+    return GetPointer<const ::flatbuffers::Vector<uint32_t> *>(VT_TENSORINDICES);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -2328,41 +2334,41 @@ struct SubGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct SubGraphBuilder {
   typedef SubGraph Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(SubGraph::VT_NAME, name);
   }
-  void add_inputIndices(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> inputIndices) {
+  void add_inputIndices(::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> inputIndices) {
     fbb_.AddOffset(SubGraph::VT_INPUTINDICES, inputIndices);
   }
-  void add_outputIndices(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> outputIndices) {
+  void add_outputIndices(::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> outputIndices) {
     fbb_.AddOffset(SubGraph::VT_OUTPUTINDICES, outputIndices);
   }
-  void add_nodeIndices(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> nodeIndices) {
+  void add_nodeIndices(::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> nodeIndices) {
     fbb_.AddOffset(SubGraph::VT_NODEINDICES, nodeIndices);
   }
-  void add_tensorIndices(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> tensorIndices) {
+  void add_tensorIndices(::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> tensorIndices) {
     fbb_.AddOffset(SubGraph::VT_TENSORINDICES, tensorIndices);
   }
-  explicit SubGraphBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit SubGraphBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<SubGraph> Finish() {
+  ::flatbuffers::Offset<SubGraph> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<SubGraph>(end);
+    auto o = ::flatbuffers::Offset<SubGraph>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<SubGraph> CreateSubGraph(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> inputIndices = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> outputIndices = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> nodeIndices = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> tensorIndices = 0) {
+inline ::flatbuffers::Offset<SubGraph> CreateSubGraph(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> inputIndices = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> outputIndices = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> nodeIndices = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> tensorIndices = 0) {
   SubGraphBuilder builder_(_fbb);
   builder_.add_tensorIndices(tensorIndices);
   builder_.add_nodeIndices(nodeIndices);
@@ -2372,8 +2378,8 @@ inline flatbuffers::Offset<SubGraph> CreateSubGraph(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<SubGraph> CreateSubGraphDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<SubGraph> CreateSubGraphDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     const std::vector<uint32_t> *inputIndices = nullptr,
     const std::vector<uint32_t> *outputIndices = nullptr,
@@ -2393,7 +2399,7 @@ inline flatbuffers::Offset<SubGraph> CreateSubGraphDirect(
       tensorIndices__);
 }
 
-struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct MetaGraph FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef MetaGraphBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
@@ -2410,32 +2416,32 @@ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_OBFMETADATA = 26,
     VT_DECRYPTTABLE = 28
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  const flatbuffers::String *version() const {
-    return GetPointer<const flatbuffers::String *>(VT_VERSION);
+  const ::flatbuffers::String *version() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_VERSION);
   }
   int32_t fmkType() const {
     return GetField<int32_t>(VT_FMKTYPE, 0);
   }
-  const flatbuffers::Vector<uint32_t> *inputIndex() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_INPUTINDEX);
+  const ::flatbuffers::Vector<uint32_t> *inputIndex() const {
+    return GetPointer<const ::flatbuffers::Vector<uint32_t> *>(VT_INPUTINDEX);
   }
-  const flatbuffers::Vector<uint32_t> *outputIndex() const {
-    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_OUTPUTINDEX);
+  const ::flatbuffers::Vector<uint32_t> *outputIndex() const {
+    return GetPointer<const ::flatbuffers::Vector<uint32_t> *>(VT_OUTPUTINDEX);
   }
   uint32_t mempoolSize() const {
     return GetField<uint32_t>(VT_MEMPOOLSIZE, 0);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::CNode>> *nodes() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::CNode>> *>(VT_NODES);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::CNode>> *nodes() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::CNode>> *>(VT_NODES);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Tensor>> *allTensors() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Tensor>> *>(VT_ALLTENSORS);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Tensor>> *allTensors() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Tensor>> *>(VT_ALLTENSORS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::SubGraph>> *subGraph() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::SubGraph>> *>(VT_SUBGRAPH);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::SubGraph>> *subGraph() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::SubGraph>> *>(VT_SUBGRAPH);
   }
   bool obfuscate() const {
     return GetField<uint8_t>(VT_OBFUSCATE, 0) != 0;
@@ -2443,24 +2449,24 @@ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool encrypt() const {
     return GetField<uint8_t>(VT_ENCRYPT, 0) != 0;
   }
-  const flatbuffers::Vector<uint8_t> *obfMetaData() const {
-    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_OBFMETADATA);
+  const ::flatbuffers::Vector<uint8_t> *obfMetaData() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_OBFMETADATA);
   }
-  const flatbuffers::Vector<uint8_t> *decryptTable() const {
-    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_DECRYPTTABLE);
+  const ::flatbuffers::Vector<uint8_t> *decryptTable() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_DECRYPTTABLE);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
            VerifyOffset(verifier, VT_VERSION) &&
            verifier.VerifyString(version()) &&
-           VerifyField<int32_t>(verifier, VT_FMKTYPE) &&
+           VerifyField<int32_t>(verifier, VT_FMKTYPE, 4) &&
            VerifyOffset(verifier, VT_INPUTINDEX) &&
            verifier.VerifyVector(inputIndex()) &&
            VerifyOffset(verifier, VT_OUTPUTINDEX) &&
            verifier.VerifyVector(outputIndex()) &&
-           VerifyField<uint32_t>(verifier, VT_MEMPOOLSIZE) &&
+           VerifyField<uint32_t>(verifier, VT_MEMPOOLSIZE, 4) &&
            VerifyOffset(verifier, VT_NODES) &&
            verifier.VerifyVector(nodes()) &&
            verifier.VerifyVectorOfTables(nodes()) &&
@@ -2470,8 +2476,8 @@ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_SUBGRAPH) &&
            verifier.VerifyVector(subGraph()) &&
            verifier.VerifyVectorOfTables(subGraph()) &&
-           VerifyField<uint8_t>(verifier, VT_OBFUSCATE) &&
-           VerifyField<uint8_t>(verifier, VT_ENCRYPT) &&
+           VerifyField<uint8_t>(verifier, VT_OBFUSCATE, 1) &&
+           VerifyField<uint8_t>(verifier, VT_ENCRYPT, 1) &&
            VerifyOffset(verifier, VT_OBFMETADATA) &&
            verifier.VerifyVector(obfMetaData()) &&
            VerifyOffset(verifier, VT_DECRYPTTABLE) &&
@@ -2482,33 +2488,33 @@ struct MetaGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct MetaGraphBuilder {
   typedef MetaGraph Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(MetaGraph::VT_NAME, name);
   }
-  void add_version(flatbuffers::Offset<flatbuffers::String> version) {
+  void add_version(::flatbuffers::Offset<::flatbuffers::String> version) {
     fbb_.AddOffset(MetaGraph::VT_VERSION, version);
   }
   void add_fmkType(int32_t fmkType) {
     fbb_.AddElement<int32_t>(MetaGraph::VT_FMKTYPE, fmkType, 0);
   }
-  void add_inputIndex(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> inputIndex) {
+  void add_inputIndex(::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> inputIndex) {
     fbb_.AddOffset(MetaGraph::VT_INPUTINDEX, inputIndex);
   }
-  void add_outputIndex(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> outputIndex) {
+  void add_outputIndex(::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> outputIndex) {
     fbb_.AddOffset(MetaGraph::VT_OUTPUTINDEX, outputIndex);
   }
   void add_mempoolSize(uint32_t mempoolSize) {
     fbb_.AddElement<uint32_t>(MetaGraph::VT_MEMPOOLSIZE, mempoolSize, 0);
   }
-  void add_nodes(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::CNode>>> nodes) {
+  void add_nodes(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::CNode>>> nodes) {
     fbb_.AddOffset(MetaGraph::VT_NODES, nodes);
   }
-  void add_allTensors(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Tensor>>> allTensors) {
+  void add_allTensors(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Tensor>>> allTensors) {
     fbb_.AddOffset(MetaGraph::VT_ALLTENSORS, allTensors);
   }
-  void add_subGraph(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::SubGraph>>> subGraph) {
+  void add_subGraph(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::SubGraph>>> subGraph) {
     fbb_.AddOffset(MetaGraph::VT_SUBGRAPH, subGraph);
   }
   void add_obfuscate(bool obfuscate) {
@@ -2517,38 +2523,38 @@ struct MetaGraphBuilder {
   void add_encrypt(bool encrypt) {
     fbb_.AddElement<uint8_t>(MetaGraph::VT_ENCRYPT, static_cast<uint8_t>(encrypt), 0);
   }
-  void add_obfMetaData(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> obfMetaData) {
+  void add_obfMetaData(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> obfMetaData) {
     fbb_.AddOffset(MetaGraph::VT_OBFMETADATA, obfMetaData);
   }
-  void add_decryptTable(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> decryptTable) {
+  void add_decryptTable(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> decryptTable) {
     fbb_.AddOffset(MetaGraph::VT_DECRYPTTABLE, decryptTable);
   }
-  explicit MetaGraphBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit MetaGraphBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<MetaGraph> Finish() {
+  ::flatbuffers::Offset<MetaGraph> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<MetaGraph>(end);
+    auto o = ::flatbuffers::Offset<MetaGraph>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<MetaGraph> CreateMetaGraph(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<flatbuffers::String> version = 0,
+inline ::flatbuffers::Offset<MetaGraph> CreateMetaGraph(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> version = 0,
     int32_t fmkType = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> inputIndex = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> outputIndex = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> inputIndex = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> outputIndex = 0,
     uint32_t mempoolSize = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::CNode>>> nodes = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Tensor>>> allTensors = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::SubGraph>>> subGraph = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::CNode>>> nodes = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Tensor>>> allTensors = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::SubGraph>>> subGraph = 0,
     bool obfuscate = false,
     bool encrypt = false,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> obfMetaData = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> decryptTable = 0) {
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> obfMetaData = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> decryptTable = 0) {
   MetaGraphBuilder builder_(_fbb);
   builder_.add_decryptTable(decryptTable);
   builder_.add_obfMetaData(obfMetaData);
@@ -2566,17 +2572,17 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraph(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<MetaGraph> CreateMetaGraphDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<MetaGraph> CreateMetaGraphDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     const char *version = nullptr,
     int32_t fmkType = 0,
     const std::vector<uint32_t> *inputIndex = nullptr,
     const std::vector<uint32_t> *outputIndex = nullptr,
     uint32_t mempoolSize = 0,
-    const std::vector<flatbuffers::Offset<mindspore::schema::CNode>> *nodes = nullptr,
-    const std::vector<flatbuffers::Offset<mindspore::schema::Tensor>> *allTensors = nullptr,
-    const std::vector<flatbuffers::Offset<mindspore::schema::SubGraph>> *subGraph = nullptr,
+    const std::vector<::flatbuffers::Offset<mindspore::schema::CNode>> *nodes = nullptr,
+    const std::vector<::flatbuffers::Offset<mindspore::schema::Tensor>> *allTensors = nullptr,
+    const std::vector<::flatbuffers::Offset<mindspore::schema::SubGraph>> *subGraph = nullptr,
     bool obfuscate = false,
     bool encrypt = false,
     const std::vector<uint8_t> *obfMetaData = nullptr,
@@ -2585,9 +2591,9 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraphDirect(
   auto version__ = version ? _fbb.CreateString(version) : 0;
   auto inputIndex__ = inputIndex ? _fbb.CreateVector<uint32_t>(*inputIndex) : 0;
   auto outputIndex__ = outputIndex ? _fbb.CreateVector<uint32_t>(*outputIndex) : 0;
-  auto nodes__ = nodes ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::CNode>>(*nodes) : 0;
-  auto allTensors__ = allTensors ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::Tensor>>(*allTensors) : 0;
-  auto subGraph__ = subGraph ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::SubGraph>>(*subGraph) : 0;
+  auto nodes__ = nodes ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::CNode>>(*nodes) : 0;
+  auto allTensors__ = allTensors ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::Tensor>>(*allTensors) : 0;
+  auto subGraph__ = subGraph ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::SubGraph>>(*subGraph) : 0;
   auto obfMetaData__ = obfMetaData ? _fbb.CreateVector<uint8_t>(*obfMetaData) : 0;
   auto decryptTable__ = decryptTable ? _fbb.CreateVector<uint8_t>(*decryptTable) : 0;
   return mindspore::schema::CreateMetaGraph(
@@ -2608,11 +2614,11 @@ inline flatbuffers::Offset<MetaGraph> CreateMetaGraphDirect(
 }
 
 inline const mindspore::schema::MetaGraph *GetMetaGraph(const void *buf) {
-  return flatbuffers::GetRoot<mindspore::schema::MetaGraph>(buf);
+  return ::flatbuffers::GetRoot<mindspore::schema::MetaGraph>(buf);
 }
 
 inline const mindspore::schema::MetaGraph *GetSizePrefixedMetaGraph(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<mindspore::schema::MetaGraph>(buf);
+  return ::flatbuffers::GetSizePrefixedRoot<mindspore::schema::MetaGraph>(buf);
 }
 
 inline const char *MetaGraphIdentifier() {
@@ -2620,17 +2626,22 @@ inline const char *MetaGraphIdentifier() {
 }
 
 inline bool MetaGraphBufferHasIdentifier(const void *buf) {
-  return flatbuffers::BufferHasIdentifier(
+  return ::flatbuffers::BufferHasIdentifier(
       buf, MetaGraphIdentifier());
 }
 
+inline bool SizePrefixedMetaGraphBufferHasIdentifier(const void *buf) {
+  return ::flatbuffers::BufferHasIdentifier(
+      buf, MetaGraphIdentifier(), true);
+}
+
 inline bool VerifyMetaGraphBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<mindspore::schema::MetaGraph>(MetaGraphIdentifier());
 }
 
 inline bool VerifySizePrefixedMetaGraphBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifySizePrefixedBuffer<mindspore::schema::MetaGraph>(MetaGraphIdentifier());
 }
 
@@ -2639,14 +2650,14 @@ inline const char *MetaGraphExtension() {
 }
 
 inline void FinishMetaGraphBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<mindspore::schema::MetaGraph> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<mindspore::schema::MetaGraph> root) {
   fbb.Finish(root, MetaGraphIdentifier());
 }
 
 inline void FinishSizePrefixedMetaGraphBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<mindspore::schema::MetaGraph> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<mindspore::schema::MetaGraph> root) {
   fbb.FinishSizePrefixed(root, MetaGraphIdentifier());
 }
 

@@ -6,6 +6,13 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+// Ensure the included flatbuffers.h is the same version as when this file was
+// generated, otherwise it may not be compatible.
+static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
+              FLATBUFFERS_VERSION_MINOR == 3 &&
+              FLATBUFFERS_VERSION_REVISION == 25,
+             "Non-compatible flatbuffers version included");
+
 namespace mindspore {
 namespace schema {
 
@@ -21,11 +28,11 @@ struct Attribute;
 struct AttributeBuilder;
 struct AttributeT;
 
-inline const flatbuffers::TypeTable *VecTypeTable();
+inline const ::flatbuffers::TypeTable *VecTypeTable();
 
-inline const flatbuffers::TypeTable *Vec2DTypeTable();
+inline const ::flatbuffers::TypeTable *Vec2DTypeTable();
 
-inline const flatbuffers::TypeTable *AttributeTypeTable();
+inline const ::flatbuffers::TypeTable *AttributeTypeTable();
 
 enum ResizeMethod : int8_t {
   ResizeMethod_UNKNOWN = -1,
@@ -58,7 +65,7 @@ inline const char * const *EnumNamesResizeMethod() {
 }
 
 inline const char *EnumNameResizeMethod(ResizeMethod e) {
-  if (flatbuffers::IsOutRange(e, ResizeMethod_UNKNOWN, ResizeMethod_CUBIC)) return "";
+  if (::flatbuffers::IsOutRange(e, ResizeMethod_UNKNOWN, ResizeMethod_CUBIC)) return "";
   const size_t index = static_cast<size_t>(e) - static_cast<size_t>(ResizeMethod_UNKNOWN);
   return EnumNamesResizeMethod()[index];
 }
@@ -91,7 +98,7 @@ inline const char * const *EnumNamesCoordinateTransformMode() {
 }
 
 inline const char *EnumNameCoordinateTransformMode(CoordinateTransformMode e) {
-  if (flatbuffers::IsOutRange(e, CoordinateTransformMode_ASYMMETRIC, CoordinateTransformMode_HALF_PIXEL)) return "";
+  if (::flatbuffers::IsOutRange(e, CoordinateTransformMode_ASYMMETRIC, CoordinateTransformMode_HALF_PIXEL)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesCoordinateTransformMode()[index];
 }
@@ -130,7 +137,7 @@ inline const char * const *EnumNamesNearestMode() {
 }
 
 inline const char *EnumNameNearestMode(NearestMode e) {
-  if (flatbuffers::IsOutRange(e, NearestMode_NORMAL, NearestMode_CEIL)) return "";
+  if (::flatbuffers::IsOutRange(e, NearestMode_NORMAL, NearestMode_CEIL)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesNearestMode()[index];
 }
@@ -211,7 +218,7 @@ inline const char * const *EnumNamesFormat() {
 }
 
 inline const char *EnumNameFormat(Format e) {
-  if (flatbuffers::IsOutRange(e, Format_NCHW, Format_NC8HW8)) return "";
+  if (::flatbuffers::IsOutRange(e, Format_NCHW, Format_NC8HW8)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesFormat()[index];
 }
@@ -301,7 +308,7 @@ inline const char * const *EnumNamesActivationType() {
 }
 
 inline const char *EnumNameActivationType(ActivationType e) {
-  if (flatbuffers::IsOutRange(e, ActivationType_NO_ACTIVATION, ActivationType_UNKNOWN)) return "";
+  if (::flatbuffers::IsOutRange(e, ActivationType_NO_ACTIVATION, ActivationType_UNKNOWN)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesActivationType()[index];
 }
@@ -352,7 +359,7 @@ inline const char * const *EnumNamesReduceMode() {
 }
 
 inline const char *EnumNameReduceMode(ReduceMode e) {
-  if (flatbuffers::IsOutRange(e, ReduceMode_ReduceMean, ReduceMode_ReduceL2)) return "";
+  if (::flatbuffers::IsOutRange(e, ReduceMode_ReduceMean, ReduceMode_ReduceL2)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesReduceMode()[index];
 }
@@ -382,7 +389,7 @@ inline const char * const *EnumNamesPoolMode() {
 }
 
 inline const char *EnumNamePoolMode(PoolMode e) {
-  if (flatbuffers::IsOutRange(e, PoolMode_MAX_POOLING, PoolMode_MEAN_POOLING)) return "";
+  if (::flatbuffers::IsOutRange(e, PoolMode_MAX_POOLING, PoolMode_MEAN_POOLING)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesPoolMode()[index];
 }
@@ -418,7 +425,7 @@ inline const char * const *EnumNamesEltwiseMode() {
 }
 
 inline const char *EnumNameEltwiseMode(EltwiseMode e) {
-  if (flatbuffers::IsOutRange(e, EltwiseMode_PROD, EltwiseMode_UNKNOWN)) return "";
+  if (::flatbuffers::IsOutRange(e, EltwiseMode_PROD, EltwiseMode_UNKNOWN)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesEltwiseMode()[index];
 }
@@ -451,7 +458,7 @@ inline const char * const *EnumNamesPadMode() {
 }
 
 inline const char *EnumNamePadMode(PadMode e) {
-  if (flatbuffers::IsOutRange(e, PadMode_PAD, PadMode_VALID)) return "";
+  if (::flatbuffers::IsOutRange(e, PadMode_PAD, PadMode_VALID)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesPadMode()[index];
 }
@@ -481,7 +488,7 @@ inline const char * const *EnumNamesRoundMode() {
 }
 
 inline const char *EnumNameRoundMode(RoundMode e) {
-  if (flatbuffers::IsOutRange(e, RoundMode_FLOOR, RoundMode_CEIL)) return "";
+  if (::flatbuffers::IsOutRange(e, RoundMode_FLOOR, RoundMode_CEIL)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesRoundMode()[index];
 }
@@ -517,7 +524,7 @@ inline const char * const *EnumNamesPaddingMode() {
 }
 
 inline const char *EnumNamePaddingMode(PaddingMode e) {
-  if (flatbuffers::IsOutRange(e, PaddingMode_CONSTANT, PaddingMode_MODE_RESERVED)) return "";
+  if (::flatbuffers::IsOutRange(e, PaddingMode_CONSTANT, PaddingMode_MODE_RESERVED)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesPaddingMode()[index];
 }
@@ -550,7 +557,7 @@ inline const char * const *EnumNamesLshProjectionType() {
 }
 
 inline const char *EnumNameLshProjectionType(LshProjectionType e) {
-  if (flatbuffers::IsOutRange(e, LshProjectionType_UNKNOWN, LshProjectionType_DENSE)) return "";
+  if (::flatbuffers::IsOutRange(e, LshProjectionType_UNKNOWN, LshProjectionType_DENSE)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesLshProjectionType()[index];
 }
@@ -583,70 +590,70 @@ inline const char * const *EnumNamesReduction() {
 }
 
 inline const char *EnumNameReduction(Reduction e) {
-  if (flatbuffers::IsOutRange(e, Reduction_REDUCTION_SUM, Reduction_NONE)) return "";
+  if (::flatbuffers::IsOutRange(e, Reduction_REDUCTION_SUM, Reduction_NONE)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesReduction()[index];
 }
 
-struct VecT : public flatbuffers::NativeTable {
+struct VecT : public ::flatbuffers::NativeTable {
   typedef Vec TableType;
   std::vector<int64_t> data{};
 };
 
-struct Vec FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Vec FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef VecT NativeTableType;
   typedef VecBuilder Builder;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return VecTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_DATA = 4
   };
-  const flatbuffers::Vector<int64_t> *data() const {
-    return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_DATA);
+  const ::flatbuffers::Vector<int64_t> *data() const {
+    return GetPointer<const ::flatbuffers::Vector<int64_t> *>(VT_DATA);
   }
-  flatbuffers::Vector<int64_t> *mutable_data() {
-    return GetPointer<flatbuffers::Vector<int64_t> *>(VT_DATA);
+  ::flatbuffers::Vector<int64_t> *mutable_data() {
+    return GetPointer<::flatbuffers::Vector<int64_t> *>(VT_DATA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_DATA) &&
            verifier.VerifyVector(data()) &&
            verifier.EndTable();
   }
-  VecT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(VecT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Vec> Pack(flatbuffers::FlatBufferBuilder &_fbb, const VecT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  VecT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(VecT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<Vec> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const VecT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct VecBuilder {
   typedef Vec Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_data(flatbuffers::Offset<flatbuffers::Vector<int64_t>> data) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_data(::flatbuffers::Offset<::flatbuffers::Vector<int64_t>> data) {
     fbb_.AddOffset(Vec::VT_DATA, data);
   }
-  explicit VecBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit VecBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Vec> Finish() {
+  ::flatbuffers::Offset<Vec> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Vec>(end);
+    auto o = ::flatbuffers::Offset<Vec>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Vec> CreateVec(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<int64_t>> data = 0) {
+inline ::flatbuffers::Offset<Vec> CreateVec(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int64_t>> data = 0) {
   VecBuilder builder_(_fbb);
   builder_.add_data(data);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Vec> CreateVecDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<Vec> CreateVecDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int64_t> *data = nullptr) {
   auto data__ = data ? _fbb.CreateVector<int64_t>(*data) : 0;
   return mindspore::schema::CreateVec(
@@ -654,106 +661,110 @@ inline flatbuffers::Offset<Vec> CreateVecDirect(
       data__);
 }
 
-flatbuffers::Offset<Vec> CreateVec(flatbuffers::FlatBufferBuilder &_fbb, const VecT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<Vec> CreateVec(::flatbuffers::FlatBufferBuilder &_fbb, const VecT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct Vec2DT : public flatbuffers::NativeTable {
+struct Vec2DT : public ::flatbuffers::NativeTable {
   typedef Vec2D TableType;
   std::vector<std::unique_ptr<mindspore::schema::VecT>> data{};
+  Vec2DT() = default;
+  Vec2DT(const Vec2DT &o);
+  Vec2DT(Vec2DT&&) FLATBUFFERS_NOEXCEPT = default;
+  Vec2DT &operator=(Vec2DT o) FLATBUFFERS_NOEXCEPT;
 };
 
-struct Vec2D FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Vec2D FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef Vec2DT NativeTableType;
   typedef Vec2DBuilder Builder;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return Vec2DTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_DATA = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Vec>> *data() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Vec>> *>(VT_DATA);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Vec>> *data() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Vec>> *>(VT_DATA);
   }
-  flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Vec>> *mutable_data() {
-    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Vec>> *>(VT_DATA);
+  ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Vec>> *mutable_data() {
+    return GetPointer<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Vec>> *>(VT_DATA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_DATA) &&
            verifier.VerifyVector(data()) &&
            verifier.VerifyVectorOfTables(data()) &&
            verifier.EndTable();
   }
-  Vec2DT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(Vec2DT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Vec2D> Pack(flatbuffers::FlatBufferBuilder &_fbb, const Vec2DT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  Vec2DT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Vec2DT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<Vec2D> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const Vec2DT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct Vec2DBuilder {
   typedef Vec2D Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_data(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Vec>>> data) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_data(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Vec>>> data) {
     fbb_.AddOffset(Vec2D::VT_DATA, data);
   }
-  explicit Vec2DBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit Vec2DBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Vec2D> Finish() {
+  ::flatbuffers::Offset<Vec2D> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Vec2D>(end);
+    auto o = ::flatbuffers::Offset<Vec2D>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Vec2D> CreateVec2D(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Vec>>> data = 0) {
+inline ::flatbuffers::Offset<Vec2D> CreateVec2D(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Vec>>> data = 0) {
   Vec2DBuilder builder_(_fbb);
   builder_.add_data(data);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Vec2D> CreateVec2DDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<mindspore::schema::Vec>> *data = nullptr) {
-  auto data__ = data ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::Vec>>(*data) : 0;
+inline ::flatbuffers::Offset<Vec2D> CreateVec2DDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<::flatbuffers::Offset<mindspore::schema::Vec>> *data = nullptr) {
+  auto data__ = data ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::Vec>>(*data) : 0;
   return mindspore::schema::CreateVec2D(
       _fbb,
       data__);
 }
 
-flatbuffers::Offset<Vec2D> CreateVec2D(flatbuffers::FlatBufferBuilder &_fbb, const Vec2DT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<Vec2D> CreateVec2D(::flatbuffers::FlatBufferBuilder &_fbb, const Vec2DT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-struct AttributeT : public flatbuffers::NativeTable {
+struct AttributeT : public ::flatbuffers::NativeTable {
   typedef Attribute TableType;
   std::string name{};
   std::vector<uint8_t> data{};
 };
 
-struct Attribute FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Attribute FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef AttributeT NativeTableType;
   typedef AttributeBuilder Builder;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return AttributeTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_DATA = 6
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  flatbuffers::String *mutable_name() {
-    return GetPointer<flatbuffers::String *>(VT_NAME);
+  ::flatbuffers::String *mutable_name() {
+    return GetPointer<::flatbuffers::String *>(VT_NAME);
   }
-  const flatbuffers::Vector<uint8_t> *data() const {
-    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_DATA);
+  const ::flatbuffers::Vector<uint8_t> *data() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_DATA);
   }
-  flatbuffers::Vector<uint8_t> *mutable_data() {
-    return GetPointer<flatbuffers::Vector<uint8_t> *>(VT_DATA);
+  ::flatbuffers::Vector<uint8_t> *mutable_data() {
+    return GetPointer<::flatbuffers::Vector<uint8_t> *>(VT_DATA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -761,44 +772,44 @@ struct Attribute FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(data()) &&
            verifier.EndTable();
   }
-  AttributeT *UnPack(const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  void UnPackTo(AttributeT *_o, const flatbuffers::resolver_function_t *_resolver = nullptr) const;
-  static flatbuffers::Offset<Attribute> Pack(flatbuffers::FlatBufferBuilder &_fbb, const AttributeT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+  AttributeT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(AttributeT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<Attribute> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const AttributeT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct AttributeBuilder {
   typedef Attribute Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(Attribute::VT_NAME, name);
   }
-  void add_data(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data) {
+  void add_data(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> data) {
     fbb_.AddOffset(Attribute::VT_DATA, data);
   }
-  explicit AttributeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit AttributeBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Attribute> Finish() {
+  ::flatbuffers::Offset<Attribute> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Attribute>(end);
+    auto o = ::flatbuffers::Offset<Attribute>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Attribute> CreateAttribute(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data = 0) {
+inline ::flatbuffers::Offset<Attribute> CreateAttribute(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> data = 0) {
   AttributeBuilder builder_(_fbb);
   builder_.add_data(data);
   builder_.add_name(name);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Attribute> CreateAttributeDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<Attribute> CreateAttributeDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     const std::vector<uint8_t> *data = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
@@ -809,81 +820,91 @@ inline flatbuffers::Offset<Attribute> CreateAttributeDirect(
       data__);
 }
 
-flatbuffers::Offset<Attribute> CreateAttribute(flatbuffers::FlatBufferBuilder &_fbb, const AttributeT *_o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
+::flatbuffers::Offset<Attribute> CreateAttribute(::flatbuffers::FlatBufferBuilder &_fbb, const AttributeT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 
-inline VecT *Vec::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+inline VecT *Vec::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
   auto _o = std::unique_ptr<VecT>(new VecT());
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void Vec::UnPackTo(VecT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Vec::UnPackTo(VecT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = data(); if (_e) { _o->data.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->data[_i] = _e->Get(_i); } } }
+  { auto _e = data(); if (_e) { _o->data.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->data[_i] = _e->Get(_i); } } else { _o->data.resize(0); } }
 }
 
-inline flatbuffers::Offset<Vec> Vec::Pack(flatbuffers::FlatBufferBuilder &_fbb, const VecT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<Vec> Vec::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const VecT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   return CreateVec(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Vec> CreateVec(flatbuffers::FlatBufferBuilder &_fbb, const VecT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<Vec> CreateVec(::flatbuffers::FlatBufferBuilder &_fbb, const VecT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const VecT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const VecT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _data = _o->data.size() ? _fbb.CreateVector(_o->data) : 0;
   return mindspore::schema::CreateVec(
       _fbb,
       _data);
 }
 
-inline Vec2DT *Vec2D::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+inline Vec2DT::Vec2DT(const Vec2DT &o) {
+  data.reserve(o.data.size());
+  for (const auto &data_ : o.data) { data.emplace_back((data_) ? new mindspore::schema::VecT(*data_) : nullptr); }
+}
+
+inline Vec2DT &Vec2DT::operator=(Vec2DT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(data, o.data);
+  return *this;
+}
+
+inline Vec2DT *Vec2D::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
   auto _o = std::unique_ptr<Vec2DT>(new Vec2DT());
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void Vec2D::UnPackTo(Vec2DT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Vec2D::UnPackTo(Vec2DT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = data(); if (_e) { _o->data.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->data[_i] = std::unique_ptr<mindspore::schema::VecT>(_e->Get(_i)->UnPack(_resolver)); } } }
+  { auto _e = data(); if (_e) { _o->data.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->data[_i]) { _e->Get(_i)->UnPackTo(_o->data[_i].get(), _resolver); } else { _o->data[_i] = std::unique_ptr<mindspore::schema::VecT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->data.resize(0); } }
 }
 
-inline flatbuffers::Offset<Vec2D> Vec2D::Pack(flatbuffers::FlatBufferBuilder &_fbb, const Vec2DT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<Vec2D> Vec2D::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const Vec2DT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   return CreateVec2D(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Vec2D> CreateVec2D(flatbuffers::FlatBufferBuilder &_fbb, const Vec2DT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<Vec2D> CreateVec2D(::flatbuffers::FlatBufferBuilder &_fbb, const Vec2DT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const Vec2DT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
-  auto _data = _o->data.size() ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::Vec>> (_o->data.size(), [](size_t i, _VectorArgs *__va) { return CreateVec(*__va->__fbb, __va->__o->data[i].get(), __va->__rehasher); }, &_va ) : 0;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const Vec2DT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _data = _o->data.size() ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::Vec>> (_o->data.size(), [](size_t i, _VectorArgs *__va) { return CreateVec(*__va->__fbb, __va->__o->data[i].get(), __va->__rehasher); }, &_va ) : 0;
   return mindspore::schema::CreateVec2D(
       _fbb,
       _data);
 }
 
-inline AttributeT *Attribute::UnPack(const flatbuffers::resolver_function_t *_resolver) const {
+inline AttributeT *Attribute::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
   auto _o = std::unique_ptr<AttributeT>(new AttributeT());
   UnPackTo(_o.get(), _resolver);
   return _o.release();
 }
 
-inline void Attribute::UnPackTo(AttributeT *_o, const flatbuffers::resolver_function_t *_resolver) const {
+inline void Attribute::UnPackTo(AttributeT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
   { auto _e = name(); if (_e) _o->name = _e->str(); }
   { auto _e = data(); if (_e) { _o->data.resize(_e->size()); std::copy(_e->begin(), _e->end(), _o->data.begin()); } }
 }
 
-inline flatbuffers::Offset<Attribute> Attribute::Pack(flatbuffers::FlatBufferBuilder &_fbb, const AttributeT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<Attribute> Attribute::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const AttributeT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   return CreateAttribute(_fbb, _o, _rehasher);
 }
 
-inline flatbuffers::Offset<Attribute> CreateAttribute(flatbuffers::FlatBufferBuilder &_fbb, const AttributeT *_o, const flatbuffers::rehasher_function_t *_rehasher) {
+inline ::flatbuffers::Offset<Attribute> CreateAttribute(::flatbuffers::FlatBufferBuilder &_fbb, const AttributeT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
   (void)_rehasher;
   (void)_o;
-  struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const AttributeT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const AttributeT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _name = _o->name.empty() ? 0 : _fbb.CreateString(_o->name);
   auto _data = _o->data.size() ? _fbb.CreateVector(_o->data) : 0;
   return mindspore::schema::CreateAttribute(
@@ -892,276 +913,395 @@ inline flatbuffers::Offset<Attribute> CreateAttribute(flatbuffers::FlatBufferBui
       _data);
 }
 
-inline const flatbuffers::TypeTable *ResizeMethodTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *ResizeMethodTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::ResizeMethodTypeTable
   };
   static const int64_t values[] = { -1, 0, 1, 2 };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, values, nullptr
+  static const char * const names[] = {
+    "UNKNOWN",
+    "LINEAR",
+    "NEAREST",
+    "CUBIC"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, values, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *CoordinateTransformModeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *CoordinateTransformModeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::CoordinateTransformModeTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "ASYMMETRIC",
+    "ALIGN_CORNERS",
+    "HALF_PIXEL"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *NearestModeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *NearestModeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::NearestModeTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 5, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "NORMAL",
+    "ROUND_HALF_DOWN",
+    "ROUND_HALF_UP",
+    "FLOOR",
+    "CEIL"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 5, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *FormatTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 },
-    { flatbuffers::ET_INT, 0, 0 }
+inline const ::flatbuffers::TypeTable *FormatTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 },
+    { ::flatbuffers::ET_INT, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::FormatTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 19, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "NCHW",
+    "NHWC",
+    "NHWC4",
+    "HWKC",
+    "HWCK",
+    "KCHW",
+    "CKHW",
+    "KHWC",
+    "CHWK",
+    "HW",
+    "HW4",
+    "NC",
+    "NC4",
+    "NC4HW4",
+    "NUM_OF_FORMAT",
+    "NCDHW",
+    "NWC",
+    "NCW",
+    "NC8HW8"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 19, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *ActivationTypeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *ActivationTypeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::ActivationTypeTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 22, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "NO_ACTIVATION",
+    "RELU",
+    "SIGMOID",
+    "RELU6",
+    "ELU",
+    "LEAKY_RELU",
+    "ABS",
+    "RELU1",
+    "SOFTSIGN",
+    "SOFTPLUS",
+    "TANH",
+    "SELU",
+    "HSWISH",
+    "HSIGMOID",
+    "THRESHOLDRELU",
+    "LINEAR",
+    "HARD_TANH",
+    "SIGN",
+    "SWISH",
+    "GELU",
+    "FAST_GELU",
+    "UNKNOWN"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 22, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *ReduceModeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *ReduceModeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::ReduceModeTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 9, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "ReduceMean",
+    "ReduceMax",
+    "ReduceMin",
+    "ReduceProd",
+    "ReduceSum",
+    "ReduceSumSquare",
+    "ReduceASum",
+    "ReduceAll",
+    "ReduceL2"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 9, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *PoolModeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *PoolModeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::PoolModeTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 2, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "MAX_POOLING",
+    "MEAN_POOLING"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 2, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *EltwiseModeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *EltwiseModeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::EltwiseModeTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "PROD",
+    "SUM",
+    "MAXIMUM",
+    "UNKNOWN"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *PadModeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *PadModeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::PadModeTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "PAD",
+    "SAME",
+    "VALID"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *RoundModeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *RoundModeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::RoundModeTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 2, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "FLOOR",
+    "CEIL"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 2, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *PaddingModeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *PaddingModeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::PaddingModeTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "CONSTANT",
+    "REFLECT",
+    "SYMMETRIC",
+    "MODE_RESERVED"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *LshProjectionTypeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *LshProjectionTypeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::LshProjectionTypeTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "UNKNOWN",
+    "SPARSE",
+    "DENSE"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *ReductionTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 },
-    { flatbuffers::ET_CHAR, 0, 0 }
+inline const ::flatbuffers::TypeTable *ReductionTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 },
+    { ::flatbuffers::ET_CHAR, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::ReductionTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "REDUCTION_SUM",
+    "MEAN",
+    "NONE"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *VecTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_LONG, 1, -1 }
+inline const ::flatbuffers::TypeTable *VecTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_LONG, 1, -1 }
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "data"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *Vec2DTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_SEQUENCE, 1, 0 }
+inline const ::flatbuffers::TypeTable *Vec2DTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_SEQUENCE, 1, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::VecTypeTable
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 1, type_codes, type_refs, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "data"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 1, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *AttributeTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_STRING, 0, -1 },
-    { flatbuffers::ET_UCHAR, 1, -1 }
+inline const ::flatbuffers::TypeTable *AttributeTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_STRING, 0, -1 },
+    { ::flatbuffers::ET_UCHAR, 1, -1 }
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, nullptr
+  static const char * const names[] = {
+    "name",
+    "data"
+  };
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, names
   };
   return &tt;
 }
