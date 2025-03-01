@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "src/common/log.h"
+#include "log.h"
 #include "mindir.h"
 #include "utils.h"
 #include "securec.h"

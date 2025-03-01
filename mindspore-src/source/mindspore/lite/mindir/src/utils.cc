@@ -15,7 +15,7 @@
  */
 #include "utils.h"
 #include "securec.h"
-#include "src/common/log.h"
+#include "log.h"
 #include "mindir_memory_manager.h"
 namespace mindspore {
 namespace lite {

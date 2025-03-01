@@ -16,7 +16,7 @@
 #include "mindir_lite_graph.h"
 #include "mindir_tensor.h"
 #include "mindir_primitive.h"
-#include "src/common/log.h"
+#include "log.h"
 #include "schema/model_generated.h"
 #include "mindir_memory_manager.h"
 #include <string>
