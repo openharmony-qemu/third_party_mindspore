@@ -51,7 +51,7 @@ ohos_shared_library("mindir_lib") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
   sources = [
-    "../src/common/log.cc",
+    "src/log.cc",
     "src/mindir.cc",
     "src/mindir_1.cc",
     "src/mindir_2.cc",

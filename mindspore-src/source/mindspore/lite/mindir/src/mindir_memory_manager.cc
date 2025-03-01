@@ -2,7 +2,7 @@
 #include <iostream>
 #include "securec.h"
 #include "utils.h"
-#include "src/common/log.h"
+#include "log.h"
 
 namespace mindspore {
 namespace lite {
