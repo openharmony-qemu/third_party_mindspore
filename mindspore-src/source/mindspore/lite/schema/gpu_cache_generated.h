@@ -6,6 +6,13 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+// Ensure the included flatbuffers.h is the same version as when this file was
+// generated, otherwise it may not be compatible.
+static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
+              FLATBUFFERS_VERSION_MINOR == 3 &&
+              FLATBUFFERS_VERSION_REVISION == 25,
+             "Non-compatible flatbuffers version included");
+
 namespace mindspore {
 namespace schema {
 
@@ -18,7 +25,7 @@ struct ProgramBinaryBuilder;
 struct GpuCache;
 struct GpuCacheBuilder;
 
-struct TuneParam FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct TuneParam FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef TuneParamBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_LOCAL = 4,
@@ -26,19 +33,19 @@ struct TuneParam FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_SHAPE = 8,
     VT_OPPARA = 10
   };
-  const flatbuffers::Vector<int32_t> *local() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_LOCAL);
+  const ::flatbuffers::Vector<int32_t> *local() const {
+    return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_LOCAL);
   }
-  const flatbuffers::Vector<int32_t> *block() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_BLOCK);
+  const ::flatbuffers::Vector<int32_t> *block() const {
+    return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_BLOCK);
   }
-  const flatbuffers::Vector<int32_t> *shape() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_SHAPE);
+  const ::flatbuffers::Vector<int32_t> *shape() const {
+    return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_SHAPE);
   }
-  const flatbuffers::Vector<int32_t> *opPara() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_OPPARA);
+  const ::flatbuffers::Vector<int32_t> *opPara() const {
+    return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_OPPARA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_LOCAL) &&
            verifier.VerifyVector(local()) &&
@@ -54,37 +61,37 @@ struct TuneParam FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct TuneParamBuilder {
   typedef TuneParam Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_local(flatbuffers::Offset<flatbuffers::Vector<int32_t>> local) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_local(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> local) {
     fbb_.AddOffset(TuneParam::VT_LOCAL, local);
   }
-  void add_block(flatbuffers::Offset<flatbuffers::Vector<int32_t>> block) {
+  void add_block(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> block) {
     fbb_.AddOffset(TuneParam::VT_BLOCK, block);
   }
-  void add_shape(flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape) {
+  void add_shape(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> shape) {
     fbb_.AddOffset(TuneParam::VT_SHAPE, shape);
   }
-  void add_opPara(flatbuffers::Offset<flatbuffers::Vector<int32_t>> opPara) {
+  void add_opPara(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> opPara) {
     fbb_.AddOffset(TuneParam::VT_OPPARA, opPara);
   }
-  explicit TuneParamBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit TuneParamBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<TuneParam> Finish() {
+  ::flatbuffers::Offset<TuneParam> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<TuneParam>(end);
+    auto o = ::flatbuffers::Offset<TuneParam>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<TuneParam> CreateTuneParam(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> local = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> block = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> opPara = 0) {
+inline ::flatbuffers::Offset<TuneParam> CreateTuneParam(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> local = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> block = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> shape = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> opPara = 0) {
   TuneParamBuilder builder_(_fbb);
   builder_.add_opPara(opPara);
   builder_.add_shape(shape);
@@ -93,8 +100,8 @@ inline flatbuffers::Offset<TuneParam> CreateTuneParam(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<TuneParam> CreateTuneParamDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<TuneParam> CreateTuneParamDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int32_t> *local = nullptr,
     const std::vector<int32_t> *block = nullptr,
     const std::vector<int32_t> *shape = nullptr,
@@ -111,7 +118,7 @@ inline flatbuffers::Offset<TuneParam> CreateTuneParamDirect(
       opPara__);
 }
 
-struct ProgramBinary FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct ProgramBinary FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef ProgramBinaryBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_PROGRAM_NAME = 4,
@@ -119,19 +126,19 @@ struct ProgramBinary FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_TUNE = 8,
     VT_DATA = 10
   };
-  const flatbuffers::String *program_name() const {
-    return GetPointer<const flatbuffers::String *>(VT_PROGRAM_NAME);
+  const ::flatbuffers::String *program_name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_PROGRAM_NAME);
   }
-  const flatbuffers::String *build_option() const {
-    return GetPointer<const flatbuffers::String *>(VT_BUILD_OPTION);
+  const ::flatbuffers::String *build_option() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_BUILD_OPTION);
   }
   const mindspore::schema::TuneParam *tune() const {
     return GetPointer<const mindspore::schema::TuneParam *>(VT_TUNE);
   }
-  const flatbuffers::Vector<uint8_t> *data() const {
-    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_DATA);
+  const ::flatbuffers::Vector<uint8_t> *data() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_DATA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_PROGRAM_NAME) &&
            verifier.VerifyString(program_name()) &&
@@ -147,37 +154,37 @@ struct ProgramBinary FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct ProgramBinaryBuilder {
   typedef ProgramBinary Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_program_name(flatbuffers::Offset<flatbuffers::String> program_name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_program_name(::flatbuffers::Offset<::flatbuffers::String> program_name) {
     fbb_.AddOffset(ProgramBinary::VT_PROGRAM_NAME, program_name);
   }
-  void add_build_option(flatbuffers::Offset<flatbuffers::String> build_option) {
+  void add_build_option(::flatbuffers::Offset<::flatbuffers::String> build_option) {
     fbb_.AddOffset(ProgramBinary::VT_BUILD_OPTION, build_option);
   }
-  void add_tune(flatbuffers::Offset<mindspore::schema::TuneParam> tune) {
+  void add_tune(::flatbuffers::Offset<mindspore::schema::TuneParam> tune) {
     fbb_.AddOffset(ProgramBinary::VT_TUNE, tune);
   }
-  void add_data(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data) {
+  void add_data(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> data) {
     fbb_.AddOffset(ProgramBinary::VT_DATA, data);
   }
-  explicit ProgramBinaryBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit ProgramBinaryBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<ProgramBinary> Finish() {
+  ::flatbuffers::Offset<ProgramBinary> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<ProgramBinary>(end);
+    auto o = ::flatbuffers::Offset<ProgramBinary>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<ProgramBinary> CreateProgramBinary(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> program_name = 0,
-    flatbuffers::Offset<flatbuffers::String> build_option = 0,
-    flatbuffers::Offset<mindspore::schema::TuneParam> tune = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data = 0) {
+inline ::flatbuffers::Offset<ProgramBinary> CreateProgramBinary(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> program_name = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> build_option = 0,
+    ::flatbuffers::Offset<mindspore::schema::TuneParam> tune = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> data = 0) {
   ProgramBinaryBuilder builder_(_fbb);
   builder_.add_data(data);
   builder_.add_tune(tune);
@@ -186,11 +193,11 @@ inline flatbuffers::Offset<ProgramBinary> CreateProgramBinary(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<ProgramBinary> CreateProgramBinaryDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<ProgramBinary> CreateProgramBinaryDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *program_name = nullptr,
     const char *build_option = nullptr,
-    flatbuffers::Offset<mindspore::schema::TuneParam> tune = 0,
+    ::flatbuffers::Offset<mindspore::schema::TuneParam> tune = 0,
     const std::vector<uint8_t> *data = nullptr) {
   auto program_name__ = program_name ? _fbb.CreateString(program_name) : 0;
   auto build_option__ = build_option ? _fbb.CreateString(build_option) : 0;
@@ -203,23 +210,23 @@ inline flatbuffers::Offset<ProgramBinary> CreateProgramBinaryDirect(
       data__);
 }
 
-struct GpuCache FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct GpuCache FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef GpuCacheBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_VERSION = 6,
     VT_ALLBINS = 8
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  const flatbuffers::String *version() const {
-    return GetPointer<const flatbuffers::String *>(VT_VERSION);
+  const ::flatbuffers::String *version() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_VERSION);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>> *allBins() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>> *>(VT_ALLBINS);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>> *allBins() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>> *>(VT_ALLBINS);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -234,33 +241,33 @@ struct GpuCache FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct GpuCacheBuilder {
   typedef GpuCache Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(GpuCache::VT_NAME, name);
   }
-  void add_version(flatbuffers::Offset<flatbuffers::String> version) {
+  void add_version(::flatbuffers::Offset<::flatbuffers::String> version) {
     fbb_.AddOffset(GpuCache::VT_VERSION, version);
   }
-  void add_allBins(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>>> allBins) {
+  void add_allBins(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>>> allBins) {
     fbb_.AddOffset(GpuCache::VT_ALLBINS, allBins);
   }
-  explicit GpuCacheBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit GpuCacheBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<GpuCache> Finish() {
+  ::flatbuffers::Offset<GpuCache> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<GpuCache>(end);
+    auto o = ::flatbuffers::Offset<GpuCache>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<GpuCache> CreateGpuCache(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<flatbuffers::String> version = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>>> allBins = 0) {
+inline ::flatbuffers::Offset<GpuCache> CreateGpuCache(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> version = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>>> allBins = 0) {
   GpuCacheBuilder builder_(_fbb);
   builder_.add_allBins(allBins);
   builder_.add_version(version);
@@ -268,14 +275,14 @@ inline flatbuffers::Offset<GpuCache> CreateGpuCache(
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<GpuCache> CreateGpuCacheDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<GpuCache> CreateGpuCacheDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     const char *version = nullptr,
-    const std::vector<flatbuffers::Offset<mindspore::schema::ProgramBinary>> *allBins = nullptr) {
+    const std::vector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>> *allBins = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   auto version__ = version ? _fbb.CreateString(version) : 0;
-  auto allBins__ = allBins ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::ProgramBinary>>(*allBins) : 0;
+  auto allBins__ = allBins ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::ProgramBinary>>(*allBins) : 0;
   return mindspore::schema::CreateGpuCache(
       _fbb,
       name__,
@@ -284,32 +291,32 @@ inline flatbuffers::Offset<GpuCache> CreateGpuCacheDirect(
 }
 
 inline const mindspore::schema::GpuCache *GetGpuCache(const void *buf) {
-  return flatbuffers::GetRoot<mindspore::schema::GpuCache>(buf);
+  return ::flatbuffers::GetRoot<mindspore::schema::GpuCache>(buf);
 }
 
 inline const mindspore::schema::GpuCache *GetSizePrefixedGpuCache(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<mindspore::schema::GpuCache>(buf);
+  return ::flatbuffers::GetSizePrefixedRoot<mindspore::schema::GpuCache>(buf);
 }
 
 inline bool VerifyGpuCacheBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<mindspore::schema::GpuCache>(nullptr);
 }
 
 inline bool VerifySizePrefixedGpuCacheBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifySizePrefixedBuffer<mindspore::schema::GpuCache>(nullptr);
 }
 
 inline void FinishGpuCacheBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<mindspore::schema::GpuCache> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<mindspore::schema::GpuCache> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedGpuCacheBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<mindspore::schema::GpuCache> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<mindspore::schema::GpuCache> root) {
   fbb.FinishSizePrefixed(root);
 }
 

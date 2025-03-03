@@ -6,6 +6,13 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+// Ensure the included flatbuffers.h is the same version as when this file was
+// generated, otherwise it may not be compatible.
+static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
+              FLATBUFFERS_VERSION_MINOR == 3 &&
+              FLATBUFFERS_VERSION_REVISION == 25,
+             "Non-compatible flatbuffers version included");
+
 namespace mindspore {
 namespace schema {
 
@@ -49,7 +56,7 @@ inline const char * const *EnumNamesResizeMethod() {
 }
 
 inline const char *EnumNameResizeMethod(ResizeMethod e) {
-  if (flatbuffers::IsOutRange(e, ResizeMethod_UNKNOWN, ResizeMethod_CUBIC)) return "";
+  if (::flatbuffers::IsOutRange(e, ResizeMethod_UNKNOWN, ResizeMethod_CUBIC)) return "";
   const size_t index = static_cast<size_t>(e) - static_cast<size_t>(ResizeMethod_UNKNOWN);
   return EnumNamesResizeMethod()[index];
 }
@@ -82,7 +89,7 @@ inline const char * const *EnumNamesCoordinateTransformMode() {
 }
 
 inline const char *EnumNameCoordinateTransformMode(CoordinateTransformMode e) {
-  if (flatbuffers::IsOutRange(e, CoordinateTransformMode_ASYMMETRIC, CoordinateTransformMode_HALF_PIXEL)) return "";
+  if (::flatbuffers::IsOutRange(e, CoordinateTransformMode_ASYMMETRIC, CoordinateTransformMode_HALF_PIXEL)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesCoordinateTransformMode()[index];
 }
@@ -121,7 +128,7 @@ inline const char * const *EnumNamesNearestMode() {
 }
 
 inline const char *EnumNameNearestMode(NearestMode e) {
-  if (flatbuffers::IsOutRange(e, NearestMode_NORMAL, NearestMode_CEIL)) return "";
+  if (::flatbuffers::IsOutRange(e, NearestMode_NORMAL, NearestMode_CEIL)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesNearestMode()[index];
 }
@@ -202,7 +209,7 @@ inline const char * const *EnumNamesFormat() {
 }
 
 inline const char *EnumNameFormat(Format e) {
-  if (flatbuffers::IsOutRange(e, Format_NCHW, Format_NC8HW8)) return "";
+  if (::flatbuffers::IsOutRange(e, Format_NCHW, Format_NC8HW8)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesFormat()[index];
 }
@@ -292,7 +299,7 @@ inline const char * const *EnumNamesActivationType() {
 }
 
 inline const char *EnumNameActivationType(ActivationType e) {
-  if (flatbuffers::IsOutRange(e, ActivationType_NO_ACTIVATION, ActivationType_UNKNOWN)) return "";
+  if (::flatbuffers::IsOutRange(e, ActivationType_NO_ACTIVATION, ActivationType_UNKNOWN)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesActivationType()[index];
 }
@@ -343,7 +350,7 @@ inline const char * const *EnumNamesReduceMode() {
 }
 
 inline const char *EnumNameReduceMode(ReduceMode e) {
-  if (flatbuffers::IsOutRange(e, ReduceMode_ReduceMean, ReduceMode_ReduceL2)) return "";
+  if (::flatbuffers::IsOutRange(e, ReduceMode_ReduceMean, ReduceMode_ReduceL2)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesReduceMode()[index];
 }
@@ -373,7 +380,7 @@ inline const char * const *EnumNamesPoolMode() {
 }
 
 inline const char *EnumNamePoolMode(PoolMode e) {
-  if (flatbuffers::IsOutRange(e, PoolMode_MAX_POOLING, PoolMode_MEAN_POOLING)) return "";
+  if (::flatbuffers::IsOutRange(e, PoolMode_MAX_POOLING, PoolMode_MEAN_POOLING)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesPoolMode()[index];
 }
@@ -409,7 +416,7 @@ inline const char * const *EnumNamesEltwiseMode() {
 }
 
 inline const char *EnumNameEltwiseMode(EltwiseMode e) {
-  if (flatbuffers::IsOutRange(e, EltwiseMode_PROD, EltwiseMode_UNKNOWN)) return "";
+  if (::flatbuffers::IsOutRange(e, EltwiseMode_PROD, EltwiseMode_UNKNOWN)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesEltwiseMode()[index];
 }
@@ -442,7 +449,7 @@ inline const char * const *EnumNamesPadMode() {
 }
 
 inline const char *EnumNamePadMode(PadMode e) {
-  if (flatbuffers::IsOutRange(e, PadMode_PAD, PadMode_VALID)) return "";
+  if (::flatbuffers::IsOutRange(e, PadMode_PAD, PadMode_VALID)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesPadMode()[index];
 }
@@ -472,7 +479,7 @@ inline const char * const *EnumNamesRoundMode() {
 }
 
 inline const char *EnumNameRoundMode(RoundMode e) {
-  if (flatbuffers::IsOutRange(e, RoundMode_FLOOR, RoundMode_CEIL)) return "";
+  if (::flatbuffers::IsOutRange(e, RoundMode_FLOOR, RoundMode_CEIL)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesRoundMode()[index];
 }
@@ -508,7 +515,7 @@ inline const char * const *EnumNamesPaddingMode() {
 }
 
 inline const char *EnumNamePaddingMode(PaddingMode e) {
-  if (flatbuffers::IsOutRange(e, PaddingMode_CONSTANT, PaddingMode_MODE_RESERVED)) return "";
+  if (::flatbuffers::IsOutRange(e, PaddingMode_CONSTANT, PaddingMode_MODE_RESERVED)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesPaddingMode()[index];
 }
@@ -541,7 +548,7 @@ inline const char * const *EnumNamesLshProjectionType() {
 }
 
 inline const char *EnumNameLshProjectionType(LshProjectionType e) {
-  if (flatbuffers::IsOutRange(e, LshProjectionType_UNKNOWN, LshProjectionType_DENSE)) return "";
+  if (::flatbuffers::IsOutRange(e, LshProjectionType_UNKNOWN, LshProjectionType_DENSE)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesLshProjectionType()[index];
 }
@@ -574,20 +581,20 @@ inline const char * const *EnumNamesReduction() {
 }
 
 inline const char *EnumNameReduction(Reduction e) {
-  if (flatbuffers::IsOutRange(e, Reduction_REDUCTION_SUM, Reduction_NONE)) return "";
+  if (::flatbuffers::IsOutRange(e, Reduction_REDUCTION_SUM, Reduction_NONE)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesReduction()[index];
 }
 
-struct Vec FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Vec FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef VecBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_DATA = 4
   };
-  const flatbuffers::Vector<int64_t> *data() const {
-    return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_DATA);
+  const ::flatbuffers::Vector<int64_t> *data() const {
+    return GetPointer<const ::flatbuffers::Vector<int64_t> *>(VT_DATA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_DATA) &&
            verifier.VerifyVector(data()) &&
@@ -597,32 +604,32 @@ struct Vec FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct VecBuilder {
   typedef Vec Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_data(flatbuffers::Offset<flatbuffers::Vector<int64_t>> data) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_data(::flatbuffers::Offset<::flatbuffers::Vector<int64_t>> data) {
     fbb_.AddOffset(Vec::VT_DATA, data);
   }
-  explicit VecBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit VecBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Vec> Finish() {
+  ::flatbuffers::Offset<Vec> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Vec>(end);
+    auto o = ::flatbuffers::Offset<Vec>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Vec> CreateVec(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<int64_t>> data = 0) {
+inline ::flatbuffers::Offset<Vec> CreateVec(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int64_t>> data = 0) {
   VecBuilder builder_(_fbb);
   builder_.add_data(data);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Vec> CreateVecDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<Vec> CreateVecDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int64_t> *data = nullptr) {
   auto data__ = data ? _fbb.CreateVector<int64_t>(*data) : 0;
   return mindspore::schema::CreateVec(
@@ -630,15 +637,15 @@ inline flatbuffers::Offset<Vec> CreateVecDirect(
       data__);
 }
 
-struct Vec2D FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Vec2D FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef Vec2DBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_DATA = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Vec>> *data() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Vec>> *>(VT_DATA);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Vec>> *data() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Vec>> *>(VT_DATA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_DATA) &&
            verifier.VerifyVector(data()) &&
@@ -649,52 +656,52 @@ struct Vec2D FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct Vec2DBuilder {
   typedef Vec2D Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_data(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Vec>>> data) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_data(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Vec>>> data) {
     fbb_.AddOffset(Vec2D::VT_DATA, data);
   }
-  explicit Vec2DBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit Vec2DBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Vec2D> Finish() {
+  ::flatbuffers::Offset<Vec2D> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Vec2D>(end);
+    auto o = ::flatbuffers::Offset<Vec2D>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Vec2D> CreateVec2D(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::Vec>>> data = 0) {
+inline ::flatbuffers::Offset<Vec2D> CreateVec2D(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<mindspore::schema::Vec>>> data = 0) {
   Vec2DBuilder builder_(_fbb);
   builder_.add_data(data);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Vec2D> CreateVec2DDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<mindspore::schema::Vec>> *data = nullptr) {
-  auto data__ = data ? _fbb.CreateVector<flatbuffers::Offset<mindspore::schema::Vec>>(*data) : 0;
+inline ::flatbuffers::Offset<Vec2D> CreateVec2DDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<::flatbuffers::Offset<mindspore::schema::Vec>> *data = nullptr) {
+  auto data__ = data ? _fbb.CreateVector<::flatbuffers::Offset<mindspore::schema::Vec>>(*data) : 0;
   return mindspore::schema::CreateVec2D(
       _fbb,
       data__);
 }
 
-struct Attribute FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Attribute FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef AttributeBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_DATA = 6
   };
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  const flatbuffers::Vector<uint8_t> *data() const {
-    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_DATA);
+  const ::flatbuffers::Vector<uint8_t> *data() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_DATA);
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -706,37 +713,37 @@ struct Attribute FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct AttributeBuilder {
   typedef Attribute Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(Attribute::VT_NAME, name);
   }
-  void add_data(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data) {
+  void add_data(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> data) {
     fbb_.AddOffset(Attribute::VT_DATA, data);
   }
-  explicit AttributeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit AttributeBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Attribute> Finish() {
+  ::flatbuffers::Offset<Attribute> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Attribute>(end);
+    auto o = ::flatbuffers::Offset<Attribute>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Attribute> CreateAttribute(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data = 0) {
+inline ::flatbuffers::Offset<Attribute> CreateAttribute(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> data = 0) {
   AttributeBuilder builder_(_fbb);
   builder_.add_data(data);
   builder_.add_name(name);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Attribute> CreateAttributeDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<Attribute> CreateAttributeDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     const std::vector<uint8_t> *data = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
