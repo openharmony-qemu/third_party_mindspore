@@ -29,8 +29,8 @@
 #undef HAVE_STDLIB_H
 #endif
 
-#include "./jpeglib.h"
-#include "./jerror.h"
+#include "jpeglib.h"
+#include "jerror.h"
 
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/kernels/image/lite_cv/image_process.h"

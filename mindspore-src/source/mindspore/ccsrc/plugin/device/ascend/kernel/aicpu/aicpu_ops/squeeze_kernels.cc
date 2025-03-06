@@ -20,8 +20,8 @@
 #include <thread>
 #include "ops/squeeze.h"
 #include "cpu_kernel/common/status.h"
-#include "./kernel_log.h"
-#include "./kernel_errcode.h"
+#include "kernel_log.h"
+#include "kernel_errcode.h"
 #include "proto/node_def.pb.h"
 #include "common/tensor.h"
 #include "proto/attr.pb.h"

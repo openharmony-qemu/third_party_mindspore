@@ -28,7 +28,7 @@
 #include "mapper/op_mapper_registry.h"
 #include "common/op_attr.h"
 #include "common/graph_output_name_keeper.h"
-#include "./pico_mapper_api.h"
+#include "pico_mapper_api.h"
 #include "op/preprocess_operator.h"
 #include "src/mapper_config_parser.h"
 #include "src/graph_split_api.h"

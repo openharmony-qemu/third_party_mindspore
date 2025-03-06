@@ -3,9 +3,9 @@
  * Description: implement of sample
  */
 
-#include "./reshape_cust_kernels.h"
+#include "reshape_cust_kernels.h"
 #include <cstring>
-#include "./cpu_types.h"
+#include "cpu_types.h"
 
 namespace {
 const char *RESHAPE_CUST = "ReshapeCust";

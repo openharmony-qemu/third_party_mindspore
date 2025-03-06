@@ -24,7 +24,7 @@
 #include <mutex>
 #include "include/api/allocator.h"
 #include "src/tensor.h"
-#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
+#include "neural_network_runtime/neural_network_runtime.h"
 
 struct OH_NN_Memory;
 struct OH_NNExecutor;

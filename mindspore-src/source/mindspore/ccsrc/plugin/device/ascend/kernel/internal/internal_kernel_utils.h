@@ -18,7 +18,7 @@
 
 #include <string>
 #include "kernel/kernel.h"
-#include "./internal_kernel.h"
+#include "internal_kernel.h"
 
 namespace mindspore {
 namespace kernel {

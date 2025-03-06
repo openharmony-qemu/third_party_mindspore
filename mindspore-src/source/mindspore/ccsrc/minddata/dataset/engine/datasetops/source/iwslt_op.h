@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "./tinyxml2.h"
+#include "tinyxml2.h"
 
 #include "include/common/debug/common.h"
 #include "minddata/dataset/engine/data_schema.h"

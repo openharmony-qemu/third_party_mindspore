@@ -21,7 +21,7 @@
 #include "common/op_attr.h"
 #include "include/errorcode.h"
 #include "ops/custom.h"
-#include "./pico_caffe.pb.h"
+#include "pico_caffe.pb.h"
 #include "op/detection_output_operator.h"
 
 using mindspore::lite::RET_ERROR;

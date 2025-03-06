@@ -87,7 +87,7 @@ const Opcode *Opcode::Map() {
 #define DEF_OPCODE(name, cls, flag) \
   opmap[(name)] = (name) == ILLEGAL_OPCODE ? Opcode::k_ILLEGAL_OPCODE : Opcode(#name, (name), (cls), (flag));
 
-#include "./opcode_attr.def"
+#include "opcode_attr.def"
 #undef DEF_OPCODE
 
   return opmap;

@@ -25,9 +25,9 @@
 #include "hiai_foundation_wrapper.h"
 #include "extension_options_parser.h"
 #include "schema/model_generated.h"
-#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime_type.h"
-#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
-#include "interfaces/innerkits/c/neural_network_runtime_inner.h"
+#include "neural_network_runtime/neural_network_runtime_type.h"
+#include "neural_network_runtime/neural_network_runtime.h"
+#include "neural_network_runtime_inner.h"
 
 namespace mindspore {
 namespace lite {

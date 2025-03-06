@@ -356,7 +356,7 @@ ohos_shared_library("mindspore_lib") {
   sources = all_sources
 
   include_dirs = [
-    "//third_party/flatbuffers/include",
+    "../../../../../../third_party/flatbuffers/include",
     "./",
     "../",
     "../../",
@@ -451,7 +451,6 @@ ohos_shared_library("mindspore_lib") {
       "../../mindspore/core/ir",
       "mindir/include",
       "mindir/inner_headers",
-      "//foundation/ai/neural_network_runtime/",
     ]
 
     external_deps += [
@@ -487,8 +486,8 @@ ohos_shared_library("mindspore_ndk") {
   sources = c_api_sources
 
   include_dirs = [
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "//third_party/flatbuffers/include",
+    "../../../../../../base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+    "../../../../../../third_party/flatbuffers/include",
     "./",
     "../",
     "../../",
@@ -513,7 +512,6 @@ ohos_shared_library("mindspore_ndk") {
   ]
 
   if (SUPPORT_NNRT) {
-    include_dirs += [ "//foundation/ai/neural_network_runtime/" ]
     defines += [ "SUPPORT_NNRT" ]
     if (mindspore_feature_nnrt_metagraph) {
       defines += [ "SUPPORT_NNRT_METAGRAPH" ]
@@ -663,7 +661,7 @@ ohos_shared_library("mindspore_train_lib") {
   sources = all_train_sources
 
   include_dirs = [
-    "//third_party/flatbuffers/include",
+    "../../../../../../third_party/flatbuffers/include",
     "./",
     "../",
     "../../",

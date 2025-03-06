@@ -20,14 +20,12 @@ ohos_shared_library("mindsporelite_napi") {
     "//third_party/mindspore/mindspore-src/source/",
     "//third_party/mindspore/mindspore-src/source/include/api",
     "//third_party/mindspore/mindspore-src/source/mindspore/core",
-    "//third_party//mindspore/mindspore-src/source/mindspore/lite",
-    "//third_party/libuv/include",
-
-    "//foundation/arkui/napi",
-    "//foundation/arkui/napi/interfaces/inner_api",
-    "//foundation/arkui/napi/interfaces/kits",
-    "//third_party/libuv/include",
-    "//third_party/node/src",
+    "//third_party/mindspore/mindspore-src/source/mindspore/lite",
+    "../../../../../../../../../third_party/libuv/include",
+    "../../../../../../../../../foundation/arkui/napi",
+    "../../../../../../../../../foundation/arkui/napi/interfaces/inner_api",
+    "../../../../../../../../../foundation/arkui/napi/interfaces/kits",
+    "../../../../../../../../../third_party/node/src",
   ]
 
   sources = [

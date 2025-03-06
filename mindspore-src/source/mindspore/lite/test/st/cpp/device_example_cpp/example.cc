@@ -26,9 +26,9 @@
 #include "include/api/types.h"
 
 #ifdef ENABLE_ASCEND
-#include "./mem_ascend.h"
+#include "mem_ascend.h"
 #else
-#include "./mem_gpu.h"
+#include "mem_gpu.h"
 #endif
 bool g_set_data = true;
 std::vector<std::vector<uint8_t>> g_cmp_data;

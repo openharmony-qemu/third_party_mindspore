@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "./gather_grad_kernels.h"
+#include "gather_grad_kernels.h"
 #include <Eigen/Dense>
 #include <map>
 #include <thread>

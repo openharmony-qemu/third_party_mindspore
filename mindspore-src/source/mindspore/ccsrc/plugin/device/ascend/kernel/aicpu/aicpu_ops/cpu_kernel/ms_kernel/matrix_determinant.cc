@@ -19,7 +19,7 @@
 #include <complex>
 #include <iostream>
 #include <vector>
-#include "./utils/kernel_util.h"
+#include "utils/kernel_util.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "utils/eigen_tensor.h"
 

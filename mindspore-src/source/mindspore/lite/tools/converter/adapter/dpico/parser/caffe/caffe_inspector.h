@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
-#include "./pico_caffe.pb.h"
+#include "pico_caffe.pb.h"
 #include "include/errorcode.h"
 
 namespace mindspore {

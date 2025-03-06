@@ -3,7 +3,7 @@
  * Copyright (c) Huawei Technologies Co., Ltd. 2020-2021. All rights reserved.
  * Description: implement of AcosCpu
  */
-#include "./acos_cpu_kernels.h"
+#include "acos_cpu_kernels.h"
 #include <cmath>
 
 namespace {

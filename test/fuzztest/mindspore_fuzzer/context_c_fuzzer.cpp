@@ -1,7 +1,7 @@
 
 #include "context_c_fuzzer.h"
-#include "../data.h"
-#include "../../utils/model_utils.h"
+#include "fuzztest/data.h"
+#include "utils/model_utils.h"
 
 bool MSContextFuzzTest_ThreadNum(const uint8_t *data, size_t size) {
     OH_AI_ContextHandle context = OH_AI_ContextCreate();

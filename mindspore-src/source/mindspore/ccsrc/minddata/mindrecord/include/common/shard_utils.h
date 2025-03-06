@@ -51,7 +51,7 @@
 #include "minddata/mindrecord/include/common/log_adapter.h"
 #include "minddata/mindrecord/include/shard_error.h"
 #include "nlohmann/json.hpp"
-#include "./sqlite3.h"
+#include "sqlite3.h"
 
 /* To be used when dlog is ok #include "./slog.h" */
 #ifdef DEBUG

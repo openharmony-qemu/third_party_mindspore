@@ -21,7 +21,7 @@
 #include <limits>
 #include <memory>
 #include <new>
-#include "./securec.h"
+#include "securec.h"
 #include "minddata/dataset/util/allocator.h"
 #include "minddata/dataset/util/memory_pool.h"
 

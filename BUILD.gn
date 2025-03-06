@@ -21,7 +21,7 @@ ohos_group("mindspore-all") {
 }
 
 group("mindir") {
-  public_deps = [ "mindspore-src/source/mindspore/lite/mindir:mindir_lib" ]
+  deps = [ "mindspore-src/source/mindspore/lite/mindir:mindir_lib" ]
 }
 
 ohos_group("mindspore-ndk") {

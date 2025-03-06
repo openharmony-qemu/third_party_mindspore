@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <functional>
 #include <set>
-#include "./securec.h"
+#include "securec.h"
 #include "minddata/dataset/util/task_manager.h"
 
 namespace mindspore {

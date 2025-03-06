@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 
-#include "interfaces/kits/c/neural_network_runtime/neural_network_runtime.h"
-#include "interfaces/innerkits/c/neural_network_runtime_inner.h"
+#include "neural_network_runtime/neural_network_runtime.h"
+#include "neural_network_runtime_inner.h"
 
 OH_NNModel *OH_NNModel_Construct(void) {
   return NULL;
