@@ -58,6 +58,14 @@ void OH_AI_ContextDestroy(OH_AI_ContextHandle *context) {
   *context = nullptr;
 }
 
+extern "C" {
+#define TRUE 1
+
+int32_t OH_AI_Inner_ContextNeedDestroy() {
+    return TRUE;
+}
+}
+
 void OH_AI_ContextSetThreadNum(OH_AI_ContextHandle context, int32_t thread_num) {
   if (context == nullptr) {
     MS_LOG(ERROR) << "context is nullptr.";
