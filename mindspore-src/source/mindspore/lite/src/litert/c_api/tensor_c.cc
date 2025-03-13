@@ -49,6 +49,10 @@ OH_AI_TensorHandle OH_AI_TensorCreate(const char *name, OH_AI_DataType type, con
     MS_LOG(ERROR) << "param is nullptr.";
     return nullptr;
   }
+  if (*name == '\0') {
+    MS_LOG(ERROR) << "tensor name is empty.";
+    return nullptr;
+  }
   std::vector<int32_t> vec_shape(shape_num);
   for (size_t i = 0; i < shape_num; i++) {
     vec_shape[i] = shape[i];
@@ -99,6 +103,10 @@ OH_AI_TensorHandle OH_AI_TensorClone(OH_AI_TensorHandle tensor) {
 void OH_AI_TensorSetName(OH_AI_TensorHandle tensor, const char *name) {
   if (tensor == nullptr || name == nullptr) {
     MS_LOG(ERROR) << "param is nullptr.";
+    return;
+  }
+  if (*name == '\0') {
+    MS_LOG(ERROR) << "tensor name is empty.";
     return;
   }
   auto impl = static_cast<mindspore::MSTensor *>(tensor);
