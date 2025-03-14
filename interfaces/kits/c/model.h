@@ -18,7 +18,7 @@
  * @addtogroup MindSpore
  * @{
  *
- * @brief 提供MindSpore Lite的模型推理相关接口。
+ * @brief Provides APIs related to MindSpore Lite model inference.
  *
  * @Syscap SystemCapability.Ai.MindSpore
  * @since 9
@@ -26,8 +26,8 @@
 
 /**
  * @file model.h
- *
- * @brief 提供了模型相关接口，可以用于模型创建、模型推理等。
+ * @kit MindSporeLiteKit
+ * @brief Provides model-related APIs for model creation and inference.
  *
  * @library libmindspore_lite_ndk.so
  * @since 9
@@ -68,13 +68,15 @@ typedef bool (*OH_AI_KernelCallBack)(const OH_AI_TensorHandleArray inputs, const
 
 /**
  * @brief Create a model object.
+ *
  * @return Model object handle.
  * @since 9
  */
-OH_AI_API OH_AI_ModelHandle OH_AI_ModelCreate();
+OH_AI_API OH_AI_ModelHandle OH_AI_ModelCreate(void);
 
 /**
  * @brief Destroy the model object.
+ *
  * @param model Model object handle address.
  * @since 9
  */
@@ -82,6 +84,7 @@ OH_AI_API void OH_AI_ModelDestroy(OH_AI_ModelHandle *model);
 
 /**
  * @brief Build the model from model file buffer so that it can run on a device.
+ *
  * @param model Model object handle.
  * @param model_data Define the buffer read from a model file.
  * @param data_size Define bytes number of model file buffer.
@@ -95,6 +98,7 @@ OH_AI_API OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *mod
 
 /**
  * @brief Load and build the model from model path so that it can run on a device.
+ *
  * @param model Model object handle.
  * @param model_path Define the model file path.
  * @param model_type Define The type of model file.
@@ -107,6 +111,7 @@ OH_AI_API OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const c
 
 /**
  * @brief Resizes the shapes of inputs.
+ *
  * @param model Model object handle.
  * @param inputs The array that includes all input tensor handles.
  * @param shape_infos Defines the new shapes of inputs, should be consistent with inputs.
@@ -119,6 +124,7 @@ OH_AI_API OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_Te
 
 /**
  * @brief Inference model.
+ *
  * @param model Model object handle.
  * @param inputs The array that includes all input tensor handles.
  * @param outputs The array that includes all output tensor handles.
@@ -133,6 +139,7 @@ OH_AI_API OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_T
 
 /**
  * @brief Obtains all input tensor handles of the model.
+ *
  * @param model Model object handle.
  * @return The array that includes all input tensor handles.
  * @since 9
@@ -141,6 +148,7 @@ OH_AI_API OH_AI_TensorHandleArray OH_AI_ModelGetInputs(const OH_AI_ModelHandle m
 
 /**
  * @brief Obtains all output tensor handles of the model.
+ *
  * @param model Model object handle.
  * @return The array that includes all output tensor handles.
  * @since 9
@@ -149,6 +157,7 @@ OH_AI_API OH_AI_TensorHandleArray OH_AI_ModelGetOutputs(const OH_AI_ModelHandle 
 
 /**
  * @brief Obtains the input tensor handle of the model by name.
+ *
  * @param model Model object handle.
  * @param tensor_name The name of tensor.
  * @return The input tensor handle with the given name, if the name is not found, an NULL is returned.
@@ -158,6 +167,7 @@ OH_AI_API OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHa
 
 /**
  * @brief Obtains the output tensor handle of the model by name.
+ *
  * @param model Model object handle.
  * @param tensor_name The name of tensor.
  * @return The output tensor handle with the given name, if the name is not found, an NULL is returned.
@@ -167,6 +177,7 @@ OH_AI_API OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelH
 
 /**
  * @brief Create a TrainCfg object. Only valid for Lite Train.
+ *
  * @return TrainCfg object handle.
  * @since 11
  */
@@ -174,6 +185,7 @@ OH_AI_API OH_AI_TrainCfgHandle OH_AI_TrainCfgCreate();
 
 /**
  * @brief Destroy the train_cfg object. Only valid for Lite Train.
+ *
  * @param train_cfg TrainCfg object handle.
  * @since 11
  */
@@ -181,6 +193,7 @@ OH_AI_API void OH_AI_TrainCfgDestroy(OH_AI_TrainCfgHandle *train_cfg);
 
 /**
  * @brief Obtains part of the name that identify a loss kernel. Only valid for Lite Train.
+ *
  * @param train_cfg TrainCfg object handle.
  * @param num The num of loss_name.
  * @return loss_name.
@@ -190,6 +203,7 @@ OH_AI_API char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_
 
 /**
  * @brief Set part of the name that identify a loss kernel. Only valid for Lite Train.
+ *
  * @param train_cfg TrainCfg object handle.
  * @param loss_name Define part of the name that identify a loss kernel.
  * @param num The num of loss_name.
@@ -199,6 +213,7 @@ OH_AI_API void OH_AI_TrainCfgSetLossName(OH_AI_TrainCfgHandle train_cfg, const c
 
 /**
  * @brief Obtains optimization level of the train_cfg. Only valid for Lite Train.
+ *
  * @param train_cfg TrainCfg object handle.
  * @return OH_AI_OptimizationLevel.
  * @since 11
@@ -207,6 +222,7 @@ OH_AI_API OH_AI_OptimizationLevel OH_AI_TrainCfgGetOptimizationLevel(OH_AI_Train
 
 /**
  * @brief Set optimization level of the train_cfg. Only valid for Lite Train.
+ *
  * @param train_cfg TrainCfg object handle.
  * @param level The optimization level of train_cfg.
  * @since 11
@@ -215,6 +231,7 @@ OH_AI_API void OH_AI_TrainCfgSetOptimizationLevel(OH_AI_TrainCfgHandle train_cfg
 
 /**
  * @brief Build the train model from model buffer so that it can run on a device. Only valid for Lite Train.
+ *
  * @param model Model object handle.
  * @param model_data Define the buffer read from a model file.
  * @param data_size Define bytes number of model file buffer.
@@ -230,6 +247,7 @@ OH_AI_API OH_AI_Status OH_AI_TrainModelBuild(OH_AI_ModelHandle model, const void
 
 /**
  * @brief Build the train model from model file buffer so that it can run on a device. Only valid for Lite Train.
+ *
  * @param model Model object handle.
  * @param model_path Define the model path.
  * @param model_type Define The type of model file.
@@ -245,6 +263,7 @@ OH_AI_API OH_AI_Status OH_AI_TrainModelBuildFromFile(OH_AI_ModelHandle model, co
 
 /**
  * @brief Train model by step. Only valid for Lite Train.
+ *
  * @param model Model object handle.
  * @param before CallBack before predict.
  * @param after CallBack after predict.
@@ -256,6 +275,7 @@ OH_AI_API OH_AI_Status OH_AI_RunStep(OH_AI_ModelHandle model, const OH_AI_Kernel
 
 /**
  * @brief Sets the Learning Rate of the training. Only valid for Lite Train.
+ *
  * @param learning_rate to set.
  * @return OH_AI_Status of operation.
  * @since 11
@@ -264,6 +284,7 @@ OH_AI_API OH_AI_Status OH_AI_ModelSetLearningRate(OH_AI_ModelHandle model, float
 
 /**
  * @brief Obtains the Learning Rate of the optimizer. Only valid for Lite Train.
+ *
  * @param model Model object handle.
  * @return Learning rate. 0.0 if no optimizer was found.
  * @since 11
@@ -272,6 +293,7 @@ OH_AI_API float OH_AI_ModelGetLearningRate(OH_AI_ModelHandle model);
 
 /**
  * @brief Obtains all weights tensors of the model. Only valid for Lite Train.
+ *
  * @param model Model object handle.
  * @return The vector that includes all gradient tensors.
  * @since 11
@@ -280,6 +302,7 @@ OH_AI_API OH_AI_TensorHandleArray OH_AI_ModelGetWeights(OH_AI_ModelHandle model)
 
 /**
  * @brief update weights tensors of the model. Only valid for Lite Train.
+ *
  * @param new_weights A vector new weights.
  * @return OH_AI_Status
  * @since 11
@@ -288,6 +311,7 @@ OH_AI_API OH_AI_Status OH_AI_ModelUpdateWeights(OH_AI_ModelHandle model, const O
 
 /**
  * @brief Get the model running mode.
+ *
  * @param model Model object handle.
  * @return Is Train Mode or not.
  * @since 11
@@ -296,6 +320,7 @@ OH_AI_API bool OH_AI_ModelGetTrainMode(OH_AI_ModelHandle model);
 
 /**
  * @brief Set the model running mode. Only valid for Lite Train.
+ *
  * @param model Model object handle.
  * @param train True means model runs in Train Mode, otherwise Eval Mode.
  * @return OH_AI_Status.
@@ -305,6 +330,7 @@ OH_AI_API OH_AI_Status OH_AI_ModelSetTrainMode(OH_AI_ModelHandle model, bool tra
 
 /**
  * @brief Setup training with virtual batches. Only valid for Lite Train.
+ *
  * @param model Model object handle.
  * @param virtual_batch_multiplier Virtual batch multiplier, use any number < 1 to disable.
  * @param lr Learning rate to use for virtual batch, -1 for internal configuration.
@@ -317,6 +343,7 @@ OH_AI_API OH_AI_Status OH_AI_ModelSetupVirtualBatch(OH_AI_ModelHandle model, int
 
 /**
  * @brief Export training model from file. Only valid for Lite Train.
+ *
  * @param model The model data.
  * @param model_type The model file type.
  * @param model_file The exported model file.
@@ -334,6 +361,7 @@ OH_AI_API OH_AI_Status OH_AI_ExportModel(OH_AI_ModelHandle model, OH_AI_ModelTyp
 
 /**
  * @brief Export training model from buffer. Only valid for Lite Train.
+ *
  * @param model The model data.
  * @param model_type The model file type.
  * @param model_data The exported model buffer.
@@ -346,12 +374,13 @@ OH_AI_API OH_AI_Status OH_AI_ExportModel(OH_AI_ModelHandle model, OH_AI_ModelTyp
  * @return OH_AI_Status.
  * @since 11
  */
-OH_AI_API OH_AI_Status OH_AI_ExportModelBuffer(OH_AI_ModelHandle model, OH_AI_ModelType model_type, char **model_data,
-                                                size_t *data_size, OH_AI_QuantizationType quantization_type,
-                                                bool export_inference_only, char **output_tensor_name, size_t num);
+OH_AI_API OH_AI_Status OH_AI_ExportModelBuffer(OH_AI_ModelHandle model, OH_AI_ModelType model_type, void *model_data,
+                                               size_t *data_size, OH_AI_QuantizationType quantization_type,
+                                               bool export_inference_only, char **output_tensor_name, size_t num);
 
 /**
  * @brief Export model's weights, which can be used in micro only. Only valid for Lite Train.
+ *
  * @param model The model data.
  * @param model_type The model file type.
  * @param weight_file The path of exported weight file.
