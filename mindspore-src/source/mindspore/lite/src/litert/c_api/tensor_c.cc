@@ -95,7 +95,7 @@ OH_AI_TensorHandle OH_AI_TensorClone(OH_AI_TensorHandle tensor) {
     MS_LOG(ERROR) << "Failed to allocate tensor impl.";
     return nullptr;
   }
-  std::static_pointer_cast<mindspore::LiteTensorImpl>(clone_impl->impl())->set_own_data(false);
+  std::static_pointer_cast<mindspore::LiteTensorImpl>(clone_impl->impl())->set_own_data(true);
   clone_impl->SetTensorName(impl->Name() + "_duplicate");
   return clone_impl;
 }
