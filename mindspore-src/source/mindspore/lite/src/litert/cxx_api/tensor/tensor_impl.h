@@ -294,7 +294,7 @@ class LiteTensorImpl : public MutableTensorImpl {
     return kSuccess;
   }
 
-  void set_own_data(bool own_data) { 
+  void set_own_data(bool own_data) {
     lite_tensor_->set_own_data(own_data);
     own_data_ = own_data;
   }
