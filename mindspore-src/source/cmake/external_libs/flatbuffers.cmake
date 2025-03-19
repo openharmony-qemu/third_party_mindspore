@@ -28,29 +28,13 @@ else()
     if(WIN32)
         set(flatbuffers_USE_STATIC_LIBS ON)
     endif()
-    if(ENABLE_GITEE_EULER)
-        set(GIT_REPOSITORY "https://gitee.com/src-openeuler/flatbuffers.git")
-        set(GIT_TAG "openEuler-22.03-LTS")
-        set(SHA256 "d94ef2fb0c22198c7ffe2a6044e864bd467ca70b8cfdc52720dc94313321777b")
-        set(FLATBUFFER_SRC "${CMAKE_BINARY_DIR}/_deps/flatbuffers-src")
-        set(FLATBUFFER_DIR "${FLATBUFFER_SRC}/flatbuffers-2.0.0")
-        __download_pkg_with_git(flatbuffers ${GIT_REPOSITORY} ${GIT_TAG} ${SHA256})
-        execute_process(COMMAND tar -xf ${FLATBUFFER_SRC}/v2.0.0.tar.gz WORKING_DIRECTORY ${FLATBUFFER_SRC})
 
-        foreach(_SUBMODULE_FILE ${PKG_SUBMODULES})
-            STRING(REGEX REPLACE "(.+)_(.+)" "\\1" _SUBMODEPATH ${_SUBMODULE_FILE})
-            STRING(REGEX REPLACE "(.+)/(.+)" "\\2" _SUBMODENAME ${_SUBMODEPATH})
-            file(GLOB ${pkg_name}_INSTALL_SUBMODULE ${_SUBMODULE_FILE}/*)
-            file(COPY ${${pkg_name}_INSTALL_SUBMODULE} DESTINATION ${${pkg_name}_SOURCE_DIR}/3rdparty/${_SUBMODENAME})
-        endforeach()
+    if(ENABLE_GITEE OR ENABLE_GITEE_EULER) # Channel GITEE_EULER is NOT supported now, use GITEE instead.
+        set(REQ_URL "https://gitee.com/mirrors/flatbuffers/repository/archive/v24.3.25.tar.gz")
+        set(SHA256 "3767fc37c8c3c500405052f2180f0f9a65e36512b07b78834a369c563fe3c644")
     else()
-    if(ENABLE_GITEE)
-        set(REQ_URL "https://gitee.com/mirrors/flatbuffers/repository/archive/v2.0.0.tar.gz")
-        set(SHA256 "3d1eabe298ddac718de34d334aefc22486064dcd8e7a367a809d87393d59ac5a")
-    else()
-        set(REQ_URL "https://github.com/google/flatbuffers/archive/v2.0.0.tar.gz")
-        set(SHA256 "9ddb9031798f4f8754d00fca2f1a68ecf9d0f83dfac7239af1311e4fd9a565c4")
-    endif()
+        set(REQ_URL "https://github.com/google/flatbuffers/archive/v24.3.25.tar.gz")
+        set(SHA256 "4157c5cacdb59737c5d627e47ac26b140e9ee28b1102f812b36068aab728c1ed")
     endif()
 
     if(APPLE)
@@ -58,7 +42,7 @@ else()
     endif()
     if(APPLE)
         mindspore_add_pkg(flatbuffers
-                VER 2.0.0
+                VER 24.3.35
                 LIBS flatbuffers
                 EXE flatc
                 URL ${REQ_URL}
@@ -67,7 +51,7 @@ else()
     else()
         if(TARGET_AOS_ARM)
             mindspore_add_pkg(flatbuffers
-                    VER 2.0.0
+                    VER 24.3.25
                     LIBS flatbuffers
                     EXE flatc
                     URL ${REQ_URL}
@@ -76,7 +60,7 @@ else()
                     -DFLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release)
         else()
             mindspore_add_pkg(flatbuffers
-                    VER 2.0.0
+                    VER 24.3.25
                     LIBS flatbuffers
                     EXE flatc
                     URL ${REQ_URL}
