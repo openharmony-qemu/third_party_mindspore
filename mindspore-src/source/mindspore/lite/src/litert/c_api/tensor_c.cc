@@ -248,7 +248,6 @@ OH_AI_Status OH_AI_TensorSetAllocator(OH_AI_TensorHandle tensor, void *allocator
     MS_LOG(ERROR) << "the input allocator does not belong to framework";
     return OH_AI_STATUS_LITE_PARAM_INVALID;
   }
-  std::static_pointer_cast<mindspore::LiteTensorImpl>(impl->impl())->set_own_data(true);
   auto allocator_ptr = allocator_table[allocator].lock();
   if (allocator_ptr != nullptr) {
     impl->SetAllocator(allocator_ptr);
@@ -256,6 +255,7 @@ OH_AI_Status OH_AI_TensorSetAllocator(OH_AI_TensorHandle tensor, void *allocator
     MS_LOG(ERROR) << "get allocator shared ptr failed.";
     return OH_AI_STATUS_LITE_NULLPTR;
   }
+  std::static_pointer_cast<mindspore::LiteTensorImpl>(impl->impl())->set_own_data(true);
   return OH_AI_STATUS_SUCCESS;
 }
 
