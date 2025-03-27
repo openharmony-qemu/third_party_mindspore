@@ -146,7 +146,7 @@ int Conv2dInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
   }
 
   out_tensor->shape_size_ = input_tensor->shape_size_;
-  SetBatch(out_tensor, GetBatch(input_tensor));
+  NnaclSetBatch(out_tensor, GetBatch(input_tensor));
   SetChannel(out_tensor, GetBatch(weight_tensor));
   output_h = output_h >= 0 ? output_h : 1;
   SetHeight(out_tensor, output_h);
