@@ -30,7 +30,7 @@ int GetBatch(const TensorC *tensor);
 int GetHeight(const TensorC *tensor);
 int GetWidth(const TensorC *tensor);
 int GetChannel(const TensorC *tensor);
-void SetBatch(TensorC *tensor, int batch);
+void NnaclSetBatch(TensorC *tensor, int batch);
 void SetHeight(TensorC *tensor, int height);
 void SetWidth(TensorC *tensor, int width);
 void SetChannel(TensorC *tensor, int channel);
