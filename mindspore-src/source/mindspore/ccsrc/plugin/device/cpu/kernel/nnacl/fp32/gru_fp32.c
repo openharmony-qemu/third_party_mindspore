@@ -65,15 +65,29 @@ void GruStepUnit(float *output, float *update_gate, float *reset_gate, float *hi
   // update update_gate
   Sigmoid(update_gate, gru_param->batch_ * gru_param->hidden_size_, update_gate);
 
-  ElementMul(hidden_state, reset_gate, reset_gate, gru_param->batch_ * gru_param->hidden_size_);
-  if (is_vec) {
-    GruMatMul(state_hidden_buffer, reset_gate, state_hidden_weight, state_hidden_bias, gru_param->batch_,
-              gru_param->hidden_size_, gru_param->hidden_size_, is_vec);
-  } else {
-    PackLstmInput(reset_gate, packed_state, gru_param->batch_, gru_param->hidden_size_);
-    GruMatMul(state_hidden_buffer, packed_state, state_hidden_weight, state_hidden_bias, gru_param->batch_,
-              gru_param->hidden_size_, gru_param->hidden_size_, is_vec);
+  if (gru_param->linear_before_reset_ == 0) {
+    ElementMul(hidden_state, reset_gate, reset_gate, gru_param->batch_ * gru_param->hidden_size_);
+    if (is_vec) {
+      GruMatMul(state_hidden_buffer, reset_gate, state_hidden_weight, state_hidden_bias, gru_param->batch_,
+                gru_param->hidden_size_, gru_param->hidden_size_, is_vec);
+    } else {
+      PackLstmInput(reset_gate, packed_state, gru_param->batch_, gru_param->hidden_size_);
+      GruMatMul(state_hidden_buffer, packed_state, state_hidden_weight, state_hidden_bias, gru_param->batch_,
+                gru_param->hidden_size_, gru_param->hidden_size_, is_vec);
+    }
+  } else if (gru_param->linear_before_reset_ == 1) {
+    // r_t * (W_hn x h_t + b_hn)
+    if (is_vec) {
+      GruMatMul(state_hidden_buffer, hidden_state, state_hidden_weight, state_hidden_bias, gru_param->batch_,
+                gru_param->hidden_size_, gru_param->hidden_size_, is_vec);
+    } else {
+      PackLstmInput(hidden_state, packed_state, gru_param->batch_, gru_param->hidden_size_);
+      GruMatMul(state_hidden_buffer, packed_state, state_hidden_weight, state_hidden_bias, gru_param->batch_,
+                gru_param->hidden_size_, gru_param->hidden_size_, is_vec);
+    }
+    ElementMul(state_hidden_buffer, reset_gate, state_hidden_buffer, gru_param->batch_ * gru_param->hidden_size_);
   }
+
   ElementAdd(hidden_buffer, state_hidden_buffer, hidden_buffer, gru_param->batch_ * gru_param->hidden_size_);
 
   Tanh(hidden_buffer, gru_param->batch_ * gru_param->hidden_size_, hidden_buffer);

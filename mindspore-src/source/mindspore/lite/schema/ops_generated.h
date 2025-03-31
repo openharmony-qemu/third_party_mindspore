@@ -11200,14 +11200,19 @@ inline ::flatbuffers::Offset<Select> CreateSelect(
 struct GRU FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef GRUBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_BIDIRECTIONAL = 4
+    VT_BIDIRECTIONAL = 4,
+    VT_LINEAR_BEFORE_RESET = 6
   };
   bool bidirectional() const {
     return GetField<uint8_t>(VT_BIDIRECTIONAL, 0) != 0;
   }
+  int64_t linear_before_reset() const {
+    return GetField<int64_t>(VT_LINEAR_BEFORE_RESET, 0);
+  }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_BIDIRECTIONAL, 1) &&
+           VerifyField<int64_t>(verifier, VT_LINEAR_BEFORE_RESET, 8) &&
            verifier.EndTable();
   }
 };
@@ -11218,6 +11223,9 @@ struct GRUBuilder {
   ::flatbuffers::uoffset_t start_;
   void add_bidirectional(bool bidirectional) {
     fbb_.AddElement<uint8_t>(GRU::VT_BIDIRECTIONAL, static_cast<uint8_t>(bidirectional), 0);
+  }
+  void add_linear_before_reset(int64_t linear_before_reset) {
+    fbb_.AddElement<int64_t>(GRU::VT_LINEAR_BEFORE_RESET, linear_before_reset, 0);
   }
   explicit GRUBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -11232,8 +11240,10 @@ struct GRUBuilder {
 
 inline ::flatbuffers::Offset<GRU> CreateGRU(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    bool bidirectional = false) {
+    bool bidirectional = false,
+    int64_t linear_before_reset = 0) {
   GRUBuilder builder_(_fbb);
+  builder_.add_linear_before_reset(linear_before_reset);
   builder_.add_bidirectional(bidirectional);
   return builder_.Finish();
 }

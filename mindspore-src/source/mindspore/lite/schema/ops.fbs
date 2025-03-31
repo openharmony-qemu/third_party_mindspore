@@ -1074,6 +1074,7 @@ table Select {
 
 table GRU {
     bidirectional: bool = false;
+    linear_before_reset: long = 0;
 }
 
 table NonZero {

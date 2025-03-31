@@ -47,6 +47,7 @@ constexpr auto kBeta2 = "beta2";
 constexpr auto kBias = "bias";
 constexpr auto kBins = "bins";
 constexpr auto kBidirectional = "bidirectional";
+constexpr auto klinearBeforeReset = "linear_before_reset";
 constexpr auto kBlockSize = "block_size";
 constexpr auto kBlockShape = "block_shape";
 constexpr auto kBoundaries = "boundaries";

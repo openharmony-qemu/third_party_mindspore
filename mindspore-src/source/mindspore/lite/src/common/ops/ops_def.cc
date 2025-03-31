@@ -1078,6 +1078,7 @@ OP_SCHEMA_DEF_END(Select)
 
 OP_SCHEMA_DEF(GRU)
 OP_ATTR_WITH_VALUE(bidirectional, bool, false)
+OP_LONG_ATTR_RAW_WITH_VALUE(linear_before_reset, long, linear_before_reset, long, 0)
 OP_SCHEMA_DEF_END(GRU)
 
 OP_SCHEMA_DEF(NonZero)
