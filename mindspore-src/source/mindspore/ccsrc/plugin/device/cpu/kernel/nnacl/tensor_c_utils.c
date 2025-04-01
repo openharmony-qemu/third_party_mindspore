@@ -241,7 +241,7 @@ int GetChannel(const TensorC *tensor) {
   }
 }
 
-void SetBatch(TensorC *tensor, int batch) {
+void NnaclSetBatch(TensorC *tensor, int batch) {
   if (tensor->shape_size_ != DIMENSION_4D && tensor->shape_size_ != DIMENSION_2D) {
     return;
   }
