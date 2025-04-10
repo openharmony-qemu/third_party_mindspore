@@ -37,6 +37,7 @@ OpParameter *PopulateGruParameter(const void *prim) {
 
   param->op_parameter_.type_ = primitive->value_type();
   param->bidirectional_ = value->bidirectional();
+  param->linear_before_reset_ = value->linear_before_reset();
   return reinterpret_cast<OpParameter *>(param);
 }
 

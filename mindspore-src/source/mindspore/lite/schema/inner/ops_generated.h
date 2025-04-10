@@ -18065,6 +18065,7 @@ inline ::flatbuffers::Offset<Select> CreateSelect(
 struct GRUT : public ::flatbuffers::NativeTable {
   typedef GRU TableType;
   bool bidirectional = false;
+  int64_t linear_before_reset = 0;
 };
 
 struct GRU FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
@@ -18074,7 +18075,8 @@ struct GRU FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return GRUTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_BIDIRECTIONAL = 4
+    VT_BIDIRECTIONAL = 4,
+    VT_LINEAR_BEFORE_RESET = 6
   };
   bool bidirectional() const {
     return GetField<uint8_t>(VT_BIDIRECTIONAL, 0) != 0;
@@ -18082,9 +18084,16 @@ struct GRU FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   bool mutate_bidirectional(bool _bidirectional = 0) {
     return SetField<uint8_t>(VT_BIDIRECTIONAL, static_cast<uint8_t>(_bidirectional), 0);
   }
+  int64_t linear_before_reset() const {
+    return GetField<int64_t>(VT_LINEAR_BEFORE_RESET, 0);
+  }
+  bool mutate_linear_before_reset(int64_t _linear_before_reset = 0) {
+    return SetField<int64_t>(VT_LINEAR_BEFORE_RESET, _linear_before_reset, 0);
+  }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_BIDIRECTIONAL, 1) &&
+           VerifyField<int64_t>(verifier, VT_LINEAR_BEFORE_RESET, 8) &&
            verifier.EndTable();
   }
   GRUT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
@@ -18099,6 +18108,9 @@ struct GRUBuilder {
   void add_bidirectional(bool bidirectional) {
     fbb_.AddElement<uint8_t>(GRU::VT_BIDIRECTIONAL, static_cast<uint8_t>(bidirectional), 0);
   }
+  void add_linear_before_reset(int64_t linear_before_reset) {
+    fbb_.AddElement<int64_t>(GRU::VT_LINEAR_BEFORE_RESET, linear_before_reset, 0);
+  }
   explicit GRUBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -18112,8 +18124,10 @@ struct GRUBuilder {
 
 inline ::flatbuffers::Offset<GRU> CreateGRU(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    bool bidirectional = false) {
+    bool bidirectional = false,
+    int64_t linear_before_reset = 0) {
   GRUBuilder builder_(_fbb);
+  builder_.add_linear_before_reset(linear_before_reset);
   builder_.add_bidirectional(bidirectional);
   return builder_.Finish();
 }
@@ -27003,6 +27017,7 @@ inline void GRU::UnPackTo(GRUT *_o, const ::flatbuffers::resolver_function_t *_r
   (void)_o;
   (void)_resolver;
   { auto _e = bidirectional(); _o->bidirectional = _e; }
+  { auto _e = linear_before_reset(); _o->linear_before_reset = _e; }
 }
 
 inline ::flatbuffers::Offset<GRU> GRU::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const GRUT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
@@ -27014,9 +27029,11 @@ inline ::flatbuffers::Offset<GRU> CreateGRU(::flatbuffers::FlatBufferBuilder &_f
   (void)_o;
   struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const GRUT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _bidirectional = _o->bidirectional;
+  auto _linear_before_reset = _o->linear_before_reset;
   return mindspore::schema::CreateGRU(
       _fbb,
-      _bidirectional);
+      _bidirectional,
+      _linear_before_reset);
 }
 
 inline NonZeroT *NonZero::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
@@ -36264,13 +36281,15 @@ inline const ::flatbuffers::TypeTable *SelectTypeTable() {
 
 inline const ::flatbuffers::TypeTable *GRUTypeTable() {
   static const ::flatbuffers::TypeCode type_codes[] = {
-    { ::flatbuffers::ET_BOOL, 0, -1 }
+    { ::flatbuffers::ET_BOOL, 0, -1 },
+    { ::flatbuffers::ET_LONG, 0, -1 }
   };
   static const char * const names[] = {
-    "bidirectional"
+    "bidirectional",
+    "linear_before_reset"
   };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, names
   };
   return &tt;
 }

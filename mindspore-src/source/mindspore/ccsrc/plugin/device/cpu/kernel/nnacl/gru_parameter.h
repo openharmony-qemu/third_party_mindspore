@@ -33,6 +33,7 @@ typedef struct GruParameter {
   int input_col_align_;
   int state_row_align_;
   int state_col_align_;
+  int64_t linear_before_reset_;
 } GruParameter;
 
 #endif  // NNACL_GRU_PARAMETER_H_

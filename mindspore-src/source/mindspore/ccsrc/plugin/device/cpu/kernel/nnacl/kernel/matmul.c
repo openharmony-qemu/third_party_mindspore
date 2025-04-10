@@ -22,7 +22,12 @@ void MatmulInitShapeA(MatmulStruct *matmul) {
   int *a_shape = matmul->base_.in_[kInputIndex]->shape_;
   size_t a_shape_size = matmul->base_.in_[kInputIndex]->shape_size_;
   int batch = 1;
-  NNACL_CHECK_TRUE_RET_VOID(a_shape_size >= C2NUM);
+  if (a_shape_size < C2NUM) {
+    matmul->a_batch_ = batch;
+    matmul->compute_.row_ = batch;
+    matmul->compute_.deep_ = a_shape[a_shape_size - 1];
+    return;
+  }
   for (size_t i = 0; i < a_shape_size - C2NUM; ++i) {
     batch *= a_shape[i];
   }

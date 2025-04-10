@@ -36,6 +36,14 @@ OpParameter *PopulateGruOpParameter(const BaseOperatorPtr &base_operator) {
     return nullptr;
   }
   param->bidirectional_ = GetValue<bool>(attr_bidirectional);
+
+  auto attr_linear_before_reset = base_operator->GetPrim()->GetAttr(mindspore::ops::klinearBeforeReset);
+  if (attr_linear_before_reset == nullptr) {
+    MS_LOG(WARNING) << "The attr(" << mindspore::ops::klinearBeforeReset << ") of operator(" << base_operator->name()
+                    << ") not exist";
+  } else {
+    param->linear_before_reset_ = GetValue<int64_t>(attr_linear_before_reset);
+  }
   return reinterpret_cast<OpParameter *>(param);
 }
 
