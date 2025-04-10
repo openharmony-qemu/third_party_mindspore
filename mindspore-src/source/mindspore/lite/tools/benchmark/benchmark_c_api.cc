@@ -53,6 +53,12 @@ int BenchmarkCApi::RunBenchmark() {
     return ret;
   }
   model_ = OH_AI_ModelCreate();
+  if (!flags_->config_file_.empty()) {
+    ret = OH_AI_ModelLoadConfig(model_, flags_->config_file_.c_str());
+    if (ret != OH_AI_STATUS_SUCCESS) {
+      BENCHMARK_LOG_ERROR("OH_AI_ModelLoadConfig failed, ret: " << ret);
+    }
+  }
   ret = OH_AI_ModelBuildFromFile(model_, flags_->model_file_.c_str(), OH_AI_MODELTYPE_MINDIR, context_);
   if (ret != OH_AI_STATUS_SUCCESS) {
     BENCHMARK_LOG_ERROR("OH_AI_ModelBuildFromFile failed, ret: " << ret);
@@ -133,7 +139,7 @@ int BenchmarkCApi::InitContext() {
     for (size_t i = 0; i < num; i++) {
       auto desc = OH_AI_GetElementOfNNRTDeviceDescs(descs, i);
       auto name = OH_AI_GetNameFromNNRTDeviceDesc(desc);
-      if (strncmp(name, "NPU_", 4) == 0 ) {  // npu推理，在线编译
+      if (strncmp(name, "NPU_", 4) == 0) {  // npu推理，在线编译
         desc_nnrt = desc;
         break;
       }
