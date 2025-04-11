@@ -546,6 +546,7 @@ int BenchmarkUnifiedApi::InitMSContext(const std::shared_ptr<mindspore::Context>
     }
     auto id = OH_AI_GetDeviceIdFromNNRTDeviceDesc(desc_nnrt);
     nnrt_device_info->SetDeviceID(id);
+    nnrt_device_info->SetPerformanceMode(OH_AI_PERFORMANCE_EXTREME);
     OH_AI_DestroyAllNNRTDeviceDescs(&descs);
     device_list.push_back(nnrt_device_info);
   }
