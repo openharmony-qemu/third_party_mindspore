@@ -725,6 +725,7 @@ ohos_shared_library("mindspore_train_lib") {
     "-Wno-constant-conversion",
   ]
   part_name = "mindspore"
+  subsystem_name = "thirdparty"
 }
 
 # Build configurations
