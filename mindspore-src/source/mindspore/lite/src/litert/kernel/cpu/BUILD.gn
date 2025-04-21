@@ -293,7 +293,7 @@ ohos_source_set("cpu_kernel_obj") {
   sources = all_cpu_kernel_sources
 
   deps = [ "../../../../../ccsrc/plugin/device/cpu/kernel/nnacl:nnacl_obj" ]
-
+  external_deps = [ "hilog:libhilog" ]
   include_dirs = [
     "./",
     "../../../../",
@@ -352,7 +352,6 @@ ohos_source_set("cpu_kernel_obj") {
     "-Wno-macro-redefined",
     "-Wno-constant-conversion",
   ]
-
   part_name = "mindspore"
   subsystem_name = "thirdparty"
 }
