@@ -32,7 +32,6 @@ ohos_executable("benchmark_bin") {
   ]
 
   include_dirs = [
-    "//third_party/flatbuffers/include",
     "../../",  # src
     "../../../core/",  # core
     "../../../../",  #
@@ -59,7 +58,7 @@ ohos_executable("benchmark_bin") {
     "../../:mindspore_lib",
     "../../:mindspore_ndk",
   ]
-
+  exterbal_deps = [ "flatbuffers:libflatbuffers_static" ]
   output_name = "benchmark_bin"
   install_enable = true
   part_name = "mindspore"
