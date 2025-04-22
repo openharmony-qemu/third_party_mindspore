@@ -1179,7 +1179,21 @@ kernel::KernelExec *Scheduler::FindBackendKernel(const std::vector<Tensor *> &in
       data_type = kNumberTypeFloat32;
     }
   } else {
-    data_type = GetFirstFp32Fp16OrInt8Type(in_tensors);
+    if (static_cast<std::string>(GetPrimitiveTypeName(node->primitive_, context_->get_schema_version())) == "Where" &&
+        in_tensors.size() == 3) {
+      // mslite use first input tensor dtype as kernel dtype, but op 'where' is a outliner, is first input 'condition'
+      // is always 'bool'-typed, here we use where's second/third input dtype as kernel dtype.
+      std::unordered_set<TypeId> type_set = {kNumberTypeFloat32, kNumberTypeFloat16, kNumberTypeInt8,  kNumberTypeInt32,
+                                             kNumberTypeBool,    kNumberTypeUInt8,   kObjectTypeString};
+      if (type_set.find(in_tensors[1]->data_type()) != type_set.end()) {
+        data_type = in_tensors[1]->data_type();
+      } else {
+        data_type = in_tensors[2]->data_type();
+      }
+    } else {
+      data_type = GetFirstFp32Fp16OrInt8Type(in_tensors);
+    }
+
     if (data_type == kTypeUnknown) {
       MS_LOG(ERROR) << "GetFirstFp32Fp16OrInt8Type is unknown.";
       return nullptr;

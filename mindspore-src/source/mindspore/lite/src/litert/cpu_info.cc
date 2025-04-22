@@ -19,7 +19,8 @@
 #include <fstream>
 #include "src/common/log_adapter.h"
 #include "nnacl/nnacl_utils.h"
-#if defined(__ANDROID__) || defined(MS_COMPILE_OHOS) && !defined(SUPPORT_NNIE) && !defined(MS_COMPILE_IOS)
+#if defined(__ANDROID__) || defined(MS_COMPILE_OHOS) && !defined(SUPPORT_NNIE) && !defined(MS_COMPILE_IOS) || \
+  defined(ENABLE_ARM64) && defined(MACHINE_LINUX_ARM64)
 #include <sys/auxv.h>
 #include <asm/hwcap.h>
 #endif

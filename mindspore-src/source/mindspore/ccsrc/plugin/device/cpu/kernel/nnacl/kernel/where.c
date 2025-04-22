@@ -136,6 +136,10 @@ int WhereBroadCastForInput(WhereStruct *where, TensorC *condition, TensorC *x, T
   size_t broad_cast_buf_size = GetElementNum(output);
   if (output->data_type_ == kNumberTypeFloat32) {
     broad_cast_buf_size *= sizeof(float);
+#ifdef ENABLE_FP16
+  } else if (output->data_type_ == kNumberTypeFloat16) {
+    broad_cast_buf_size *= sizeof(float16_t);
+#endif
   } else {
     return NNACL_WHERE_BROAD_CAST_FAILED;
   }
@@ -168,7 +172,13 @@ int WhereBroadCastForInput(WhereStruct *where, TensorC *condition, TensorC *x, T
     where->base_.env_->Free(where->base_.env_->allocator_, *condition_broadcast_buf);
     return NNACL_WHERE_BROAD_CAST_FAILED;
   }
-  BroadcastToSize32(x->data_, &x_info, *x_broadcast_buf);
+  if (output->data_type_ != kNumberTypeFloat16) {
+    BroadcastToSize32(x->data_, &x_info, *x_broadcast_buf);
+#ifdef ENABLE_FP16
+  } else {
+    BroadcastToSize16(x->data_, &x_info, *x_broadcast_buf);
+#endif
+  }
 
   *y_broadcast_buf = where->base_.env_->Alloc(where->base_.env_->allocator_, broad_cast_buf_size);
   if (*y_broadcast_buf == NULL) {
@@ -176,7 +186,14 @@ int WhereBroadCastForInput(WhereStruct *where, TensorC *condition, TensorC *x, T
     where->base_.env_->Free(where->base_.env_->allocator_, *x_broadcast_buf);
     return NNACL_WHERE_BROAD_CAST_FAILED;
   }
-  BroadcastToSize32(y->data_, &y_info, *y_broadcast_buf);
+  if (output->data_type_ != kNumberTypeFloat16) {
+    BroadcastToSize32(y->data_, &y_info, *y_broadcast_buf);
+#ifdef ENABLE_FP16
+  } else {
+    BroadcastToSize16(y->data_, &y_info, *y_broadcast_buf);
+#endif
+  }
+
   return NNACL_OK;
 }
 
@@ -189,6 +206,10 @@ int WhereRunWithTripleInputs(WhereStruct *where) {
   NNACL_CHECK_NULL_RETURN_ERR(y);
   TensorC *output = where->base_.out_[Index0];
   NNACL_CHECK_NULL_RETURN_ERR(output);
+
+  if (x->data_type_ != y->data_type_ || x->data_type_ != output->data_type_) {
+    return NNACL_WHERE_INOUT_DTYPE_INVALID;
+  }
 
   int condition_nums = GetElementNum(condition);
   int x_num = GetElementNum(x);
