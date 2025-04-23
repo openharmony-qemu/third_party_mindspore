@@ -485,6 +485,8 @@ ohos_shared_library("mindspore_ndk") {
 
   sources = c_api_sources
 
+  external_deps = [ "hilog:libhilog" ]
+
   include_dirs = [
     "../../../../../../base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "../../../../../../third_party/flatbuffers/include",
@@ -517,7 +519,7 @@ ohos_shared_library("mindspore_ndk") {
       defines += [ "SUPPORT_NNRT_METAGRAPH" ]
       print("enabled feature: mindspore_feature_nnrt_metagraph")
     }
-    external_deps = [
+    external_deps += [
       "neural_network_runtime:libneural_network_core",
       "neural_network_runtime:libneural_network_runtime",
     ]
@@ -725,6 +727,7 @@ ohos_shared_library("mindspore_train_lib") {
     "-Wno-constant-conversion",
   ]
   part_name = "mindspore"
+  subsystem_name = "thirdparty"
 }
 
 # Build configurations
