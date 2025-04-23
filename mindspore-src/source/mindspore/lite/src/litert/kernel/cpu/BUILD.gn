@@ -294,6 +294,7 @@ ohos_source_set("cpu_kernel_obj") {
 
   deps = [ "../../../../../ccsrc/plugin/device/cpu/kernel/nnacl:nnacl_obj" ]
 
+  external_deps = [ "hilog:libhilog" ]
   include_dirs = [
     "./",
     "../../../../",
