@@ -63,9 +63,6 @@ ohos_shared_library("mindir_lib") {
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
-    "drivers_interface_nnrt:libnnrt_proxy_1.0",
-    "drivers_interface_nnrt:libnnrt_proxy_2.0",
-    "drivers_interface_nnrt:nnrt_idl_headers",
     "hdf_core:libhdi",
     "hilog:libhilog",
   ]
