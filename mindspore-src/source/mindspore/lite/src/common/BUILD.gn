@@ -37,6 +37,7 @@ ohos_source_set("lite_common_mid_obj") {
   ]
 
   external_deps = [
+    "flatbuffers:libflatbuffers_static",
     "hiappevent:hiappevent_innerapi",
     "hilog:libhilog",
   ]
