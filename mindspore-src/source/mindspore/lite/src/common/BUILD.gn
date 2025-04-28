@@ -29,11 +29,9 @@ ohos_source_set("lite_common_mid_obj") {
     "../../",
     "../../../../",
     "../../../core/",
-    "../../../../../../../../third_party/flatbuffers/include/",
     "../../../../third_party/",
     "../../../ccsrc/plugin/device/cpu/kernel/",
     "../../../core/mindrt/src/",
-    "../../../../../../../../base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
 
   external_deps = [

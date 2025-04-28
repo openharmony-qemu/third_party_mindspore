@@ -46,9 +46,6 @@ ohos_shared_library("mindir_lib") {
     "../",
     "../../core",
     "inner_headers",
-    "../../../../../../../third_party/flatbuffers/include",
-    "../../../../../../../third_party/bounds_checking_function/include",
-    "../../../../../../../base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
   sources = [
     "src/log.cc",
