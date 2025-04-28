@@ -356,7 +356,6 @@ ohos_shared_library("mindspore_lib") {
   sources = all_sources
 
   include_dirs = [
-    "../../../../../../third_party/flatbuffers/include",
     "./",
     "../",
     "../../",
@@ -488,8 +487,6 @@ ohos_shared_library("mindspore_ndk") {
   external_deps = [ "hilog:libhilog" ]
 
   include_dirs = [
-    "../../../../../../base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "../../../../../../third_party/flatbuffers/include",
     "./",
     "../",
     "../../",
@@ -663,7 +660,6 @@ ohos_shared_library("mindspore_train_lib") {
   sources = all_train_sources
 
   include_dirs = [
-    "../../../../../../third_party/flatbuffers/include",
     "./",
     "../",
     "../../",

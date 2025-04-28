@@ -308,11 +308,9 @@ ohos_source_set("cpu_kernel_obj") {
     "../../../../../core/mindrt/src/",
     "../../../../../core/mindrt/include/",
     "../../../../../../",
-    "../../../../../../../../../../third_party/flatbuffers/include",
     "../../../../../../third_party/",
     "../../../../src/",
     "../../../../src/c_api",
-    "../../../../../../../../../../base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
 
   defines = [
