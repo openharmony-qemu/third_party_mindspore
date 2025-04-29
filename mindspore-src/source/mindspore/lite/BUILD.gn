@@ -421,9 +421,10 @@ ohos_shared_library("mindspore_lib") {
 
   remove_configs = [ "//build/config/compiler:no_rtti" ]
 
-  external_deps = [ "hilog:libhilog" ]
-
-  public_external_deps = [ "flatbuffers:libflatbuffers_static" ]
+  external_deps = [
+    "flatbuffers:libflatbuffers_static",
+    "hilog:libhilog",
+  ]
 
   output_name = "libmindspore-lite"
   output_extension = "so"
@@ -517,12 +518,11 @@ ohos_shared_library("mindspore_ndk") {
       print("enabled feature: mindspore_feature_nnrt_metagraph")
     }
     external_deps += [
+      "flatbuffers:libflatbuffers_static",
       "neural_network_runtime:libneural_network_core",
       "neural_network_runtime:libneural_network_runtime",
     ]
   }
-
-  public_external_deps = [ "flatbuffers:libflatbuffers_static" ]
 
   configs = [
     ":mindspore_api",
@@ -708,8 +708,10 @@ ohos_shared_library("mindspore_train_lib") {
   ]
 
   remove_configs = [ "//build/config/compiler:no_rtti" ]
-  external_deps = [ "hilog:libhilog" ]
-  public_external_deps = [ "flatbuffers:libflatbuffers_static" ]
+  external_deps = [
+    "flatbuffers:libflatbuffers_static",
+    "hilog:libhilog",
+  ]
   innerapi_tags = [ "platformsdk" ]
   output_name = "libmindspore-lite-train"
   output_extension = "so"

@@ -60,10 +60,10 @@ ohos_shared_library("mindir_lib") {
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
+    "flatbuffers:libflatbuffers_static",
     "hdf_core:libhdi",
     "hilog:libhilog",
   ]
-  public_external_deps = [ "flatbuffers:libflatbuffers_static" ]
   configs = [ ":mindir_secure_disable_android" ]
   public_configs = [ ":mindir_config" ]
   defines = [ "MS_COMPILE_OHOS" ]
