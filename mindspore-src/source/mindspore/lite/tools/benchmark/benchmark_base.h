@@ -131,6 +131,8 @@ class MS_API BenchmarkFlags : public virtual FlagParser {
     AddFlag(&BenchmarkFlags::enable_fp16_, "enableFp16", "Enable float16", false);
     AddFlag(&BenchmarkFlags::enable_parallel_, "enableParallel", "Enable subgraph parallel : true | false", false);
     AddFlag(&BenchmarkFlags::warm_up_loop_count_, "warmUpLoopCount", "Run warm up loop", 3);
+    AddFlag(&BenchmarkFlags::nnrt_performance_mode_, "nnrtPerformanceMode", "NNRT Performance Mode: 0|1|2|3|4, "
+            "0 for NONE, 1 for LOW, 2 for MEDIUM, 3 for HIGH, 4 for EXTREME.", 3);
     AddFlag(&BenchmarkFlags::time_profiling_, "timeProfiling", "Run time profiling", false);
     AddFlag(&BenchmarkFlags::perf_profiling_, "perfProfiling",
             "Perf event profiling(only instructions statics enabled currently)", false);
@@ -210,6 +212,7 @@ class MS_API BenchmarkFlags : public virtual FlagParser {
   bool enable_gl_texture_ = false;
   bool enable_parallel_ = false;
   int warm_up_loop_count_ = 3;
+  int nnrt_performance_mode_ = 3;
   // MarkAccuracy
   std::string benchmark_data_file_;
   std::string benchmark_data_type_ = "FLOAT";
