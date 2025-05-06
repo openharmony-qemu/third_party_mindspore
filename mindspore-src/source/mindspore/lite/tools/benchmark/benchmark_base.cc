@@ -494,6 +494,7 @@ int BenchmarkBase::Init() {
   MS_LOG(INFO) << "AccuracyThreshold = " << this->flags_->accuracy_threshold_;
   MS_LOG(INFO) << "CosineDistanceThreshold = " << this->flags_->cosine_distance_threshold_;
   MS_LOG(INFO) << "WarmUpLoopCount = " << this->flags_->warm_up_loop_count_;
+  MS_LOG(INFO) << "PerformanceMode = " << this->flags_->nnrt_performance_mode_;
   MS_LOG(INFO) << "NumThreads = " << this->flags_->num_threads_;
   MS_LOG(INFO) << "InterOpParallelNum = " << this->flags_->inter_op_parallel_num_;
   MS_LOG(INFO) << "Fp16Priority = " << this->flags_->enable_fp16_;
@@ -512,6 +513,7 @@ int BenchmarkBase::Init() {
   std::cout << "AccuracyThreshold = " << this->flags_->accuracy_threshold_ << std::endl;
   std::cout << "CosineDistanceThreshold = " << this->flags_->cosine_distance_threshold_ << std::endl;
   std::cout << "WarmUpLoopCount = " << this->flags_->warm_up_loop_count_ << std::endl;
+  std::cout << "PerformanceMode = " << this->flags_->nnrt_performance_mode_ << std::endl;
   std::cout << "NumThreads = " << this->flags_->num_threads_ << std::endl;
   std::cout << "InterOpParallelNum = " << this->flags_->inter_op_parallel_num_ << std::endl;
   std::cout << "Fp16Priority = " << this->flags_->enable_fp16_ << std::endl;
