@@ -185,7 +185,7 @@ size_t OH_AI_ModelCalcWorkspaceSize(OH_AI_ModelHandle model) {
 OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size, OH_AI_ModelType model_type,
                       const OH_AI_ContextHandle model_context) {
   if (model == nullptr || model_data == nullptr || model_context == nullptr) {
-    MS_LOG(ERROR) << "model/model_data/model_context is nullptr.";
+    MS_LOG(ERROR) << "model or model_data or model_context is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
   }
   if (model_type == OH_AI_MODELTYPE_INVALID) {
@@ -209,7 +209,7 @@ OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, s
 OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path, OH_AI_ModelType model_type,
                               const OH_AI_ContextHandle model_context) {
   if (model == nullptr || model_path == nullptr || model_context == nullptr) {
-    MS_LOG(ERROR) << "model/model_path/model_context is nullptr.";
+    MS_LOG(ERROR) << "model or model_path or model_context is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
   }
   if (model_type == OH_AI_MODELTYPE_INVALID) {
@@ -233,7 +233,7 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
 OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs, OH_AI_ShapeInfo *shape_infos,
                        size_t shape_info_num) {
   if (model == nullptr || shape_infos == nullptr) {
-    MS_LOG(ERROR) << "model/shape_infos is nullptr.";
+    MS_LOG(ERROR) << "model or shape_infos is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
   }
   std::vector<mindspore::MSTensor> vec_inputs;
@@ -346,7 +346,7 @@ OH_AI_TensorHandleArray OH_AI_ModelGetOutputs(const OH_AI_ModelHandle model) {
 
 OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name) {
   if (model == nullptr || tensor_name == nullptr) {
-    MS_LOG(ERROR) << "model/tensor_name is nullptr.";
+    MS_LOG(ERROR) << "model or tensor_name is nullptr.";
     return nullptr;
   }
   auto impl = static_cast<mindspore::ModelC *>(model);
@@ -363,7 +363,7 @@ OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHandle model
 
 OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name) {
   if (model == nullptr || tensor_name == nullptr) {
-    MS_LOG(ERROR) << "model/tensor_name is nullptr.";
+    MS_LOG(ERROR) << "model or tensor_name is nullptr.";
     return nullptr;
   }
   auto impl = static_cast<mindspore::ModelC *>(model);
@@ -397,7 +397,7 @@ void OH_AI_TrainCfgDestroy(OH_AI_TrainCfgHandle *train_cfg) {
 
 char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_t *num) {
   if (train_cfg == nullptr || num == nullptr) {
-    MS_LOG(ERROR) << "train_cfg/num is nullptr.";
+    MS_LOG(ERROR) << "train_cfg or num is nullptr.";
     return nullptr;
   }
   auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
@@ -424,7 +424,7 @@ char **OH_AI_TrainCfgGetLossName(OH_AI_TrainCfgHandle train_cfg, size_t *num) {
 
 void OH_AI_TrainCfgSetLossName(OH_AI_TrainCfgHandle train_cfg, const char **loss_name, size_t num) {
   if (train_cfg == nullptr || loss_name == nullptr || *loss_name == nullptr) {
-    MS_LOG(ERROR) << "train_cfg/loss_name is nullptr.";
+    MS_LOG(ERROR) << "train_cfg or loss_name is nullptr.";
     return;
   }
   auto impl = static_cast<mindspore::TrainCfg *>(train_cfg);
@@ -456,7 +456,7 @@ void OH_AI_TrainCfgSetOptimizationLevel(OH_AI_TrainCfgHandle train_cfg, OH_AI_Op
 OH_AI_Status OH_AI_TrainModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size, OH_AI_ModelType model_type,
                            const OH_AI_ContextHandle model_context, const OH_AI_TrainCfgHandle train_cfg) {
   if (model == nullptr || model_data == nullptr || model_context == nullptr) {
-    MS_LOG(ERROR) << "model/model_data/model_context is nullptr.";
+    MS_LOG(ERROR) << "model or model_data or model_context is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
   }
   if (model_type == OH_AI_MODELTYPE_INVALID) {
@@ -493,7 +493,7 @@ OH_AI_Status OH_AI_TrainModelBuild(OH_AI_ModelHandle model, const void *model_da
 OH_AI_Status OH_AI_TrainModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path, OH_AI_ModelType model_type,
                                    const OH_AI_ContextHandle model_context, const OH_AI_TrainCfgHandle train_cfg) {
   if (model == nullptr || model_path == nullptr || model_context == nullptr) {
-    MS_LOG(ERROR) << "model/model_path/model_context is nullptr.";
+    MS_LOG(ERROR) << "model or model_path or model_context is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
   }
   if (model_type == OH_AI_MODELTYPE_INVALID) {
@@ -688,5 +688,17 @@ OH_AI_Status OH_AI_ExportWeightsCollaborateWithMicro(OH_AI_ModelHandle model, OH
   if (!ret.IsOk()) {
     MS_LOG(ERROR) << "export model fail, ret :" << ret;
   }
+  return static_cast<OH_AI_Status>(ret.StatusCode());
+}
+
+OH_AI_Status OH_AI_ModelLoadConfig(OH_AI_ModelHandle model, const char *config_file_path) {
+  if (model == nullptr || config_file_path == nullptr) {
+    MS_LOG(ERROR) << "model or config_file_path is nullptr.";
+    return OH_AI_STATUS_LITE_NULLPTR;
+  }
+  MS_LOG(INFO) << "config_file_path: " << config_file_path;
+
+  auto impl = static_cast<mindspore::ModelC *>(model);
+  auto ret = impl->model_->LoadConfig(config_file_path);
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
