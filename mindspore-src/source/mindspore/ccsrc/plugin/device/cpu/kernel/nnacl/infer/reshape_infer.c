@@ -33,14 +33,18 @@ int CalShape(const int *data, const TensorC *const *inputs, int *out_shape, size
     }
     ShapePush(out_shape, out_shape_size, data[i]);
   }
-  if (size == 0) {
-    return NNACL_ERR;
-  }
+
   if ((int)(data[index]) == -1) {
     if (index >= MAX_SHAPE_SIZE) {
       return NNACL_ERR;
     }
-    out_shape[index] = input_count / size;
+    if (input_count == 0) {
+      out_shape[index] = 0;
+    } else if (size == 0) {
+      return NNACL_ERR;
+    } else {
+      out_shape[index] = input_count / size;
+    }
   }
   return NNACL_OK;
 }
