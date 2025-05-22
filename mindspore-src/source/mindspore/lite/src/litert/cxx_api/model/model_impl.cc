@@ -392,7 +392,8 @@ Status ModelImpl::LoadConfig(const std::string &config_path) {
     return kSuccess;
   }
 
-  lite::ParserExecutionPlan(&config_info, &execution_plan_);
+  lite::ParserMultiExecutionPlan(&config_info, &execution_plan_, &hete_execution_plan_);
+  MS_LOG(INFO) << "Execution plan from config file parse success.";
   return kSuccess;
 }
 
@@ -534,7 +535,7 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
       }
     }
   }
-  
+
   auto ret = RunGraph(before, after);
   ResetTensorData(old_data, input_tensors);
   if (ret != kSuccess) {
@@ -1009,7 +1010,7 @@ lite::LiteSession *ModelImpl::CreateLiteSession(const std::shared_ptr<lite::Inne
 #ifdef SUPPORT_NNRT_METAGRAPH
   auto iter = std::find_if(context->device_list_.begin(), context->device_list_.end(),
                            [](lite::DeviceContext &device) { return device.device_type_ == lite::DT_NNRT; });
-  if(iter != context->device_list_.end()) {
+  if (iter != context->device_list_.end()) {
     const auto &nnrt_device_info = iter->device_info_.nnrt_device_info_;
     if (lite::CacheSession::IsKirinNPUWithOnlineInference(nnrt_device_info.device_id_)) {
       const auto &extensions = nnrt_device_info.extensions_;
@@ -1036,6 +1037,7 @@ lite::LiteSession *ModelImpl::CreateLiteSession(const std::shared_ptr<lite::Inne
     return nullptr;
   }
   session->InitExecutionConfig(&execution_plan_);
+  session->InitHeteExecutionConfig(&hete_execution_plan_);
   session->SetConfigInfo(&config_info_);
 
   auto ret = session->Init(context);
