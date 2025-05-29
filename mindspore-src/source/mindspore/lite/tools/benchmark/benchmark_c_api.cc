@@ -26,6 +26,9 @@ using mindspore::lite::RET_OK;
 
 namespace mindspore {
 namespace tools {
+namespace {
+constexpr size_t kNPUPrefixLen = 4;
+}
 int BenchmarkCApi::LoadInput() {
   if (flags_->in_data_file_.empty()) {
     auto status = GenerateInputData();
@@ -139,7 +142,7 @@ int BenchmarkCApi::InitContext() {
     for (size_t i = 0; i < num; i++) {
       auto desc = OH_AI_GetElementOfNNRTDeviceDescs(descs, i);
       auto name = OH_AI_GetNameFromNNRTDeviceDesc(desc);
-      if (strncmp(name, "NPU_", 4) == 0) {  // npu推理，在线编译
+      if (strncmp(name, "NPU_", kNPUPrefixLen) == 0) {  // npu推理，在线编译
         desc_nnrt = desc;
         break;
       }
