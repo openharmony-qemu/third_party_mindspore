@@ -148,6 +148,7 @@ mindspore::MSKernelCallBack ModelC::TransCallBack(const OH_AI_KernelCallBack &ms
 }  // namespace mindspore
 
 OH_AI_ModelHandle OH_AI_ModelCreate() {
+  MS_LOG(INFO) << "Start to create ms model";
   auto impl = new (std::nothrow) mindspore::ModelC();
   if (impl == nullptr) {
     MS_LOG(ERROR) << "Model implement is nullptr.";
@@ -155,14 +156,16 @@ OH_AI_ModelHandle OH_AI_ModelCreate() {
   }
   impl->model_ = std::make_shared<mindspore::Model>();
   if (impl->model_ == nullptr) {
-    MS_LOG(ERROR) << "model_ is nullptr.";
+    MS_LOG(ERROR) << "inner model object is nullptr.";
     delete impl;
     return nullptr;
   }
+  MS_LOG(INFO) << "Created ms model successfully";
   return static_cast<OH_AI_ModelHandle>(impl);
 }
 
 void OH_AI_ModelDestroy(OH_AI_ModelHandle *model) {
+  MS_LOG(INFO) << "Start to destroy ms model";
   if (model == nullptr || *model == nullptr) {
     MS_LOG(ERROR) << "model is nullptr.";
     return;
@@ -170,6 +173,7 @@ void OH_AI_ModelDestroy(OH_AI_ModelHandle *model) {
   auto impl = static_cast<mindspore::ModelC *>(*model);
   delete impl;
   *model = nullptr;
+  MS_LOG(INFO) << "Destroyed ms model successfully";
 }
 
 void OH_AI_ModelSetWorkspace(OH_AI_ModelHandle model, void *workspace, size_t workspace_size) {
@@ -184,6 +188,7 @@ size_t OH_AI_ModelCalcWorkspaceSize(OH_AI_ModelHandle model) {
 
 OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size, OH_AI_ModelType model_type,
                       const OH_AI_ContextHandle model_context) {
+  MS_LOG(INFO) << "Start to build ms model";
   if (model == nullptr || model_data == nullptr || model_context == nullptr) {
     MS_LOG(ERROR) << "model or model_data or model_context is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
@@ -203,11 +208,17 @@ OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, s
     context->owned_by_model_ = true;
   }
   auto ret = impl->model_->Build(model_data, data_size, static_cast<mindspore::ModelType>(model_type), impl->context_);
+  if (ret.IsOk()) {
+    MS_LOG(INFO) << "Built ms model successfully";
+  } else {
+    MS_LOG(ERROR) << "Built ms model failed, ret: " << ret;
+  }
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
 OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path, OH_AI_ModelType model_type,
                               const OH_AI_ContextHandle model_context) {
+  MS_LOG(INFO) << "Start to build ms model from file";
   if (model == nullptr || model_path == nullptr || model_context == nullptr) {
     MS_LOG(ERROR) << "model or model_path or model_context is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
@@ -227,11 +238,17 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
     context->owned_by_model_ = true;
   }
   auto ret = impl->model_->Build(model_path, static_cast<mindspore::ModelType>(model_type), impl->context_);
+  if (ret.IsOk()) {
+    MS_LOG(INFO) << "Built ms model from file successfully";
+  } else {
+    MS_LOG(ERROR) << "Built ms model from file failed, ret: " << ret;
+  }
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
 OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs, OH_AI_ShapeInfo *shape_infos,
                        size_t shape_info_num) {
+  MS_LOG(INFO) << "Start to resize ms model";
   if (model == nullptr || shape_infos == nullptr) {
     MS_LOG(ERROR) << "model or shape_infos is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
@@ -252,11 +269,17 @@ OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandle
   }
   auto impl = static_cast<mindspore::ModelC *>(model);
   auto ret = impl->model_->Resize(vec_inputs, vec_dims);
+  if (ret.IsOk()) {
+    MS_LOG(INFO) << "Resized ms model successfully";
+  } else {
+    MS_LOG(ERROR) << "Resized ms model failed, ret: " << ret;
+  }
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
 OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs, OH_AI_TensorHandleArray *outputs,
                         const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after) {
+  MS_LOG(INFO) << "Start to predict ms model";
   if (model == nullptr) {
     MS_LOG(ERROR) << "model is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
@@ -309,6 +332,7 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
   }
 
   outputs->handle_list = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&(outputs->handle_num)));
+  MS_LOG(INFO) << "Predicted ms model successfully";
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
@@ -323,6 +347,7 @@ OH_AI_Status OH_AI_ModelExportWeight(const OH_AI_ModelHandle model, const char *
 }
 
 OH_AI_TensorHandleArray OH_AI_ModelGetInputs(const OH_AI_ModelHandle model) {
+  MS_LOG(INFO) << "Start to get ms model inputs";
   if (model == nullptr) {
     MS_LOG(ERROR) << "model is nullptr.";
     return {0, nullptr};
@@ -330,10 +355,12 @@ OH_AI_TensorHandleArray OH_AI_ModelGetInputs(const OH_AI_ModelHandle model) {
   auto impl = static_cast<mindspore::ModelC *>(model);
   size_t input_num = 0;
   auto handles = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetInputs(&input_num));
+  MS_LOG(INFO) << "Got ms model " << input_num << " inputs successfully";
   return {input_num, handles};
 }
 
 OH_AI_TensorHandleArray OH_AI_ModelGetOutputs(const OH_AI_ModelHandle model) {
+  MS_LOG(INFO) << "Start to get ms model outputs";
   if (model == nullptr) {
     MS_LOG(ERROR) << "model is nullptr.";
     return {0, nullptr};
@@ -341,10 +368,12 @@ OH_AI_TensorHandleArray OH_AI_ModelGetOutputs(const OH_AI_ModelHandle model) {
   auto impl = static_cast<mindspore::ModelC *>(model);
   size_t output_num;
   auto handles = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&output_num));
+  MS_LOG(INFO) << "Got ms model " << output_num << " outputs successfully";
   return {output_num, handles};
 }
 
 OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name) {
+  MS_LOG(INFO) << "Start to get ms model input by name";
   if (model == nullptr || tensor_name == nullptr) {
     MS_LOG(ERROR) << "model or tensor_name is nullptr.";
     return nullptr;
@@ -354,14 +383,16 @@ OH_AI_TensorHandle OH_AI_ModelGetInputByTensorName(const OH_AI_ModelHandle model
   auto inputs = impl->GetInputs(&input_num);
   for (size_t i = 0; i < input_num; i++) {
     if (inputs[i]->Name() == tensor_name) {
+      MS_LOG(INFO) << "Got ms model input by name successfully";
       return static_cast<OH_AI_TensorHandle>(inputs[i]);
     }
   }
-  MS_LOG(ERROR) << "tensor is not exist.";
+  MS_LOG(ERROR) << "Input tensor is not exist";
   return nullptr;
 }
 
 OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle model, const char *tensor_name) {
+  MS_LOG(INFO) << "Start to get ms model output by name";
   if (model == nullptr || tensor_name == nullptr) {
     MS_LOG(ERROR) << "model or tensor_name is nullptr.";
     return nullptr;
@@ -371,10 +402,11 @@ OH_AI_TensorHandle OH_AI_ModelGetOutputByTensorName(const OH_AI_ModelHandle mode
   auto outputs = impl->GetOutputs(&output_num);
   for (size_t i = 0; i < output_num; i++) {
     if (outputs[i]->Name() == tensor_name) {
+      MS_LOG(INFO) << "Got ms model output by name successfully";
       return static_cast<OH_AI_TensorHandle>(outputs[i]);
     }
   }
-  MS_LOG(ERROR) << "tensor is not exist.";
+  MS_LOG(ERROR) << "Output tensor is not exist";
   return nullptr;
 }
 
@@ -692,6 +724,7 @@ OH_AI_Status OH_AI_ExportWeightsCollaborateWithMicro(OH_AI_ModelHandle model, OH
 }
 
 OH_AI_Status OH_AI_ModelLoadConfig(OH_AI_ModelHandle model, const char *config_file_path) {
+  MS_LOG(INFO) << "Start to load config file for ms model";
   if (model == nullptr || config_file_path == nullptr) {
     MS_LOG(ERROR) << "model or config_file_path is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
@@ -700,5 +733,11 @@ OH_AI_Status OH_AI_ModelLoadConfig(OH_AI_ModelHandle model, const char *config_f
 
   auto impl = static_cast<mindspore::ModelC *>(model);
   auto ret = impl->model_->LoadConfig(config_file_path);
+
+  if (ret.IsOk()) {
+    MS_LOG(INFO) << "Loaded ms model config file successfully";
+  } else {
+    MS_LOG(ERROR) << "Loaded ms model config file failed, ret: " << ret;
+  }
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
