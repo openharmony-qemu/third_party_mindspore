@@ -77,6 +77,9 @@ class MS_API LiteSession {
   virtual int BindGLTexture2DMemory(const std::map<std::string, unsigned int> &inputGLTexture,
                                     std::map<std::string, unsigned int> *outputGLTexture);
   void InitExecutionConfig(std::map<std::string, TypeId> *config) { execution_plan_ = config; }
+  void InitHeteExecutionConfig(std::map<std::string, TypeId> *config) {
+    hete_execution_plan_ = config;
+  }
   void set_model(Model *model) { this->model_ = model; }
   const std::vector<kernel::KernelExec *> &get_kernels() const { return this->kernels_; }
   const Delegate *get_delegate() const { return this->delegate_.get(); }
@@ -252,6 +255,7 @@ class MS_API LiteSession {
   std::shared_ptr<Delegate> delegate_ = nullptr;
   int delegate_device_type_ = -1;  // -1: not specified; 0: CPU; 1: GPU; 2: NPU
   std::map<std::string, TypeId> *execution_plan_ = nullptr;
+  std::map<std::string, TypeId> *hete_execution_plan_ = nullptr;
   const std::map<std::string, std::map<std::string, std::string>> *config_info_ = nullptr;
   std::vector<kernel::KernelExec *> non_tail_call_kernels_;
   std::string model_id_;

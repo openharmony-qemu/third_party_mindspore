@@ -22,6 +22,7 @@
 #include "neural_network_runtime/neural_network_runtime.h"
 #include "neural_network_runtime_inner.h"
 #include "nnrt_model_kernel.h"
+#include "nnrt_allocator.h"
 #include "schema/model_generated.h"
 #include "schema/ops_generated.h"
 #include "flatbuffers/flatbuffers.h"
@@ -53,7 +54,14 @@ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
   }
 #ifdef SUPPORT_NNRT_METAGRAPH
   InitExtensionOptions();
+  if (enable_hete_ == false) {
+    MS_LOG(INFO) << "Disable heterogeneous online inference, and will infer model on NPU by default.";
+  }
   if (IsKirinNPUWithOnlineInference()) {
+    if (enable_hete_ && hete_execution_plan_ != nullptr && !(*hete_execution_plan_).empty()) {
+        MS_LOG(INFO) << "Enable heterogeneous online inference by enable_hete_ " << enable_hete_;
+        return BuildNormalModel(model);
+    }
     MS_LOG(DEBUG) << "Choose to build online inference model";
     return BuildKirinNPUModel(model);
   }
@@ -63,7 +71,7 @@ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
   }
 #endif
 
-  return BuildNormalModel(model);
+  return kSuccess;
 }
 
 bool NNRTDelegate::IsCustomModel() const {
@@ -245,6 +253,60 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
 }
 #endif
 
+void NNRTDelegate::PrintNodeNameFormat()
+{
+  MS_LOG(DEBUG) << "Total node name " << lite_graph_->all_nodes_.size();
+  for (size_t i = 0; i < lite_graph_->all_nodes_.size(); i++) {
+    auto &node = lite_graph_->all_nodes_[i];
+    if (node == nullptr) {
+      MS_LOG(ERROR) << "Total node is null at index [" << i << "].";
+      continue;
+    }
+    MS_LOG(DEBUG) << "Current node name " << node->name_ << ", node type "
+                 << GetPrimitiveTypeName(node->primitive_, schema_version_);
+    for (auto j : node->input_indices_) {
+      MS_LOG(DEBUG) << "Input tensor format is " << EnumNameFormat(lite_graph_->all_tensors_[j]->format());
+    }
+    for (auto j : node->output_indices_) {
+      MS_LOG(DEBUG) << "Output tensor format is " << EnumNameFormat(lite_graph_->all_tensors_[j]->format());
+    }
+  }
+}
+
+void NNRTDelegate::ApplyCPUOp(std::vector<bool> &op_supports)
+{
+  uint32_t op_count = 0;
+  op_supports.resize(lite_graph_->all_nodes_.size());
+  size_t index = 0;
+  bool hete_op = true;
+  if (!enable_hete_) {
+    MS_LOG(WARNING) << "Disable heterogeneous online inference.";
+  }
+  if (hete_execution_plan_ == nullptr || (*hete_execution_plan_).empty()) {
+    MS_LOG(ERROR) << "Heterogeneous OP config is invalid, please check config file. All OP will run on NPU by defalult.";
+    hete_op = false;
+  }
+  MS_LOG(DEBUG) << "Current tatol op num " << op_supports.size() << " .";
+  for (size_t i = 0; i < lite_graph_->all_nodes_.size(); i++) {
+    auto &node = lite_graph_->all_nodes_[i];
+    if (node == nullptr) {
+      MS_LOG(ERROR) << "Current node is null at index [" << i << "].";
+      continue;
+    }
+    if (hete_op && ((*hete_execution_plan_)[node->name_] == kBackendTypeCPU)) {
+      MS_LOG(INFO) << "Current node " << node->name_ << ", node type "
+                   << GetPrimitiveTypeName(node->primitive_, schema_version_);
+      op_supports[i] = false;
+      index++;
+      continue;
+    }
+    op_supports[i] = true;
+    op_count++;
+  }
+  MS_LOG(DEBUG) << "Total OP num " << op_supports.size() << ", " << op_count << " OP will run on NPU, " << index
+               << " OP will run CPU.";
+}
+
 Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
   MS_LOG(DEBUG) << "Start to build NNRT model.";
   if ((lite_graph_ == nullptr) || (lite_graph_->sub_graphs_.size() > 1)) {
@@ -257,7 +319,9 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
     MS_LOG(WARNING) << "Build full NNModel failed, fallback to CPU";
     return kSuccess;
   }
+  PrintNodeNameFormat();
   std::vector<bool> op_supports = QueryOpSupports(full_model);
+  ApplyCPUOp(op_supports);
   if (op_supports.empty()) {
     MS_LOG(WARNING) << "Query no op supports for full model, fallback to CPU";
     OH_NNModel_Destroy(&full_model);
@@ -569,7 +633,8 @@ Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
       }
     }
   } else {
-    MS_LOG(WARNING) << "hiai_foundation is nullptr.";
+    MS_LOG(WARNING) << "hiai_foundation is " << (hiai_handle_ == nullptr ? "" : "not")
+                    << " nullptr, current device name prefix is not HIAI_F.";
   }
 #endif
 
@@ -621,7 +686,6 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
     }
     MS_LOG(DEBUG) << "NNRTDelegate creates NNExecutor success.";
 
-    bool format_not_support = false;
     std::vector<MSTensor> in_tensors;
     for (auto index: sub_lite_graph->sub_graphs_[0]->input_indices_) {
       TensorLocation location;
@@ -632,15 +696,16 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
           uint32_t tensor_index = iter - node->input_indices_.begin();
           location.node_index = node_index;
           location.tensor_index = tensor_index;
-          MS_LOG(INFO) << "Found graph input index: " << index << " is the " << tensor_index << "th input of the node " << node->primitive_;
+          MS_LOG(INFO) << "Found graph input index: " << index << " is the " << tensor_index << "th input of the node "
+                       << node->name_ << " node type " << GetPrimitiveTypeName(node->primitive_, schema_version_);
           break;
         }
       }
       KernelIter kernel_iter = nnrt_subgraph_ranges[i].begin_iter_ + location.node_index;
       in_tensors.push_back((*kernel_iter)->inputs()[location.tensor_index]);
       if (in_tensors.back().format() != Format::NHWC) {
-        format_not_support = true;
-        break ;
+        MS_LOG(WARNING) << "Kernel name " << (*kernel_iter)->name() << ", in_tensor format "
+                        << mindspore::FormatEnumToString(in_tensors.back().format());
       }
     }
 
@@ -661,16 +726,9 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       KernelIter kernel_iter = nnrt_subgraph_ranges[i].begin_iter_ + location.node_index;
       out_tensors.push_back((*kernel_iter)->outputs()[location.tensor_index]);
       if (out_tensors.back().format() != Format::NHWC) {
-        format_not_support = true;
-        break ;
+        MS_LOG(WARNING) << "Kernel name " << (*kernel_iter)->name() << ", in_tensor format "
+                        << mindspore::FormatEnumToString(out_tensors.back().format());
       }
-    }
-    if (format_not_support) {
-      MS_LOG(WARNING) << "Not support in/out tensor format, skip this subgraph";
-      OH_NNCompilation_Destroy(&nn_compilation);
-      OH_NNModel_Destroy(&nn_model);
-      nnrt_subgraph_kernels->push_back(nullptr);
-      continue ;
     }
 
     auto nnrt_model_kernel = new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, in_tensors, out_tensors);
