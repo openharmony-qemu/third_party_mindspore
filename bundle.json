@@ -100,7 +100,7 @@
             }
           },
           {
-            "name": "//third_party/mindspore/:mindspore-lib",
+            "name": "//third_party/mindspore/mindspore-src/source/mindspore/lite/:mindspore_lib",
             "header": {
               "header_files": [],
               "header_base": "//third_party/mindspore/mindspore-src/source/include/c_api"
