@@ -34,12 +34,14 @@ int SoftMaxInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC 
   }
   // there is a model with an 8-dim input, which runs on ascend910.
   if (input->shape_size_ > DIMENSION_8D) {
+    NNACL_LOG_ERROR("input->shape_size_ > DIMENSION_8D,which is %zu",input->shape_size_);
     return NNACL_ERR;
   }
 
   SoftmaxParameter *param = (SoftmaxParameter *)parameter;
   NNACL_CHECK_NULL_RETURN_ERR(param);
   if (param->axis_ < (-1 * (int)(input->shape_size_)) || param->axis_ > (int)(input->shape_size_)) {
+    NNACL_LOG_ERROR("param->axis_ is invalid");
     return NNACL_PARAM_INVALID;
   }
   SetShapeTensor(output, input);

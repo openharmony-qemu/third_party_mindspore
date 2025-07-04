@@ -26,6 +26,8 @@ int GatherInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
   }
   const size_t kMinimumGradInputsNum = 3;
   if (inputs_size < kMinimumGradInputsNum || outputs_size != 1) {
+    NNACL_LOG_ERROR("inputs_size or outputs_size is invalid");
+
     return NNACL_ERR;
   }
   const TensorC *input = inputs[0];
@@ -41,12 +43,15 @@ int GatherInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
     return NNACL_INFER_INVALID;
   }
   if (input->shape_size_ > MAX_SHAPE_SIZE || indices->shape_size_ > MAX_SHAPE_SIZE) {
+    NNACL_LOG_ERROR("input->shape_size_ or indices->shape_size_ is invalid,too large");
     return NNACL_INPUT_TENSOR_ERROR;
   }
   if (inputs[2]->data_ == NULL) {
+    NNACL_LOG_ERROR("inputs[2]->data_ == NULL");
     return NNACL_NULL_PTR;
   }
   if (GetElementNum(inputs[2]) < 1) {
+    NNACL_LOG_ERROR("GetElementNum(inputs[2]) < 1");
     return NNACL_ERR;
   }
   int axis = *((int *)inputs[2]->data_);
@@ -61,6 +66,8 @@ int GatherInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
   size_t in_shape_size = 0;
   ShapeSet(in_shape, &in_shape_size, input->shape_, input->shape_size_);
   if ((int)(in_shape_size) < axis + 1) {
+    NNACL_LOG_ERROR("(int)(in_shape_size) < axis + 1");
+
     return NNACL_ERR;
   }
   int out_shape[MAX_SHAPE_SIZE] = {0};
@@ -68,11 +75,15 @@ int GatherInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
   ShapeSet(out_shape, &out_shape_size, in_shape, in_shape_size);
   int erase_ret = ShapeErase(out_shape, &out_shape_size, axis);
   if (erase_ret != NNACL_OK) {
+    NNACL_LOG_ERROR("ShapeErase failed,erase_ret != NNACL_OK");
+
     return NNACL_ERR;
   }
   for (int i = (int)(indices_rank - 1); i >= 0; --i) {
     ret = ShapeInsert(out_shape, &out_shape_size, axis, indices_shape[i]);
     if (ret != NNACL_OK) {
+      NNACL_LOG_ERROR("ShapeInsert failed ,ret != NNACL_OK");
+
       return NNACL_ERR;
     }
   }

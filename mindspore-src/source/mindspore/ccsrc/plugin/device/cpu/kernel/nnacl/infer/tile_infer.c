@@ -61,12 +61,14 @@ int TileInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
   size_t multiples_size = 0;
   int input1_shape_size = inputs[1]->shape_size_;
   if (input1_shape_size > (int)(input->shape_size_) || input->shape_size_ > MAX_SHAPE_SIZE) {
+    NNACL_LOG_ERROR("input1_shape_size > (int)(input->shape_size_) || input->shape_size_ > MAX_SHAPE_SIZE");
     return NNACL_INPUT_TENSOR_ERROR;
   }
   NNACL_CHECK_TRUE_RET(input1_shape_size <= MAX_SHAPE_SIZE, NNACL_ERR);
   int data_num = GetElementNum(inputs[1]);
   multiples_size = (size_t)(data_num);
   if (inputs[1]->data_type_ != kNumberTypeInt && inputs[1]->data_type_ != kNumberTypeInt32) {
+    NNACL_LOG_ERROR("inputs[1]->data_type_ != kNumberTypeInt && inputs[1]->data_type_ != kNumberTypeInt32");
     return NNACL_INPUT_TENSOR_ERROR;
   }
   int *input1_data = inputs[1]->data_;
@@ -94,9 +96,11 @@ int TileInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
   }
   for (size_t i = 0; i < dims_size; ++i) {
     if (dims[i] >= MAX_SHAPE_SIZE || input->shape_[dims[i]] == 0) {
+      NNACL_LOG_ERROR("dims[%zu] >= MAX_SHAPE_SIZE || input->shape_[dims[%zu]] == 0",i,i);
       return NNACL_ERR;
     }
     if (input->shape_[dims[i]] != 0 && param->multiples_[i] > INT_MAX / input->shape_[dims[i]]) {
+      NNACL_LOG_ERROR("input->shape_[dims[%zu]] != 0 && param->multiples_[%zu] > INT_MAX / input->shape_[dims[%zu]]",i,i,i);
       return NNACL_ERR;
     }
     NNACL_CHECK_FALSE(INT_MUL_OVERFLOW(input->shape_[dims[i]], (param->multiples_[i])), NNACL_ERR);

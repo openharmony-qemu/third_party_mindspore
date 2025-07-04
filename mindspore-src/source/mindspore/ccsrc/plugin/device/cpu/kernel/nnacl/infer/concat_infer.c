@@ -21,6 +21,7 @@ int DataTypeJudge(const TensorC *input, const TensorC *output) {
   if ((input->data_type_ != output->data_type_) &&
       !((input->data_type_ == kNumberTypeFloat16 && output->data_type_ == kNumberTypeFloat32) ||
         (input->data_type_ == kNumberTypeFloat32 && output->data_type_ == kNumberTypeFloat16))) {
+    NNACL_LOG_ERROR("input->data_type_ which is %d and output->data_type_ which is %d do not match",input->data_type_,output->data_type_);
     return NNACL_PARAM_INVALID;
   }
   return NNACL_OK;
@@ -33,6 +34,7 @@ int ConcatInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
     return check_ret;
   }
   if (inputs_size < 1) {
+    NNACL_LOG_ERROR("inputs_size < 1 which is %zu",inputs_size);
     return NNACL_INPUT_TENSOR_ERROR;
   }
 
@@ -49,9 +51,11 @@ int ConcatInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
   ConcatParameter *param = (ConcatParameter *)parameter;
   int axis = param->axis_ < 0 ? param->axis_ + (int)input0_shape_size : param->axis_;
   if (axis < 0 || axis >= (int)input0_shape_size) {
+    NNACL_LOG_ERROR("axis which is %d is less than 0 or exceed the limitation",axis);
     return NNACL_ERR;
   }
   if (input0_shape_size > MAX_SHAPE_SIZE) {
+    NNACL_LOG_ERROR("input0_shape_size > MAX_SHAPE_SIZE,which is %zu",input0_shape_size);
     return NNACL_INPUT_TENSOR_ERROR;
   }
   int input0_shape_without_axis[MAX_SHAPE_SIZE] = {0};
@@ -59,12 +63,14 @@ int ConcatInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
   ShapeSet(input0_shape_without_axis, &input0_shape_without_axis_size, input0_shape, input0_shape_size);
   int erase_ret = ShapeErase(input0_shape_without_axis, &input0_shape_without_axis_size, axis);
   if (erase_ret != NNACL_OK) {
+    NNACL_LOG_ERROR("erase_ret != NNACL_OK");
     return NNACL_ERR;
   }
   int output_axis_dim = input0_shape[axis];
   for (size_t i = 1; i < inputs_size; ++i) {
     size_t input_i_shape_size = inputs[i]->shape_size_;
     if (input_i_shape_size != input0_shape_size) {
+      NNACL_LOG_ERROR("input_i_shape_size != input0_shape_size");
       return NNACL_PARAM_INVALID;
     }
     int shape_tmp[MAX_SHAPE_SIZE] = {0};
@@ -77,9 +83,11 @@ int ConcatInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
     int axis_tmp = shape_tmp[axis];
     erase_ret = ShapeErase(shape_tmp, &shape_tmp_size, axis);
     if (erase_ret != NNACL_OK) {
+      NNACL_LOG_ERROR("erase_ret != NNACL_OK");
       return NNACL_ERR;
     }
     if (!ShapeEqual(input0_shape_without_axis, input0_shape_without_axis_size, shape_tmp, shape_tmp_size)) {
+      NNACL_LOG_ERROR("shape0 and shape_tmp is not equal");
       return NNACL_ERR;
     }
     output_axis_dim += axis_tmp;

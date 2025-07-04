@@ -34,6 +34,7 @@ int FlattenInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC 
   }
 
   if (input->shape_size_ <= 0 || input->shape_size_ > MAX_SHAPE_SIZE) {
+    NNACL_LOG_ERROR("input->shape_size_ is invalid");
     return NNACL_INPUT_TENSOR_ERROR;
   }
   int input_shape[MAX_SHAPE_SIZE] = {0};
@@ -46,6 +47,7 @@ int FlattenInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC 
   // dimensions from the back.
   axis = axis < 0 ? (int)input_shape_size - axis : axis;
   if (axis >= (int)input_shape_size) {
+    NNACL_LOG_ERROR("axis is invalid, which is %d",axis);
     return NNACL_ERR;
   }
   int output_shape[2];

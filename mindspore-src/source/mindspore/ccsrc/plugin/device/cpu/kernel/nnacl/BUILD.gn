@@ -78,6 +78,7 @@ ohos_source_set("nnacl_obj") {
 common_sources = [
   "./common_func.c",
   "./errorcode.c",
+  "./logging.c",
   "./kernel.c",
   "./nnacl_common.c",
   "./nnacl_utils.c",
@@ -956,6 +957,9 @@ ohos_source_set("nnacl_common") {
   sources = nnacl_sources
   part_name = "mindspore"
   subsystem_name = "thirdparty"
+  external_deps = [
+    "hilog:libhilog"
+  ]
 }
 
 ohos_source_set("nnacl_no_fast_math") {

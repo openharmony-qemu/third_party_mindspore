@@ -16,7 +16,7 @@
 
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_NNACL_OP_BASE_H_
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_NNACL_OP_BASE_H_
-
+#include "logging.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>

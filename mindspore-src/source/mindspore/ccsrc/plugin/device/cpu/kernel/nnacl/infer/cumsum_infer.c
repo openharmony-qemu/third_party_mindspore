@@ -24,6 +24,7 @@ int CumsumInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
     return check_ret;
   }
   if (inputs_size < 1) {
+    NNACL_LOG_ERROR("inputs_size < 1,which is %zu",inputs_size);
     return NNACL_INPUT_TENSOR_ERROR;
   }
 
