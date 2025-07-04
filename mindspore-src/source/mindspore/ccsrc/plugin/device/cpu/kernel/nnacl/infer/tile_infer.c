@@ -96,11 +96,12 @@ int TileInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
   }
   for (size_t i = 0; i < dims_size; ++i) {
     if (dims[i] >= MAX_SHAPE_SIZE || input->shape_[dims[i]] == 0) {
-      NNACL_LOG_ERROR("dims[%zu] >= MAX_SHAPE_SIZE || input->shape_[dims[%zu]] == 0",i,i);
+      NNACL_LOG_ERROR("dims[%zu] >= MAX_SHAPE_SIZE || input->shape_[dims[%zu]] == 0", i, i);
       return NNACL_ERR;
     }
     if (input->shape_[dims[i]] != 0 && param->multiples_[i] > INT_MAX / input->shape_[dims[i]]) {
-      NNACL_LOG_ERROR("input->shape_[dims[%zu]] != 0 && param->multiples_[%zu] > INT_MAX / input->shape_[dims[%zu]]",i,i,i);
+      NNACL_LOG_ERROR("input->shape_[dims[%zu]] != 0 && param->multiples_[%zu] > INT_MAX / input->shape_[dims[%zu]]", i,
+                      i, i);
       return NNACL_ERR;
     }
     NNACL_CHECK_FALSE(INT_MUL_OVERFLOW(input->shape_[dims[i]], (param->multiples_[i])), NNACL_ERR);

@@ -56,7 +56,8 @@ bool CheckInputs(const TensorC *const *inputs, size_t inputs_size) {
 int HandleAxesCheckNull(const TensorC *input_tensor, const TensorC *begin_tensor, int *begin_data,
                         const TensorC *end_tensor, int *end_data) {
   if (input_tensor == NULL || begin_tensor == NULL || end_tensor == NULL || begin_data == NULL || end_data == NULL) {
-    NNACL_LOG_ERROR("input_tensor == NULL || begin_tensor == NULL || end_tensor == NULL || begin_data == NULL || end_data == NULL");
+    NNACL_LOG_ERROR(
+      "input_tensor == NULL || begin_tensor == NULL || end_tensor == NULL || begin_data == NULL || end_data == NULL");
     return NNACL_NULL_PTR;
   }
   return NNACL_OK;
@@ -283,7 +284,7 @@ int ApplyEndMask(StridedSliceTransferBuffer *transfer_buffer, const int *in_shap
   for (int i = 0; i < transfer_buffer->ndim_; i++) {
     if (transfer_buffer->ends_mask_[i]) {
       if ((size_t)i >= in_shape_size) {
-        NNACL_LOG_ERROR("i >= in_shape_size, i is %d",i);
+        NNACL_LOG_ERROR("i >= in_shape_size, i is %d", i);
         return NNACL_ERR;
       }
       transfer_buffer->ends_[i] = transfer_buffer->strides_[i] > 0 ? in_shape[i] : -1 - in_shape[i];
@@ -296,7 +297,7 @@ int ApplyEllipsisMask(StridedSliceTransferBuffer *transfer_buffer, const int *in
   for (size_t i = 0; i < transfer_buffer->ellipsis_mask_size_; i++) {
     if (transfer_buffer->ellipsis_mask_[i]) {
       if (i >= in_shape_size) {
-        NNACL_LOG_ERROR("i >= in_shape_size,i is %zu",i);
+        NNACL_LOG_ERROR("i >= in_shape_size,i is %zu", i);
         return NNACL_ERR;
       }
       transfer_buffer->begins_[i] = 0;
@@ -311,7 +312,7 @@ int TransIndexToPositive(StridedSliceTransferBuffer *transfer_buffer, const int 
                          size_t in_shape_size) {
   for (size_t i = 0; i < transfer_buffer->begins_size_; i++) {
     if (i >= max_shape_size) {
-      NNACL_LOG_ERROR("i >= max_shape_size,i is %zu",i);
+      NNACL_LOG_ERROR("i >= max_shape_size,i is %zu", i);
       return NNACL_ERR;
     }
     if (transfer_buffer->begins_[i] < 0) {
@@ -322,12 +323,12 @@ int TransIndexToPositive(StridedSliceTransferBuffer *transfer_buffer, const int 
     }
     if (i < in_shape_size) {
       if (transfer_buffer->begins_[i] < 0 || transfer_buffer->begins_[i] > in_shape[i]) {
-        NNACL_LOG_ERROR("transfer_buffer->begins_[%zu] < 0 || transfer_buffer->begins_[%zu] > in_shape[%zu]",i,i,i);
+        NNACL_LOG_ERROR("transfer_buffer->begins_[%zu] < 0 || transfer_buffer->begins_[%zu] > in_shape[%zu]", i, i, i);
         return NNACL_ERR;
       }
       if ((transfer_buffer->ends_[i] < 0 && transfer_buffer->ends_[i] != -1) ||
           transfer_buffer->ends_[i] > in_shape[i]) {
-        NNACL_LOG_ERROR("transfer_buffer->ends_[%zu] is invalid",i);
+        NNACL_LOG_ERROR("transfer_buffer->ends_[%zu] is invalid", i);
         return NNACL_ERR;
       }
     }
@@ -356,7 +357,8 @@ void ApplyShrinkMask(StridedSliceTransferBuffer *transfer_buffer, int *output_sh
 int TransferBuffer2Param(const StridedSliceTransferBuffer *transfer_buffer, StridedSliceParameter *param,
                          const int *in_shape, size_t in_shape_size) {
   if (transfer_buffer->ndim_ >= (int)(in_shape_size) || param->in_shape_length_ >= (int)(in_shape_size)) {
-    NNACL_LOG_ERROR("transfer_buffer->ndim_ >= (int)(in_shape_size) || param->in_shape_length_ >= (int)(in_shape_size)");
+    NNACL_LOG_ERROR(
+      "transfer_buffer->ndim_ >= (int)(in_shape_size) || param->in_shape_length_ >= (int)(in_shape_size)");
     return NNACL_ERR;
   }
   for (int i = 0; i < transfer_buffer->ndim_; i++) {
@@ -484,7 +486,7 @@ int StridedSliceInferShape(const TensorC *const *inputs, size_t inputs_size, Ten
   }
   for (int i = 0; i < transfer_buffer.ndim_; i++) {
     if (transfer_buffer.strides_[i] == 0 || in_shape[i] < transfer_buffer.ends_[i]) {
-      NNACL_LOG_ERROR("transfer_buffer.strides_[%d] == 0 || in_shape[%d] < transfer_buffer.ends_[%d]",i,i,i);
+      NNACL_LOG_ERROR("transfer_buffer.strides_[%d] == 0 || in_shape[%d] < transfer_buffer.ends_[%d]", i, i, i);
       return NNACL_ERR;
     }
     output_shape[i] = (transfer_buffer.ends_[i] - transfer_buffer.begins_[i] + transfer_buffer.strides_[i] +

@@ -24,7 +24,7 @@ int CastInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
     return check_ret;
   }
   if (inputs_size != 2) {
-    NNACL_LOG_ERROR("inputs_size != 2 ,which is %zu",inputs_size);
+    NNACL_LOG_ERROR("inputs_size != 2 ,which is %zu", inputs_size);
     return NNACL_INPUT_TENSOR_ERROR;
   }
 
@@ -44,7 +44,8 @@ int CastInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
       input->data_type_ != kNumberTypeInt8 && input->data_type_ != kNumberTypeInt32 &&
       input->data_type_ != kNumberTypeInt64 && input->data_type_ != kNumberTypeFloat32 &&
       input->data_type_ != kNumberTypeFloat16) {
-    NNACL_LOG_ERROR("input->data_type_ should be one of [Bool,UInt8,Int8,Int32,Int64,Float32,Float16],but it is %d",input->data_type_);
+    NNACL_LOG_ERROR("input->data_type_ should be one of [Bool,UInt8,Int8,Int32,Int64,Float32,Float16],but it is %d",
+                    input->data_type_);
     return NNACL_INPUT_TENSOR_ERROR;
   }
 

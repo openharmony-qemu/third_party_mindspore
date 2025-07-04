@@ -54,7 +54,7 @@ int CheckMatMulBias(int *shape, size_t dim_size) {
   if (dim_size > 1) {
     for (size_t i = 0; i < dim_size - 1; i++) {
       if (shape[i] != DIMENSION_1D) {
-        NNACL_LOG_ERROR("shape[%zu] != DIMENSION_1D",i);
+        NNACL_LOG_ERROR("shape[%zu] != DIMENSION_1D", i);
         return NNACL_ERR;
       }
     }

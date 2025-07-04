@@ -21,7 +21,8 @@ int DataTypeJudge(const TensorC *input, const TensorC *output) {
   if ((input->data_type_ != output->data_type_) &&
       !((input->data_type_ == kNumberTypeFloat16 && output->data_type_ == kNumberTypeFloat32) ||
         (input->data_type_ == kNumberTypeFloat32 && output->data_type_ == kNumberTypeFloat16))) {
-    NNACL_LOG_ERROR("input->data_type_ which is %d and output->data_type_ which is %d do not match",input->data_type_,output->data_type_);
+    NNACL_LOG_ERROR("input->data_type_ which is %d and output->data_type_ which is %d do not match", input->data_type_,
+                    output->data_type_);
     return NNACL_PARAM_INVALID;
   }
   return NNACL_OK;
@@ -34,7 +35,7 @@ int ConcatInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
     return check_ret;
   }
   if (inputs_size < 1) {
-    NNACL_LOG_ERROR("inputs_size < 1 which is %zu",inputs_size);
+    NNACL_LOG_ERROR("inputs_size < 1 which is %zu", inputs_size);
     return NNACL_INPUT_TENSOR_ERROR;
   }
 
@@ -51,11 +52,11 @@ int ConcatInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
   ConcatParameter *param = (ConcatParameter *)parameter;
   int axis = param->axis_ < 0 ? param->axis_ + (int)input0_shape_size : param->axis_;
   if (axis < 0 || axis >= (int)input0_shape_size) {
-    NNACL_LOG_ERROR("axis which is %d is less than 0 or exceed the limitation",axis);
+    NNACL_LOG_ERROR("axis which is %d is less than 0 or exceed the limitation", axis);
     return NNACL_ERR;
   }
   if (input0_shape_size > MAX_SHAPE_SIZE) {
-    NNACL_LOG_ERROR("input0_shape_size > MAX_SHAPE_SIZE,which is %zu",input0_shape_size);
+    NNACL_LOG_ERROR("input0_shape_size > MAX_SHAPE_SIZE,which is %zu", input0_shape_size);
     return NNACL_INPUT_TENSOR_ERROR;
   }
   int input0_shape_without_axis[MAX_SHAPE_SIZE] = {0};
