@@ -34,6 +34,7 @@ int FlattenGradInferShape(const TensorC *const *inputs, size_t inputs_size, Tens
 
   int output_shape_size = inputs[1]->shape_[0];
   if (inputs[1]->data_ == NULL || output_shape_size > MAX_SHAPE_SIZE) {
+    NNACL_LOG_ERROR("inputs[1]->data_ == NULL or output_shape_size > MAX_SHAPE_SIZE");
     return NNACL_ERR;
   }
   SetShapeArray(output, (int *)(inputs[1]->data_), (size_t)output_shape_size);

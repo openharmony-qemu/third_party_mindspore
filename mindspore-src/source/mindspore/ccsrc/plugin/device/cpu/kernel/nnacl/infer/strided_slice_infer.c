@@ -56,6 +56,7 @@ bool CheckInputs(const TensorC *const *inputs, size_t inputs_size) {
 int HandleAxesCheckNull(const TensorC *input_tensor, const TensorC *begin_tensor, int *begin_data,
                         const TensorC *end_tensor, int *end_data) {
   if (input_tensor == NULL || begin_tensor == NULL || end_tensor == NULL || begin_data == NULL || end_data == NULL) {
+    NNACL_LOG_ERROR("input_tensor == NULL || begin_tensor == NULL || end_tensor == NULL || begin_data == NULL || end_data == NULL");
     return NNACL_NULL_PTR;
   }
   return NNACL_OK;
@@ -85,10 +86,12 @@ int GenerateAxes(const TensorC *axes_tensor, int *axes, int num, int ndim) {
   int *axes_data = NULL;
   if (GetElementNum(axes_tensor) != 0) {
     if (GetElementNum(axes_tensor) != num) {
+      NNACL_LOG_ERROR("GetElementNum(axes_tensor) != num");
       return NNACL_ERR;
     }
     axes_data = (int *)(axes_tensor->data_);
     if (axes_data == NULL) {
+      NNACL_LOG_ERROR("axes_data == NULL");
       return NNACL_NULL_PTR;
     }
   }
@@ -152,6 +155,7 @@ int HandleAxesInputExist(const TensorC *const *inputs, int *ndim, int *in_shape,
   }
 
   if (*ndim > MAX_SHAPE_SIZE || *ndim < 0) {
+    NNACL_LOG_ERROR("*ndim > MAX_SHAPE_SIZE || *ndim < 0");
     return NNACL_ERR;
   }
   for (int i = 0; i < *ndim; i++) {
@@ -165,6 +169,7 @@ int HandleAxesInputExist(const TensorC *const *inputs, int *ndim, int *in_shape,
   for (int i = 0; i < *ndim; ++i) {
     int axes_it = 0;
     if (begin_ndim > MAX_SHAPE_SIZE || begin_ndim < 0) {
+      NNACL_LOG_ERROR("begin_ndim > MAX_SHAPE_SIZE || begin_ndim < 0");
       return NNACL_ERR;
     }
     for (int j = 0; j < begin_ndim; j++) {
@@ -185,6 +190,7 @@ int HandleAxesInputExist(const TensorC *const *inputs, int *ndim, int *in_shape,
       // ends exceed limit will be set to limit
       ends[i] = imax(imin(end_data[axis], input_tensor->shape_[i]), -input_tensor->shape_[i] - 1);
       if (stride_data == NULL) {
+        NNACL_LOG_ERROR("stride_data == NULL");
         return NNACL_ERR;
       }
       strides[i] = stride_data[axis];
@@ -200,13 +206,16 @@ int HandleAxesInputExist(const TensorC *const *inputs, int *ndim, int *in_shape,
 int StrideSlicePreCheck(const TensorC *const *inputs, size_t inputs_size, TensorC **outputs, size_t outputs_size,
                         OpParameter *parameter) {
   if (outputs_size != kStridedSliceOutputNum) {
+    NNACL_LOG_ERROR("outputs_size != kStridedSliceOutputNum");
     return NNACL_PARAM_INVALID;
   }
   if (inputs_size != kStridedSliceInputNum &&
       !(inputs_size <= kStridedSliceMultiInputNumMax && inputs_size >= kStridedSliceMultiInputNumMin)) {
+    NNACL_LOG_ERROR("inputs_size is invalid");
     return NNACL_PARAM_INVALID;
   }
   if (parameter == NULL || outputs[0] == NULL || inputs[0] == NULL) {
+    NNACL_LOG_ERROR("parameter == NULL || outputs[0] == NULL || inputs[0] == NULL");
     return NNACL_NULL_PTR;
   }
   if (inputs_size >= kStridedSliceMultiInputNumMin) {
@@ -215,6 +224,7 @@ int StrideSlicePreCheck(const TensorC *const *inputs, size_t inputs_size, Tensor
     bool ends_type_ok =
       (inputs[C2NUM]->data_type_ == kNumberTypeInt32) || (inputs[C2NUM]->data_type_ == kNumberTypeInt64);
     if (!(begins_type_ok && ends_type_ok)) {
+      NNACL_LOG_ERROR("begins_type_ or ends_type_ is not right");
       return NNACL_PARAM_INVALID;
     }
   }
@@ -236,10 +246,12 @@ int ApplyNewAxisMask(StridedSliceTransferBuffer *transfer_buffer, StridedSlicePa
   for (size_t i = 0; i < transfer_buffer->new_axis_mask_size_; i++) {
     if (transfer_buffer->new_axis_mask_[i]) {
       if (*out_shape_size >= MAX_SHAPE_SIZE) {
+        NNACL_LOG_ERROR("*out_shape_size >= MAX_SHAPE_SIZE");
         return NNACL_ERR;
       }
       int ret = ShapeInsert(in_shape, out_shape_size, i, 1);
       if (ret != NNACL_OK) {
+        NNACL_LOG_ERROR("ShapeInsert failed,ret != NNACL_OK");
         return NNACL_ERR;
       }
       transfer_buffer->begins_[i] = 0;
@@ -271,6 +283,7 @@ int ApplyEndMask(StridedSliceTransferBuffer *transfer_buffer, const int *in_shap
   for (int i = 0; i < transfer_buffer->ndim_; i++) {
     if (transfer_buffer->ends_mask_[i]) {
       if ((size_t)i >= in_shape_size) {
+        NNACL_LOG_ERROR("i >= in_shape_size, i is %d",i);
         return NNACL_ERR;
       }
       transfer_buffer->ends_[i] = transfer_buffer->strides_[i] > 0 ? in_shape[i] : -1 - in_shape[i];
@@ -283,6 +296,7 @@ int ApplyEllipsisMask(StridedSliceTransferBuffer *transfer_buffer, const int *in
   for (size_t i = 0; i < transfer_buffer->ellipsis_mask_size_; i++) {
     if (transfer_buffer->ellipsis_mask_[i]) {
       if (i >= in_shape_size) {
+        NNACL_LOG_ERROR("i >= in_shape_size,i is %zu",i);
         return NNACL_ERR;
       }
       transfer_buffer->begins_[i] = 0;
@@ -297,6 +311,7 @@ int TransIndexToPositive(StridedSliceTransferBuffer *transfer_buffer, const int 
                          size_t in_shape_size) {
   for (size_t i = 0; i < transfer_buffer->begins_size_; i++) {
     if (i >= max_shape_size) {
+      NNACL_LOG_ERROR("i >= max_shape_size,i is %zu",i);
       return NNACL_ERR;
     }
     if (transfer_buffer->begins_[i] < 0) {
@@ -307,10 +322,12 @@ int TransIndexToPositive(StridedSliceTransferBuffer *transfer_buffer, const int 
     }
     if (i < in_shape_size) {
       if (transfer_buffer->begins_[i] < 0 || transfer_buffer->begins_[i] > in_shape[i]) {
+        NNACL_LOG_ERROR("transfer_buffer->begins_[%zu] < 0 || transfer_buffer->begins_[%zu] > in_shape[%zu]",i,i,i);
         return NNACL_ERR;
       }
       if ((transfer_buffer->ends_[i] < 0 && transfer_buffer->ends_[i] != -1) ||
           transfer_buffer->ends_[i] > in_shape[i]) {
+        NNACL_LOG_ERROR("transfer_buffer->ends_[%zu] is invalid",i);
         return NNACL_ERR;
       }
     }
@@ -339,6 +356,7 @@ void ApplyShrinkMask(StridedSliceTransferBuffer *transfer_buffer, int *output_sh
 int TransferBuffer2Param(const StridedSliceTransferBuffer *transfer_buffer, StridedSliceParameter *param,
                          const int *in_shape, size_t in_shape_size) {
   if (transfer_buffer->ndim_ >= (int)(in_shape_size) || param->in_shape_length_ >= (int)(in_shape_size)) {
+    NNACL_LOG_ERROR("transfer_buffer->ndim_ >= (int)(in_shape_size) || param->in_shape_length_ >= (int)(in_shape_size)");
     return NNACL_ERR;
   }
   for (int i = 0; i < transfer_buffer->ndim_; i++) {
@@ -393,6 +411,7 @@ int StridedSliceInferShape(const TensorC *const *inputs, size_t inputs_size, Ten
   int in_shape[MAX_SHAPE_SIZE] = {0};
   size_t in_shape_size = 0;
   if (input->shape_size_ > MAX_SHAPE_SIZE) {
+    NNACL_LOG_ERROR("input->shape_size_ > MAX_SHAPE_SIZE");
     return NNACL_ERR;
   }
   ShapeSet(in_shape, &in_shape_size, input->shape_, input->shape_size_);
@@ -406,6 +425,7 @@ int StridedSliceInferShape(const TensorC *const *inputs, size_t inputs_size, Ten
   if (inputs_size == kStridedSliceInputNum) {
     transfer_buffer.ndim_ = (int)(in_shape_size);
     if (transfer_buffer.ndim_ > MAX_SHAPE_SIZE) {
+      NNACL_LOG_ERROR("transfer_buffer.ndim_ > MAX_SHAPE_SIZE");
       return NNACL_ERR;
     }
     for (int i = 0; i < transfer_buffer.ndim_; i++) {
@@ -464,6 +484,7 @@ int StridedSliceInferShape(const TensorC *const *inputs, size_t inputs_size, Ten
   }
   for (int i = 0; i < transfer_buffer.ndim_; i++) {
     if (transfer_buffer.strides_[i] == 0 || in_shape[i] < transfer_buffer.ends_[i]) {
+      NNACL_LOG_ERROR("transfer_buffer.strides_[%d] == 0 || in_shape[%d] < transfer_buffer.ends_[%d]",i,i,i);
       return NNACL_ERR;
     }
     output_shape[i] = (transfer_buffer.ends_[i] - transfer_buffer.begins_[i] + transfer_buffer.strides_[i] +

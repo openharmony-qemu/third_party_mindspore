@@ -21,6 +21,7 @@
 int InstanceNormInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **outputs, size_t outputs_size,
                            OpParameter *parameter) {
   if (parameter == NULL || inputs[0] == NULL || outputs[0] == NULL) {
+    NNACL_LOG_ERROR("parameter == NULL || inputs[0] == NULL || outputs[0] == NULL");
     return NNACL_NULL_PTR;
   }
   TensorC *output = outputs[0];

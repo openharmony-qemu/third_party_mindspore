@@ -29,6 +29,7 @@ int CheckMatmulInputShape(int *a_shape, size_t a_shape_size, int *b_shape, size_
     int min_value = MSMIN(a_shape[i], b_shape[i]);
     int max_value = MSMAX(a_shape[i], b_shape[i]);
     if (min_value != 0 && max_value % min_value != 0) {
+      NNACL_LOG_ERROR("min_value != 0 && max_value is not multiple of min_value");
       return NNACL_INPUT_TENSOR_ERROR;
     }
   }
@@ -39,9 +40,11 @@ int CheckMatmulInputShape(int *a_shape, size_t a_shape_size, int *b_shape, size_
     iswap(&b_shape[b_shape_size - 1], &b_shape[b_shape_size - 2]);
   }
   if (bias_shape_size == DIMENSION_1D && bias_shape[0] != b_shape[b_shape_size - 1]) {
+    NNACL_LOG_ERROR("bias_shape_size == DIMENSION_1D && bias_shape[0] != b_shape[b_shape_size - 1]");
     return NNACL_ERR;
   }
   if (a_shape[a_shape_size - 1] != b_shape[b_shape_size - 2]) {
+    NNACL_LOG_ERROR("a_shape[a_shape_size - 1] != b_shape[b_shape_size - 2]");
     return NNACL_ERR;
   }
   return NNACL_OK;
@@ -51,6 +54,7 @@ int CheckMatMulBias(int *shape, size_t dim_size) {
   if (dim_size > 1) {
     for (size_t i = 0; i < dim_size - 1; i++) {
       if (shape[i] != DIMENSION_1D) {
+        NNACL_LOG_ERROR("shape[%zu] != DIMENSION_1D",i);
         return NNACL_ERR;
       }
     }
@@ -89,6 +93,7 @@ int SetShape(const TensorC *const *inputs, size_t inputs_size, TensorC **outputs
   if (a_shape_size == 1) {
     int insert_ret = ShapeInsert(a_shape, &a_shape_size, 0, 1);
     if (insert_ret != NNACL_OK) {
+      NNACL_LOG_ERROR("ShapeInsert failed,insert_ret != NNACL_OK");
       return NNACL_ERR;
     }
     del_start = true;
@@ -99,6 +104,7 @@ int SetShape(const TensorC *const *inputs, size_t inputs_size, TensorC **outputs
   }
   int ret = CheckMatmulInputShape(a_shape, a_shape_size, b_shape, b_shape_size, bias_shape, bias_shape_size, param);
   if (ret != NNACL_OK) {
+    NNACL_LOG_ERROR("CheckMatmulInputShape failed,ret != NNACL_OK");
     return NNACL_ERR;
   }
   int c_shape[MAX_SHAPE_SIZE];
@@ -108,6 +114,7 @@ int SetShape(const TensorC *const *inputs, size_t inputs_size, TensorC **outputs
   if (del_start) {
     int erase_ret = ShapeErase(c_shape, &c_shape_size, 0);
     if (erase_ret != NNACL_OK) {
+      NNACL_LOG_ERROR("ShapeErase failed,erase_ret != NNACL_OK");
       return NNACL_ERR;
     }
   }

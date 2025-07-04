@@ -42,18 +42,21 @@ int TopKInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
   param->k_ = ((int32_t *)input_k_tensor->data_)[0];
 
   if (input->shape_size_ > MAX_SHAPE_SIZE) {
+    NNACL_LOG_ERROR("input->shape_size_ > MAX_SHAPE_SIZE");
     return NNACL_INPUT_TENSOR_ERROR;
   }
   int out_shape[MAX_SHAPE_SIZE];
   size_t out_shape_size = 0;
   ShapeSet(out_shape, &out_shape_size, input->shape_, input->shape_size_);
   if (out_shape_size < 1) {
+    NNACL_LOG_ERROR("out_shape_size < 1");
     return NNACL_ERR;
   }
   if (param->axis_ < 0) {
     param->axis_ += (int)out_shape_size;
   }
   if (param->axis_ < 0 || (size_t)param->axis_ >= out_shape_size) {
+    NNACL_LOG_ERROR("param->axis_ < 0 || (size_t)param->axis_ >= out_shape_size");
     return NNACL_ERR;
   }
   out_shape[(size_t)param->axis_] = param->k_;

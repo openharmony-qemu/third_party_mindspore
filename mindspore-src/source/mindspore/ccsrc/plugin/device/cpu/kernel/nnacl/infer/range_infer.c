@@ -35,6 +35,7 @@ int RangeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **
     return NNACL_INFER_INVALID;
   }
   if (GetElementNum(inputs[FIRST_INPUT]) < 1) {
+    NNACL_LOG_ERROR("GetElementNum(inputs[FIRST_INPUT]) < 1");
     return NNACL_ERR;
   }
   int shape_size = 0;
@@ -47,6 +48,7 @@ int RangeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **
       return NNACL_INFER_INVALID;
     }
     if (GetElementNum(inputs[SECOND_INPUT]) < 1 || GetElementNum(inputs[THIRD_INPUT]) < 1) {
+      NNACL_LOG_ERROR("GetElementNum(inputs[SECOND_INPUT]) < 1 || GetElementNum(inputs[THIRD_INPUT]) < 1");
       return NNACL_ERR;
     }
     switch (inputs[0]->data_type_) {
@@ -56,6 +58,7 @@ int RangeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **
         int limit = *(int *)(inputs[1]->data_);
         int delta = *(int *)(inputs[2]->data_);
         if (delta == 0) {
+          NNACL_LOG_ERROR("delta == 0");
           return NNACL_ERR;
         }
         shape_size = imax((int)(ceil((float)(limit - start) / delta)), 0);
@@ -66,11 +69,13 @@ int RangeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **
         float limit = *(float *)(inputs[1]->data_);
         float delta = *(float *)(inputs[2]->data_);
         if (fabsf(delta) < EPSILON_VALUE) {
+          NNACL_LOG_ERROR("fabsf(delta) < EPSILON_VALUE");
           return NNACL_ERR;
         }
         shape_size = imax((int)(ceil((float)(limit - start) / delta)), 0);
       } break;
       default: {
+        NNACL_LOG_ERROR("inputs[0]->data_type_ is invalid");
         return NNACL_ERR;
       }
     }
@@ -78,6 +83,7 @@ int RangeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **
     RangeParameter *param = (RangeParameter *)parameter;
     NNACL_CHECK_NULL_RETURN_ERR(param);
     if (param->delta_ == 0) {
+      NNACL_LOG_ERROR("param->delta_ == 0");
       return NNACL_PARAM_INVALID;
     }
     shape_size = ceil((float)(param->limit_ - param->start_) / param->delta_);

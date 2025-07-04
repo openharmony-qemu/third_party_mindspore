@@ -36,11 +36,13 @@ int CalShape(const int *data, const TensorC *const *inputs, int *out_shape, size
 
   if ((int)(data[index]) == -1) {
     if (index >= MAX_SHAPE_SIZE) {
+      NNACL_LOG_ERROR("index >= MAX_SHAPE_SIZE,which is %d",index);
       return NNACL_ERR;
     }
     if (input_count == 0) {
       out_shape[index] = 0;
     } else if (size == 0) {
+      NNACL_LOG_ERROR("size == 0");
       return NNACL_ERR;
     } else {
       out_shape[index] = input_count / size;
@@ -61,9 +63,12 @@ int CalNewShape(const TensorC *in_tensor, int *out_shape, size_t out_shape_size)
       if (infer_index == -1) {
         infer_index = (int64_t)(i);
       } else {
+        NNACL_LOG_ERROR("out_shape[%zu] == -1 and infer_index != -1",i);
         return NNACL_ERR;
       }
     } else if (out_shape[i] < 0) {
+      NNACL_LOG_ERROR("out_shape[%zu] < 0",i);
+
       return NNACL_ERR;
     } else if (out_shape[i] == 0) {
       if (GetElementNum(in_tensor) != 0) {
@@ -78,13 +83,16 @@ int CalNewShape(const TensorC *in_tensor, int *out_shape, size_t out_shape_size)
     }
   }
   if (infer_index == -1 && out_shape_size_new != in_shape_size) {
+    NNACL_LOG_ERROR("infer_index == -1 && out_shape_size_new != in_shape_size");
     return NNACL_ERR;
   }
   if (infer_index != -1) {
     if (out_shape_size_new == 0) {
+      NNACL_LOG_ERROR("out_shape_size_new == 0");
       return NNACL_ERR;
     }
     if (infer_index >= MAX_SHAPE_SIZE) {
+      NNACL_LOG_ERROR("infer_index >= MAX_SHAPE_SIZE");
       return NNACL_ERR;
     }
     out_shape[infer_index] = in_shape_size / out_shape_size_new;
@@ -95,11 +103,13 @@ int CalNewShape(const TensorC *in_tensor, int *out_shape, size_t out_shape_size)
 int CalShapeByType(const TensorC *const *inputs, size_t shape_size, int *out_shape, size_t *out_shape_size) {
   const TensorC *shape_tensor = inputs[1];
   if (shape_size == 0) {
+    NNACL_LOG_ERROR("shape_size == 0");
     return NNACL_ERR;
   }
   NNACL_CHECK_FALSE(INT_MUL_OVERFLOW((sizeof(int)), shape_size), NNACL_ERR);
   int *data_int = (int *)malloc(sizeof(int) * shape_size);
   if (data_int == NULL) {
+    NNACL_LOG_ERROR("data_int == NULL");
     return NNACL_ERR;
   }
   switch (shape_tensor->data_type_) {
@@ -111,6 +121,7 @@ int CalShapeByType(const TensorC *const *inputs, size_t shape_size, int *out_sha
       int cal_ret = CalShape(data_int, inputs, out_shape, out_shape_size, shape_size);
       if (cal_ret != NNACL_OK) {
         free(data_int);
+        NNACL_LOG_ERROR("CalShape failed,cal_ret != NNACL_OK");
         return NNACL_ERR;
       }
     } break;
@@ -122,6 +133,7 @@ int CalShapeByType(const TensorC *const *inputs, size_t shape_size, int *out_sha
       int cal_ret = CalShape(data_int, inputs, out_shape, out_shape_size, shape_size);
       if (cal_ret != NNACL_OK) {
         free(data_int);
+        NNACL_LOG_ERROR("CalShape failed,cal_ret != NNACL_OK");
         return NNACL_ERR;
       }
     } break;
@@ -133,6 +145,7 @@ int CalShapeByType(const TensorC *const *inputs, size_t shape_size, int *out_sha
       int cal_ret = CalShape(data_int, inputs, out_shape, out_shape_size, shape_size);
       if (cal_ret != NNACL_OK) {
         free(data_int);
+        NNACL_LOG_ERROR("CalShape failed,cal_ret != NNACL_OK");
         return NNACL_ERR;
       }
     } break;
@@ -144,6 +157,7 @@ int CalShapeByType(const TensorC *const *inputs, size_t shape_size, int *out_sha
       int cal_ret = CalShape(data_int, inputs, out_shape, out_shape_size, shape_size);
       if (cal_ret != NNACL_OK) {
         free(data_int);
+        NNACL_LOG_ERROR("CalShape failed,cal_ret != NNACL_OK");
         return NNACL_ERR;
       }
     } break;
@@ -155,11 +169,13 @@ int CalShapeByType(const TensorC *const *inputs, size_t shape_size, int *out_sha
       int cal_ret = CalShape(data_int, inputs, out_shape, out_shape_size, shape_size);
       if (cal_ret != NNACL_OK) {
         free(data_int);
+        NNACL_LOG_ERROR("CalShape failed,cal_ret != NNACL_OK");
         return NNACL_ERR;
       }
     } break;
     default: {
       free(data_int);
+      NNACL_LOG_ERROR("shape_tensor->data_type_ is invalid");
       return NNACL_ERR;
     }
   }
@@ -198,6 +214,7 @@ int ReshapeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC 
     }
     int shape_size = GetElementNum(shape_tensor);
     if (shape_size > MAX_SHAPE_SIZE) {
+      NNACL_LOG_ERROR("shape_size > MAX_SHAPE_SIZE,which is %d",shape_size);
       return NNACL_ERR;
     }
     int calRet = CalShapeByType(inputs, shape_size, out_shape, &out_shape_size);
@@ -206,12 +223,15 @@ int ReshapeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC 
     }
   } else if (inputs_size == 1) {
     if (param->shape_dim_ > MAX_SHAPE_SIZE) {
+      NNACL_LOG_ERROR("param->shape_dim_ > MAX_SHAPE_SIZE,which is %d",param->shape_dim_);
+
       return NNACL_PARAM_INVALID;
     }
     for (int i = 0; i < param->shape_dim_; ++i) {
       ShapePush(out_shape, &out_shape_size, param->shape_[i]);
     }
   } else {
+    NNACL_LOG_ERROR("inputs_size is invalid,which is %zu",inputs_size);
     return NNACL_ERR;
   }
   int ret = CalNewShape(inputs[0], out_shape, out_shape_size);

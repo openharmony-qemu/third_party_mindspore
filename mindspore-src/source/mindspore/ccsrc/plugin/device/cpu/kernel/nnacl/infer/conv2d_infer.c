@@ -26,9 +26,11 @@ int ConvInferShape(int input_h, int input_w, int *output_h, int *output_w, ConvP
   int dilate_h = param->dilation_h_;
 
   if (stride_w == 0 || stride_h == 0) {
+    NNACL_LOG_ERROR("stride_w == 0 || stride_h == 0");
     return NNACL_PARAM_INVALID;
   }
   if (INT_MUL_OVERFLOW(kernel_h, dilate_h) || INT_MUL_OVERFLOW(kernel_w, dilate_w)) {
+    NNACL_LOG_ERROR("h or w multiply overflow");
     return NNACL_ERRCODE_MUL_OVERFLOW;
   }
   if (param->pad_mode_ == Pad_same) {  // maybe error
@@ -62,6 +64,7 @@ int ConvInferShape(int input_h, int input_w, int *output_h, int *output_w, ConvP
 
   if (param->kernel_h_ > input_h + param->pad_u_ + param->pad_d_ ||
       param->kernel_w_ > input_w + param->pad_l_ + param->pad_r_) {
+    NNACL_LOG_ERROR("kernel_h_ or kernel_w_ is larger than expected");
     return NNACL_PARAM_INVALID;
   }
   return NNACL_OK;
@@ -75,6 +78,8 @@ int CheckConvAttr(const int input_c, const TensorC *weight_tensor, const ConvPar
   // group conv: input_c / group == weight_tensor->shape_[3]
   NNACL_CHECK_FALSE(param->group_ == 0, NNACL_PARAM_INVALID);
   if (input_c != weight_tensor->shape_[3] && input_c != 1 && (input_c / param->group_) != weight_tensor->shape_[3]) {
+    NNACL_LOG_ERROR("value of input_c is unexpected");
+
     return NNACL_PARAM_INVALID;
   }
 
@@ -83,13 +88,16 @@ int CheckConvAttr(const int input_c, const TensorC *weight_tensor, const ConvPar
   // group conv: group == input_c / weight_tensor->shape_[3]
   NNACL_CHECK_FALSE(weight_tensor->shape_[3] == 0, NNACL_PARAM_INVALID);
   if (param->group_ != 1 && param->group_ != input_c && param->group_ != (input_c / weight_tensor->shape_[3])) {
+    NNACL_LOG_ERROR("value of param->group_ is unexpected");
     return NNACL_PARAM_INVALID;
   }
   if (param->stride_h_ <= 0 || param->stride_w_ <= 0) {
+    NNACL_LOG_ERROR("value of param->stride_w_ or param->stride_h_ is unexpected");
     return NNACL_PARAM_INVALID;
   }
 
   if ((param->kernel_h_ >= MAX_CONV_KERNEL_DIM) || (param->kernel_w_ >= MAX_CONV_KERNEL_DIM)) {
+    NNACL_LOG_ERROR("value of param->kernel_h_ or param->kernel_w_ is unexpected");
     return NNACL_PARAM_INVALID;
   }
 
@@ -108,10 +116,12 @@ int Conv2dInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
   const TensorC *input_tensor = inputs[0];
   if (input_tensor->format_ != Format_NHWC && input_tensor->format_ != Format_KHWC &&
       input_tensor->format_ != Format_NC4HW4 && input_tensor->format_ != Format_NC8HW8) {
+    NNACL_LOG_ERROR("value of input_tensor->format_ is unexpected");
     return NNACL_FORMAT_ERROR;
   }
   const TensorC *weight_tensor = inputs[1];
   if (weight_tensor->format_ != Format_NHWC && weight_tensor->format_ != Format_KHWC) {
+    NNACL_LOG_ERROR("value of weight_tensor->format_ is unexpected");
     return NNACL_FORMAT_ERROR;
   }
   TensorC *out_tensor = outputs[0];
