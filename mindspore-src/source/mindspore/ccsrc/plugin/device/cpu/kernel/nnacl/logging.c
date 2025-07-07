@@ -1,7 +1,22 @@
+/**
+ * Copyright 2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include "logging.h"
 #if defined(__ANDROID__)
 #include <android/log.h>
-const char*ANDROID_LOG_TAG = "MS_LITE_NNACL";
+const char *ANDROID_LOG_TAG = "MS_LITE_NNACL";
 static int GetAndroidLogLevel(NNACLLogLevel level) {
   switch (level) {
     case NNACL_LOG_DEBUG:
@@ -73,35 +88,35 @@ int NnaclStrToInt(const char *env) {
   return 2;
 }
 int NnaclIsPrint(int level) {
-    const char *env = getenv("GLOG_v");
-    const int ms_level = NnaclStrToInt(env);
-    if (level < 0) {
-        level = 2;
-    }
-    if (level >= ms_level) {
-        return 1;
-    }
-    return 0;
+  const char *env = getenv("GLOG_v");
+  const int ms_level = NnaclStrToInt(env);
+  if (level < 0) {
+    level = 2;
+  }
+  if (level >= ms_level) {
+    return 1;
+  }
+  return 0;
 }
 void NnaclLogOutput(NNACLLogLevel level, const char *file, int line, const char *func, const char *fmt, ...) {
-    char buffer[256];
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buffer, sizeof(buffer), fmt, args);
-    va_end(args);
-    if (NnaclIsPrint(level) == 0) {
-        return;
-    }
+  if (NnaclIsPrint(level) == 0) {
+    return;
+  }
+  char buffer[256];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(buffer, sizeof(buffer), fmt, args);
+  va_end(args);
 
 #if defined(__ANDROID__)
-    __android_log_print(GetAndroidLogLevel(level), ANDROID_LOG_TAG, "[%s:%d] (%s): %s", file, line, func,buffer);
+  __android_log_print(GetAndroidLogLevel(level), ANDROID_LOG_TAG, "[%s:%d] (%s): %s", file, line, func, buffer);
 
 #elif defined(MS_COMPILE_OHOS)
-    NnaclPrintHiLog(level, file, line, func, buffer);
+  NnaclPrintHiLog(level, file, line, func, buffer);
 
 #else
-    const char *level_str[] = {"DEBUG", "INFO", "WARNING", "ERROR"};
-    printf("[%s] %s:%d (%s): %s", level_str[level], file, line, func,buffer);
-    printf("\n");
+  const char *level_str[] = {"DEBUG", "INFO", "WARNING", "ERROR"};
+  printf("[%s] %s:%d (%s): %s", level_str[level], file, line, func, buffer);
+  printf("\n");
 #endif
 }

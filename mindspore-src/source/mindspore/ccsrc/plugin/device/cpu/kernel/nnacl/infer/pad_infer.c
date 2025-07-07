@@ -34,13 +34,13 @@ int PadInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **ou
   }
 
   if (input->shape_size_ > DEFAULT_PAD_NDIMS) {
-    NNACL_LOG_ERROR("input->shape_size_ > DEFAULT_PAD_NDIMS,which is %zu",input->shape_size_);
+    NNACL_LOG_ERROR("input->shape_size_ > DEFAULT_PAD_NDIMS,which is %zu", input->shape_size_);
     return NNACL_INPUT_TENSOR_ERROR;
   }
   const TensorC *paddings = inputs[1];
   int size = GetElementNum(paddings);
   if (size > MAX_PAD_SIZE) {
-    NNACL_LOG_ERROR("size > MAX_PAD_SIZE,which is %d",size);
+    NNACL_LOG_ERROR("size > MAX_PAD_SIZE,which is %d", size);
     return NNACL_PARAM_INVALID;
   }
   if (paddings->data_ == NULL) {

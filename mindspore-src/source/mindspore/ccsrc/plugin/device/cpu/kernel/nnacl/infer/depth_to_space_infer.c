@@ -26,7 +26,7 @@ int DepthToSpaceInferShape(const TensorC *const *inputs, size_t inputs_size, Ten
 
   const TensorC *input = inputs[0];
   if (input->format_ != Format_NHWC) {
-    NNACL_LOG_ERROR("input->format_ != Format_NHWC,which is %d",input->format_);
+    NNACL_LOG_ERROR("input->format_ != Format_NHWC,which is %d", input->format_);
 
     return NNACL_FORMAT_ERROR;
   }
@@ -36,7 +36,7 @@ int DepthToSpaceInferShape(const TensorC *const *inputs, size_t inputs_size, Ten
     return NNACL_INFER_INVALID;
   }
   if (input->shape_size_ != 4) {
-    NNACL_LOG_ERROR("input->shape_size_ != 4,which is %zu",input->shape_size_);
+    NNACL_LOG_ERROR("input->shape_size_ != 4,which is %zu", input->shape_size_);
     return NNACL_PARAM_INVALID;
   }
   int input_shape[MAX_SHAPE_SIZE] = {0};

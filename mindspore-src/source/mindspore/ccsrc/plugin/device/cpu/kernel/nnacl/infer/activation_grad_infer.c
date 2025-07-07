@@ -26,12 +26,14 @@ int ActivationGradInferShape(const TensorC *const *inputs, size_t inputs_size, T
   const TensorC *input = inputs[0];
   const TensorC *input_grad = inputs[1];
   if (input->shape_size_ != input_grad->shape_size_) {
-    NNACL_LOG_ERROR("input->shape_size_ which is %zu != input_grad->shape_size_ which is %zu",input->shape_size_,input_grad->shape_size_);
+    NNACL_LOG_ERROR("input->shape_size_ which is %zu != input_grad->shape_size_ which is %zu", input->shape_size_,
+                    input_grad->shape_size_);
     return NNACL_ERR;
   }
   for (size_t i = 0; i < input->shape_size_; i++) {
     if (input->shape_[i] != input_grad->shape_[i]) {
-      NNACL_LOG_ERROR("input->shape_[%zu] which is %d != input_grad->shape_[%zu] which is %d",i,input->shape_[i],i,input_grad->shape_[i]);
+      NNACL_LOG_ERROR("input->shape_[%zu] which is %d != input_grad->shape_[%zu] which is %d", i, input->shape_[i], i,
+                      input_grad->shape_[i]);
       return NNACL_ERR;
     }
   }
