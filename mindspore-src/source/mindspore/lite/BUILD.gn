@@ -344,6 +344,25 @@ if ((target_cpu == "arm" || target_cpu == "arm64") && !is_emulator) {
   SUPPORT_NNRT = true
 }
 
+config("mindspore_lib_include") {
+  include_dirs = [
+    "./",
+    "../",
+    "../../",
+    "../core",
+    "src",
+    "src/c_api/",
+    "../ccsrc/plugin/device/cpu/kernel/",
+    "../core/mindrt/src/",
+    "../core/mindrt/include/",
+    "../../third_party/",
+    "./schema/",
+    "../ccsrc/",
+    "src/litert/kernel/cpu/",
+    "../core/mindrt/src/",
+  ]
+}
+
 ohos_shared_library("mindspore_lib") {
   branch_protector_ret = "pac_ret"
   deps = [
@@ -354,7 +373,7 @@ ohos_shared_library("mindspore_lib") {
   ]
 
   sources = all_sources
-
+  public_configs = [ ":mindspore_lib_include" ]
   include_dirs = [
     "./",
     "../",
