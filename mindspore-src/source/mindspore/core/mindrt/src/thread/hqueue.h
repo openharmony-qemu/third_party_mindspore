@@ -76,6 +76,7 @@ class HQueue {
   void Clean() {
     for (auto node : nodes) {
       delete node;
+      node = nullptr;
     }
     nodes.clear();
   }
