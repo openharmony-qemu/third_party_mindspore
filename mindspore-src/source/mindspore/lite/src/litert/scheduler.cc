@@ -69,6 +69,9 @@ using AbstractBaseModel = mindspore::infer::AbstractBaseModel;
 namespace mindspore::lite {
 namespace {
 constexpr int kMainSubGraphIndex = 0;
+constexpr int kWhereInputNum = 3;
+constexpr int kIndex2 = 2;
+constexpr int kIndex1 = 1;
 }  // namespace
 
 namespace {
@@ -1180,15 +1183,15 @@ kernel::KernelExec *Scheduler::FindBackendKernel(const std::vector<Tensor *> &in
     }
   } else {
     if (static_cast<std::string>(GetPrimitiveTypeName(node->primitive_, context_->get_schema_version())) == "Where" &&
-        in_tensors.size() == 3) {
+        in_tensors.size() == kWhereInputNum) {
       // mslite use first input tensor dtype as kernel dtype, but op 'where' is a outliner, is first input 'condition'
       // is always 'bool'-typed, here we use where's second/third input dtype as kernel dtype.
       std::unordered_set<TypeId> type_set = {kNumberTypeFloat32, kNumberTypeFloat16, kNumberTypeInt8,  kNumberTypeInt32,
                                              kNumberTypeBool,    kNumberTypeUInt8,   kObjectTypeString};
-      if (type_set.find(in_tensors[1]->data_type()) != type_set.end()) {
-        data_type = in_tensors[1]->data_type();
+      if (type_set.find(in_tensors[kIndex1]->data_type()) != type_set.end()) {
+        data_type = in_tensors[kIndex1]->data_type();
       } else {
-        data_type = in_tensors[2]->data_type();
+        data_type = in_tensors[kIndex2]->data_type();
       }
     } else {
       data_type = GetFirstFp32Fp16OrInt8Type(in_tensors);
