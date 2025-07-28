@@ -504,7 +504,10 @@ ohos_shared_library("mindspore_ndk") {
 
   sources = c_api_sources
 
-  external_deps = [ "hilog:libhilog" ]
+  external_deps = [ 
+    "flatbuffers:libflatbuffers_static",
+    "hilog:libhilog"
+  ]
 
   include_dirs = [
     "./",
@@ -537,7 +540,6 @@ ohos_shared_library("mindspore_ndk") {
       print("enabled feature: mindspore_feature_nnrt_metagraph")
     }
     external_deps += [
-      "flatbuffers:libflatbuffers_static",
       "neural_network_runtime:libneural_network_core",
       "neural_network_runtime:libneural_network_runtime",
     ]
