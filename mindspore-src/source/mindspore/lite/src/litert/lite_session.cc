@@ -688,7 +688,7 @@ int LiteSession::CreateNNRTDelegate() {
 #if SUPPORT_NNRT
   auto iter = std::find_if(context_->device_list_.begin(), context_->device_list_.end(),
                            [](DeviceContext &device) { return device.device_type_ == lite::DT_NNRT; });
-  if(iter == context_->device_list_.end()) {
+  if (iter == context_->device_list_.end()) {
     MS_LOG(ERROR) << "Found non NNRT device info";
     return RET_ERROR;
   }
@@ -1495,6 +1495,14 @@ int LiteSession::Resize(const std::vector<mindspore::lite::Tensor *> &inputs,
   if (!is_running_.compare_exchange_strong(expected, true)) {
     MS_LOG(ERROR) << "Not support multi-threading";
     return RET_ERROR;
+  }
+  for (size_t i = 0; i < dims.size(); i++) {
+    auto model_input_rank = inputs[i]->ConvertToTensorC()->shape_size_;
+    if (dims[i].size() != model_input_rank && model_input_rank != 0) {
+      MS_LOG(ERROR) << "Tensor " << i << "'s rank: " << dims[i].size() << " must match the rank: " << model_input_rank
+                    << " of model input " << i;
+      return RET_ERROR;
+    }
   }
   std::vector<std::vector<int>> old_dims;
   for (size_t i = 0; i < inputs_.size(); ++i) {
