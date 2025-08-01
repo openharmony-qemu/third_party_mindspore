@@ -344,6 +344,10 @@ if ((target_cpu == "arm" || target_cpu == "arm64") && !is_emulator) {
   SUPPORT_NNRT = true
 }
 
+config("link_option_lto") {
+  ldflags = ["-Wl,--lto-O0"]
+}
+
 config("mindspore_lib_include") {
   include_dirs = [
     "./",
@@ -436,6 +440,7 @@ ohos_shared_library("mindspore_lib") {
     ":disable_android",
     ":opencl_option",
     ":secure_option",
+    ":link_option_lto",
   ]
 
   remove_configs = [ "//build/config/compiler:no_rtti" ]
@@ -726,6 +731,7 @@ ohos_shared_library("mindspore_train_lib") {
     ":disable_android",
     ":train_kernel_option",
     ":secure_option",
+    ":link_option_lto",
   ]
 
   remove_configs = [ "//build/config/compiler:no_rtti" ]
