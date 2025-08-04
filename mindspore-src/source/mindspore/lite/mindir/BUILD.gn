@@ -64,7 +64,10 @@ ohos_shared_library("mindir_lib") {
     "hdf_core:libhdi",
     "hilog:libhilog",
   ]
-  configs = [ ":mindir_secure_disable_android" ]
+  configs = [
+    ":mindir_secure_disable_android",
+    "../:link_option_lto",
+  ]
   public_configs = [ ":mindir_config" ]
   defines = [ "MS_COMPILE_OHOS" ]
   output_name = "mindir"
