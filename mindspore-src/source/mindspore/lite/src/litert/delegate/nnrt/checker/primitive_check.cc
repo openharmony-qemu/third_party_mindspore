@@ -63,7 +63,7 @@ Status CheckTensorSupported(const schema::Tensor *primitive) {
     auto ret = DecompressTensor(*primitive);
     if (ret == RET_NO_CHANGE) {
     } else {
-      MS_LOG(ERROR) << "Not support Decompress Tensor.";
+      MS_LOG(DEBUG) << "Not support Decompress Tensor.";
       return mindspore::kLiteNotSupport;
     }
   }
