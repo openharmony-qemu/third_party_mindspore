@@ -22,7 +22,7 @@
 #endif
 
 #ifdef MS_COMPILE_OHOS
-#define LOG_DOMAIN 0xD002102
+#define LOG_DOMAIN 0xD002103
 #define LOG_TAG "MS_LITE"
 #define FORMAT "[%{public}s:%{public}d] %{public}s# %{public}s"
 #include "hilog/log.h"
@@ -96,15 +96,15 @@ void PrintHiLog(LiteLogLevel level, const char *file, int line, const char *func
 #else
   // When build in OHOS repo, use inner api of hilog module.
   if (level == LiteLogLevel::DEBUG) {
-    HILOG_DEBUG(LOG_APP, FORMAT, file, line, func, msg);
+    HILOG_DEBUG(LOG_CORE, FORMAT, file, line, func, msg);
   } else if (level == LiteLogLevel::INFO) {
-    HILOG_INFO(LOG_APP, FORMAT, file, line, func, msg);
+    HILOG_INFO(LOG_CORE, FORMAT, file, line, func, msg);
   } else if (level == LiteLogLevel::WARNING) {
-    HILOG_WARN(LOG_APP, FORMAT, file, line, func, msg);
+    HILOG_WARN(LOG_CORE, FORMAT, file, line, func, msg);
   } else if (level == LiteLogLevel::ERROR) {
-    HILOG_ERROR(LOG_APP, FORMAT, file, line, func, msg);
+    HILOG_ERROR(LOG_CORE, FORMAT, file, line, func, msg);
   } else {
-    HILOG_ERROR(LOG_APP, FORMAT, file, line, func, msg);
+    HILOG_ERROR(LOG_CORE, FORMAT, file, line, func, msg);
   }
 #endif
 }
