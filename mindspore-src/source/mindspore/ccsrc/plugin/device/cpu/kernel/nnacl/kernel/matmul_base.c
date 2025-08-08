@@ -639,6 +639,7 @@ void InitMatrixInfo(MatrixInfo *info) {
 }
 
 KernelBase *CreateMatmulBase() {
+  NNACL_LOG_INFO("Attempting to allocate memory for MatmulStruct, size: %zu bytes", sizeof(MatmulStruct));
   MatmulStruct *matmul = (MatmulStruct *)malloc(sizeof(MatmulStruct));
   NNACL_MALLOC_CHECK_NULL_RETURN_NULL(matmul);
   memset(matmul, 0, sizeof(MatmulStruct));
