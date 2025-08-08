@@ -189,7 +189,8 @@ int MatMulDynamicSdotInt8Kernel::MatMulDynamicArm64SdotImpl(int task_id) {
 void MatMulDynamicSdotInt8Kernel::InitParameter() {
   param_->a_const_ = (in_tensors_[0]->data() != nullptr);
   param_->b_const_ = (in_tensors_[1]->data() != nullptr);
-
+  MS_LOG(INFO) << "param_->a_const_ is " << param_->a_const_;
+  MS_LOG(INFO) << "param_->b_const_ is " << param_->b_const_;
   row_tile_ = C4NUM;
   col_tile_ = C16NUM;
   deep_tile_ = C4NUM;
