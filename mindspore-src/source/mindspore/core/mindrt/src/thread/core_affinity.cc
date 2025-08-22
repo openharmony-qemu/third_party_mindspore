@@ -298,7 +298,7 @@ int CoreAffinity::InitHardwareCoreInfo() {
   sorted_id_.clear();
   int max_freq = freq_set.front().max_freq;
   for (const auto &info : freq_set) {
-    THREAD_INFO("sorted core id: %d, max frequency: %d, arch: %d", info.core_id, info.max_freq, info.arch);
+    THREAD_DEBUG("sorted core id: %d, max frequency: %d, arch: %d", info.core_id, info.max_freq, info.arch);
     sorted_id_.push_back(info.core_id);
     higher_num_ += info.max_freq == max_freq ? 1 : 0;
   }
