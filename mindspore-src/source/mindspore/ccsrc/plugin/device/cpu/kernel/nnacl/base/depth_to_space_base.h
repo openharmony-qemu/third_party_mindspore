@@ -24,6 +24,8 @@ extern "C" {
 #endif
 void DepthToSpaceForNHWC(const void *input, void *output, const int *in_shape, const DepthToSpaceArgs *param);
 void DepthToSpaceCRDForNHWC(const void *input, void *output, const int *in_shape, const DepthToSpaceArgs *param);
+void DepthToSpaceCRDForNCHW(const void *input, void *output, const int *in_shape, int start_h, int end_h,
+                            const DepthToSpaceArgs *param);
 #ifdef __cplusplus
 }
 #endif
