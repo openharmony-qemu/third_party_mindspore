@@ -83,5 +83,41 @@ TEST_F(DepthToSpaceTestFp32, DepthToSpaceTest3) {
   }
   std::cout << "\n";
   ASSERT_EQ(0, CompareOutputData(output, expect_out, kOutSize, 0.000001));
+
+  TEST_F(DepthToSpaceTestFp32, DepthToSpaceNCHWSucc) {
+    DepthToSpaceArgs param;
+    param.block_size_ = 2;
+    param.data_type_size_ = sizeof(float);
+    int32_t in_shape[Num4] = {1, 4, 2, 2};
+    int32_t in_strides[Num4];
+    ComputeStrides(in_shape, in_strides, Num4);
+    param.in_stride_dim0_ = in_strides[Index0];
+    param.in_stride_dim1_ = in_strides[Index1];
+    param.in_stride_dim2_ = in_strides[Index2];
+    int32_t out_shape[Num4] = {1, 1, 4, 4};
+    int32_t out_strides[Num4];
+    ComputeStrides(out_shape, out_strides, Num4);
+    param.out_stride_dim0_ = out_strides[Index0];
+    param.out_stride_dim1_ = out_strides[Index1];
+    param.out_stride_dim2_ = out_strides[Index2];
+    int32_t in_size = 1;
+    for (int32_t i = 0; i < Num4; ++i) {
+      in_size *= in_shape[i];
+    }
+    std::vector<float> input(in_size);
+    for (int32_t i = 0; i < in_size; ++i) {
+      input[i] = i + 1;
+    }
+    float *output = (float *)malloc(in_size * sizeof(float));
+    if (output == nullptr) {
+      return;
+    }
+    DepthToSpaceCRDForNCHW(input.data(), output, in_shape, 0, in_shape[2], &param);
+    std::vector<float> expect_output = {1, 5, 2, 6, 9, 13, 10, 14, 3, 7, 4, 8, 11, 15, 12, 16};
+    for (int32_t i = 0; i < in_size; ++i) {
+      ASSERT_LT(std::abs(output[i] - expect_output[i]), 1e-6);
+    }
+    free(output);
+  }
 }
 }  // namespace mindspore

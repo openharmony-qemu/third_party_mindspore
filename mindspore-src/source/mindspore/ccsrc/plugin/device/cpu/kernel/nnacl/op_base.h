@@ -770,6 +770,8 @@ typedef enum CalFixedMultiplierMode {
   Method_DoublePrecision
 } CalFixedMultiplierMode;
 
+typedef enum DepthToSpaceMode { DepthToSpaceMode_DCR = 0, DepthToSpaceMode_CRD = 1 } DepthToSpaceMode;
+
 #define VA_ARG_TUPLE_LEN 2
 static inline void offset_to_index_init(int offset, int cnt, ...) {
   va_list valist;

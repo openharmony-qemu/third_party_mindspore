@@ -41,12 +41,44 @@ int DepthToSpaceResize(KernelBase *self) {
   return NNACL_OK;
 }
 
+int DepthToSpaceComputeNCHWImpl(void *cdata, int thread_id, float l, float r) {
+  DepthToSpaceStruct *depth_to_space = (DepthToSpaceStruct *)cdata;
+  TensorC *input = depth_to_space->base_.in_[FIRST_INPUT];
+  int in_h = input->shape_[kNCHW_H];
+  int thread_num = depth_to_space->base_.thread_nr_;
+  int rows_per_thread = in_h / thread_num;
+  int start_h = thread_id * rows_per_thread;
+  int end_h = (thread_id == (thread_num - 1)) ? in_h : (thread_id + 1) * rows_per_thread;
+  TensorC *output = depth_to_space->base_.out_[OUTPUT_INDEX];
+  DepthToSpaceCRDForNCHW(input->data_, output->data_, input->shape_, start_h, end_h, &depth_to_space->args_);
+  return NNACL_OK;
+}
+
 int DepthToSpaceCompute(KernelBase *self) {
   DepthToSpaceStruct *depth_to_space = (DepthToSpaceStruct *)self;
   int mode = ((DepthToSpaceParameter *)self->param_)->mode_;
 
   TensorC *input = self->in_[FIRST_INPUT];
   TensorC *output = self->out_[OUTPUT_INDEX];
+
+  int format_ = input->format_;
+  if (format_ == Format_NCHW) {
+    if (mode != DepthToSpaceMode_CRD) {
+      // only support mode = "CRD" when format == NCHW
+      return NNACL_PARAM_INVALID;
+    }
+    if (input->data_type_ != kNumberTypeFloat && input->data_type_ != kNumberTypeFloat16 &&
+        input->data_type_ != kNumberTypeFloat32) {
+      // only support fp32 && fp16
+      return NNACL_PARAM_INVALID;
+    }
+    int in_h = input->shape_[kNCHW_H];
+    if (in_h % self->thread_nr_ == 0) {
+      return self->env_->ParallelLaunch(self->env_->thread_pool_, DepthToSpaceComputeNCHWImpl, self, self->thread_nr_);
+    } else {
+      DepthToSpaceCRDForNCHW(input->data_, output->data_, input->shape_, 0, in_h, &depth_to_space->args_);
+    }
+  }
 
   if (mode == 0) {
     // RCD
