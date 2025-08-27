@@ -107,6 +107,7 @@ cpu_kernel_sources = [
   "nnacl/nnacl_matmul.cc",
   "nnacl/nnacl_reduce.cc",
   "nnacl/nnacl_reshape.cc",
+  "nnacl/nnacl_where.cc",
   "nnacl/nnacl_strided_slice.cc",
 ]
 

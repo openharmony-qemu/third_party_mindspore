@@ -372,6 +372,33 @@ int ReduceCompute(struct KernelBase *self) {
   NNACL_CHECK_NULL_RETURN_ERR(self);
   ReduceStruct *reduce = (ReduceStruct *)self;
   NNACL_CHECK_FALSE(self->in_[FIRST_INPUT]->data_type_ != reduce->data_type_, NNACL_ERR);
+  int *in_shape = self->in_[FIRST_INPUT]->shape_;
+  size_t shape_size = self->in_[FIRST_INPUT]->shape_size_;
+  size_t out_shape_size = self->out_[OUTPUT_INDEX]->shape_size_;
+  size_t out_len = 1;
+  for (size_t i = 0; i < out_shape_size; ++i) {
+    out_len *= self->out_[OUTPUT_INDEX]->shape_[i];
+  }
+  for (size_t i = 0; i < shape_size; ++i) {
+    if (in_shape[i] != Num0) {
+      continue;
+    }
+    switch (self->out_[OUTPUT_INDEX]->data_type_) {
+      case kNumberTypeInt32:
+        for (size_t j = 0; j < out_len; ++j) {
+          *((int32_t *)(self->out_[OUTPUT_INDEX]->data_) + j) = 0;
+        }
+        break;
+      case kNumberTypeFloat32:
+        for (size_t j = 0; j < out_len; ++j) {
+          *((float *)(self->out_[OUTPUT_INDEX]->data_) + j) = 0.0f;
+        }
+        break;
+      default:
+        return NNACL_ERR;
+    }
+    return NNACL_OK;
+  }
 
   if (reduce->only_copy_) {
     return CopyReduceyInputToOutput(reduce);
