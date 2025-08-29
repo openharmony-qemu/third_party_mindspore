@@ -44,24 +44,6 @@ config("nnacl_public_config") {
       ]
       cflags_c += [ "-flax-vector-conversions" ]
     }
-  } else if (target_cpu == "x86_64") {
-    cflags_c += [
-      "-mavx",
-      "-mavx2",
-      "-mfma",
-      "-msse4.1",
-      "-fPIC",
-    ]
-    defines += [
-      "ENABLE_SSE",
-      "ENABLE_AVX",
-    ]
-
-    # emulator not support avx512
-    if (!is_emulator) {
-      cflags_c += [ "-mavx512f" ]
-      defines += [ "ENABLE_AVX512" ]
-    }
   }
 }
 
@@ -946,7 +928,7 @@ if (target_cpu == "arm") {
   not_needed(arm_only_sources)
   not_needed(x86_64_only_sources)
 } else if (target_cpu == "x86_64") {
-  nnacl_sources += x86_64_only_sources
+  not_needed(x86_64_only_sources)
   not_needed(arm_only_sources)
   not_needed(arm64_only_sources)
 }
