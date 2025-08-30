@@ -54,12 +54,14 @@ bool LoadHiaiFLibraryFromPath(void **handle_ptr) {
 
   LOAD_HIAIF_FUNCTION_PTR(HMS_HiAIOptions_SetQuantConfig);
   LOAD_HIAIF_FUNCTION_PTR(HMS_HiAIOptions_SetBandMode);
+  LOAD_HIAIF_FUNCTION_PTR(HMS_HiAIOptions_SetAsyncModeEnable);
   return true;
 }
 
 #define HIAIF_DEFINE_FUNC_PTR(func) func##Func func = nullptr
 HIAIF_DEFINE_FUNC_PTR(HMS_HiAIOptions_SetQuantConfig);
 HIAIF_DEFINE_FUNC_PTR(HMS_HiAIOptions_SetBandMode);
+HIAIF_DEFINE_FUNC_PTR(HMS_HiAIOptions_SetAsyncModeEnable);
 
 #undef LOAD_HIAIF_FUNCTION_PTR
 }  // mindspore::lite

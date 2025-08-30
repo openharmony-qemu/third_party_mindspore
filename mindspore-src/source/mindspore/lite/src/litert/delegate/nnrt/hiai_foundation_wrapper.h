@@ -37,10 +37,12 @@ typedef enum {
 
 using HMS_HiAIOptions_SetQuantConfigFunc = OH_NN_ReturnCode (*)(OH_NNCompilation*, void*, size_t);
 using HMS_HiAIOptions_SetBandModeFunc = OH_NN_ReturnCode (*)(OH_NNCompilation*, HiAI_BandMode);
+using HMS_HiAIOptions_SetAsyncModeEnableFunc = OH_NN_ReturnCode (*)(OH_NNCompilation*, bool);
 
 #define HIAIF_DECLARE_FUNC_PTR(func) extern func##Func func
 HIAIF_DECLARE_FUNC_PTR(HMS_HiAIOptions_SetQuantConfig);
 HIAIF_DECLARE_FUNC_PTR(HMS_HiAIOptions_SetBandMode);
+HIAIF_DECLARE_FUNC_PTR(HMS_HiAIOptions_SetAsyncModeEnable);
 #undef HIAIF_DECLARE_FUNC_PTR
 }  // mindspore::lite
 

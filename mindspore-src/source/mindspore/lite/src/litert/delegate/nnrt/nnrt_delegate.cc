@@ -568,6 +568,13 @@ Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
         return kLiteError;
       }
     }
+    if (extension_options_.dynamic_dims.size() > 0) {
+      ret_code = mindspore::lite::HMS_HiAIOptions_SetAsyncModeEnable(nn_compilation, false);
+      if (ret_code != OH_NN_SUCCESS) {
+        MS_LOG(ERROR) << "HMS_HiAIOptions_SetAsyncModeEnable failed, ret: " << ret_code;
+        return kLiteError;
+      }
+    }
   } else {
     MS_LOG(WARNING) << "hiai_foundation is nullptr.";
   }
