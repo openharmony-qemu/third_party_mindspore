@@ -35,12 +35,14 @@
           "napi",
           "resource_management",
           "bounds_checking_function",
-          "flatbuffers"
+          "flatbuffers",
+          "runtime_core"
         ]
       },
       "build": {
         "sub_component": [
-          "//third_party/mindspore/:mindspore-all"
+          "//third_party/mindspore/:mindspore-all",
+          "//third_party/mindspore/mindspore-src/source/mindspore/lite/src/litert/taihe/ability_delegator:mindspore_taihe"
         ],
         "inner_kits": [
           {
@@ -105,6 +107,9 @@
               "header_files": [],
               "header_base": "//third_party/mindspore/mindspore-src/source/include/c_api"
             }
+          },
+          {
+            "name": "//third_party/mindspore/mindspore-src/source/mindspore/lite/src/litert/taihe/ability_delegator:mindspore_taihe"
           }
         ],
         "test": [
