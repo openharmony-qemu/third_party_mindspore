@@ -2141,6 +2141,13 @@ int lite::LiteSession::LoadModelAndCompileByPath(const std::string &model_path, 
     return RET_ERROR;
   }
   set_model(model);
+#ifdef SUPPORT_NNRT
+  if (context_->IsDeviceTypeEnabled(DT_NNRT)) {
+    if (delegate_ != nullptr && reinterpret_cast<NNRTDelegate *>(delegate_.get())->IsBuildOffline()) {
+        (reinterpret_cast<lite::LiteModel *>(model))->UnmapModelBuf();
+    }
+  }
+#endif
   return RET_OK;
 }
 

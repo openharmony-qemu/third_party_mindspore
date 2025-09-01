@@ -57,7 +57,7 @@ class NNRTDelegate : public Delegate {
   }
   static std::vector<NNRTOpRange> GetNNRTSubgraphRanges(DelegateModel<schema::Primitive> *model,
                                                         const std::vector<bool> &op_supports);
-
+  bool IsBuildOffline() const { return build_offline_; }
  private:
   void InitExtensionOptions();
   Status BuildNormalModel(DelegateModel<schema::Primitive> *model);
@@ -102,6 +102,7 @@ class NNRTDelegate : public Delegate {
   std::map<schema::Tensor *, void *> dequant_schema_tensors_buffer_map_;
   std::vector<schema::Tensor *> replaced_schema_tensors_;
   void *hiai_handle_{nullptr};
+  bool build_offline_ = false;
 };
 }  // namespace lite
 }  // namespace mindspore

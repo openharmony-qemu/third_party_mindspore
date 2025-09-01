@@ -71,6 +71,7 @@ class MS_API LiteModel : public Model {
 #else
   bool PrepareInnerTensors();
 #endif
+  void UnmapModelBuf();  
 
  private:
   bool CheckQuantAllInit(const flatbuffers::Vector<flatbuffers::Offset<mindspore::schema::QuantParam>> *quant_params);
