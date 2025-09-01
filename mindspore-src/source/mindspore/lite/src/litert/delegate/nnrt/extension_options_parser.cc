@@ -32,6 +32,7 @@ const std::string kBandMode = "BandMode";
 const std::string kQuantBuffer = "QuantBuffer";
 const std::string kQuantConfigData = "QuantConfigData";
 const std::string kModelName = "ModelName";
+const std::string kDynamicDims = "DynamicDims";
 }  // namespace
 
 int ExtensionOptionsParser::Parse(const std::vector<Extension> &extensions, ExtensionOptions *param) {
@@ -42,6 +43,7 @@ int ExtensionOptionsParser::Parse(const std::vector<Extension> &extensions, Exte
   DoParseBondMode(extensions, &param->band_mode);
   DoParseQuantConfig(extensions, &param->quant_config, &param->quant_config_size, &param->is_optional_quant_setted);
   DoParseModelName(extensions, &param->model_name);
+  DoParseDynamicDims(extensions, &param->dynamic_dims);
   return RET_OK;
 }
 
@@ -100,6 +102,16 @@ void ExtensionOptionsParser::DoParseModelName(const std::vector<Extension> &exte
   });
   if (iter_config != extensions.end()) {
     *model_name = std::string(iter_config->value.begin(), iter_config->value.end());
+  }
+}
+
+void ExtensionOptionsParser::DoParseDynamicDims(const std::vector<Extension> &extensions, std::string *dynamic_dims) {
+  MS_CHECK_TRUE_RET_VOID(dynamic_dims != nullptr);
+  auto iter_config = std::find_if(extensions.begin(), extensions.end(), [](const Extension &extension) {
+    return extension.name == kDynamicDims;
+  });
+  if (iter_config != extensions.end()) {
+    *dynamic_dims = std::string(iter_config->value.begin(), iter_config->value.end());
   }
 }
 }  // mindspore::lite::nnrt

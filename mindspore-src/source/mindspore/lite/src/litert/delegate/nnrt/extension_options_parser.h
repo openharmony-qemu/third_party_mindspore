@@ -30,6 +30,7 @@ struct ExtensionOptions {
   size_t quant_config_size = 0;
   bool is_optional_quant_setted = false;
   std::string model_name = "";
+  std::string dynamic_dims = "";
 };
 
 class ExtensionOptionsParser {
@@ -43,6 +44,7 @@ private:
   static void DoParseCachePath(const std::vector<Extension> &extensions, std::string *cache_path);
   static void DoParseCacheVersion(const std::vector<Extension> &extensions, uint32_t *cache_version);
   static void DoParseModelName(const std::vector<Extension> &extensions, std::string *model_name);
+  static void DoParseDynamicDims(const std::vector<Extension> &extensions, std::string *dynamic_dims);
 };
 
 }  // namespace mindspore::lite::nnrt
