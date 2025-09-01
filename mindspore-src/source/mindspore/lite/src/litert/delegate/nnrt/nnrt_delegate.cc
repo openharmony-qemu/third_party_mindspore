@@ -59,6 +59,7 @@ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
   }
   if (IsKirinNPUWithOfflineInference()) {
     MS_LOG(DEBUG) << "Choose to build offline inference model";
+    build_offline_ = true;
     return BuildOfflineModel(model);
   }
 #endif

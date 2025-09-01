@@ -40,11 +40,20 @@ namespace {
 constexpr size_t kMaxModelBufferSize = static_cast<size_t>(1024) * 1024 * 1024 * 2;
 }
 
-void LiteModel::Free() {
+void LiteModel::UnmapModelBuf() {
+  if (this->buf == nullptr) {
+    return;
+  }
+
   if (this->model_buf_by_mmap_) {
     UnmapMmapBuffer(static_cast<void *>(this->buf), this->buf_size_);
     this->buf = nullptr;
   }
+}
+
+void LiteModel::Free() {
+  UnmapModelBuf();
+  
   if (this->buf != nullptr && !this->model_buf_by_mmap_) {
     delete[](this->buf);
     this->buf = nullptr;
