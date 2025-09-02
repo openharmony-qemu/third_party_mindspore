@@ -115,6 +115,7 @@ class ModelImpl {
   std::vector<Metrics *> GetMetrics() { return metrics_; }
   const lite::LiteSession *GetSession() const { return session_.get(); }
   Status Finalize();
+  bool use_aipp_ = false;
 
  protected:
   // Utility methods
@@ -135,6 +136,7 @@ class ModelImpl {
   void SetGraph(const std::shared_ptr<Graph> &graph) { graph_ = graph; }
   void SetContext(const std::shared_ptr<Context> &context) { context_ = context; }
   void SetConfig(const std::shared_ptr<TrainCfg> cfg) { cfg_ = cfg; }
+  void SetPredictPara(const char *predict_config);
   Status RunGraph(const MSKernelCallBack &before, const MSKernelCallBack &after);
   bool IsEnableModelSharing(const std::string &model_path);
   bool IsEnableModelSharing(const std::pair<const void *, size_t> &model_buff);
@@ -142,6 +144,7 @@ class ModelImpl {
   int ModelDeObfuscate();
   std::map<std::string, TypeId> execution_plan_;
   std::map<std::string, std::map<std::string, std::string>> config_info_;
+  const char *predict_config_ = nullptr;
 };
 }  // namespace mindspore
 

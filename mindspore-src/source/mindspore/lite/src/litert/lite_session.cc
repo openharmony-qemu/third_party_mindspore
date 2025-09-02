@@ -909,6 +909,11 @@ int LiteSession::RunGraph(const KernelCallBack &before, const KernelCallBack &af
     return ret;
   }
   MS_ASSERT(this->context_ != nullptr);
+#ifdef SUPPORT_NNRT
+  for (auto kernel_exec : this->kernels_) {
+    kernel_exec->SetPredictParaKernelExec(predict_config_);
+  }
+#endif
   ret = executor_->Run(this->inputs_, this->outputs_, this->kernels_, before, after);
   if (MS_UNLIKELY(ret != RET_OK)) {
     MS_LOG(ERROR) << "RunGraph failed : " << ret;

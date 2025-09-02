@@ -268,6 +268,10 @@ OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandle
     vec_dims.push_back(shape);
   }
   auto impl = static_cast<mindspore::ModelC *>(model);
+  if (impl->model_->GetUseAipp()) {
+    MS_LOG(ERROR) << "aipp is true, not use model resize!!! ";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
   auto ret = impl->model_->Resize(vec_inputs, vec_dims);
   if (ret.IsOk()) {
     MS_LOG(INFO) << "Resized ms model successfully";
@@ -334,6 +338,19 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
   outputs->handle_list = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&(outputs->handle_num)));
   MS_LOG(INFO) << "Predicted ms model successfully";
   return static_cast<OH_AI_Status>(ret.StatusCode());
+}
+
+extern "C" OH_AI_Status OH_AI_ModelPredictV2(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
+                                             OH_AI_TensorHandleArray *outputs, const OH_AI_KernelCallBack before,
+                                             const OH_AI_KernelCallBack after, const char *predict_config) {
+  if (predict_config == nullptr || predict_config[0] == '\0') {
+    MS_LOG(ERROR) << "Unsupported predict_config is empty.";
+    return OH_AI_STATUS_LITE_NOT_SUPPORT;
+  }
+  auto impl = static_cast<mindspore::ModelC *>(model);
+  impl->model_->SetPredictModelPara(predict_config);
+  OH_AI_Status ret = OH_AI_ModelPredict(model, inputs, outputs, before, after);
+  return ret;
 }
 
 OH_AI_Status OH_AI_ModelRunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after) {

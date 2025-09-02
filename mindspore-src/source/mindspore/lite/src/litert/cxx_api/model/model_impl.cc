@@ -76,6 +76,8 @@ bool ModelImpl::IsEnableModelSharing(const std::pair<const void *, size_t> &mode
   return (model_buff_set.find(model_buff) != model_buff_set.end());
 }
 
+void ModelImpl::SetPredictPara(const char *predict_config) { predict_config_ = predict_config; }
+
 CreateTrainSessionProto *CreateTrainSessionCallbackHolder(CreateTrainSessionProto *proto) {
   static CreateTrainSessionProto *proto_ = nullptr;
   if (proto != nullptr) {
@@ -368,6 +370,7 @@ Status ModelImpl::RunGraph(const MSKernelCallBack &before, const MSKernelCallBac
       return after(inputs, outputs, call_param);
     };
   }
+  session_->SetPredictParaSession(predict_config_);
   auto ret = session_->RunGraph(before_call_back, after_call_back);
   return static_cast<StatusCode>(ret);
 }
@@ -434,7 +437,7 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
   for (size_t i = 0; i < inputs.size(); i++) {
     auto input = input_tensors.at(i);
     auto user_input = inputs.at(i);
-    if (user_input.DataType() != static_cast<enum DataType>(input->data_type())) {
+    if (predict_config_ == nullptr && user_input.DataType() != static_cast<enum DataType>(input->data_type())) {
       ResetTensorData(old_data, input_tensors);
       MS_LOG(ERROR) << "Tensor " << user_input.Name() << " has a different data type from input" << input->tensor_name()
                     << ".";
@@ -465,11 +468,13 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
 #endif
     } else {
       if (user_input.MutableData() != input->data()) {
-        if (input->Size() != user_input.DataSize()) {
+        if (predict_config_ == nullptr && input->Size() != user_input.DataSize()) {
           ResetTensorData(old_data, input_tensors);
 #ifndef ENABLE_LITE_ACL
-          MS_LOG(ERROR) << "Tensor " << user_input.Name() << " has wrong data size.";
-          return kLiteInputTensorError;
+          if (predict_config_ == nullptr) {
+            MS_LOG(ERROR) << "Tensor " << user_input.Name() << " has wrong data size.";
+            return kLiteInputTensorError;
+          }
 #else
           MS_LOG(WARNING) << "Please check tensor " << user_input.Name()
                           << " has been modified data size by DVPP method.";
@@ -493,6 +498,9 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
           }
           memcpy(input_data, user_data, input->Size());
         }
+      } else if (predict_config_ != nullptr) {
+        MS_LOG(ERROR) << "Aipp must predict by create tensor!!!";
+        return kLiteParamInvalid;
       }
     }
   }
@@ -534,7 +542,7 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
       }
     }
   }
-  
+
   auto ret = RunGraph(before, after);
   ResetTensorData(old_data, input_tensors);
   if (ret != kSuccess) {
@@ -1009,7 +1017,7 @@ lite::LiteSession *ModelImpl::CreateLiteSession(const std::shared_ptr<lite::Inne
 #ifdef SUPPORT_NNRT_METAGRAPH
   auto iter = std::find_if(context->device_list_.begin(), context->device_list_.end(),
                            [](lite::DeviceContext &device) { return device.device_type_ == lite::DT_NNRT; });
-  if(iter != context->device_list_.end()) {
+  if (iter != context->device_list_.end()) {
     const auto &nnrt_device_info = iter->device_info_.nnrt_device_info_;
     if (lite::CacheSession::IsKirinNPUWithOnlineInference(nnrt_device_info.device_id_)) {
       const auto &extensions = nnrt_device_info.extensions_;

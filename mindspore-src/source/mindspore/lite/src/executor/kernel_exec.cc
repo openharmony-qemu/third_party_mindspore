@@ -90,4 +90,9 @@ int KernelExec::DoExecute() {
   }
   return ret;
 }
+void KernelExec::SetPredictParaKernelExec(const char *predict_config) {
+#ifdef SUPPORT_NNRT
+  kernel_->SetPredictParaKernel(predict_config);
+#endif
+}
 }  // namespace mindspore::kernel

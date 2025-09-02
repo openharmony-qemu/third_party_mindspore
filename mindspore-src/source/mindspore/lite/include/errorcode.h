@@ -61,6 +61,10 @@ constexpr int RET_INFER_INVALID = -501; /**< Invalid infer shape before runtime.
 /* User input param error code, range: [-600, 700) */
 constexpr int RET_INPUT_PARAM_INVALID = -600; /**< Invalid input param by user. */
 
+/* User aipp infer param error code, range: [-800, 900) */
+constexpr int RET_NOT_SUPPORT_AIPP = -800; /**< Not support aipp predict. */
+constexpr int RET_INFER_AIPP_FAIL = -801;  /**< Failed Aipp model infer. */
+
 /// \brief Print description of errorcode.
 ///
 /// \param[in] error_code define return status of procedure.

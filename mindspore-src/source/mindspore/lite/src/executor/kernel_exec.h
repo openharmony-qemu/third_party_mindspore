@@ -316,6 +316,8 @@ class KernelExec {
     }
   }
 
+  void SetPredictParaKernelExec(const char *predict_config);
+
   std::vector<size_t> FindAllInTensorIndex(const lite::Tensor *tensor) {
     std::vector<size_t> indexes;
     for (size_t i = 0; i < in_tensors().size(); i++) {

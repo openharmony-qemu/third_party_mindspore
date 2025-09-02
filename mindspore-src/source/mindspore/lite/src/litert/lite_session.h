@@ -135,6 +135,8 @@ class MS_API LiteSession {
   }
   virtual int SetOptimizerParams(const std::vector<lite::Tensor *> &params) { return mindspore::lite::RET_ERROR; }
 
+  void SetPredictParaSession(const char *predict_config) { predict_config_ = predict_config; }
+
   bool GetKeepModelBuf() { return keep_model_buf_; }
 
   void SetKeepModelBuf(bool keep_model_buf) { keep_model_buf_ = keep_model_buf; }
@@ -259,6 +261,7 @@ class MS_API LiteSession {
   int worker_id_;
   bool is_shared_weight_ = false;
   bool model_buff_changed_ = false;
+  const char *predict_config_ = nullptr;
 };
 }  // namespace lite
 }  // namespace mindspore

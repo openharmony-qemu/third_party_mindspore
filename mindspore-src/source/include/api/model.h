@@ -191,6 +191,14 @@ class MS_API Model {
   /// \return true if data preprocess exists.
   bool HasPreprocess();
 
+  /// \brief Set model aipp predict parameter.
+  /// \return void.
+  void SetPredictModelPara(const char *predict_config);
+
+  /// \brief Check if using aipp config in model.
+  /// \return true if using aipp config in model.
+  bool GetUseAipp();
+
   /// \brief Load config file.
   ///
   /// \param[in] config_path config file path.
