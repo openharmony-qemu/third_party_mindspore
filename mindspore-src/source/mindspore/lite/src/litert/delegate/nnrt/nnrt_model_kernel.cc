@@ -17,6 +17,7 @@
 #include "nnrt_model_kernel.h"
 #include "nnrt_allocator.h"
 #include "litert/cxx_api/tensor/tensor_impl.h"
+#include "neural_network_runtime_inner.h"
 
 namespace mindspore{
 namespace {
@@ -74,9 +75,24 @@ int NNRTModelKernel::Execute() {
     return ret_val;
   }
   MS_LOG(INFO) << "Running NNRtModel Kernel...";
-  OH_NN_ReturnCode ret_code;
-  ret_code = OH_NNExecutor_RunSync(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
-                                   nn_output_tensors_.data(), nn_output_tensors_.size());
+  OH_NN_ReturnCode ret_code = OH_NN_SUCCESS;
+  if (predict_config_ != nullptr) {
+    bool support = false;
+    ret_code = OH_NN_IsSupportAIPP(support);
+    if (ret_code != OH_NN_SUCCESS) {
+      MS_LOG(INFO) << "Aipp not support in current device.";
+      return lite::RET_NOT_SUPPORT_AIPP;
+    }
+    ret_code = OH_NNExecutor_RunSyncWithAipp(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
+                                             nn_output_tensors_.data(), nn_output_tensors_.size(), predict_config_);
+    if (ret_code != OH_NN_SUCCESS) {
+      MS_LOG(INFO) << "Aipp infer fail.";
+      return lite::RET_INFER_AIPP_FAIL;
+    }
+  } else {
+    ret_code = OH_NNExecutor_RunSync(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
+                                     nn_output_tensors_.data(), nn_output_tensors_.size());
+  }
 
   if (ret_code != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "OH_NNExecutor_RunSync Run failed, OH_NN_ReturnCode = " << ret_code;

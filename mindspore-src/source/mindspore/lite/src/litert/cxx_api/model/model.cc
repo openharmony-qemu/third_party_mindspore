@@ -164,7 +164,8 @@ Status Model::Build(const void *model_data, size_t data_size, ModelType model_ty
 #endif
   ret = impl_->Build(model_data, data_size, model_type, model_context);
 #ifdef ENABLE_HI_APP_EVENT
-    mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelBuild", begin_time, devices);
+  mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelBuild", begin_time,
+                                                    devices);
 #endif
   if (ret != kSuccess) {
     return ret;
@@ -280,7 +281,8 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
 #endif
   ret = impl_->Build(CharToString(model_path), model_type, model_context);
 #ifdef ENABLE_HI_APP_EVENT
-    mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelBuildFromFile", begin_time, devices);
+  mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelBuildFromFile",
+                                                    begin_time, devices);
 #endif
   if (ret != kSuccess) {
     return ret;
@@ -290,12 +292,12 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
 
 Status Model::Build(GraphCell graph, const std::shared_ptr<Context> &model_context,
                     const std::shared_ptr<TrainCfg> &train_cfg) {
-std::stringstream err_msg;
-if (model_context == nullptr) {
-  err_msg << "Invalid null context.";
-  MS_LOG(ERROR) << err_msg.str();
-  return Status(kLiteNullptr, err_msg.str());
-}
+  std::stringstream err_msg;
+  if (model_context == nullptr) {
+    err_msg << "Invalid null context.";
+    MS_LOG(ERROR) << err_msg.str();
+    return Status(kLiteNullptr, err_msg.str());
+  }
 #ifdef ENABLE_HI_APP_EVENT
   uint64_t begin_time = mindspore::lite::HiAppEvent::GetTimeMs();
   std::string devices;
@@ -344,7 +346,8 @@ if (model_context == nullptr) {
   impl_->SetConfig(train_cfg);
   auto ret = impl_->Build();
 #ifdef ENABLE_HI_APP_EVENT
-  mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_TrainModelBuildFromFile", begin_time, devices);
+  mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_TrainModelBuildFromFile",
+                                                    begin_time, devices);
 #endif
   return ret;
 }
@@ -359,7 +362,8 @@ Status Model::Resize(const std::vector<MSTensor> &inputs, const std::vector<std:
   }
   auto ret = impl_->Resize(inputs, dims);
 #ifdef ENABLE_HI_APP_EVENT
-    mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelResize", begin_time);
+  mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelResize",
+                                                    begin_time);
 #endif
   return ret;
 }
@@ -384,7 +388,7 @@ Status Model::RunStep(const MSKernelCallBack &before, const MSKernelCallBack &af
   auto outputs = impl_->GetOutputs();
   auto ret = impl_->Predict(inputs, &outputs, before, after);
 #ifdef ENABLE_HI_APP_EVENT
-    mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_RunStep", begin_time);
+  mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_RunStep", begin_time);
 #endif
   return ret;
 }
@@ -400,7 +404,8 @@ Status Model::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTensor>
   }
   auto ret = impl_->Predict(inputs, outputs, before, after);
 #ifdef ENABLE_HI_APP_EVENT
-    mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelPredict", begin_time);
+  mindspore::lite::HiAppEvent::GetInstance().Report(ret.StatusCode(), ret.StatusCode(), "OH_AI_ModelPredict",
+                                                    begin_time);
 #endif
   return ret;
 }
@@ -431,7 +436,7 @@ bool Model::HasPreprocess() {
 
 Model::Model() {
 #ifdef ENABLE_HI_APP_EVENT
-    uint64_t begin_time = mindspore::lite::HiAppEvent::GetTimeMs();
+  uint64_t begin_time = mindspore::lite::HiAppEvent::GetTimeMs();
 #endif
 #ifdef USE_GLOG
   mindspore::mindspore_log_init();
@@ -559,7 +564,7 @@ Status Model::SetTrainMode(bool train) {
   }
   auto ret = (train) ? impl_->session_->Train() : impl_->session_->Eval();
 #ifdef ENABLE_HI_APP_EVENT
-    mindspore::lite::HiAppEvent::GetInstance().Report(RET_OK, RET_OK, "OH_AI_ModelSetTrainMode", begin_time);
+  mindspore::lite::HiAppEvent::GetInstance().Report(RET_OK, RET_OK, "OH_AI_ModelSetTrainMode", begin_time);
 #endif
   return (ret == mindspore::lite::RET_OK) ? kSuccess : kLiteError;
 }
@@ -681,4 +686,8 @@ Status Model::Finalize() {
   }
   return impl_->Finalize();
 }
+
+void Model::SetPredictModelPara(const char *predict_config) { impl_->SetPredictPara(predict_config); }
+
+bool Model::GetUseAipp() { return impl_->use_aipp_; }
 }  // namespace mindspore

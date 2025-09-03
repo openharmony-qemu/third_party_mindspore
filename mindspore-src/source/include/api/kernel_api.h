@@ -110,6 +110,15 @@ class MS_API MSKernel {
   ///
   /// \param[in] config define the kernel's config.
   void SetConfig(const std::map<std::string, std::map<std::string, std::string>> *config) { config_ = config; }
+
+  /// \brief set model aipp predict config.
+  ///
+  /// \param[in] config model aipp predict config.
+  void SetPredictParaKernel(const char *predict_config)
+  {
+    predict_config_ = predict_config;
+  }
+
   /// \brief set kernel's config.
   ///
   /// \param[in] section define the section of the kernel's config.
@@ -137,6 +146,7 @@ class MS_API MSKernel {
   std::vector<mindspore::MSTensor> outputs_;
   std::map<std::string, std::string> attrs_;
   const std::map<std::string, std::map<std::string, std::string>> *config_ = nullptr;
+  const char *predict_config_ = nullptr;
 };
 
 /// \brief The Kernel class is used to define a MindSpore Kernel with specific primitive.

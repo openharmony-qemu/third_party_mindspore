@@ -563,7 +563,7 @@ OH_AI_API OH_AI_Status OH_AI_DeviceInfoAddExtension(OH_AI_DeviceInfoHandle devic
   }
   static std::vector<std::string> extension_keys = {"CachePath", "CacheVersion", "ModelName", "QuantBuffer",
                                                     "QuantConfigData", "isProfiling", "opLayout", "InputDims",
-                                                    "DynamicDims", "BandMode", "NPU_FM_SHARED"};
+                                                    "DynamicDims", "BandMode", "NPU_FM_SHARED", "AIPP"};
   auto it = std::find(extension_keys.begin(), extension_keys.end(), std::string(name));
   if (it == extension_keys.end()) {
     MS_LOG(ERROR) << "The name of the extension is not allowable, only can be one of {CachePath, CacheVersion,"
