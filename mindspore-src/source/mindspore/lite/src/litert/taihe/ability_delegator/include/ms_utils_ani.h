@@ -15,6 +15,7 @@
 #ifndef MS_UTILS_ANI
 #define MS_UTILS_ANI
 #include <sys/mman.h>
+#include "taihe/runtime.hpp"
 #include "include/api/model.h"
 #include "include/api/data_type.h"
 #include "include/c_api/context_c.h"
@@ -44,6 +45,8 @@ std::shared_ptr<mindspore::Model> CreateModelANI(MSLiteModelInfoANI *model_info_
 
 std::shared_ptr<mindspore::Model> CreateTrainModelANI(MSLiteModelInfoANI *model_info_ptr,
                                                       MSLiteContextInfoANI *context_info_ptr);
+
+void ThrowBusinessError(MSLiteErrorCodeANI code_error);
 
 }  // namespace mindspore_ani
 #endif
