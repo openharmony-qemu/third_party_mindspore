@@ -98,8 +98,8 @@ enum ThreadAffinityMode: i32 {
 
 @class
 interface Model{
-    @get getLearningRate(): Optional<f32>;
-    @set setLearningRate(ulearningRate: Optional<f32>): void;
+    @get getLearningRate(): Optional<f64>;
+    @set setLearningRate(ulearningRate: Optional<f64>): void;
 
     @get getTrainMode(): Optional<bool>;
     @set setTrainMode(utrainMode: Optional<bool>): void;
@@ -119,7 +119,7 @@ interface Model{
 
     updateWeights(weights: Array<MSTensor>): bool;
 
-    setupVirtualBatch(virtualBatchMultiplier: i32, lr: f32, momentum: f32): bool;
+    setupVirtualBatch(virtualBatchMultiplier: i32, lr: f64, momentum: f64): bool;
 
     exportModel(modelFile: String, quantizationType: Optional<QuantizationType>, exportInferenceOnly: Optional<bool>, outputTensorName: Optional<Array<String>>): bool;
 

@@ -109,7 +109,7 @@ class MSTensorImpl {
     if (inputArray.size() != native_length) {
       MS_LOG(ERROR) << "ANI size mismatch, setData fail, set data size:" << inputArray.size()
                     << ", tensor size=" << native_length;
-      return;
+      ThrowBusinessError(mindspore_ani::MS_SETDATA_SIZE_ERROR_MSTENSOR);
     }
     memcpy(tensor_native, inputArray.data(), native_length);
   }
@@ -123,12 +123,12 @@ class ModelImpl {
  public:
   ModelImpl(std::shared_ptr<mindspore::Model> native_model) { this->native_model_ = native_model; }
 
-  ::taihe::optional<float> getLearningRate() {
+  ::taihe::optional<double> getLearningRate() {
     auto lr = this->native_model_->GetLearningRate();
-    return ::taihe::optional<float>{std::in_place, lr};
+    return ::taihe::optional<double>{std::in_place, lr};
   }
 
-  void setLearningRate(::taihe::optional_view<float> ulearningRate) {
+  void setLearningRate(::taihe::optional_view<double> ulearningRate) {
     if (bool(ulearningRate)) {
       this->native_model_->SetLearningRate(ulearningRate.value());
       MS_LOG(DEBUG) << "SetLearningRate MS_SUCCESS_ANI.";
@@ -307,7 +307,7 @@ class ModelImpl {
     return true;
   }
 
-  bool setupVirtualBatch(int32_t virtualBatchMultiplier, float lr, float momentum) {
+  bool setupVirtualBatch(int32_t virtualBatchMultiplier, double lr, double momentum) {
     auto ret = this->native_model_->SetupVirtualBatch(static_cast<int>(virtualBatchMultiplier), lr, momentum);
     if (ret != mindspore::kSuccess) {
       MS_LOG(ERROR) << "ANI model setupVirtualBatch failed";
@@ -444,6 +444,7 @@ class NNRTDeviceDescriptionImpl {
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_NATIVE_ERROR_PREDICT);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -473,6 +474,7 @@ void loadModelFromFileCallback(::taihe::string_view model,
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_NATIVE_ERROR_PREDICT);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -507,6 +509,7 @@ void loadModelFromFileContextCallback(::taihe::string_view model, ::ohos::ai::mi
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_NATIVE_ERROR_PREDICT);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -547,6 +550,7 @@ void loadModelFromFileContextCallback(::taihe::string_view model, ::ohos::ai::mi
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -580,6 +584,7 @@ void loadModelFromBufferCallback(::taihe::array_view<uint8_t> model,
     taihe::make_holder<ModelImpl, ::ohos::ai::mindSporeLite::Model>(native_model);
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -610,6 +615,7 @@ void loadModelFromBufferContextCallback(::taihe::array_view<uint8_t> model,
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -658,6 +664,7 @@ void loadModelFromBufferContextCallback(::taihe::array_view<uint8_t> model,
   // create taihe model
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_FD_NATIVE_ERROR_PREDICT);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -696,6 +703,7 @@ void loadModelFromFdCallback(int32_t model,
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_FD_NATIVE_ERROR_PREDICT);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -740,6 +748,7 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_FD_NATIVE_ERROR_PREDICT);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -798,6 +807,7 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
     mindspore_ani::CreateTrainModelANI(model_info_native.get(), context_native.get());
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_PATH_NATIVE_ERROR_TRAIN);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -853,6 +863,7 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
     mindspore_ani::CreateTrainModelANI(model_info_native.get(), context_native.get());
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_BUFFER_NATIVE_ERROR_TRAIN);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }
@@ -866,8 +877,6 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
 ::ohos::ai::mindSporeLite::Model loadTrainModelFromFd(
   int32_t model, ::taihe::optional_view<::ohos::ai::mindSporeLite::TrainCfg> trainCfg,
   ::taihe::optional_view<::ohos::ai::mindSporeLite::Context> context) {
-  // The parameters in the make_holder function should be of the same type
-  // as the parameters in the constructor of the actual implementation class.
   std::unique_ptr<mindspore_ani::MSLiteModelInfoANI> model_info_native =
     std::make_unique<mindspore_ani::MSLiteModelInfoANI>();
   std::unique_ptr<mindspore_ani::MSLiteContextInfoANI> context_native =
@@ -900,8 +909,6 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
       opt_value = static_cast<int32_t>(train_cfg.optimizationLevel.value());
     }
     context_native->train_cfg.optimization_level = opt_value;
-  } else {
-    ConfigureDefaultCpuContext(context_native);
   }
   // parser context
   if (bool(context)) {
@@ -910,12 +917,15 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
     if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
       MS_LOG(ERROR) << "ANI some context parameter set failed, maybe predict fail";
     }
+  } else {
+    ConfigureDefaultCpuContext(context_native);
   }
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
     mindspore_ani::CreateTrainModelANI(model_info_native.get(), context_native.get());
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+    ThrowBusinessError(mindspore_ani::MS_LOAD_FD_ERROR_TRAIN);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
   }

@@ -23,20 +23,17 @@ struct TrainModelPrepareANI {
 
 std::optional<TrainModelPrepareANI> CreateTrainModelPrepareANI(MSLiteContextInfoANI *context_info_ptr) {
   if (!context_info_ptr || context_info_ptr->target.empty()) {
-    MS_LOG(ERROR) << "ANI invalid context_info_ptr.";
-    return std::nullopt;
+    ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
   }
 
   auto context = std::make_shared<mindspore::Context>();
   if (!context) {
-    MS_LOG(ERROR) << "ANI failed to new context.";
-    return std::nullopt;
+    ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
   }
 
   auto &device_infos = context->MutableDeviceInfo();
   if (GetDeviceInfoContextANI(context_info_ptr, device_infos) != MS_SUCCESS_ANI) {
-    MS_LOG(ERROR) << "ANI create context failed.";
-    return std::nullopt;
+    ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
   }
 
   auto train_cfg = std::make_shared<mindspore::TrainCfg>();
@@ -115,18 +112,16 @@ int32_t GetDeviceInfoContextANI(MSLiteContextInfoANI *context_ptr,
 std::shared_ptr<mindspore::Model> BuildModelFromBufferANI(void *buffer, size_t size,
                                                           const std::shared_ptr<mindspore::Context> &context) {
   if (buffer == nullptr || size <= 0) {
-    MS_LOG(ERROR) << "ANI invalid buffer input.";
-    return nullptr;
+    ThrowBusinessError(MS_LOAD_BUFFER_ERROR_PREDICT);
   }
   auto model_ptr = std::make_shared<mindspore::Model>();
   if (model_ptr == nullptr) {
     MS_LOG(ERROR) << "ANI failed to new native mindspore::Model.";
-    return nullptr;
+    ThrowBusinessError(MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
   }
   auto ret = model_ptr->Build(buffer, size, mindspore::kMindIR, context);
   if (ret != mindspore::kSuccess) {
-    MS_LOG(ERROR) << "ANI build model from buffer failed.";
-    return nullptr;
+    ThrowBusinessError(MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
   }
   MS_LOG(INFO) << "ANI build model from buffer success.";
   return model_ptr;
@@ -139,10 +134,12 @@ std::shared_ptr<mindspore::Model> BuildModelFromPathANI(const std::string &path,
     MS_LOG(ERROR) << "ANI failed to new native mindspore::Model.";
     return nullptr;
   }
+  if (path.empty()) {
+    ThrowBusinessError(MS_LOAD_PATH_ERROR_PREDICT);
+  }
   auto ret = model_ptr->Build(path, mindspore::kMindIR, context);
   if (ret != mindspore::kSuccess) {
-    MS_LOG(ERROR) << "ANI build model from path failed.";
-    return nullptr;
+    ThrowBusinessError(MS_LOAD_NATIVE_ERROR_PREDICT);
   }
   MS_LOG(INFO) << "ANI build model from path success.";
   return model_ptr;
@@ -152,26 +149,22 @@ std::shared_ptr<mindspore::Model> CreateModelANI(MSLiteModelInfoANI *model_info_
                                                  MSLiteContextInfoANI *context_info_ptr) {
   std::lock_guard<std::mutex> lock(create_mutex_);
   if (context_info_ptr == nullptr) {
-    MS_LOG(ERROR) << "ANI context_info_ptr is nullptr, create native model fail.";
-    return nullptr;
+    ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
   }
 
   // create and init context
   auto context = std::make_shared<mindspore::Context>();
   if (context == nullptr) {
-    MS_LOG(ERROR) << "ANI failed to new context.";
-    return nullptr;
+    ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
   }
 
   if (context_info_ptr->target.empty()) {
-    MS_LOG(ERROR) << "ANI context target is empty.";
-    return nullptr;
+    ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
   }
 
   auto &device_infos = context->MutableDeviceInfo();
   if (GetDeviceInfoContextANI(context_info_ptr, device_infos) != MS_SUCCESS_ANI) {
-    MS_LOG(ERROR) << "ANI create context failed.";
-    return nullptr;
+    ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
   }
   context->SetThreadNum(context_info_ptr->cpu_device.thread_num);
 
@@ -191,31 +184,31 @@ std::shared_ptr<mindspore::Model> CreateModelANI(MSLiteModelInfoANI *model_info_
       return model;
     }
     default:
-      MS_LOG(ERROR) << "ANI invalid load native model mode: " << model_info_ptr->mode;
+      ThrowBusinessError(MS_LOAD_WAY_ERROR_PREDICT);
       return nullptr;
   }
 }
 
 std::optional<mindspore::Graph> LoadGraphFromBufferTrainANI(void *buffer, size_t size) {
   if (buffer == nullptr || size <= 0) {
-    MS_LOG(ERROR) << "ANI invalid buffer input.";
-    return std::nullopt;
+    ThrowBusinessError(MS_LOAD_BUFFER_ERROR_TRAIN);
   }
   mindspore::Graph graph;
   auto status = mindspore::Serialization::Load(buffer, size, mindspore::kMindIR, &graph);
   if (status != mindspore::kSuccess) {
-    MS_LOG(ERROR) << "ANI load model from buffer failed.";
-    return std::nullopt;
+    ThrowBusinessError(MS_LOAD_BUFFER_NATIVE_ERROR_TRAIN);
   }
   return graph;
 }
 
 std::optional<mindspore::Graph> LoadGraphFromPathTrainANI(const std::string &path) {
   mindspore::Graph graph;
+  if (path.empty()) {
+    ThrowBusinessError(MS_LOAD_PATH_ERROR_TRAIN);
+  }
   auto status = mindspore::Serialization::Load(path, mindspore::kMindIR, &graph);
   if (status != mindspore::kSuccess) {
-    MS_LOG(ERROR) << "ANI load model from path failed.";
-    return std::nullopt;
+    ThrowBusinessError(MS_LOAD_PATH_NATIVE_ERROR_TRAIN);
   }
   return graph;
 }
@@ -262,14 +255,16 @@ std::shared_ptr<mindspore::Model> CreateTrainModelANI(MSLiteModelInfoANI *model_
     case MSLiteLoadModelMode::kFD: {
       auto graph_opt =
         LoadGraphFromBufferTrainANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
-      if (!graph_opt) return nullptr;
+      if (!graph_opt) {
+        ThrowBusinessError(MS_LOAD_FD_ERROR_TRAIN);
+      };
       auto model = BuildTrainModelANI(*graph_opt, context, train_cfg);
       (void)munmap(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
       model_info_ptr->model_buffer_data = nullptr;
       return model;
     }
     default:
-      MS_LOG(ERROR) << "ANI invalid model mode: " << model_info_ptr->mode;
+      ThrowBusinessError(MS_LOAD_WAY_ERROR_PREDICT);
       return nullptr;
   }
 }
@@ -382,6 +377,10 @@ void ConfigureDefaultCpuContext(std::unique_ptr<mindspore_ani::MSLiteContextInfo
   context_native->cpu_device.thread_num = mindspore_ani::DEFAULT_THREAD_NUM;
   context_native->cpu_device.thread_affinity_mode = mindspore_ani::DEFAULT_THREAD_AFFINITY;
   context_native->cpu_device.precision_mode = "enforce_fp32";
+}
+
+void ThrowBusinessError(MSLiteErrorCodeANI code_error) {
+  taihe::set_business_error(code_error, MSLiteErrorCodeInfoANI.at(code_error));
 }
 
 }  // namespace mindspore_ani
