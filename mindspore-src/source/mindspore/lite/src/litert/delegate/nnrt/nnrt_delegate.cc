@@ -103,13 +103,9 @@ bool NNRTDelegate::CheckNPUPrefix(const std::string prefix_name) const {
   return true;
 }
 
-bool NNRTDelegate::IsKirinNPUWithOnlineInference() const {
-  return CheckNPUPrefix("NPU_");
-}
+bool NNRTDelegate::IsKirinNPUWithOnlineInference() const { return CheckNPUPrefix("NPU_"); }
 
-bool NNRTDelegate::IsKirinNPUWithOfflineInference() const {
-  return CheckNPUPrefix("HIAI_F");
-}
+bool NNRTDelegate::IsKirinNPUWithOfflineInference() const { return CheckNPUPrefix("HIAI_F"); }
 
 Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model) {
   OH_NNModel *nn_model = OH_NNModel_Construct();
@@ -121,7 +117,7 @@ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model)
   size_t extension_size = nnrt_device_info_.extensions_.size();
   std::vector<OH_NN_Extension> extensions;
   MS_LOG_DEBUG << "set extensions, item number: " << extension_size;
-  const size_t kExtensionNameMax = 128; // This is a length limitation in NNRT API.
+  const size_t kExtensionNameMax = 128;  // This is a length limitation in NNRT API.
   for (size_t i = 0; i < extension_size; i++) {
     auto &src_extension = nnrt_device_info_.extensions_[i];
     OH_NN_Extension dst_extension;
@@ -140,7 +136,7 @@ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model)
     return kLiteError;
   }
 
-  auto ret2 =  CreateFullModelKernel(model, nn_model);
+  auto ret2 = CreateFullModelKernel(model, nn_model);
   if (ret2 != kSuccess) {
     MS_LOG(ERROR) << "Create full model kernel failed, ret: " << ret2;
     return kLiteError;
@@ -194,7 +190,8 @@ Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model) 
   }
   OH_NNCompilation_Destroy(&nn_compilation);
 
-  auto nnrt_model_kernel = new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, model->inputs(), model->outputs());
+  auto nnrt_model_kernel =
+    new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, model->inputs(), model->outputs());
   if (nnrt_model_kernel == nullptr) {
     OH_NNExecutor_Destroy(&nn_executor);
     MS_LOG(ERROR) << "new NNRTModelKernel failed";
@@ -233,7 +230,8 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
   }
   OH_NNCompilation_Destroy(&nn_compilation);
 
-  auto nnrt_model_kernel = new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, model->inputs(), model->outputs());
+  auto nnrt_model_kernel =
+    new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, model->inputs(), model->outputs());
   if (nnrt_model_kernel == nullptr) {
     OH_NNExecutor_Destroy(&nn_executor);
     MS_LOG(ERROR) << "new NNRTModelKernel failed";
@@ -249,7 +247,8 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
 Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
   MS_LOG(DEBUG) << "Start to build NNRT model.";
   if ((lite_graph_ == nullptr) || (lite_graph_->sub_graphs_.size() > 1)) {
-    MS_LOG(WARNING) << "LiteGraph contains more than one subgraph. NNRT does not support control-flow model yet, fallback to CPU";
+    MS_LOG(WARNING)
+      << "LiteGraph contains more than one subgraph. NNRT does not support control-flow model yet, fallback to CPU";
     return kSuccess;
   }
 
@@ -271,6 +270,9 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
   auto ret = CreateLiteGraphForNNRTSubgraph(nnrt_subgraph_ranges, &sub_lite_graphs);
   if (ret != kSuccess) {
     OH_NNModel_Destroy(&full_model);
+    for (auto *g : sub_lite_graphs) {
+      FreeLiteGraph(&g);
+    }
     MS_LOG(WARNING) << "Create NNRT sub LiteGraph failed, fallback to CPU";
     return kSuccess;
   }
@@ -279,12 +281,18 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
   ret = CreateNNRTSubgraphKernels(model, sub_lite_graphs, nnrt_subgraph_ranges, &nnrt_subgraph_kernels);
   if (ret != kSuccess) {
     OH_NNModel_Destroy(&full_model);
+    for (auto *g : sub_lite_graphs) {
+      FreeLiteGraph(&g);
+    }
     MS_LOG(WARNING) << "Create NNRT subgraph kernel failed, fallback to CPU";
     return kSuccess;
   }
 
   ReplaceNNRTKernelsInDelegateModel(model, nnrt_subgraph_ranges, nnrt_subgraph_kernels);
   OH_NNModel_Destroy(&full_model);
+  for (auto *g : sub_lite_graphs) {
+    FreeLiteGraph(&g);
+  }
   MS_LOG(INFO) << "NNRTDelegate build success.";
   return kSuccess;
 }
@@ -316,12 +324,12 @@ OH_NNModel *NNRTDelegate::CreateFullNNModel() {
 }
 
 std::vector<bool> NNRTDelegate::QueryOpSupports(OH_NNModel *nn_model) {
-  const bool *is_supported = nullptr; // Note: this memory is owned by nn_model, don't free alone.
+  const bool *is_supported = nullptr;  // Note: this memory is owned by nn_model, don't free alone.
   uint32_t op_count = 0;
   auto ret = OH_NNModel_GetAvailableOperations(nn_model, nnrt_device_info_.device_id_, &is_supported, &op_count);
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(WARNING) << "NNModel GetAvailableOperations failed, ret: " << ret
-                  << ", maybe caused by dataParcel data length limitation";
+                    << ", maybe caused by dataParcel data length limitation";
     return {};
   }
   std::vector<bool> op_supports(is_supported, is_supported + op_count);
@@ -366,13 +374,12 @@ std::vector<NNRTOpRange> NNRTDelegate::GetNNRTSubgraphRanges(DelegateModel<schem
  *  This ensures the kernel replacement in DelegateModel based on the re-organizing info from lite_graph_ is correct.
  * 2. The node indices of lite_graph_->sub_graphs[0].node_indices should be monotonically increasing from 0 to size - 1.
  */
-Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
-    const std::vector<NNRTOpRange> &nnrt_op_ranges,
-    std::vector<LiteGraph *> *sub_lite_graphs) {
+Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(const std::vector<NNRTOpRange> &nnrt_op_ranges,
+                                                    std::vector<LiteGraph *> *sub_lite_graphs) {
   MS_LOG(INFO) << "Start creating LiteGraph for NNRT subgraph";
-  for (const auto &op_range: nnrt_op_ranges) {
+  for (const auto &op_range : nnrt_op_ranges) {
     MS_LOG(INFO) << "Process op range: [" << op_range.begin_index_ << ", " << op_range.end_index_ << ")";
-    LiteGraph *sub_lite_graph = new (std::nothrow)LiteGraph;
+    LiteGraph *sub_lite_graph = new (std::nothrow) LiteGraph;
     if (sub_lite_graph == nullptr) {
       MS_LOG(ERROR) << "Allocate LiteGraph failed";
       return kLiteError;
@@ -380,7 +387,7 @@ Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
     sub_lite_graph->name_ = lite_graph_->name_;
     sub_lite_graph->version_ = lite_graph_->version_;
 
-    auto sub_graph = new (std::nothrow)LiteGraph::SubGraph;
+    auto sub_graph = new (std::nothrow) LiteGraph::SubGraph;
     if (sub_graph == nullptr) {
       MS_LOG(ERROR) << "Allocate SubGraph failed";
       return kLiteError;
@@ -394,7 +401,7 @@ Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
     std::map<uint32_t, schema::Tensor *> in_tensor_index_map;
     std::map<uint32_t, schema::Tensor *> out_tensor_index_map;
     for (size_t index = op_range.begin_index_; index < op_range.end_index_; index++) {
-      LiteGraph::Node *node = new (std::nothrow)LiteGraph::Node;
+      LiteGraph::Node *node = new (std::nothrow) LiteGraph::Node;
       if (node == nullptr) {
         MS_LOG(ERROR) << "Allocate Node failed";
         return kLiteError;
@@ -403,10 +410,10 @@ Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
       sub_lite_graph->all_nodes_.push_back(node);
       sub_graph->node_indices_.push_back(new_node_index++);
 
-      for (auto i: node->input_indices_) {
+      for (auto i : node->input_indices_) {
         in_tensor_index_map.emplace(i, lite_graph_->all_tensors_[i]);
       }
-      for (auto i: node->output_indices_) {
+      for (auto i : node->output_indices_) {
         out_tensor_index_map.emplace(i, lite_graph_->all_tensors_[i]);
       }
     }
@@ -414,16 +421,16 @@ Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
     // deal with all_tensors
     MS_LOG(INFO) << "Assemble all_tensors...";
     std::set<schema::Tensor *> tensors;
-    for (auto iter: in_tensor_index_map) {
+    for (auto iter : in_tensor_index_map) {
       tensors.emplace(iter.second);
     }
-    for (auto iter: out_tensor_index_map) {
+    for (auto iter : out_tensor_index_map) {
       tensors.emplace(iter.second);
     }
 
     uint32_t new_index = 0;
     std::map<schema::Tensor *, uint32_t> new_tensor_maps;
-    for (auto tensor: tensors) {
+    for (auto tensor : tensors) {
       new_tensor_maps.emplace(tensor, new_index++);
     }
 
@@ -431,7 +438,7 @@ Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
 
     // deal with every node's input/output indices
     MS_LOG(INFO) << "Set input/output indices of each node...";
-    for (auto node: sub_lite_graph->all_nodes_) {
+    for (auto node : sub_lite_graph->all_nodes_) {
       for (auto &index : node->input_indices_) {
         index = new_tensor_maps.at(in_tensor_index_map.at(index));
       }
@@ -445,7 +452,7 @@ Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
     sub_graph->tensor_indices_ = std::vector<uint32_t>(tensors.size());
     std::iota(sub_graph->tensor_indices_.begin(), sub_graph->tensor_indices_.end(), 0U);
 
-    for (auto iter: in_tensor_index_map) {
+    for (auto iter : in_tensor_index_map) {
       auto new_tensor_index = new_tensor_maps[iter.second];
       MS_LOG(DEBUG) << "handle input: old: " << iter.first << ", new: " << new_tensor_index << std::endl;
       if (IsConstTensor(*iter.second)) {
@@ -454,7 +461,7 @@ Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
       }
 
       bool is_subgraph_input = true;
-      for (auto node: sub_lite_graph->all_nodes_) {
+      for (auto node : sub_lite_graph->all_nodes_) {
         if (std::find(node->output_indices_.begin(), node->output_indices_.end(), new_tensor_index) !=
             node->output_indices_.end()) {
           is_subgraph_input = false;
@@ -468,7 +475,7 @@ Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
       }
     }
 
-    for (auto iter: out_tensor_index_map) {
+    for (auto iter : out_tensor_index_map) {
       int new_tensor_index = new_tensor_maps.at(iter.second);
       MS_LOG(DEBUG) << "handle output: old: " << iter.first << ", new: " << new_tensor_index << std::endl;
       if (IsConstTensor(*iter.second)) {
@@ -483,13 +490,14 @@ Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
         }
         auto node = lite_graph_->all_nodes_[i];
         if (std::find(node->input_indices_.begin(), node->input_indices_.end(), iter.first) !=
-            node->input_indices_.end()) { // As the input of node which does not belong to the subgraph.
+            node->input_indices_.end()) {  // As the input of node which does not belong to the subgraph.
           is_subgraph_output = true;
-          MS_LOG(DEBUG) << "- tensor: " << new_tensor_index << " is original subgraph output. node: " << node->primitive_ << std::endl;
+          MS_LOG(DEBUG) << "- tensor: " << new_tensor_index
+                        << " is original subgraph output. node: " << node->primitive_ << std::endl;
           break;
         }
       }
-      bool is_graph_output = (std::find(lite_graph_->output_indices_.begin(),lite_graph_->output_indices_.end(),
+      bool is_graph_output = (std::find(lite_graph_->output_indices_.begin(), lite_graph_->output_indices_.end(),
                                         iter.first) != lite_graph_->output_indices_.end());
       if (is_graph_output) {
         MS_LOG(DEBUG) << "- tensor: " << new_tensor_index << " is graph output." << std::endl;
@@ -510,8 +518,8 @@ Status NNRTDelegate::CreateLiteGraphForNNRTSubgraph(
 }
 
 struct TensorLocation {
-  uint32_t node_index; // the index of node which the tensor belongs to.
-  uint32_t tensor_index; // the index of node in/out tensors which the tensor is located at.
+  uint32_t node_index;    // the index of node which the tensor belongs to.
+  uint32_t tensor_index;  // the index of node in/out tensors which the tensor is located at.
 };
 
 Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
@@ -520,8 +528,8 @@ Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
     MS_LOG(ERROR) << "NNCompilation set device id failed, ret: " << ret_code;
     return kLiteError;
   }
-  ret_code = OH_NNCompilation_SetPerformanceMode(nn_compilation,
-                                                 (OH_NN_PerformanceMode)(nnrt_device_info_.performance_mode_));
+  ret_code =
+    OH_NNCompilation_SetPerformanceMode(nn_compilation, (OH_NN_PerformanceMode)(nnrt_device_info_.performance_mode_));
   if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
     MS_LOG(ERROR) << "NNCompilation set performance mode failed, ret: " << ret_code;
     return kLiteError;
@@ -590,7 +598,8 @@ Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
 }
 
 Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> *model,
-                                               const std::vector<LiteGraph *> &sub_lite_graphs, const std::vector<NNRTOpRange> &nnrt_subgraph_ranges,
+                                               const std::vector<LiteGraph *> &sub_lite_graphs,
+                                               const std::vector<NNRTOpRange> &nnrt_subgraph_ranges,
                                                std::vector<NNRTModelKernel *> *nnrt_subgraph_kernels) {
   for (size_t i = 0; i < sub_lite_graphs.size(); i++) {
     auto sub_lite_graph = sub_lite_graphs[i];
@@ -631,16 +640,17 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
 
     bool format_not_support = false;
     std::vector<MSTensor> in_tensors;
-    for (auto index: sub_lite_graph->sub_graphs_[0]->input_indices_) {
+    for (auto index : sub_lite_graph->sub_graphs_[0]->input_indices_) {
       TensorLocation location;
-      for (auto node_index: sub_lite_graph->sub_graphs_[0]->node_indices_) {
+      for (auto node_index : sub_lite_graph->sub_graphs_[0]->node_indices_) {
         auto node = sub_lite_graph->all_nodes_[node_index];
         auto iter = std::find(node->input_indices_.begin(), node->input_indices_.end(), index);
         if (iter != node->input_indices_.end()) {
           uint32_t tensor_index = iter - node->input_indices_.begin();
           location.node_index = node_index;
           location.tensor_index = tensor_index;
-          MS_LOG(INFO) << "Found graph input index: " << index << " is the " << tensor_index << "th input of the node " << node->primitive_;
+          MS_LOG(INFO) << "Found graph input index: " << index << " is the " << tensor_index << "th input of the node "
+                       << node->primitive_;
           break;
         }
       }
@@ -648,21 +658,22 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       in_tensors.push_back((*kernel_iter)->inputs()[location.tensor_index]);
       if (in_tensors.back().format() != Format::NHWC) {
         format_not_support = true;
-        break ;
+        break;
       }
     }
 
     std::vector<MSTensor> out_tensors;
-    for (auto index: sub_lite_graph->sub_graphs_[0]->output_indices_) {
+    for (auto index : sub_lite_graph->sub_graphs_[0]->output_indices_) {
       TensorLocation location;
-      for (auto node_index: sub_lite_graph->sub_graphs_[0]->node_indices_) {
+      for (auto node_index : sub_lite_graph->sub_graphs_[0]->node_indices_) {
         auto node = sub_lite_graph->all_nodes_[node_index];
         auto iter = std::find(node->output_indices_.begin(), node->output_indices_.end(), index);
         if (iter != node->output_indices_.end()) {
           uint32_t tensor_index = iter - node->output_indices_.begin();
           location.node_index = node_index;
           location.tensor_index = tensor_index;
-          MS_LOG(INFO) << "Found graph output index: " << index << " is the " << tensor_index << "th output of the node " << node->primitive_;
+          MS_LOG(INFO) << "Found graph output index: " << index << " is the " << tensor_index
+                       << "th output of the node " << node->primitive_;
           break;
         }
       }
@@ -670,7 +681,7 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       out_tensors.push_back((*kernel_iter)->outputs()[location.tensor_index]);
       if (out_tensors.back().format() != Format::NHWC) {
         format_not_support = true;
-        break ;
+        break;
       }
     }
     if (format_not_support) {
@@ -678,10 +689,11 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       OH_NNCompilation_Destroy(&nn_compilation);
       OH_NNModel_Destroy(&nn_model);
       nnrt_subgraph_kernels->push_back(nullptr);
-      continue ;
+      continue;
     }
 
-    auto nnrt_model_kernel = new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, in_tensors, out_tensors);
+    auto nnrt_model_kernel =
+      new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, in_tensors, out_tensors);
     if (nnrt_model_kernel == nullptr) {
       MS_LOG(ERROR) << "new NNRTModelKernel failed";
       return kLiteError;
@@ -695,8 +707,8 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
 }
 
 void NNRTDelegate::ReplaceNNRTKernelsInDelegateModel(DelegateModel<schema::Primitive> *model,
-                                       const std::vector<NNRTOpRange> &nnrt_subgraph_ranges,
-                                       const std::vector<NNRTModelKernel *> &nnrt_subgraph_kernels) {
+                                                     const std::vector<NNRTOpRange> &nnrt_subgraph_ranges,
+                                                     const std::vector<NNRTModelKernel *> &nnrt_subgraph_kernels) {
   // Here we perform the replacement from back to front intentionally! If replace from front to end, the kernel
   // sequence would shrink and the later begin_iter_/end_iter_ may be erased already.
   for (int i = nnrt_subgraph_ranges.size() - 1; i >= 0; i--) {
@@ -706,13 +718,12 @@ void NNRTDelegate::ReplaceNNRTKernelsInDelegateModel(DelegateModel<schema::Primi
     auto from = nnrt_subgraph_ranges[i].begin_iter_;
     auto end = nnrt_subgraph_ranges[i].end_iter_;
     (void)model->Replace(from, end, nnrt_subgraph_kernels[i]);
-    MS_LOG(INFO) << "Replace nnrt subgraph kernel in range: [" << (from - model->BeginKernelIterator())
-      << ", " << (end - model->BeginKernelIterator()) << ")";
+    MS_LOG(INFO) << "Replace nnrt subgraph kernel in range: [" << (from - model->BeginKernelIterator()) << ", "
+                 << (end - model->BeginKernelIterator()) << ")";
   }
 }
 
-Status NNRTDelegate::PrepareInputs(DelegateModel<schema::Primitive> *model,
-                                   OH_NNExecutor *oh_nn_executor) {
+Status NNRTDelegate::PrepareInputs(DelegateModel<schema::Primitive> *model, OH_NNExecutor *oh_nn_executor) {
   auto input_tensors = model->inputs();
   for (size_t i = 0; i < input_tensors.size(); i++) {
     auto tensor = input_tensors[i];
@@ -723,7 +734,7 @@ Status NNRTDelegate::PrepareInputs(DelegateModel<schema::Primitive> *model,
     std::vector<double> scale;
     std::vector<int32_t> zero_point;
     if (!tmp_quant_param.empty()) {
-      quant_param = new(std::nothrow) OH_NN_QuantParam;
+      quant_param = new (std::nothrow) OH_NN_QuantParam;
       if (quant_param == nullptr) {
         MS_LOG(ERROR) << "new OH_NN_QuantParam failed.";
         return kLiteError;
@@ -738,7 +749,7 @@ Status NNRTDelegate::PrepareInputs(DelegateModel<schema::Primitive> *model,
       quant_param->scale = scale.data();
       quant_param->zeroPoint = zero_point.data();
     }
-    auto oprend = new(std::nothrow) OH_NN_Tensor;
+    auto oprend = new (std::nothrow) OH_NN_Tensor;
     if (oprend == nullptr) {
       MS_LOG(ERROR) << "new OH_NN_Tensor Failed";
       return kLiteError;
@@ -760,7 +771,7 @@ Status NNRTDelegate::PrepareInputs(DelegateModel<schema::Primitive> *model,
     oprend->quantParam = quant_param;
     oprend->type = OH_NN_TENSOR;
     OH_NN_ReturnCode ret_code =
-        OH_NNExecutor_SetInput(oh_nn_executor, i, oprend, tensor.MutableData(), tensor.DataSize());
+      OH_NNExecutor_SetInput(oh_nn_executor, i, oprend, tensor.MutableData(), tensor.DataSize());
     delete (oprend);
 
     if (!tmp_quant_param.empty()) {
@@ -779,18 +790,12 @@ Status NNRTDelegate::PrepareInputs(DelegateModel<schema::Primitive> *model,
 
 OH_NN_DataType NNRTDelegate::CastToNNRTDataType(DataType data_type) {
   const std::unordered_map<DataType, OH_NN_DataType> kDataTypeMap = {
-      {DataType::kNumberTypeBool, OH_NN_BOOL},
-      {DataType::kNumberTypeInt8, OH_NN_INT8},
-      {DataType::kNumberTypeInt16, OH_NN_INT16},
-      {DataType::kNumberTypeInt32, OH_NN_INT32},
-      {DataType::kNumberTypeInt64, OH_NN_INT64},
-      {DataType::kNumberTypeUInt8, OH_NN_UINT8},
-      {DataType::kNumberTypeUInt16, OH_NN_UINT16},
-      {DataType::kNumberTypeUInt32, OH_NN_UINT32},
-      {DataType::kNumberTypeUInt64, OH_NN_UINT64},
-      {DataType::kNumberTypeFloat16, OH_NN_FLOAT16},
-      {DataType::kNumberTypeFloat32, OH_NN_FLOAT32},
-      {DataType::kNumberTypeFloat64, OH_NN_FLOAT64},
+    {DataType::kNumberTypeBool, OH_NN_BOOL},       {DataType::kNumberTypeInt8, OH_NN_INT8},
+    {DataType::kNumberTypeInt16, OH_NN_INT16},     {DataType::kNumberTypeInt32, OH_NN_INT32},
+    {DataType::kNumberTypeInt64, OH_NN_INT64},     {DataType::kNumberTypeUInt8, OH_NN_UINT8},
+    {DataType::kNumberTypeUInt16, OH_NN_UINT16},   {DataType::kNumberTypeUInt32, OH_NN_UINT32},
+    {DataType::kNumberTypeUInt64, OH_NN_UINT64},   {DataType::kNumberTypeFloat16, OH_NN_FLOAT16},
+    {DataType::kNumberTypeFloat32, OH_NN_FLOAT32}, {DataType::kNumberTypeFloat64, OH_NN_FLOAT64},
   };
 
   auto iter = kDataTypeMap.find(data_type);
@@ -800,8 +805,7 @@ OH_NN_DataType NNRTDelegate::CastToNNRTDataType(DataType data_type) {
   return iter->second;
 }
 
-Status NNRTDelegate::PrepareOutputs(DelegateModel<schema::Primitive> *model,
-                                    OH_NNExecutor *oh_nn_executor) {
+Status NNRTDelegate::PrepareOutputs(DelegateModel<schema::Primitive> *model, OH_NNExecutor *oh_nn_executor) {
   auto output_tensors = model->outputs();
   for (size_t i = 0; i < output_tensors.size(); i++) {
     auto tensor = output_tensors[i];
@@ -832,15 +836,15 @@ schema::Tensor *NNRTDelegate::TensorToSchemaTensor(Tensor *lite_tensor, schema::
   std::vector<flatbuffers::Offset<mindspore::schema::ExternalData>> external_data_vec;
   if (external_data != nullptr) {
     for (auto ed : *external_data) {
-      external_data_vec.emplace_back(schema::CreateExternalDataDirect(fbb, ed->checkSum()->c_str(), ed->location()->c_str(), 0, ed->length()));
+      external_data_vec.emplace_back(
+        schema::CreateExternalDataDirect(fbb, ed->checkSum()->c_str(), ed->location()->c_str(), 0, ed->length()));
     }
   }
   uint8_t *data_src = reinterpret_cast<uint8_t *>(lite_tensor->data());
   std::vector<uint8_t> data_vec(data_src, data_src + lite_tensor->Size());
   auto tensor_offset = schema::CreateTensorDirect(fbb, schema_tensor->nodeType(), lite_tensor->data_type(), &dim_vec,
-                                                  schema_tensor->format(), 0, 0, &data_vec, &quant_vec,
-                                                  &quant_clusters, schema_tensor->name()->c_str(),
-                                                  schema_tensor->enableHuffmanCode(),
+                                                  schema_tensor->format(), 0, 0, &data_vec, &quant_vec, &quant_clusters,
+                                                  schema_tensor->name()->c_str(), schema_tensor->enableHuffmanCode(),
                                                   mindspore::schema::WeightQuantCompressType_NONE, &external_data_vec);
   fbb.Finish(tensor_offset);
 
@@ -879,8 +883,9 @@ int NNRTDelegate::DequantNodeInputs(LiteGraph::Node *node) {
     auto tensor_index = node->input_indices_[i];
     auto *src_tensor = lite_graph_->all_tensors_[tensor_index];
     auto input = dequant_src_tensors_->at(tensor_index);
-    if (!input->IsConst() || !(src_tensor->dataType() == kNumberTypeInt8 ||
-        src_tensor->dataType() == kNumberTypeInt16 || src_tensor->dataType() == kNumberTypeInt32)) {
+    if (!input->IsConst() ||
+        !(src_tensor->dataType() == kNumberTypeInt8 || src_tensor->dataType() == kNumberTypeInt16 ||
+          src_tensor->dataType() == kNumberTypeInt32)) {
       continue;
     }
     auto dst_tensor = TensorToSchemaTensor(input, src_tensor);
@@ -888,8 +893,8 @@ int NNRTDelegate::DequantNodeInputs(LiteGraph::Node *node) {
       dequant_schema_tensors_.emplace(tensor_index, dst_tensor);
       replaced_schema_tensors_.emplace_back(src_tensor);
     } else {
-      MS_LOG(ERROR) << "create dequant schema tensor failed, node: " << node->name_ << ", tensor_index: "
-                    << tensor_index;
+      MS_LOG(ERROR) << "create dequant schema tensor failed, node: " << node->name_
+                    << ", tensor_index: " << tensor_index;
       ret = RET_ERROR;
       break;
     }
@@ -926,7 +931,7 @@ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
   node_list.reserve(lite_graph.all_nodes_.size());
   // copy node
   for (auto node : lite_graph.all_nodes_) {
-    auto new_node = new(std::nothrow) LiteGraph::Node;
+    auto new_node = new (std::nothrow) LiteGraph::Node;
     if (new_node == nullptr) {
       MS_LOG(ERROR) << " new LiteGraph::Node failed.";
       return;
@@ -945,7 +950,7 @@ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
   // copy subgraph
   std::vector<LiteGraph::SubGraph *> subgraph_list;
   for (auto subgraph : lite_graph.sub_graphs_) {
-    auto new_subgraph = new(std::nothrow) LiteGraph::SubGraph;
+    auto new_subgraph = new (std::nothrow) LiteGraph::SubGraph;
     if (new_subgraph == nullptr) {
       MS_LOG(ERROR) << "new LiteGraph::Subgraph failed.";
       return;
@@ -964,7 +969,7 @@ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
     }
   }
 
-  lite_graph_ = new(std::nothrow) lite::LiteGraph();
+  lite_graph_ = new (std::nothrow) lite::LiteGraph();
   if (lite_graph_ == nullptr) {
     MS_LOG(ERROR) << "new LiteGraph failed.";
     return;
@@ -1012,6 +1017,12 @@ void NNRTDelegate::FreeLiteGraph(lite::LiteGraph **liteGraph) {
 }
 
 NNRTDelegate::~NNRTDelegate() {
+#ifdef SUPPORT_NNRT_METAGRAPH
+  if (hiai_handle_ != nullprt) {
+    (void)mindspore::lite::UnLoadHiaiFLibrary(hiai_handle_);
+    hiai_handle_ = nullptr;
+  }
+#endif
   for (size_t i = 0; i < nn_executor_list_.size(); i++) {
     if (nn_executor_list_[i] != nullptr) {
       MS_LOG(INFO) << "start NNExecutor Destroy.";
@@ -1020,6 +1031,12 @@ NNRTDelegate::~NNRTDelegate() {
     }
   }
   if (lite_graph_ != nullptr) {
+    #ifdef SUPPORT_NNRT_METAGRAPH
+    if (IsKirinNPUWithOfflineInference()) {
+      FreeLiteGraph(&lite_graph_);
+      lite_graph_ = nullptr;
+    }
+    #endif
     MS_LOG(ERROR) << "Delete NNRTDelegate.";
   }
   for (auto iter : dequant_schema_tensors_buffer_map_) {
@@ -1029,6 +1046,7 @@ NNRTDelegate::~NNRTDelegate() {
     }
   }
   dequant_schema_tensors_buffer_map_.clear();
+  replaced_schema_tensors_.clear();
 }
 }  // namespace lite
 }  // namespace mindspore
