@@ -1018,7 +1018,7 @@ void NNRTDelegate::FreeLiteGraph(lite::LiteGraph **liteGraph) {
 
 NNRTDelegate::~NNRTDelegate() {
 #ifdef SUPPORT_NNRT_METAGRAPH
-  if (hiai_handle_ != nullprt) {
+  if (hiai_handle_ != nullptr) {
     (void)mindspore::lite::UnLoadHiaiFLibrary(hiai_handle_);
     hiai_handle_ = nullptr;
   }
