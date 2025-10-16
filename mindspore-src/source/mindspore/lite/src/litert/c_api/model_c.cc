@@ -59,6 +59,7 @@ class ModelC {
   mindspore::MSKernelCallBack TransCallBack(const OH_AI_KernelCallBack &ms_callback);
   std::shared_ptr<Model> model_;
   std::shared_ptr<Context> context_;
+  std::atomic_flag in_use_ = ATOMIC_FLAG_INIT;
 
  private:
   MSTensor **GetOutputsTensor(size_t *output_num, std::vector<MSTensor *> *vec_tensors);
@@ -171,6 +172,10 @@ void OH_AI_ModelDestroy(OH_AI_ModelHandle *model) {
     return;
   }
   auto impl = static_cast<mindspore::ModelC *>(*model);
+  if (impl->in_use_.test_and_set()) {
+    MS_LOG(ERROR) << "model in use by other interface, destroy fail. Need destroy again; otherwise, a memory leak may occur.";
+    return;
+  }
   delete impl;
   *model = nullptr;
   MS_LOG(INFO) << "Destroyed ms model successfully";
@@ -229,8 +234,13 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
   }
   mindspore::ContextC *context = static_cast<mindspore::ContextC *>(model_context);
   auto impl = static_cast<mindspore::ModelC *>(model);
+  if (impl->in_use_.test_and_set()) {
+    MS_LOG(ERROR) << "model in use by other interface, build model fail.";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
   if (impl->context_.get() != context->context_ && context->owned_by_model_) {
     MS_LOG(ERROR) << "context is owned by other model.";
+    impl->in_use_.clear();
     return OH_AI_STATUS_LITE_PARAM_INVALID;
   }
   if (impl->context_.get() != context->context_) {
@@ -243,6 +253,7 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
   } else {
     MS_LOG(ERROR) << "Built ms model from file failed, ret: " << ret;
   }
+  impl->in_use_.clear();
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
@@ -289,10 +300,15 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
     return OH_AI_STATUS_LITE_NULLPTR;
   }
   auto impl = static_cast<mindspore::ModelC *>(model);
+  if (impl->in_use_.test_and_set()) {
+    MS_LOG(ERROR) << "model in use by other interface, predict fail.";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
   size_t input_num;
   (void)impl->GetInputs(&input_num);
   if (input_num != inputs.handle_num) {
     MS_LOG(ERROR) << "Wrong input size.";
+    impl->in_use_.clear();
     return OH_AI_STATUS_LITE_ERROR;
   }
 
@@ -303,6 +319,7 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
       ms_tensor_inputs.push_back(*user_input);
     } else {
       MS_LOG(ERROR) << "input handle is nullptr.";
+      impl->in_use_.clear();
       return OH_AI_STATUS_LITE_NULLPTR;
     }
   }
@@ -319,6 +336,7 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
     for (size_t i = 0; i < output_num; i++) {
       if (outputs->handle_list[i] == nullptr) {
         MS_LOG(ERROR) << "user provided output array handle_list[" << i << "] is nullptr";
+        impl->in_use_.clear();
         return OH_AI_STATUS_LITE_NULLPTR;
       }
       ms_tensor_outputs.push_back(*static_cast<mindspore::MSTensor *>(outputs->handle_list[i]));
@@ -328,15 +346,18 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
   auto ret = impl->model_->Predict(ms_tensor_inputs, &ms_tensor_outputs, before_call_back, after_call_back);
   if (!ret.IsOk()) {
     MS_LOG(ERROR) << "Predict fail, ret :" << ret;
+    impl->in_use_.clear();
     return static_cast<OH_AI_Status>(ret.StatusCode());
   }
 
   if (handle_num == output_num) {
+    impl->in_use_.clear();
     return OH_AI_STATUS_SUCCESS;
   }
 
   outputs->handle_list = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&(outputs->handle_num)));
   MS_LOG(INFO) << "Predicted ms model successfully";
+  impl->in_use_.clear();
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
