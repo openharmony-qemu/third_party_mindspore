@@ -472,18 +472,16 @@ void loadModelFromFileCallback(::taihe::string_view model,
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
-  if (!native_model) {
-    MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_NATIVE_ERROR_PREDICT);
-  } else {
-    MS_LOG(INFO) << "ANI native_model created successfully!";
-  }
   // create taihe model
   ::ohos::ai::mindSporeLite::Model taihe_model =
     taihe::make_holder<ModelImpl, ::ohos::ai::mindSporeLite::Model>(native_model);
   MS_LOG(DEBUG) << "ANI loadModelFromFileCallback end make holder native model";
-
-  callback(taihe_model);
+  if (!native_model) {
+    MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+  } else {
+    MS_LOG(INFO) << "ANI native_model created successfully!";
+    callback(taihe_model);
+  }
 }
 
 void loadModelFromFileContextCallback(::taihe::string_view model, ::ohos::ai::mindSporeLite::Context const &context,
@@ -507,18 +505,16 @@ void loadModelFromFileContextCallback(::taihe::string_view model, ::ohos::ai::mi
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
-  if (!native_model) {
-    MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_NATIVE_ERROR_PREDICT);
-  } else {
-    MS_LOG(INFO) << "ANI native_model created successfully!";
-  }
   // create taihe model
   ::ohos::ai::mindSporeLite::Model taihe_model =
     taihe::make_holder<ModelImpl, ::ohos::ai::mindSporeLite::Model>(native_model);
   MS_LOG(DEBUG) << "ANI loadModelFromFileContextCallback end make holder native model";
-
-  callback(taihe_model);
+  if (!native_model) {
+    MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+  } else {
+    MS_LOG(INFO) << "ANI native_model created successfully!";
+    callback(taihe_model);
+  }
 }
 
 ::ohos::ai::mindSporeLite::Model loadModelFromBufferSync(
@@ -584,13 +580,10 @@ void loadModelFromBufferCallback(::taihe::array_view<uint8_t> model,
     taihe::make_holder<ModelImpl, ::ohos::ai::mindSporeLite::Model>(native_model);
   if (!native_model) {
     MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
   } else {
     MS_LOG(INFO) << "ANI native_model created successfully!";
+    callback(taihe_model);
   }
-  MS_LOG(DEBUG) << "loadModelFromBufferCallback end make holder native model";
-
-  callback(taihe_model);
 }
 
 void loadModelFromBufferContextCallback(::taihe::array_view<uint8_t> model,
@@ -613,17 +606,15 @@ void loadModelFromBufferContextCallback(::taihe::array_view<uint8_t> model,
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
-  if (!native_model) {
-    MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
-  } else {
-    MS_LOG(INFO) << "ANI native_model created successfully!";
-  }
   // create taihe model
   ::ohos::ai::mindSporeLite::Model taihe_model =
     taihe::make_holder<ModelImpl, ::ohos::ai::mindSporeLite::Model>(native_model);
-
-  callback(taihe_model);
+  if (!native_model) {
+    MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+  } else {
+    MS_LOG(INFO) << "ANI native_model created successfully!";
+    callback(taihe_model);
+  }
 }
 
 ::ohos::ai::mindSporeLite::Model loadModelFromFdSync(
@@ -701,18 +692,16 @@ void loadModelFromFdCallback(int32_t model,
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
-  if (!native_model) {
-    MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_FD_NATIVE_ERROR_PREDICT);
-  } else {
-    MS_LOG(INFO) << "ANI native_model created successfully!";
-  }
   // create taihe model
   ::ohos::ai::mindSporeLite::Model taihe_model =
     taihe::make_holder<ModelImpl, ::ohos::ai::mindSporeLite::Model>(native_model);
   MS_LOG(DEBUG) << "ANI loadModelFromFdCallback make_holder native_model .";
-
-  callback(taihe_model);
+  if (!native_model) {
+    MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+  } else {
+    MS_LOG(INFO) << "ANI native_model created successfully!";
+    callback(taihe_model);
+  }
 }
 
 void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Context const &context,
@@ -746,18 +735,16 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
     mindspore_ani::CreateModelANI(model_info_native.get(), context_native.get());
-  if (!native_model) {
-    MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_FD_NATIVE_ERROR_PREDICT);
-  } else {
-    MS_LOG(INFO) << "ANI native_model created successfully!";
-  }
   // create taihe model
   ::ohos::ai::mindSporeLite::Model taihe_model =
     taihe::make_holder<ModelImpl, ::ohos::ai::mindSporeLite::Model>(native_model);
   MS_LOG(DEBUG) << "ANI loadModelFromFdContextCallback end make_holder native_model.";
-
-  callback(taihe_model);
+  if (!native_model) {
+    MS_LOG(ERROR) << "ANI native_model is nullptr, CreateModelANI failed!";
+  } else {
+    MS_LOG(INFO) << "ANI native_model created successfully!";
+    callback(taihe_model);
+  }
 }
 
 ::ohos::ai::mindSporeLite::Model loadTrainModelFromFile(

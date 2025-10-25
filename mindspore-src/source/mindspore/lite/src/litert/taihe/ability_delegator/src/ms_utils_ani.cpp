@@ -110,18 +110,26 @@ int32_t GetDeviceInfoContextANI(MSLiteContextInfoANI *context_ptr,
 }
 
 std::shared_ptr<mindspore::Model> BuildModelFromBufferANI(void *buffer, size_t size,
-                                                          const std::shared_ptr<mindspore::Context> &context) {
+                                                          const std::shared_ptr<mindspore::Context> &context, bool is_fd) {
   if (buffer == nullptr || size <= 0) {
-    ThrowBusinessError(MS_LOAD_BUFFER_ERROR_PREDICT);
+    if(is_fd){
+      ThrowBusinessError(MS_LOAD_FD_NATIVE_ERROR_PREDICT);
+    }
+    else{
+      ThrowBusinessError(MS_LOAD_BUFFER_ERROR_PREDICT);
+    }
+    return nullptr;
   }
   auto model_ptr = std::make_shared<mindspore::Model>();
-  if (model_ptr == nullptr) {
-    MS_LOG(ERROR) << "ANI failed to new native mindspore::Model.";
-    ThrowBusinessError(MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
-  }
   auto ret = model_ptr->Build(buffer, size, mindspore::kMindIR, context);
   if (ret != mindspore::kSuccess) {
-    ThrowBusinessError(MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
+    if(is_fd){
+      ThrowBusinessError(MS_LOAD_FD_NATIVE_ERROR_PREDICT);
+    }
+    else{
+      ThrowBusinessError(MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
+    }
+    return nullptr;
   }
   MS_LOG(INFO) << "ANI build model from buffer success.";
   return model_ptr;
@@ -136,10 +144,12 @@ std::shared_ptr<mindspore::Model> BuildModelFromPathANI(const std::string &path,
   }
   if (path.empty()) {
     ThrowBusinessError(MS_LOAD_PATH_ERROR_PREDICT);
+    return nullptr;
   }
   auto ret = model_ptr->Build(path, mindspore::kMindIR, context);
   if (ret != mindspore::kSuccess) {
     ThrowBusinessError(MS_LOAD_NATIVE_ERROR_PREDICT);
+    return nullptr;
   }
   MS_LOG(INFO) << "ANI build model from path success.";
   return model_ptr;
@@ -150,35 +160,39 @@ std::shared_ptr<mindspore::Model> CreateModelANI(MSLiteModelInfoANI *model_info_
   std::lock_guard<std::mutex> lock(create_mutex_);
   if (context_info_ptr == nullptr) {
     ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
+    return nullptr;
   }
 
   // create and init context
   auto context = std::make_shared<mindspore::Context>();
   if (context == nullptr) {
     ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
+    return nullptr;
   }
 
   if (context_info_ptr->target.empty()) {
     ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
+    return nullptr;
   }
 
   auto &device_infos = context->MutableDeviceInfo();
   if (GetDeviceInfoContextANI(context_info_ptr, device_infos) != MS_SUCCESS_ANI) {
     ThrowBusinessError(MS_LOAD_CONTEXT_ERROR);
+    return nullptr;
   }
   context->SetThreadNum(context_info_ptr->cpu_device.thread_num);
 
   // load model
   switch (model_info_ptr->mode) {
     case MSLiteLoadModelMode::kBuffer:
-      return BuildModelFromBufferANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total, context);
+      return BuildModelFromBufferANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total, context, false);
 
     case MSLiteLoadModelMode::kPath:
       return BuildModelFromPathANI(model_info_ptr->model_path, context);
 
     case MSLiteLoadModelMode::kFD: {
       auto model =
-        BuildModelFromBufferANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total, context);
+        BuildModelFromBufferANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total, context, true);
       (void)munmap(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
       model_info_ptr->model_buffer_data = nullptr;
       return model;
@@ -189,14 +203,24 @@ std::shared_ptr<mindspore::Model> CreateModelANI(MSLiteModelInfoANI *model_info_
   }
 }
 
-std::optional<mindspore::Graph> LoadGraphFromBufferTrainANI(void *buffer, size_t size) {
+std::optional<mindspore::Graph> LoadGraphFromBufferTrainANI(void *buffer, size_t size, bool is_fd) {
   if (buffer == nullptr || size <= 0) {
-    ThrowBusinessError(MS_LOAD_BUFFER_ERROR_TRAIN);
+    if (is_fd) {
+      ThrowBusinessError(MS_LOAD_FD_ERROR_TRAIN);
+    } else {
+      ThrowBusinessError(MS_LOAD_BUFFER_ERROR_TRAIN);
+    }
+    return std::nullopt;
   }
   mindspore::Graph graph;
   auto status = mindspore::Serialization::Load(buffer, size, mindspore::kMindIR, &graph);
   if (status != mindspore::kSuccess) {
-    ThrowBusinessError(MS_LOAD_BUFFER_NATIVE_ERROR_TRAIN);
+    if (is_fd) {
+      ThrowBusinessError(MS_LOAD_FD_ERROR_TRAIN);
+    } else {
+      ThrowBusinessError(MS_LOAD_BUFFER_NATIVE_ERROR_TRAIN);
+    }
+    return std::nullopt;
   }
   return graph;
 }
@@ -205,10 +229,12 @@ std::optional<mindspore::Graph> LoadGraphFromPathTrainANI(const std::string &pat
   mindspore::Graph graph;
   if (path.empty()) {
     ThrowBusinessError(MS_LOAD_PATH_ERROR_TRAIN);
+    return std::nullopt;
   }
   auto status = mindspore::Serialization::Load(path, mindspore::kMindIR, &graph);
   if (status != mindspore::kSuccess) {
     ThrowBusinessError(MS_LOAD_PATH_NATIVE_ERROR_TRAIN);
+    return std::nullopt;
   }
   return graph;
 }
@@ -243,7 +269,7 @@ std::shared_ptr<mindspore::Model> CreateTrainModelANI(MSLiteModelInfoANI *model_
   switch (model_info_ptr->mode) {
     case MSLiteLoadModelMode::kBuffer: {
       auto graph_opt =
-        LoadGraphFromBufferTrainANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
+        LoadGraphFromBufferTrainANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total, false);
       if (!graph_opt) return nullptr;
       return BuildTrainModelANI(*graph_opt, context, train_cfg);
     }
@@ -254,10 +280,8 @@ std::shared_ptr<mindspore::Model> CreateTrainModelANI(MSLiteModelInfoANI *model_
     }
     case MSLiteLoadModelMode::kFD: {
       auto graph_opt =
-        LoadGraphFromBufferTrainANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
-      if (!graph_opt) {
-        ThrowBusinessError(MS_LOAD_FD_ERROR_TRAIN);
-      };
+        LoadGraphFromBufferTrainANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total, true);
+      if (!graph_opt) return nullptr;
       auto model = BuildTrainModelANI(*graph_opt, context, train_cfg);
       (void)munmap(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total);
       model_info_ptr->model_buffer_data = nullptr;
