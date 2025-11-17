@@ -2060,6 +2060,7 @@ int lite::LiteSession::LoadModelAndCompileByBuf(const char *model_buf, mindspore
 int lite::LiteSession::LoadModelAndCompileByBuf(const char *model_buf, mindspore::ModelType model_type,
                                                 const size_t &buf_size) {
 #endif
+  MS_LOG(INFO) << "Start loading model and compiling from buffer";
   auto status = lite::PackWeightManager::GetInstance()->InitPackWeightManager(model_buf, buf_size, &model_id_,
                                                                               &runner_id_, config_info_);
   if (status != RET_OK) {
@@ -2074,7 +2075,9 @@ int lite::LiteSession::LoadModelAndCompileByBuf(const char *model_buf, mindspore
   }
   size_t lite_buf_size = 0;
   char *lite_buf = nullptr;
+  MS_LOG(INFO) << "Start loading model from buffer";
   auto buf_model_type = LoadModelByBuff(new_model_buf, buf_size, &lite_buf, &lite_buf_size, model_type);
+  MS_LOG(INFO) << "Successfully loaded model from buffer";
   if (buf_model_type == mindspore::ModelType::kUnknownType || lite_buf == nullptr) {
     MS_LOG(ERROR) << "Invalid model_buf";
     return RET_ERROR;
@@ -2090,7 +2093,9 @@ int lite::LiteSession::LoadModelAndCompileByBuf(const char *model_buf, mindspore
     return RET_ERROR;
   }
   (reinterpret_cast<lite::LiteModel *>(model))->set_keep_model_buf(keep_model_buf_);
+  MS_LOG(INFO) << "Start to compile Graph";
   auto ret = CompileGraph(model);
+  MS_LOG(INFO) << "Has successfully compiled the graph";
   model->buf = nullptr;
   if (ret != lite::RET_OK) {
     MS_LOG(ERROR) << "Compile model failed";
@@ -2102,15 +2107,18 @@ int lite::LiteSession::LoadModelAndCompileByBuf(const char *model_buf, mindspore
 }
 
 int lite::LiteSession::LoadModelAndCompileByPath(const std::string &model_path, mindspore::ModelType model_type) {
+  MS_LOG(INFO) << "Start loading model and compiling from path";
   size_t model_size;
   bool use_mmap = IsMmapEnable();
   auto model_buf = LoadModelByPath(model_path, model_type, &model_size, use_mmap);
+  MS_LOG(INFO) << "Successfully loaded model from path";
   if (model_buf == nullptr) {
     MS_LOG(ERROR) << "Read model file failed";
     return RET_ERROR;
   }
   auto status = lite::PackWeightManager::GetInstance()->InitPackWeightManager(model_buf, model_size, &model_id_,
                                                                               &runner_id_, config_info_);
+  MS_LOG(INFO) << "Successfully initialized Pack Weight Manager";
   if (status != RET_OK) {
     MS_LOG(ERROR) << "InitPackWeightByBuf failed.";
     return RET_ERROR;
@@ -2121,6 +2129,7 @@ int lite::LiteSession::LoadModelAndCompileByPath(const std::string &model_path, 
     MS_LOG(ERROR) << "get shared model buf is nullptr.";
     return RET_ERROR;
   }
+  MS_LOG(INFO) << "Successfully got the SharedModel buffer";
   if (is_shared_weight_) {
     if (use_mmap) {
       lite::UnmapMmapBuffer(const_cast<void *>(static_cast<const void *>(model_buf)), model_size);
@@ -2138,7 +2147,9 @@ int lite::LiteSession::LoadModelAndCompileByPath(const std::string &model_path, 
     reinterpret_cast<lite::LiteModel *>(model)->model_buf_by_mmap_ = true;
   }
   (reinterpret_cast<lite::LiteModel *>(model))->set_keep_model_buf(true);
+  MS_LOG(INFO) << "Start compiling the graph";
   auto ret = CompileGraph(model);
+  MS_LOG(INFO) << "Successfully compiled the graph";
   if (ret != lite::RET_OK) {
     MS_LOG(ERROR) << "Compile model failed";
     model->buf = nullptr;

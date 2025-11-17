@@ -53,6 +53,7 @@ int NNRTModelKernel::ReSize() {
 }
 
 int NNRTModelKernel::Execute() {
+  MS_LOG(INFO) << "Start to execute the NNRT model kernel";
   MS_CHECK_TRUE_RET(this->outputs().empty() != true, lite::RET_ERROR);
   zero_copy_ = IS_NNRT_ALLOCATOR(this->outputs()[Index0].allocator());
 
@@ -63,12 +64,13 @@ int NNRTModelKernel::Execute() {
   nn_output_tensors_.clear();
   nn_input_tensor_descs_.clear();
   nn_output_tensor_descs_.clear();
-
+  MS_LOG(INFO) << "Start to set inputs of the NNRT model";
   lite::STATUS ret_val = SetInputs();
   if (ret_val != lite::RET_OK) {
     MS_LOG(ERROR) << "NNRTModelKernel SetInputs failed, STATUS is " << ret_val;
     return ret_val;
   }
+  MS_LOG(INFO) << "Start to set outputs of the NNRT model";
   ret_val = SetOutputs();
   if (ret_val != lite::RET_OK) {
     MS_LOG(ERROR) << "NNRTModelKernel SetOutputs failed, STATUS is " << ret_val;

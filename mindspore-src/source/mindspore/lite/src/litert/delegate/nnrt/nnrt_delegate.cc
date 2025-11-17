@@ -204,13 +204,14 @@ Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model) 
 }
 
 Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *model, OH_NNModel *nn_model) {
+  MS_LOG(INFO) << "NNRTDelegate starts and creates NNCompilation";
   OH_NNCompilation *nn_compilation = OH_NNCompilation_Construct(nn_model);
   if (nn_compilation == nullptr) {
     MS_LOG(ERROR) << "Construct NNCompilation failed";
     OH_NNModel_Destroy(&nn_model);
     return kLiteError;
   }
-  MS_LOG(DEBUG) << "NNRTDelegate creates NNCompilation success.";
+  MS_LOG(INFO) << "NNRTDelegate creates NNCompilation successfully";
 
   auto ret_code = InitNNCompilation(nn_compilation);
   if (ret_code != kSuccess) {
@@ -220,7 +221,7 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
     return kLiteError;
   }
   OH_NNModel_Destroy(&nn_model);
-
+  MS_LOG(INFO) << "NNRTDelegate initialized NNCompilation successfully";
   OH_NNExecutor *nn_executor = nullptr;
   nn_executor = OH_NNExecutor_Construct(nn_compilation);
   if (nn_executor == nullptr) {
@@ -228,6 +229,7 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
     OH_NNCompilation_Destroy(&nn_compilation);
     return kLiteError;
   }
+  MS_LOG(INFO) << "NNRTDelegate constructed NNExecutor successfully";
   OH_NNCompilation_Destroy(&nn_compilation);
 
   auto nnrt_model_kernel =
@@ -237,9 +239,11 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
     MS_LOG(ERROR) << "new NNRTModelKernel failed";
     return kLiteError;
   }
+  MS_LOG(INFO) << "NNRTDelegate created NNRTModelKernel successfully";
   nn_executor_list_.push_back(nn_executor);
 
   model->Replace(model->BeginKernelIterator(), model->EndKernelIterator(), nnrt_model_kernel);
+  MS_LOG(INFO) << "NNRTDelegate created FullModelKernel successfully";
   return kSuccess;
 }
 #endif
@@ -298,6 +302,7 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
 }
 
 OH_NNModel *NNRTDelegate::CreateFullNNModel() {
+  MS_LOG(INFO) << "NNRTDelegate starts creating the Full NNRT Model";
   if (lite_graph_ == nullptr) {
     MS_LOG(ERROR) << "Lite graph is null";
     return nullptr;
@@ -314,7 +319,10 @@ OH_NNModel *NNRTDelegate::CreateFullNNModel() {
     return nullptr;
   }
 
+  MS_LOG(INFO) << "NNRTDelegate starts building the NNRT Model from LiteGraph";
   auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, lite_graph_, nullptr, 0);
+  MS_LOG(INFO) << "NNRTDelegate has successfully built the NNRT Model from LiteGraph";
+  
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
     OH_NNModel_Destroy(&nn_model);
