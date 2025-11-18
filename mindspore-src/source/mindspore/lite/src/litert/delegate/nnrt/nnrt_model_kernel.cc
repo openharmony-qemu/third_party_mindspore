@@ -18,6 +18,7 @@
 #include "nnrt_allocator.h"
 #include "litert/cxx_api/tensor/tensor_impl.h"
 #include "neural_network_runtime_inner.h"
+#include "src/common/utils.h"
 
 namespace mindspore{
 namespace {
@@ -53,6 +54,7 @@ int NNRTModelKernel::ReSize() {
 }
 
 int NNRTModelKernel::Execute() {
+  uint64_t start_exec_nnrt = mindspore::lite::GetTimeUs();
   MS_LOG(INFO) << "Start to execute the NNRT model kernel";
   MS_CHECK_TRUE_RET(this->outputs().empty() != true, lite::RET_ERROR);
   zero_copy_ = IS_NNRT_ALLOCATOR(this->outputs()[Index0].allocator());
@@ -101,7 +103,8 @@ int NNRTModelKernel::Execute() {
     return lite::RET_ERROR;
   }
   MS_LOG(INFO) << "Run NNRtModel Kernel success.";
-
+  uint64_t nnrt_exec_time = mindspore::lite::GetTimeUs() - start_exec_nnrt;
+  MS_LOG(INFO) << "The NNRT inference time of the Lite model  is: " << nnrt_exec_time << "us";
   return lite::RET_OK;
 }
 
