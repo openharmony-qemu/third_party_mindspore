@@ -82,6 +82,7 @@ ohos_group("mindspore") {
     ":mindspore_train_lib",
     "mindir:mindir_lib",
     "src/litert/js_api:mindsporelite_napi",
+    "src/litert/taihe/ability_delegator:mindspore_taihe"
   ]
 }
 
