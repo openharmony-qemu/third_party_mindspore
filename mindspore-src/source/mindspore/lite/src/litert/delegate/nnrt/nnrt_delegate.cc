@@ -26,6 +26,7 @@
 #include "schema/ops_generated.h"
 #include "flatbuffers/flatbuffers.h"
 #include "litert/tensor_category.h"
+#include "src/common/utils.h"
 
 namespace mindspore {
 namespace lite {
@@ -108,6 +109,7 @@ bool NNRTDelegate::IsKirinNPUWithOnlineInference() const { return CheckNPUPrefix
 bool NNRTDelegate::IsKirinNPUWithOfflineInference() const { return CheckNPUPrefix("HIAI_F"); }
 
 Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model) {
+  uint64_t start_build_nnrt = mindspore::lite::GetTimeUs();
   OH_NNModel *nn_model = OH_NNModel_Construct();
   if (nn_model == nullptr) {
     MS_LOG(ERROR) << "Create NNModel failed, result is nullptr";
@@ -141,6 +143,8 @@ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model)
     MS_LOG(ERROR) << "Create full model kernel failed, ret: " << ret2;
     return kLiteError;
   }
+  uint64_t build_nnrt_time = mindspore::lite::GetTimeUs() - start_build_nnrt;
+  MS_LOG(INFO) << "The NNRT delegate online model build time is: " << build_nnrt_time << "us"
   return kSuccess;
 }
 
@@ -149,6 +153,7 @@ constexpr int32_t kNum2 = 2;
 }
 
 Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model) {
+  uint64_t start_build_offline_nnrt = mindspore::lite::GetTimeUs();
   if (!IsCustomModel()) {
     MS_LOG(ERROR) << "not third party model";
     return kLiteNullptr;
@@ -200,6 +205,8 @@ Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model) 
   nn_executor_list_.push_back(nn_executor);
 
   (void)model->Replace(model->BeginKernelIterator(), model->EndKernelIterator(), nnrt_model_kernel);
+  uint64_t build_offline_nnrt_time = mindspore::lite::GetTimeUs() - start_build_offline_nnrt;
+  MS_LOG(INFO) << "The NNRT delegate offline model build time is: " << build_offline_nnrt_time << "us"
   return kSuccess;
 }
 

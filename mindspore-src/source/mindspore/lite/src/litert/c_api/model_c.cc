@@ -23,6 +23,7 @@
 #include "include/api/types.h"
 #include "src/litert/cxx_api/tensor/tensor_impl.h"
 #include "src/litert/cxx_api/model/model_impl.h"
+#include "src/common/utils.h"
 #ifdef ENABLE_HI_APP_EVENT
 #include "src/common/hi_app_event/hi_app_event.h"
 #endif
@@ -223,6 +224,7 @@ OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, s
 
 OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path, OH_AI_ModelType model_type,
                               const OH_AI_ContextHandle model_context) {
+  uint64_t start_build = mindspore::lite::GetTimeUs();
   MS_LOG(INFO) << "Start to build ms model from file";
   if (model == nullptr || model_path == nullptr || model_context == nullptr) {
     MS_LOG(ERROR) << "model or model_path or model_context is nullptr.";
@@ -254,6 +256,8 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
     MS_LOG(ERROR) << "Built ms model from file failed, ret: " << ret;
   }
   impl->in_use_.clear();
+  uint64_t build_time = mindspore::lite::GetTimeUs() - start_build;
+  MS_LOG(INFO) << "The build time of the Lite model is: " << build_time << "us";
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
@@ -295,6 +299,7 @@ OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandle
 OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs, OH_AI_TensorHandleArray *outputs,
                         const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after) {
   MS_LOG(INFO) << "Start to predict ms model";
+  uint64_t start_predict = mindspore::lite::GetTimeUs();
   if (model == nullptr) {
     MS_LOG(ERROR) << "model is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
@@ -358,6 +363,8 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
   outputs->handle_list = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&(outputs->handle_num)));
   MS_LOG(INFO) << "Predicted ms model successfully";
   impl->in_use_.clear();
+  uint64_t predict_time = mindspore::lite::GetTimeUs() - start_predict;
+  MS_LOG(INFO) << "The inference time of the Lite model is: " << predict_time << "us";
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
