@@ -195,6 +195,7 @@ size_t OH_AI_ModelCalcWorkspaceSize(OH_AI_ModelHandle model) {
 OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size, OH_AI_ModelType model_type,
                       const OH_AI_ContextHandle model_context) {
   MS_LOG(INFO) << "Start to build ms model";
+  uint64_t start_build = mindspore::lite::GetTimeUs();
   if (model == nullptr || model_data == nullptr || model_context == nullptr) {
     MS_LOG(ERROR) << "model or model_data or model_context is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
@@ -219,6 +220,8 @@ OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, s
   } else {
     MS_LOG(ERROR) << "Built ms model failed, ret: " << ret;
   }
+  uint64_t build_time = mindspore::lite::GetTimeUs() - start_build;
+  MS_LOG(DEBUG) << "The build time of the Lite model is: " << build_time << "us";
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
@@ -257,7 +260,7 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
   }
   impl->in_use_.clear();
   uint64_t build_time = mindspore::lite::GetTimeUs() - start_build;
-  MS_LOG(INFO) << "The build time of the Lite model is: " << build_time << "us";
+  MS_LOG(DEBUG) << "The build time of the Lite model is: " << build_time << "us";
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
@@ -364,7 +367,7 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
   MS_LOG(INFO) << "Predicted ms model successfully";
   impl->in_use_.clear();
   uint64_t predict_time = mindspore::lite::GetTimeUs() - start_predict;
-  MS_LOG(INFO) << "The inference time of the Lite model is: " << predict_time << "us";
+  MS_LOG(DEBUG) << "The inference time of the Lite model is: " << predict_time << "us";
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
