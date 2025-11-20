@@ -125,17 +125,19 @@ const char *EnumStrForMsLogLevel(LiteLogLevel level) {
 }
 
 void LiteLogWriter::OutputLog(const std::ostringstream &msg) const {
+#if defined(MS_COMPILE_OHOS)
+  PrintHiLog(log_level_, location_.file_, location_.line_, location_.func_, msg.str().c_str());
+#else
   if (IsPrint(static_cast<int>(log_level_))) {
 #if defined(__ANDROID__)
     __android_log_print(GetAndroidLogLevel(log_level_), ANDROID_LOG_TAG, "[%s:%d] %s] %s", location_.file_,
                         location_.line_, location_.func_, msg.str().c_str());
-#elif defined(MS_COMPILE_OHOS)
-    PrintHiLog(log_level_, location_.file_, location_.line_, location_.func_, msg.str().c_str());
 #else
     printf("%s [%s:%d] %s] %s\n", EnumStrForMsLogLevel(log_level_), location_.file_, location_.line_, location_.func_,
            msg.str().c_str());
 #endif
   }
+#endif
 }
 
 void LiteLogWriter::operator<(const LiteLogStream &stream) const noexcept {

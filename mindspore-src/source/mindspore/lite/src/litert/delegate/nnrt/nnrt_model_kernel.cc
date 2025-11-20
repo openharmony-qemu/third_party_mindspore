@@ -55,7 +55,7 @@ int NNRTModelKernel::ReSize() {
 
 int NNRTModelKernel::Execute() {
   uint64_t start_exec_nnrt = mindspore::lite::GetTimeUs();
-  MS_LOG(INFO) << "Start to execute the NNRT model kernel";
+  MS_LOG(DEBUG) << "Start to execute the NNRT model kernel";
   MS_CHECK_TRUE_RET(this->outputs().empty() != true, lite::RET_ERROR);
   zero_copy_ = IS_NNRT_ALLOCATOR(this->outputs()[Index0].allocator());
 
@@ -66,31 +66,31 @@ int NNRTModelKernel::Execute() {
   nn_output_tensors_.clear();
   nn_input_tensor_descs_.clear();
   nn_output_tensor_descs_.clear();
-  MS_LOG(INFO) << "Start to set inputs of the NNRT model";
+  MS_LOG(DEBUG) << "Start to set inputs of the NNRT model";
   lite::STATUS ret_val = SetInputs();
   if (ret_val != lite::RET_OK) {
     MS_LOG(ERROR) << "NNRTModelKernel SetInputs failed, STATUS is " << ret_val;
     return ret_val;
   }
-  MS_LOG(INFO) << "Start to set outputs of the NNRT model";
+  MS_LOG(DEBUG) << "Start to set outputs of the NNRT model";
   ret_val = SetOutputs();
   if (ret_val != lite::RET_OK) {
     MS_LOG(ERROR) << "NNRTModelKernel SetOutputs failed, STATUS is " << ret_val;
     return ret_val;
   }
-  MS_LOG(INFO) << "Running NNRtModel Kernel...";
+  MS_LOG(DEBUG) << "Running NNRtModel Kernel...";
   OH_NN_ReturnCode ret_code = OH_NN_SUCCESS;
   if (predict_config_ != nullptr) {
     bool support = false;
     ret_code = OH_NN_IsSupportAIPP(support);
     if (ret_code != OH_NN_SUCCESS) {
-      MS_LOG(INFO) << "Aipp not support in current device.";
+      MS_LOG(ERROR) << "Aipp not support in current device.";
       return lite::RET_NOT_SUPPORT_AIPP;
     }
     ret_code = OH_NNExecutor_RunSyncWithAipp(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
                                              nn_output_tensors_.data(), nn_output_tensors_.size(), predict_config_);
     if (ret_code != OH_NN_SUCCESS) {
-      MS_LOG(INFO) << "Aipp infer fail.";
+      MS_LOG(ERROR) << "Aipp infer fail.";
       return lite::RET_INFER_AIPP_FAIL;
     }
   } else {
@@ -102,9 +102,9 @@ int NNRTModelKernel::Execute() {
     MS_LOG(ERROR) << "OH_NNExecutor_RunSync Run failed, OH_NN_ReturnCode = " << ret_code;
     return lite::RET_ERROR;
   }
-  MS_LOG(INFO) << "Run NNRtModel Kernel success.";
+  MS_LOG(DEBUG) << "Run NNRtModel Kernel success";
   uint64_t nnrt_exec_time = mindspore::lite::GetTimeUs() - start_exec_nnrt;
-  MS_LOG(INFO) << "The NNRT inference time of the Lite model  is: " << nnrt_exec_time << "us";
+  MS_LOG(DEBUG) << "The NNRT inference time of the Lite model  is: " << nnrt_exec_time << "us";
   return lite::RET_OK;
 }
 

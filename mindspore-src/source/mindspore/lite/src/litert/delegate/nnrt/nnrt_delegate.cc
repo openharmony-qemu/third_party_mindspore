@@ -144,7 +144,7 @@ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model)
     return kLiteError;
   }
   uint64_t build_nnrt_time = mindspore::lite::GetTimeUs() - start_build_nnrt;
-  MS_LOG(INFO) << "The NNRT delegate online model build time is: " << build_nnrt_time << "us"
+  MS_LOG(DEBUG) << "The NNRT delegate online model build time is: " << build_nnrt_time << "us"
   return kSuccess;
 }
 
@@ -206,7 +206,7 @@ Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model) 
 
   (void)model->Replace(model->BeginKernelIterator(), model->EndKernelIterator(), nnrt_model_kernel);
   uint64_t build_offline_nnrt_time = mindspore::lite::GetTimeUs() - start_build_offline_nnrt;
-  MS_LOG(INFO) << "The NNRT delegate offline model build time is: " << build_offline_nnrt_time << "us"
+  MS_LOG(DEBUG) << "The NNRT delegate offline model build time is: " << build_offline_nnrt_time << "us"
   return kSuccess;
 }
 
