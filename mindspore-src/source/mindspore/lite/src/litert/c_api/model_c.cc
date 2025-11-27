@@ -371,9 +371,9 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
-extern "C" OH_AI_Status OH_AI_ModelPredictV2(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
-                                             OH_AI_TensorHandleArray *outputs, const OH_AI_KernelCallBack before,
-                                             const OH_AI_KernelCallBack after, const char *predict_config) {
+OH_AI_Status OH_AI_ModelPredictWithConfig(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
+                                             OH_AI_TensorHandleArray *outputs, const char *predict_config,
+                                             const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after) {
   if (predict_config == nullptr || predict_config[0] == '\0') {
     MS_LOG(ERROR) << "Unsupported predict_config is empty.";
     return OH_AI_STATUS_LITE_NOT_SUPPORT;

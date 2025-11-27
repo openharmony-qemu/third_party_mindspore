@@ -20,7 +20,7 @@
  *
  * @brief Provides APIs related to MindSpore Lite model inference.
  *
- * @Syscap SystemCapability.Ai.MindSpore
+ * @syscap SystemCapability.Ai.MindSpore
  * @since 9
  */
 
@@ -405,8 +405,12 @@ OH_AI_API OH_AI_Status OH_AI_ExportWeightsCollaborateWithMicro(OH_AI_ModelHandle
  * @since 20
  */
 OH_AI_API OH_AI_Status OH_AI_ModelLoadConfig(OH_AI_ModelHandle model, const char *config_path);
-
+OH_AI_API OH_AI_Status OH_AI_ModelPredictWithConfig(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
+                                             OH_AI_TensorHandleArray *output, const char *config,
+                                             const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after);
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 #endif  // MINDSPORE_INCLUDE_C_API_MODEL_C_H

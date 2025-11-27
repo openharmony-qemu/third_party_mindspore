@@ -348,7 +348,9 @@ OH_AI_API OH_AI_Status OH_AI_ExportWeightsCollaborateWithMicro(OH_AI_ModelHandle
 ///
 /// \return OH_AI_Status.
 OH_AI_API OH_AI_Status OH_AI_ModelLoadConfig(OH_AI_ModelHandle model, const char *config_path);
-
+OH_AI_API OH_AI_Status OH_AI_ModelPredictWithConfig(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
+                                             OH_AI_TensorHandleArray *outputs, const char *predict_config,
+                                             const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after);
 #ifdef __cplusplus
 }
 #endif
