@@ -84,13 +84,13 @@ int NNRTModelKernel::Execute() {
     bool support = false;
     ret_code = OH_NN_IsSupportAIPP(support);
     if (ret_code != OH_NN_SUCCESS) {
-      MS_LOG(ERROR) << "Aipp not support in current device.";
+      MS_LOG(ERROR) << "Aipp not support in current device";
       return lite::RET_NOT_SUPPORT_AIPP;
     }
     ret_code = OH_NNExecutor_RunSyncWithAipp(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
                                              nn_output_tensors_.data(), nn_output_tensors_.size(), predict_config_);
     if (ret_code != OH_NN_SUCCESS) {
-      MS_LOG(ERROR) << "Aipp infer fail.";
+      MS_LOG(ERROR) << "Inference failed when Aipp invoked the NNRT interface";
       return lite::RET_INFER_AIPP_FAIL;
     }
   } else {

@@ -375,8 +375,12 @@ OH_AI_Status OH_AI_ModelPredictWithConfig(OH_AI_ModelHandle model, const OH_AI_T
                                              OH_AI_TensorHandleArray *outputs, const char *predict_config,
                                              const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after) {
   if (predict_config == nullptr || predict_config[0] == '\0') {
-    MS_LOG(ERROR) << "Unsupported predict_config is empty.";
-    return OH_AI_STATUS_LITE_NOT_SUPPORT;
+    MS_LOG(ERROR) << "Unsupported predict_config is empty";
+    return OH_AI_STATUS_LITE_PARAM_INVALID;
+  }
+  if (model == nullptr) {
+    MS_LOG(ERROR) << "Input model cannot be nullptr";
+    return OH_AI_STATUS_LITE_NULLPTR;
   }
   auto impl = static_cast<mindspore::ModelC *>(model);
   impl->model_->SetPredictModelPara(predict_config);

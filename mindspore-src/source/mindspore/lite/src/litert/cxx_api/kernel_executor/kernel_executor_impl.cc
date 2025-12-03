@@ -192,8 +192,8 @@ Status KernelExecutorImpl::Execute(const std::vector<MSTensor> &inputs, std::vec
   kernel_->set_in_tensors(inputs_);
   int ret = kernel_->Execute();
   if (ret != RET_OK) {
-    MS_LOG(ERROR) << "execute error.";
-    return kLiteError;
+    MS_LOG(ERROR) << "execute error, ret is:" << ret;
+    return ret;
   }
   auto res = GetOutputs();
   outputs->clear();

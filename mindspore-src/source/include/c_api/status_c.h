@@ -72,6 +72,9 @@ typedef enum OH_AI_Status {
 
   // User input param error code, range: [-600, 700)
   OH_AI_STATUS_LITE_INPUT_PARAM_INVALID = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -600), /**< Invalid input param by user. */
+  // AIPP module error code, range: [-700, -800)
+  OH_AI_STATUS_LITE_AIPP_NOT_SUPPORTED = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -700), /**<Not support AIPP>  */
+  OH_AI_STATUS_LITE_AIPP_INFER_ERROR = OH_AI_COMPCODE_LITE | (0x0FFFFFFF & -701), /**<Not support AIPP>  */
 } OH_AI_Status;
 #ifdef __cplusplus
 }
