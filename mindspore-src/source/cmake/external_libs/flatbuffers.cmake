@@ -30,11 +30,11 @@ else()
     endif()
 
     if(ENABLE_GITEE OR ENABLE_GITEE_EULER) # Channel GITEE_EULER is NOT supported now, use GITEE instead.
-        set(REQ_URL "https://gitee.com/mirrors/flatbuffers/repository/archive/v24.3.25.tar.gz")
-        set(SHA256 "3767fc37c8c3c500405052f2180f0f9a65e36512b07b78834a369c563fe3c644")
+        set(REQ_URL "https://gitee.com/mirrors/flatbuffers/repository/archive/v25.2.10.tar.gz")
+        set(SHA256 "b97b0ad5319f66f671bf060e9d624a41ae6437a623c9344d7f744a872d27c14d")
     else()
-        set(REQ_URL "https://github.com/google/flatbuffers/archive/v24.3.25.tar.gz")
-        set(SHA256 "4157c5cacdb59737c5d627e47ac26b140e9ee28b1102f812b36068aab728c1ed")
+        set(REQ_URL "https://github.com/google/flatbuffers/archive/refs/tags/v25.2.10.tar.gz")
+        set(SHA256 "b9c2df49707c57a48fc0923d52b8c73beb72d675f9d44b2211e4569be40a7421")
     endif()
 
     if(APPLE)
@@ -42,7 +42,7 @@ else()
     endif()
     if(APPLE)
         mindspore_add_pkg(flatbuffers
-                VER 24.3.35
+                VER 25.2.10
                 LIBS flatbuffers
                 EXE flatc
                 URL ${REQ_URL}
@@ -51,7 +51,7 @@ else()
     else()
         if(TARGET_AOS_ARM)
             mindspore_add_pkg(flatbuffers
-                    VER 24.3.25
+                    VER 25.2.10
                     LIBS flatbuffers
                     EXE flatc
                     URL ${REQ_URL}
@@ -60,7 +60,7 @@ else()
                     -DFLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release)
         else()
             mindspore_add_pkg(flatbuffers
-                    VER 24.3.25
+                    VER 25.2.10
                     LIBS flatbuffers
                     EXE flatc
                     URL ${REQ_URL}
