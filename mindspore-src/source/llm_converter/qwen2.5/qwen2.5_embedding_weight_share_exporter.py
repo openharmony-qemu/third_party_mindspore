@@ -20,8 +20,15 @@ from onnxslim import slim
 import torch
 from torch.onnx import OperatorExportTypes
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
-
+from utils.duplicate_shared_initializer import duplicate_shared_initializers
 from onnx import helper, shape_inference, TensorProto
+from utils.quant.quantize import (
+    apply_quant,
+    quantize_weight_g128_4bit_nz,
+    apply_shared_weight,
+    quantize_weight_g32_4bit_nd,
+)
+from utils.quant.quant_config import ModelConfig, QuantizationConfig, LiteTurboConfig
 device = "cpu"
 dtype = torch.float16
 
@@ -77,37 +84,6 @@ def get_initializers_info(model):
     name_2_init = {init.name: init for init in model.graph.initializer}
 
     return init_usage_map, name_2_init
-
-
-def duplicate_shared_initializers(model):
-    init_usage_map, name_2_init = get_initializers_info(model)
-    for init_name, nodes in init_usage_map.items():
-
-        if len(nodes) <= 1:
-            continue
-        print(
-            f"Initializer '{init_name}' is reused {len(nodes)} times, apply deepcopy...")
-
-        for idx, node in enumerate(nodes):
-            flag = False
-            idx_del = 0
-            for idx_re, i_name in enumerate(node.input):
-                if i_name == init_name:
-                    print(f"node:{node.name} initializer:{init_name}")
-                    flag = True
-                    idx_del = idx_re
-                    break
-            get_init = name_2_init.get(init_name, None)
-            if get_init is None:
-                continue
-
-            new_init = copy.deepcopy(get_init)
-            print(f"initializer of node:{node.name} {init_name} copy complete")
-            new_name = f"{init_name}_copy{idx}"
-            new_init.name = new_name
-            model.graph.initializer.append(new_init)
-
-            node.input[idx_del] = new_name
 
 
 def get_fusion_outputs(users):
@@ -843,13 +819,49 @@ class Qwen2Onnx:
         )
 
     def embedding_weight_save(
-        self, embedding_weight_save_path=None
+        self, embedding_weight_save_path=None, embedding_quantize_config=None
     ):
         embedding_layer = self.model.get_input_embeddings()
         weight = embedding_layer.weight
         embedding_weight = weight.detach().numpy().astype(np.float16)
-        embedding_weight.flatten().tofile(embedding_weight_save_path)
+        if embedding_quantize_config == "W4A8":
+            weight_4bit = quantize_weight_g128_4bit_nz(embedding_weight.T)
+            weight_4bit.tofile(embedding_weight_save_path)
+        elif embedding_quantize_config == "W4A16":
+            weight_4bit_gp32 = quantize_weight_g32_4bit_nd(embedding_weight.T)
+            weight_4bit_gp32.tofile(embedding_weight_save_path)
+        else:
+            embedding_weight.flatten().tofile(embedding_weight_save_path)
         print(f"Save {embedding_weight_save_path}")
+
+    def rope_sin_cos_save(self, cos_path, sin_path, seq_len):
+        """save rope cos and sin constant"""
+        rotary_layer = self.model.model.layers[0].self_attn.rotary_emb
+
+        valid_seq_len = seq_len
+        input_embed = torch.rand(
+            1, valid_seq_len, self.hidden_size, dtype=torch.float16
+        ).to(device)
+        position_ids = torch.arange(0, valid_seq_len).unsqueeze(0)
+        rope_cos, rope_sin = rotary_layer(input_embed, valid_seq_len)
+
+        rope_cos = rope_cos[position_ids].detach().numpy().astype(np.float16)
+        rope_sin = rope_sin[position_ids].detach().numpy().astype(np.float16)
+
+        rope_cos.flatten().tofile(cos_path)
+        rope_sin.flatten().tofile(sin_path)
+
+    def attention_mask_save(self, attention_mask_path, max_seq_len):
+        _, tgt_len = 1, max_seq_len
+        mask = torch.full((tgt_len, tgt_len), torch.finfo(dtype).min)
+        mask_cond = torch.arange(mask.size(-1))
+        mask.masked_fill_(mask_cond < (
+            mask_cond + 1).view(mask.size(-1), 1), 0)
+        mask = mask.to(dtype)
+        attention_mask = mask[None, None, :, :].expand(1, 1, tgt_len, tgt_len)
+        attention_mask.to(torch.float16).detach().numpy().tofile(
+            attention_mask_path
+        )
 
 
 if __name__ == "__main__":
@@ -868,6 +880,36 @@ if __name__ == "__main__":
         required=True,
         help="path to embedding weight",
     )
+    parser.add_argument(
+        "--cos_weight_save_path",
+        type=str,
+        required=True,
+        help="path to cos weight",
+    )
+    parser.add_argument(
+        "--sin_weight_save_path",
+        type=str,
+        required=True,
+        help="path to sin weight",
+    )
+    parser.add_argument(
+        "--attention_mask_save_path",
+        type=str,
+        required=True,
+        help="path to attention mask weight",
+    )
+    parser.add_argument(
+        "--embedding_quantize_config",
+        type=str,
+        required=False,
+        help="embedding/lm_head quantization config",
+    )
+    parser.add_argument(
+        "--decoder_quantize_config",
+        type=str,
+        required=False,
+        help="decoder layer quantization config",
+    )
     args = parser.parse_args()
     max_length = 1024
     chunk_size = 128
@@ -878,23 +920,84 @@ if __name__ == "__main__":
     logging.info("load model: %s...", args.model)
     qwen2onnx.load(args.model, 24)
     logging.info("loaded model: %s\n", args.model)
+
+    embedding_quant_config = QuantizationConfig(
+        args.embedding_quantize_config
+    )
+    decoder_quant_config = QuantizationConfig(
+        args.decoder_quantize_config
+    )
+    model_config = ModelConfig(
+        max_length=max_length,
+        chunk_size=chunk_size,
+        vocab_size=qwen2onnx.config.vocab_size,
+        hidden_size=qwen2onnx.config.hidden_size,
+        num_attention_heads=qwen2onnx.config.num_attention_heads,
+        num_key_value_heads=qwen2onnx.config.num_key_value_heads,
+        eos_id=qwen2onnx.config.eos_token_id,
+        embedding_quant=embedding_quant_config,
+        decoder_quant=decoder_quant_config,
+    )
+    lite_turbo_config = LiteTurboConfig(
+        max_length=max_length,
+        chunk_size=chunk_size,
+        vocab_size=qwen2onnx.config.vocab_size,
+        hidden_size=qwen2onnx.config.hidden_size,
+        num_attention_heads=qwen2onnx.config.num_attention_heads,
+        num_key_value_heads=qwen2onnx.config.num_key_value_heads,
+        eos_id=qwen2onnx.config.eos_token_id,
+        scale_gp_size=embedding_quant_config.group_size,
+        embedding_quant=(
+            True
+            if args.embedding_quantize_config or args.decoder_quantize_config
+            else False
+        ),
+        do_sample=True,
+        temperature=0.3,
+        top_k=50,
+        top_p=0.9,
+        typical_p=1.0,
+        diversity_penalty=0.0,
+        repetition_penalty=1.0,
+        length_penalty=1.0,
+        random_seed=42,
+    )
+
     # export half precision model
     qwen2onnx.export(
         args.onnx_model,
         max_seq_len=max_length,
         chunk_size=chunk_size,
     )
-    model = onnx.load(args.onnx_model)
-    apply_shared_weight(model)
-    if model.ByteSize() > onnx.checker.MAXIMUM_PROTOBUF:
-        onnx.save(
-            model,
-            args.onnx_model,
-            save_as_external_data=True,
-            location=os.path.basename(args.onnx_model) + ".data",
-        )
+    if args.embedding_quantize_config or args.decoder_quantize_config:
+        path, file_name = os.path.split(args.onnx_model)
+        file_name, ext = os.path.splitext(file_name)
+        quant_model_path = os.path.join(path, file_name + "_quant" + ext)
+        apply_quant(args.onnx_model, quant_model_path, model_config)
     else:
-        onnx.save(model, args.onnx_model)
+        model = onnx.load(args.onnx_model)
+        apply_shared_weight(model)
+        if model.ByteSize() > onnx.checker.MAXIMUM_PROTOBUF:
+            onnx.save(
+                model,
+                args.onnx_model,
+                save_as_external_data=True,
+                location=os.path.basename(args.onnx_model) + ".data",
+            )
+        else:
+            onnx.save(model, args.onnx_model)
+    path, _ = os.path.split(args.onnx_model)
     qwen2onnx.embedding_weight_save(
-        args.embedding_weight_save_path
+        args.embedding_weight_save_path, args.embedding_quantize_config
     )
+    qwen2onnx.rope_sin_cos_save(
+        args.cos_weight_save_path, args.sin_weight_save_path, model_config.max_length)
+    qwen2onnx.attention_mask_save(
+        args.attention_mask_save_path, model_config.max_length)
+    lite_turbo_json_str = json.dumps(
+        lite_turbo_config.asdict(), indent=4, separators=(",", ": ")
+    )
+    lite_turbo_config_path = os.path.join(path, "lite_turbo_config.json")
+    with open(lite_turbo_config_path, "w", encoding="utf-8") as f:
+        f.write(lite_turbo_json_str)
+        print(f"Save model config to {lite_turbo_config_path}")
