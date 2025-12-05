@@ -334,5 +334,24 @@
   {
     "first_introduced": "11",
     "name": "OH_AI_ExportWeightsCollaborateWithMicro"
+  },
+  {
+    "first_introduced": "23",
+    "name": "OH_AI_LLMCreateSession"
+  },
+  {
+    "first_introduced": "23",
+    "name": "OH_AI_LLMBuildModel"
+  },  
+  {
+    "first_introduced": "23",
+    "name": "OH_AI_LLMSetSessionConfig"
+  },
+  {
+    "first_introduced": "23",
+    "name": "OH_AI_LLMDestroy"
+  },  {
+    "first_introduced": "23",
+    "name": "OH_AI_LLMGenerate"
   }
 ]

@@ -107,6 +107,8 @@ c_api_sources = [
   "src/litert/c_api/context_c.cc",
   "src/litert/c_api/model_c.cc",
   "src/litert/c_api/tensor_c.cc",
+  "src/litert/c_api/llm_c.cc",
+  "src/litert/c_api/llm_wrapper.cc",
 ]
 
 api_source = [ "../core/utils/status.cc" ]
