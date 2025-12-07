@@ -8,9 +8,9 @@
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
-              FLATBUFFERS_VERSION_MINOR == 3 &&
-              FLATBUFFERS_VERSION_REVISION == 25,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 25 &&
+              FLATBUFFERS_VERSION_MINOR == 2 &&
+              FLATBUFFERS_VERSION_REVISION == 10,
              "Non-compatible flatbuffers version included");
 
 namespace mindspore {
@@ -500,7 +500,7 @@ inline void GpuCache::UnPackTo(GpuCacheT *_o, const ::flatbuffers::resolver_func
   (void)_resolver;
   { auto _e = name(); if (_e) _o->name = _e->str(); }
   { auto _e = version(); if (_e) _o->version = _e->str(); }
-  { auto _e = allBins(); if (_e) { _o->allBins.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->allBins[_i]) { _e->Get(_i)->UnPackTo(_o->allBins[_i].get(), _resolver); } else { _o->allBins[_i] = std::unique_ptr<mindspore::schema::ProgramBinaryT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->allBins.resize(0); } }
+  { auto _e = allBins(); if (_e) { _o->allBins.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->allBins[_i]) { _e->Get(_i)->UnPackTo(_o->allBins[_i].get(), _resolver); } else { _o->allBins[_i] = std::unique_ptr<mindspore::schema::ProgramBinaryT>(_e->Get(_i)->UnPack(_resolver)); } } } else { _o->allBins.resize(0); } }
 }
 
 inline ::flatbuffers::Offset<GpuCache> GpuCache::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const GpuCacheT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
@@ -528,14 +528,8 @@ inline const ::flatbuffers::TypeTable *TuneParamTypeTable() {
     { ::flatbuffers::ET_INT, 1, -1 },
     { ::flatbuffers::ET_INT, 1, -1 }
   };
-  static const char * const names[] = {
-    "local",
-    "block",
-    "shape",
-    "opPara"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 4, type_codes, nullptr, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 4, type_codes, nullptr, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -550,14 +544,8 @@ inline const ::flatbuffers::TypeTable *ProgramBinaryTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::TuneParamTypeTable
   };
-  static const char * const names[] = {
-    "program_name",
-    "build_option",
-    "tune",
-    "data"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 4, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 4, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -571,13 +559,8 @@ inline const ::flatbuffers::TypeTable *GpuCacheTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::ProgramBinaryTypeTable
   };
-  static const char * const names[] = {
-    "name",
-    "version",
-    "allBins"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 3, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 3, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }

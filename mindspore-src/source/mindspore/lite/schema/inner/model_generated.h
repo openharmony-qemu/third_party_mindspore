@@ -8,9 +8,9 @@
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
-              FLATBUFFERS_VERSION_MINOR == 3 &&
-              FLATBUFFERS_VERSION_REVISION == 25,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 25 &&
+              FLATBUFFERS_VERSION_MINOR == 2 &&
+              FLATBUFFERS_VERSION_REVISION == 10,
              "Non-compatible flatbuffers version included");
 
 #include "ops_generated.h"
@@ -3098,12 +3098,12 @@ inline void Tensor::UnPackTo(TensorT *_o, const ::flatbuffers::resolver_function
   { auto _e = refCount(); _o->refCount = _e; }
   { auto _e = offset(); _o->offset = _e; }
   { auto _e = data(); if (_e) { _o->data.resize(_e->size()); std::copy(_e->begin(), _e->end(), _o->data.begin()); } }
-  { auto _e = quantParams(); if (_e) { _o->quantParams.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->quantParams[_i]) { _e->Get(_i)->UnPackTo(_o->quantParams[_i].get(), _resolver); } else { _o->quantParams[_i] = std::unique_ptr<mindspore::schema::QuantParamT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->quantParams.resize(0); } }
+  { auto _e = quantParams(); if (_e) { _o->quantParams.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->quantParams[_i]) { _e->Get(_i)->UnPackTo(_o->quantParams[_i].get(), _resolver); } else { _o->quantParams[_i] = std::unique_ptr<mindspore::schema::QuantParamT>(_e->Get(_i)->UnPack(_resolver)); } } } else { _o->quantParams.resize(0); } }
   { auto _e = quantClusters(); if (_e) { _o->quantClusters.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->quantClusters[_i] = _e->Get(_i); } } else { _o->quantClusters.resize(0); } }
   { auto _e = name(); if (_e) _o->name = _e->str(); }
   { auto _e = enableHuffmanCode(); _o->enableHuffmanCode = _e; }
   { auto _e = weightQuantCompressType(); _o->weightQuantCompressType = _e; }
-  { auto _e = externalData(); if (_e) { _o->externalData.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->externalData[_i]) { _e->Get(_i)->UnPackTo(_o->externalData[_i].get(), _resolver); } else { _o->externalData[_i] = std::unique_ptr<mindspore::schema::ExternalDataT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->externalData.resize(0); } }
+  { auto _e = externalData(); if (_e) { _o->externalData.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->externalData[_i]) { _e->Get(_i)->UnPackTo(_o->externalData[_i].get(), _resolver); } else { _o->externalData[_i] = std::unique_ptr<mindspore::schema::ExternalDataT>(_e->Get(_i)->UnPack(_resolver)); } } } else { _o->externalData.resize(0); } }
 }
 
 inline ::flatbuffers::Offset<Tensor> Tensor::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const TensorT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
@@ -3322,9 +3322,9 @@ inline void MetaGraph::UnPackTo(MetaGraphT *_o, const ::flatbuffers::resolver_fu
   { auto _e = inputIndex(); if (_e) { _o->inputIndex.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->inputIndex[_i] = _e->Get(_i); } } else { _o->inputIndex.resize(0); } }
   { auto _e = outputIndex(); if (_e) { _o->outputIndex.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->outputIndex[_i] = _e->Get(_i); } } else { _o->outputIndex.resize(0); } }
   { auto _e = mempoolSize(); _o->mempoolSize = _e; }
-  { auto _e = nodes(); if (_e) { _o->nodes.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->nodes[_i]) { _e->Get(_i)->UnPackTo(_o->nodes[_i].get(), _resolver); } else { _o->nodes[_i] = std::unique_ptr<mindspore::schema::CNodeT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->nodes.resize(0); } }
-  { auto _e = allTensors(); if (_e) { _o->allTensors.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->allTensors[_i]) { _e->Get(_i)->UnPackTo(_o->allTensors[_i].get(), _resolver); } else { _o->allTensors[_i] = std::unique_ptr<mindspore::schema::TensorT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->allTensors.resize(0); } }
-  { auto _e = subGraph(); if (_e) { _o->subGraph.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->subGraph[_i]) { _e->Get(_i)->UnPackTo(_o->subGraph[_i].get(), _resolver); } else { _o->subGraph[_i] = std::unique_ptr<mindspore::schema::SubGraphT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->subGraph.resize(0); } }
+  { auto _e = nodes(); if (_e) { _o->nodes.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->nodes[_i]) { _e->Get(_i)->UnPackTo(_o->nodes[_i].get(), _resolver); } else { _o->nodes[_i] = std::unique_ptr<mindspore::schema::CNodeT>(_e->Get(_i)->UnPack(_resolver)); } } } else { _o->nodes.resize(0); } }
+  { auto _e = allTensors(); if (_e) { _o->allTensors.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->allTensors[_i]) { _e->Get(_i)->UnPackTo(_o->allTensors[_i].get(), _resolver); } else { _o->allTensors[_i] = std::unique_ptr<mindspore::schema::TensorT>(_e->Get(_i)->UnPack(_resolver)); } } } else { _o->allTensors.resize(0); } }
+  { auto _e = subGraph(); if (_e) { _o->subGraph.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->subGraph[_i]) { _e->Get(_i)->UnPackTo(_o->subGraph[_i].get(), _resolver); } else { _o->subGraph[_i] = std::unique_ptr<mindspore::schema::SubGraphT>(_e->Get(_i)->UnPack(_resolver)); } } } else { _o->subGraph.resize(0); } }
   { auto _e = obfuscate(); _o->obfuscate = _e; }
   { auto _e = encrypt(); _o->encrypt = _e; }
   { auto _e = obfMetaData(); if (_e) { _o->obfMetaData.resize(_e->size()); std::copy(_e->begin(), _e->end(), _o->obfMetaData.begin()); } }
@@ -3382,17 +3382,8 @@ inline const ::flatbuffers::TypeTable *WeightQuantCompressTypeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::WeightQuantCompressTypeTypeTable
   };
-  static const char * const names[] = {
-    "NONE",
-    "INDEXING",
-    "SPARSE",
-    "FSE",
-    "BITPACKING",
-    "FSE_INT",
-    "FSE_INFER"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 7, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 7, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -3410,17 +3401,8 @@ inline const ::flatbuffers::TypeTable *QuantTypeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::QuantTypeTypeTable
   };
-  static const char * const names[] = {
-    "QUANT_NONE",
-    "AwareTraining",
-    "WeightQuant",
-    "PostTraining",
-    "QUANT_WEIGHT",
-    "QUANT_ALL",
-    "QUANT_DYNAMIC"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 7, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 7, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -3440,22 +3422,8 @@ inline const ::flatbuffers::TypeTable *QuantParamTypeTable() {
     { ::flatbuffers::ET_INT, 0, -1 },
     { ::flatbuffers::ET_INT, 0, -1 }
   };
-  static const char * const names[] = {
-    "scale",
-    "zeroPoint",
-    "min",
-    "max",
-    "narrowRange",
-    "numBits",
-    "inited",
-    "varCorr",
-    "meanCorr",
-    "dstDtype",
-    "roundType",
-    "multiplier"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 12, type_codes, nullptr, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 12, type_codes, nullptr, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -3467,14 +3435,8 @@ inline const ::flatbuffers::TypeTable *ExternalDataTypeTable() {
     { ::flatbuffers::ET_LONG, 0, -1 },
     { ::flatbuffers::ET_LONG, 0, -1 }
   };
-  static const char * const names[] = {
-    "checkSum",
-    "location",
-    "offset",
-    "length"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 4, type_codes, nullptr, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 4, type_codes, nullptr, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -3501,23 +3463,8 @@ inline const ::flatbuffers::TypeTable *TensorTypeTable() {
     mindspore::schema::WeightQuantCompressTypeTypeTable,
     mindspore::schema::ExternalDataTypeTable
   };
-  static const char * const names[] = {
-    "nodeType",
-    "dataType",
-    "dims",
-    "format",
-    "refCount",
-    "offset",
-    "data",
-    "quantParams",
-    "quantClusters",
-    "name",
-    "enableHuffmanCode",
-    "weightQuantCompressType",
-    "externalData"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 13, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 13, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -3530,12 +3477,8 @@ inline const ::flatbuffers::TypeTable *PrimitiveTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::PrimitiveTypeTypeTable
   };
-  static const char * const names[] = {
-    "value_type",
-    "value"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 2, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 2, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -3554,17 +3497,8 @@ inline const ::flatbuffers::TypeTable *CNodeTypeTable() {
     mindspore::schema::PrimitiveTypeTable,
     mindspore::schema::QuantTypeTypeTable
   };
-  static const char * const names[] = {
-    "name",
-    "nodeType",
-    "primitive",
-    "inputIndex",
-    "outputIndex",
-    "quantType",
-    "deviceType"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 7, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 7, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -3577,15 +3511,8 @@ inline const ::flatbuffers::TypeTable *SubGraphTypeTable() {
     { ::flatbuffers::ET_UINT, 1, -1 },
     { ::flatbuffers::ET_UINT, 1, -1 }
   };
-  static const char * const names[] = {
-    "name",
-    "inputIndices",
-    "outputIndices",
-    "nodeIndices",
-    "tensorIndices"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 5, type_codes, nullptr, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 5, type_codes, nullptr, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -3611,23 +3538,8 @@ inline const ::flatbuffers::TypeTable *MetaGraphTypeTable() {
     mindspore::schema::TensorTypeTable,
     mindspore::schema::SubGraphTypeTable
   };
-  static const char * const names[] = {
-    "name",
-    "version",
-    "fmkType",
-    "inputIndex",
-    "outputIndex",
-    "mempoolSize",
-    "nodes",
-    "allTensors",
-    "subGraph",
-    "obfuscate",
-    "encrypt",
-    "obfMetaData",
-    "decryptTable"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 13, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 13, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }

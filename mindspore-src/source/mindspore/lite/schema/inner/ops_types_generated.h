@@ -8,9 +8,9 @@
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
-              FLATBUFFERS_VERSION_MINOR == 3 &&
-              FLATBUFFERS_VERSION_REVISION == 25,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 25 &&
+              FLATBUFFERS_VERSION_MINOR == 2 &&
+              FLATBUFFERS_VERSION_REVISION == 10,
              "Non-compatible flatbuffers version included");
 
 namespace mindspore {
@@ -867,7 +867,7 @@ inline Vec2DT *Vec2D::UnPack(const ::flatbuffers::resolver_function_t *_resolver
 inline void Vec2D::UnPackTo(Vec2DT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = data(); if (_e) { _o->data.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->data[_i]) { _e->Get(_i)->UnPackTo(_o->data[_i].get(), _resolver); } else { _o->data[_i] = std::unique_ptr<mindspore::schema::VecT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->data.resize(0); } }
+  { auto _e = data(); if (_e) { _o->data.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->data[_i]) { _e->Get(_i)->UnPackTo(_o->data[_i].get(), _resolver); } else { _o->data[_i] = std::unique_ptr<mindspore::schema::VecT>(_e->Get(_i)->UnPack(_resolver)); } } } else { _o->data.resize(0); } }
 }
 
 inline ::flatbuffers::Offset<Vec2D> Vec2D::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const Vec2DT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
@@ -924,14 +924,8 @@ inline const ::flatbuffers::TypeTable *ResizeMethodTypeTable() {
     mindspore::schema::ResizeMethodTypeTable
   };
   static const int64_t values[] = { -1, 0, 1, 2 };
-  static const char * const names[] = {
-    "UNKNOWN",
-    "LINEAR",
-    "NEAREST",
-    "CUBIC"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, values, names
+    ::flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, values, nullptr
   };
   return &tt;
 }
@@ -945,13 +939,8 @@ inline const ::flatbuffers::TypeTable *CoordinateTransformModeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::CoordinateTransformModeTypeTable
   };
-  static const char * const names[] = {
-    "ASYMMETRIC",
-    "ALIGN_CORNERS",
-    "HALF_PIXEL"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -967,15 +956,8 @@ inline const ::flatbuffers::TypeTable *NearestModeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::NearestModeTypeTable
   };
-  static const char * const names[] = {
-    "NORMAL",
-    "ROUND_HALF_DOWN",
-    "ROUND_HALF_UP",
-    "FLOOR",
-    "CEIL"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 5, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 5, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1005,29 +987,8 @@ inline const ::flatbuffers::TypeTable *FormatTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::FormatTypeTable
   };
-  static const char * const names[] = {
-    "NCHW",
-    "NHWC",
-    "NHWC4",
-    "HWKC",
-    "HWCK",
-    "KCHW",
-    "CKHW",
-    "KHWC",
-    "CHWK",
-    "HW",
-    "HW4",
-    "NC",
-    "NC4",
-    "NC4HW4",
-    "NUM_OF_FORMAT",
-    "NCDHW",
-    "NWC",
-    "NCW",
-    "NC8HW8"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 19, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 19, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1060,32 +1021,8 @@ inline const ::flatbuffers::TypeTable *ActivationTypeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::ActivationTypeTypeTable
   };
-  static const char * const names[] = {
-    "NO_ACTIVATION",
-    "RELU",
-    "SIGMOID",
-    "RELU6",
-    "ELU",
-    "LEAKY_RELU",
-    "ABS",
-    "RELU1",
-    "SOFTSIGN",
-    "SOFTPLUS",
-    "TANH",
-    "SELU",
-    "HSWISH",
-    "HSIGMOID",
-    "THRESHOLDRELU",
-    "LINEAR",
-    "HARD_TANH",
-    "SIGN",
-    "SWISH",
-    "GELU",
-    "FAST_GELU",
-    "UNKNOWN"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 22, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 22, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1105,19 +1042,8 @@ inline const ::flatbuffers::TypeTable *ReduceModeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::ReduceModeTypeTable
   };
-  static const char * const names[] = {
-    "ReduceMean",
-    "ReduceMax",
-    "ReduceMin",
-    "ReduceProd",
-    "ReduceSum",
-    "ReduceSumSquare",
-    "ReduceASum",
-    "ReduceAll",
-    "ReduceL2"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 9, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 9, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1130,12 +1056,8 @@ inline const ::flatbuffers::TypeTable *PoolModeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::PoolModeTypeTable
   };
-  static const char * const names[] = {
-    "MAX_POOLING",
-    "MEAN_POOLING"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 2, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 2, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1150,14 +1072,8 @@ inline const ::flatbuffers::TypeTable *EltwiseModeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::EltwiseModeTypeTable
   };
-  static const char * const names[] = {
-    "PROD",
-    "SUM",
-    "MAXIMUM",
-    "UNKNOWN"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1171,13 +1087,8 @@ inline const ::flatbuffers::TypeTable *PadModeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::PadModeTypeTable
   };
-  static const char * const names[] = {
-    "PAD",
-    "SAME",
-    "VALID"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1190,12 +1101,8 @@ inline const ::flatbuffers::TypeTable *RoundModeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::RoundModeTypeTable
   };
-  static const char * const names[] = {
-    "FLOOR",
-    "CEIL"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 2, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 2, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1210,14 +1117,8 @@ inline const ::flatbuffers::TypeTable *PaddingModeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::PaddingModeTypeTable
   };
-  static const char * const names[] = {
-    "CONSTANT",
-    "REFLECT",
-    "SYMMETRIC",
-    "MODE_RESERVED"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1231,13 +1132,8 @@ inline const ::flatbuffers::TypeTable *LshProjectionTypeTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::LshProjectionTypeTypeTable
   };
-  static const char * const names[] = {
-    "UNKNOWN",
-    "SPARSE",
-    "DENSE"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1251,13 +1147,8 @@ inline const ::flatbuffers::TypeTable *ReductionTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::ReductionTypeTable
   };
-  static const char * const names[] = {
-    "REDUCTION_SUM",
-    "MEAN",
-    "NONE"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_ENUM, 3, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1266,11 +1157,8 @@ inline const ::flatbuffers::TypeTable *VecTypeTable() {
   static const ::flatbuffers::TypeCode type_codes[] = {
     { ::flatbuffers::ET_LONG, 1, -1 }
   };
-  static const char * const names[] = {
-    "data"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1282,11 +1170,8 @@ inline const ::flatbuffers::TypeTable *Vec2DTypeTable() {
   static const ::flatbuffers::TypeFunction type_refs[] = {
     mindspore::schema::VecTypeTable
   };
-  static const char * const names[] = {
-    "data"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 1, type_codes, type_refs, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 1, type_codes, type_refs, nullptr, nullptr, nullptr
   };
   return &tt;
 }
@@ -1296,12 +1181,8 @@ inline const ::flatbuffers::TypeTable *AttributeTypeTable() {
     { ::flatbuffers::ET_STRING, 0, -1 },
     { ::flatbuffers::ET_UCHAR, 1, -1 }
   };
-  static const char * const names[] = {
-    "name",
-    "data"
-  };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, nullptr
   };
   return &tt;
 }
