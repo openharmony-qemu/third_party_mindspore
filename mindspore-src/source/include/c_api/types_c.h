@@ -99,6 +99,20 @@ typedef enum OH_AI_QuantizationType {
 } OH_AI_QuantizationType;
 
 typedef struct NNRTDeviceDesc NNRTDeviceDesc;
+
+enum OH_AI_LLMGenerationMode {
+    OH_AI_LLM_GENERATE_ONE_TOKEN,
+    OH_AI_LLM_GENERATE_ALL_TOKENS,
+};
+
+enum OH_AI_LLMFinishReason {
+    OH_AI_LLM_NOT_FINISHED,
+    OH_AI_LLM_FINISHED_BY_EOS_TOKEN,
+    OH_AI_LLM_FINISHED_BY_REACHING_MAX_CONTEXT_LENGTH,
+    OH_AI_LLM_FINISHED_BY_REACHING_MAX_OUTPUT_LENGTH,
+};
+
+
 #ifdef __cplusplus
 }
 #endif
