@@ -125,9 +125,9 @@ enum StatusCode : uint32_t {
   // User input param error code, range: [-600, 700)
   kLiteInputParamInvalid = kLite | (0x0FFFFFFF & -600), /**< Invalid input param by user. */
 
-  // User aipp infer param error code, range: [-800, 900)
-  kLiteInputAippNotSupport = kLite | (0x0FFFFFFF & -800), /**< Not support aipp predict. */
-  kLiteInputInferError = kLite | (0x0FFFFFFF & -801), /**< Failed Aipp model infer. */
+  // User aipp infer param error code, range: [-700, 800)
+  kLiteInputAippNotSupport = kLite | (0x0FFFFFFF & -700), /**< Not support aipp predict. */
+  kLiteInputInferError = kLite | (0x0FFFFFFF & -701), /**< Failed Aipp model infer. */
 };
 
 class MS_API Status {

@@ -496,6 +496,10 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
             MS_LOG(ERROR) << "input data is nullptr";
             return kLiteNullptr;
           }
+          if (user_input.DataSize() != input->Size()) {
+            MS_LOG(ERROR) << "The size of the user-provided input data does not match the modle's expected input size";
+            return kLiteInputParamInvalid;
+          }
           memcpy(input_data, user_data, input->Size());
         }
       } else if (predict_config_ != nullptr) {

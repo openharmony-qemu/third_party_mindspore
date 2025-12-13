@@ -61,7 +61,7 @@ int MindrtRun(const std::vector<OpDataPtr<T>> &input_data, std::vector<OpDataPtr
   auto collect = MindrtAsyncRun<T>(input_data, &context, actor_mgr);
   collect.Wait();
   if (!collect.IsOK()) {
-    return -1;
+    return collect.GetErrorCode();
   }
 
   return 0;
