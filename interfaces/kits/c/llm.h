@@ -51,18 +51,18 @@ OH_AI_LLMHandle OH_AI_LLMCreateSession();
 /**
  * @brief Build llm model by model_config
  * @param llm Model handle.
- * @param model_config config for model.
+ * @param path of model.
  * @since 23
  */
-OH_AI_Status OH_AI_LLMBuildModel(OH_AI_LLMHandle llm, const char *model_config);
+OH_AI_Status OH_AI_LLMBuildModel(OH_AI_LLMHandle llm, const char *model_path);
 
 /**
  * @brief set llm config
  * @param llm Model handle.
- * @param updated_config config for model.
+ * @param generated config for model.
  * @since 23
  */
-OH_AI_Status OH_AI_LLMSetSessionConfig(OH_AI_LLMHandle llm, const char *updated_config);
+OH_AI_Status OH_AI_LLMSetSessionConfig(OH_AI_LLMHandle llm, const char *generated_config);
 
 /**
  * @brief Destroy model and free resource controled by model handle.

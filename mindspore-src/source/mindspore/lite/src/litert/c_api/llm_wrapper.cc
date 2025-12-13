@@ -18,108 +18,116 @@
 #include <string>
 #include "src/common/log_adapter.h"
 
-template<class T>
-bool LoadFunctionHelper(void* handle, const char* name, T* function)
-{
-    if (name == nullptr) {
-        MS_LOG(ERROR) << "load function failed, the " << name << " does not exist.";
-        return false;
-    }
-    void* fn = dlsym(handle, name);
-    if (fn == nullptr) {
-        MS_LOG(ERROR) << "dlsym function " << name << " error: " << dlerror();
-        return false;
-    }
-    *function = reinterpret_cast<T>(fn);
-    return true;
+template <class T>
+bool LoadFunctionHelper(void *handle, const char *name, T *function) {
+  if (name == nullptr) {
+    MS_LOG(ERROR) << "load function failed, the " << name << " does not exist.";
+    return false;
+  }
+  void *fn = dlsym(handle, name);
+  if (fn == nullptr) {
+    MS_LOG(ERROR) << "dlsym function " << name << " error: " << dlerror();
+    return false;
+  }
+  *function = reinterpret_cast<T>(fn);
+  return true;
 }
 
 namespace mindspore {
-  std::string kLLMImplLibraryName = "libmindspore-lite-turbo.so";
-  void LLMWrapper::LoadLibrary() {
-    library_handle_ = dlopen(kLLMImplLibraryName.c_str(), RTLD_LAZY);
-    if (library_handle_ == nullptr) {
-        MS_LOG(ERROR) << "dlopen llm library " << kLLMImplLibraryName << " error: " << dlerror();
-        return;
-    }
-    MS_LOG(INFO) << "loaded llm library " << kLLMImplLibraryName;
-    printf("loaded llm library \n");
-    bool ok = LoadFunctionHelper(library_handle_, "OH_AI_LLMNativeCreate", &llm_create_func_) &&
-        LoadFunctionHelper(library_handle_, "OH_AI_LLMNativeDestroy", &llm_destroy_func_) &&
-        LoadFunctionHelper(library_handle_, "OH_AI_LLMNativeBuild", &llm_build_func_) &&
-        LoadFunctionHelper(library_handle_, "OH_AI_LLMNativeGenerate", &llm_generate_func_) &&
-        LoadFunctionHelper(library_handle_, "OH_AI_LLMNativeUpdateConfig", &llm_update_func_);
-    if (llm_create_func_ == nullptr || llm_destroy_func_ == nullptr || llm_build_func_ == nullptr || llm_generate_func_ == nullptr || llm_update_func_ == nullptr) {
-        printf("func is null\n");
-    }
-    if (!ok) {
-        MS_LOG(ERROR) << "failed to load necessary functions for llm";
-        printf("failed to load necessary functions for llm\n");
-        int ret = dlclose(library_handle_);
-        if (ret != 0) {
-            MS_LOG(WARNING) << "dlclose llm library " << kLLMImplLibraryName << " error: " << dlerror();
-            printf("dlclose llm library \n");
-
-        }
-        library_handle_ = nullptr;
-        return;
-    }
-    is_loaded_ = true;
-  }
-
-  LLMWrapper::~LLMWrapper() {
-    if (!IsLoaded()) {
-        return;
-    }
-    int ret = dlclose(library_handle_);
-    if (ret != 0) {
-        MS_LOG(WARNING) << "dlclose llm library " << kLLMImplLibraryName << " error: " << dlerror();
-    }
-    library_handle_ = nullptr;
-    MS_LOG(INFO) << "unloaded llm library " << kLLMImplLibraryName;
+std::string kLLMImplLibraryName = "libmindspore-lite-turbo.so";
+void LLMWrapper::LoadLibrary() {
+  library_handle_ = dlopen(kLLMImplLibraryName.c_str(), RTLD_LAZY);
+  if (library_handle_ == nullptr) {
+    MS_LOG(ERROR) << "dlopen llm library " << kLLMImplLibraryName << " error: " << dlerror();
     return;
   }
-
-  bool LLMWrapper::IsLoaded() {
-    return is_loaded_;
+  MS_LOG(INFO) << "loaded llm library " << kLLMImplLibraryName;
+  bool ok = LoadFunctionHelper(library_handle_, "OH_AI_LLMNativeCreate", &llm_create_func_) &&
+            LoadFunctionHelper(library_handle_, "OH_AI_LLMNativeDestroy", &llm_destroy_func_) &&
+            LoadFunctionHelper(library_handle_, "OH_AI_LLMNativeBuild", &llm_build_func_) &&
+            LoadFunctionHelper(library_handle_, "OH_AI_LLMNativeGenerate", &llm_generate_func_) &&
+            LoadFunctionHelper(library_handle_, "OH_AI_LLMNativeUpdateConfig", &llm_update_func_);
+  if (llm_create_func_ == nullptr || llm_destroy_func_ == nullptr || llm_build_func_ == nullptr ||
+      llm_generate_func_ == nullptr || llm_update_func_ == nullptr) {
+    MS_LOG(ERROR) << "func is null";
   }
-
-  bool LLMWrapper::IsCreated() {
-    return llm_impl_handle_ != nullptr;
-  }
-
-  OH_AI_Status LLMWrapper::Build(const char *model_config) {
-    if (!IsCreated()) {
-        printf("llm wrapper is not created\n");
-        return OH_AI_STATUS_LITE_ERROR;
+  if (!ok) {
+    MS_LOG(ERROR) << "failed to load necessary functions for llm";
+    int ret = dlclose(library_handle_);
+    if (ret != 0) {
+      MS_LOG(WARNING) << "dlclose llm library " << kLLMImplLibraryName << " error: " << dlerror();
     }
-    printf("before llm build func\n");
-    return llm_build_func_(llm_impl_handle_, model_config);
+    library_handle_ = nullptr;
+    return;
   }
+  is_loaded_ = true;
+}
 
-  OH_AI_Status LLMWrapper::SetConfig(const char *updated_config) {
-    if (!IsCreated()) {
-        printf("llm wrapper is not created\n");
-        return OH_AI_STATUS_LITE_ERROR;
-    }
-    return llm_update_func_(llm_impl_handle_, updated_config);
+LLMWrapper::~LLMWrapper() {
+  if (!IsLoaded()) {
+    return;
   }
-
-  OH_AI_Status LLMWrapper::Create() {
-    llm_impl_handle_ = llm_create_func_();
-    return OH_AI_STATUS_SUCCESS;    
+  int ret = dlclose(library_handle_);
+  if (ret != 0) {
+    MS_LOG(WARNING) << "dlclose llm library " << kLLMImplLibraryName << " error: " << dlerror();
   }
+  library_handle_ = nullptr;
+  MS_LOG(INFO) << "unloaded llm library " << kLLMImplLibraryName;
+  return;
+}
 
-  OH_AI_Status LLMWrapper::Generate(const char *prompt,
-        OH_AI_LLMGenerationMode generaion_mode,
-        char *generated_buffer,
-        int buffer_size,
-        OH_AI_LLMFinishReason *finish_reason) {
-    if (!IsCreated()) {
-        printf("llm wrapper is not created\n");
-        return OH_AI_STATUS_LITE_ERROR;
-    }
-    return llm_generate_func_(llm_impl_handle_, prompt, generaion_mode,generated_buffer, buffer_size, finish_reason);
+bool LLMWrapper::IsLoaded() { return is_loaded_; }
+
+bool LLMWrapper::IsCreated() { return llm_impl_handle_ != nullptr; }
+
+OH_AI_Status LLMWrapper::Build(const char *model_path) {
+  if (!IsCreated()) {
+    MS_LOG(ERROR) << "llm wrapper is not created";
+    return OH_AI_STATUS_LITE_ERROR;
   }
+  if (model_path == nullptr) {
+    MS_LOG(ERROR) << "model_path is nullptr";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
+  return llm_build_func_(llm_impl_handle_, model_path);
+}
 
-} // namespace mindspore
+OH_AI_Status LLMWrapper::SetConfig(const char *generated_config) {
+  if (!IsCreated()) {
+    MS_LOG(ERROR) << "llm wrapper is not created";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
+  if (generated_config == nullptr) {
+    MS_LOG(ERROR) << "generated_config is nullptr";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
+  return llm_update_func_(llm_impl_handle_, generated_config);
+}
+
+OH_AI_Status LLMWrapper::Create() {
+  llm_impl_handle_ = llm_create_func_();
+  return OH_AI_STATUS_SUCCESS;
+}
+
+OH_AI_Status LLMWrapper::Generate(const char *prompt, OH_AI_LLMGenerationMode generaion_mode, char *generated_buffer,
+                                  int buffer_size, OH_AI_LLMFinishReason *finish_reason) {
+  if (!IsCreated()) {
+    MS_LOG(ERROR) << "llm wrapper is not created";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
+  if (prompt == nullptr) {
+    MS_LOG(ERROR) << "prompt is nullptr";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
+  if (generated_buffer == nullptr) {
+    MS_LOG(ERROR) << "generated_buffer is nullptr";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
+  if (finish_reason == nullptr) {
+    MS_LOG(ERROR) << "finish_reason is nullptr";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
+  return llm_generate_func_(llm_impl_handle_, prompt, generaion_mode, generated_buffer, buffer_size, finish_reason);
+}
+
+}  // namespace mindspore

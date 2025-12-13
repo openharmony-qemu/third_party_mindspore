@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <iostream>
+#include "src/common/utils.h"
 #include "src/common/log_adapter.h"
 #include <algorithm>
 #include <string>
@@ -29,58 +30,57 @@
  * @since 23
  */
 OH_AI_LLMHandle OH_AI_LLMCreateSession() {
-	mindspore::LLMWrapper *llmWrapper = new(std::nothrow) mindspore::LLMWrapper();
-	if (llmWrapper == nullptr) {
-        return nullptr;
-    }
-    MS_LOG(INFO) << "loaded llm library at OH_AI_LLMCreate";
-    printf("loaded llm library at OH_AI_LLMCreate\n");
-    llmWrapper->LoadLibrary();
-    if (!llmWrapper->IsLoaded()) {
-        return nullptr;
-    }
-    llmWrapper->Create();
-    return llmWrapper;
+  mindspore::LLMWrapper *llmWrapper = new (std::nothrow) mindspore::LLMWrapper();
+  if (llmWrapper == nullptr) {
+    return nullptr;
+  }
+  MS_LOG(INFO) << "loaded llm library at OH_AI_LLMCreate";
+  llmWrapper->LoadLibrary();
+  if (!llmWrapper->IsLoaded()) {
+    return nullptr;
+  }
+  llmWrapper->Create();
+  return llmWrapper;
 }
 
 /**
  * @brief Build llm model by model_config
  * @param llm Model handle.
- * @param model_config config for model.
+ * @param path of model.
  * @since 23
  */
-OH_AI_Status OH_AI_LLMBuildModel(OH_AI_LLMHandle llm, const char *model_config) {
-    mindspore::LLMWrapper *llmWrapper = static_cast<mindspore::LLMWrapper*>(llm);
-    if (llmWrapper == nullptr) {
-        printf("llmWrapper is null\n");
-        return OH_AI_STATUS_LITE_NULLPTR;
-    }
-    if (!llmWrapper->IsLoaded()) {
-        printf("llmWrapper is not loaded\n");
-        return OH_AI_STATUS_LITE_ERROR;
-    }
+OH_AI_Status OH_AI_LLMBuildModel(OH_AI_LLMHandle llm, const char *model_path) {
+  mindspore::LLMWrapper *llmWrapper = static_cast<mindspore::LLMWrapper *>(llm);
+  if (llmWrapper == nullptr) {
+    MS_LOG(ERROR) << "llmWrapper is nullptr";
+    return OH_AI_STATUS_LITE_NULLPTR;
+  }
+  if (!llmWrapper->IsLoaded()) {
+    MS_LOG(ERROR) << "llmWrapper is not loaded";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
 
-    return llmWrapper->Build(model_config);
+  return llmWrapper->Build(model_path);
 }
 
 /**
  * @brief set llm config
  * @param llm Model handle.
- * @param updated_config config for model.
+ * @param generated config for model.
  * @since 23
  */
-OH_AI_Status OH_AI_LLMSetSessionConfig(OH_AI_LLMHandle llm, const char *updated_config) {
-    mindspore::LLMWrapper *llmWrapper = static_cast<mindspore::LLMWrapper*>(llm);
-    if (llmWrapper == nullptr) {
-        printf("llmWrapper is null\n");
-        return OH_AI_STATUS_LITE_NULLPTR;
-    }
-    if (!llmWrapper->IsLoaded()) {
-        printf("llmWrapper is not loaded\n");
-        return OH_AI_STATUS_LITE_ERROR;
-    }
+OH_AI_Status OH_AI_LLMSetSessionConfig(OH_AI_LLMHandle llm, const char *generated_config) {
+  mindspore::LLMWrapper *llmWrapper = static_cast<mindspore::LLMWrapper *>(llm);
+  if (llmWrapper == nullptr) {
+    MS_LOG(ERROR) << "llmWrapper is nullptr";
+    return OH_AI_STATUS_LITE_NULLPTR;
+  }
+  if (!llmWrapper->IsLoaded()) {
+    MS_LOG(ERROR) << "llmWrapper is not loaded";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
 
-    return llmWrapper->SetConfig(updated_config);
+  return llmWrapper->SetConfig(generated_config);
 }
 
 /**
@@ -89,15 +89,15 @@ OH_AI_Status OH_AI_LLMSetSessionConfig(OH_AI_LLMHandle llm, const char *updated_
  * @since 23
  */
 OH_AI_Status OH_AI_LLMDestroy(OH_AI_LLMHandle llm) {
-	mindspore::LLMWrapper *llmWrapper = static_cast<mindspore::LLMWrapper*>(llm);
-	if (llmWrapper == nullptr) {
-			return OH_AI_STATUS_LITE_NULLPTR;
-	}
-	if (!llmWrapper->IsLoaded()) {
-			return OH_AI_STATUS_LITE_ERROR;
-	}
-	delete llmWrapper;
-    return OH_AI_STATUS_SUCCESS;
+  mindspore::LLMWrapper *llmWrapper = static_cast<mindspore::LLMWrapper *>(llm);
+  if (llmWrapper == nullptr) {
+    return OH_AI_STATUS_LITE_NULLPTR;
+  }
+  if (!llmWrapper->IsLoaded()) {
+    return OH_AI_STATUS_LITE_ERROR;
+  }
+  delete llmWrapper;
+  return OH_AI_STATUS_SUCCESS;
 }
 
 /**
@@ -110,19 +110,14 @@ OH_AI_Status OH_AI_LLMDestroy(OH_AI_LLMHandle llm) {
  * @param finish_reason flag for finish reason
  * @since 23
  */
-OH_AI_Status OH_AI_LLMGenerate(OH_AI_LLMHandle llm,
-	const char *prompt,
-	OH_AI_LLMGenerationMode generaion_mode,
-	char *generated_buffer,
-	int buffer_size,
-	OH_AI_LLMFinishReason *finish_reason) {
-	mindspore::LLMWrapper *llmWrapper = static_cast<mindspore::LLMWrapper*>(llm);
-	if (llmWrapper == nullptr) {
-			return OH_AI_STATUS_LITE_NULLPTR;
-	}
-	if (!llmWrapper->IsLoaded()) {
-			return OH_AI_STATUS_LITE_ERROR;
-	}
-	return llmWrapper->Generate(prompt, generaion_mode,
-	generated_buffer, buffer_size, finish_reason);
+OH_AI_Status OH_AI_LLMGenerate(OH_AI_LLMHandle llm, const char *prompt, OH_AI_LLMGenerationMode generaion_mode,
+                               char *generated_buffer, int buffer_size, OH_AI_LLMFinishReason *finish_reason) {
+  mindspore::LLMWrapper *llmWrapper = static_cast<mindspore::LLMWrapper *>(llm);
+  if (llmWrapper == nullptr) {
+    return OH_AI_STATUS_LITE_NULLPTR;
+  }
+  if (!llmWrapper->IsLoaded()) {
+    return OH_AI_STATUS_LITE_ERROR;
+  }
+  return llmWrapper->Generate(prompt, generaion_mode, generated_buffer, buffer_size, finish_reason);
 }

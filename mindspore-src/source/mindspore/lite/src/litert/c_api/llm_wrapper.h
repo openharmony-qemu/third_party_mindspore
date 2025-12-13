@@ -18,6 +18,8 @@
 
 #include "include/c_api/llm_c.h"
 #include "include/c_api/types_c.h"
+#include "src/common/utils.h"
+
 typedef OH_AI_LLMHandle OH_AI_LLMImplHandle;
 typedef OH_AI_LLMImplHandle (*LLMCreateFunc)(void);
 typedef OH_AI_Status (*LLMDestroyFunc)(OH_AI_LLMImplHandle llm);
@@ -34,13 +36,13 @@ namespace mindspore {
       void LoadLibrary();
       bool IsLoaded();
       OH_AI_Status Create();
-      OH_AI_Status Build(const char *model_config);
+      OH_AI_Status Build(const char *model_path);
       OH_AI_Status Generate(const char *prompt,
                             OH_AI_LLMGenerationMode generaion_mode,
                             char *generated_buffer,
                             int buffer_size,
                             OH_AI_LLMFinishReason *finish_reason);
-      OH_AI_Status SetConfig(const char *updated_config);
+      OH_AI_Status SetConfig(const char *generated_config);
     private:
       bool IsCreated();
       void ParseLLMConfig(const char *config_str);
