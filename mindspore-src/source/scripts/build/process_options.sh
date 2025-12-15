@@ -20,17 +20,14 @@ set -e
 process_options()
 {
   # Process the options
-  while getopts 'RdfhiorvyzA:B:D:E:F:G:H:I:K:L:M:P:S:V:W:a:b:c:e:g:j:k:l:n:p:s:t:' opt
+  while getopts 'dfhirvA:I:S:W:a:c:g:j:n:t:' opt
   do
-    CASE_SENSIVE_ARG=${OPTARG}
     OPTARG=$(echo ${OPTARG} | tr '[A-Z]' '[a-z]')
     case "${opt}" in
       d)
         DEBUG_MODE="on" ;;
       n)
         build_option_proc_n ;;
-      y)
-        export ENABLE_SYM_FILE="on" ;;
       r)
         export DEBUG_MODE="off" ;;
       v)
@@ -45,73 +42,20 @@ process_options()
         build_option_proc_g ;;
       h)
         build_option_proc_h ;;
-      b)
-        build_option_proc_b ;;
       a)
         build_option_proc_a ;;
-      p)
-        build_option_proc_p ;;
-      l)
-        build_option_proc_l ;;
       i)
         export INC_BUILD="on" ;;
-      s)
-        build_option_proc_s ;;
-      R)
-        export ENABLE_TIMELINE="on"
-        echo "enable time_line record" ;;
       S)
         build_option_proc_upper_s ;;
-      k)
-        check_on_off $OPTARG k
-        export ENABLE_MAKE_CLEAN="$OPTARG"
-        echo "enable make clean" ;;
-      e)
-        export DEVICE=$DEVICE:$OPTARG ;;
-      M)
-        check_on_off $OPTARG M
-        export ENABLE_MPI="$OPTARG" ;;
-      V)
-        export DEVICE_VERSION=$OPTARG ;;
-      P)
-        check_on_off $OPTARG p
-        export ENABLE_DUMP2PROTO="$OPTARG"
-        echo "enable dump anf graph to proto file" ;;
-      D)
-        build_option_proc_upper_d ;;
-      z)
-        build_option_proc_z ;;
       I)
         build_option_proc_upper_i ;;
-      K)
-        check_on_off $OPTARG K
-        export ENABLE_AKG="$OPTARG" ;;
-      B)
-        build_option_proc_upper_b ;;
-      E)
-        check_on_off $OPTARG E
-        export ENABLE_RDMA="$OPTARG"
-        echo "RDMA for RPC $ENABLE_RDMA" ;;
       A)
         build_option_proc_upper_a ;;
       W)
         build_option_proc_upper_w ;;
-      F)
-        build_option_proc_upper_f ;;
-      H)
-        check_on_off $OPTARG H
-        export ENABLE_HIDDEN="$OPTARG"
-        echo "${OPTARG} hidden" ;;
-      L)
-        export ENABLE_TRT="on"
-        export TENSORRT_HOME="$CASE_SENSIVE_ARG"
-        echo "Link Tensor-RT library. Path: ${CASE_SENSIVE_ARG}" ;;
-      G)
-        build_option_proc_upper_g ;;
       f)
         export FASTER_BUILD_FOR_PLUGINS="on" ;;
-      o)
-        export ENABLE_AIO="on" ;;
       *)
         echo "Unknown option ${opt}!"
         usage

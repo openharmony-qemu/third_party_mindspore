@@ -33,10 +33,12 @@ Model
     :template: classtemplate.rst
 
     mindspore_lite.Model
+    mindspore_lite.ModelExecutor
     mindspore_lite.ModelGroup
     mindspore_lite.ModelGroupFlag
     mindspore_lite.ModelParallelRunner
     mindspore_lite.ModelType
+    mindspore_lite.MultiModelRunner
 
 Tensor
 ------
@@ -49,5 +51,14 @@ Tensor
     mindspore_lite.DataType
     mindspore_lite.Format
     mindspore_lite.Tensor
+    mindspore_lite.TensorMeta
 
+LiteInfer
+----------
 
+.. autosummary::
+    :toctree: mindspore_lite
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore_lite.LiteInfer

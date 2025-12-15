@@ -42,7 +42,7 @@
       "build": {
         "sub_component": [
           "//third_party/mindspore/:mindspore-all",
-          "//third_party/mindspore/mindspore-src/source/mindspore/lite/src/litert/taihe/ability_delegator:mindspore_taihe"
+          "//third_party/mindspore/mindspore-src/source/mindspore-lite/src/litert/taihe/ability_delegator:mindspore_taihe"
         ],
         "inner_kits": [
           {
@@ -55,11 +55,11 @@
                 "mindir_types.h",
                 "mindir.h"
               ],
-              "header_base": "//third_party/mindspore/mindspore-src/source/mindspore/lite/mindir/include"
+              "header_base": "//third_party/mindspore/mindspore-src/source/mindspore-lite/mindir/include"
             }
           },
           {
-            "name": "//third_party/mindspore/mindspore-src/source/mindspore/lite/mindir:mindir_lib",
+            "name": "//third_party/mindspore/mindspore-src/source/mindspore-lite/mindir:mindir_lib",
             "header": {
               "header_files": [
                 "mindir_lite_graph.h",
@@ -68,7 +68,7 @@
                 "mindir_types.h",
                 "mindir.h"
               ],
-              "header_base": "//third_party/mindspore/mindspore-src/source/mindspore/lite/mindir/include"
+              "header_base": "//third_party/mindspore/mindspore-src/source/mindspore-lite/mindir/include"
             }
           },
           {
@@ -87,7 +87,7 @@
             }
           },
           {
-            "name": "//third_party/mindspore/mindspore-src/source/mindspore/lite:mindspore_ndk",
+            "name": "//third_party/mindspore/mindspore-src/source/mindspore-lite:mindspore_ndk",
             "header": {
               "header_files": [
                 "context_c.h",
@@ -102,14 +102,14 @@
             }
           },
           {
-            "name": "//third_party/mindspore/mindspore-src/source/mindspore/lite/:mindspore_lib",
+            "name": "//third_party/mindspore/mindspore-src/source/mindspore-lite/:mindspore_lib",
             "header": {
               "header_files": [],
               "header_base": "//third_party/mindspore/mindspore-src/source/include/c_api"
             }
           },
           {
-            "name": "//third_party/mindspore/mindspore-src/source/mindspore/lite/src/litert/taihe/ability_delegator:mindspore_taihe"
+            "name": "//third_party/mindspore/mindspore-src/source/mindspore-lite/src/litert/taihe/ability_delegator:mindspore_taihe"
           }
         ],
         "test": [

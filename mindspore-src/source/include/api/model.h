@@ -40,7 +40,9 @@ class Dataset;
 /// \brief The Model class is used to define a MindSpore model, facilitating computational graph management.
 class MS_API Model {
  public:
+  /// \brief Constructor of Model.
   Model();
+  /// \brief Destructor of Model.
   ~Model();
 
   /// \brief Build a model from model buffer so that it can run on a device.
@@ -369,6 +371,9 @@ class MS_API Model {
   /// \return Status of operation.
   Status Evaluate(std::shared_ptr<dataset::Dataset> ds, std::vector<TrainCallBack *> cbs);
 
+  /// \brief Performs the implication.
+  ///
+  /// \return the implication of the model.
   const std::shared_ptr<ModelImpl> impl() const { return impl_; }
 
   /// \brief Get model info by key
@@ -377,7 +382,9 @@ class MS_API Model {
   ///
   /// \return The value of the model info associated with the given key.
   inline std::string GetModelInfo(const std::string &key);
-
+  /// \brief Finish the model. (Only used for mindspore_lite's ascend backend.)
+  ///
+  /// \return Status of the operation.
   // release inference resourcec, only used for mindspore_lite's ascend backend now.
   Status Finalize();
 

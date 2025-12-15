@@ -37,7 +37,7 @@ ohos_fuzztest("MindSporeFuzzTest") {
   configs = [ ":module_private_config" ]
 
   deps = [
-    "//third_party/mindspore/mindspore-src/source/mindspore/lite:mindspore_ndk",
+    "//third_party/mindspore/mindspore-src/source/mindspore-lite:mindspore_ndk",
   ]
 
   external_deps = [

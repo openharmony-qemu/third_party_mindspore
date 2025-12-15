@@ -25,17 +25,15 @@ build_option_proc_v()
 build_option_proc_c()
 {
   check_on_off $OPTARG c
-  export ENABLE_COVERAGE="$OPTARG"
+  export MSLITE_ENABLE_COVERAGE="$OPTARG"
 }
 
 build_option_proc_t()
 {
   if [[ "X$OPTARG" == "Xon" || "X$OPTARG" == "Xut" ]]; then
-    export RUN_TESTCASES="on"
+    export MSLITE_ENABLE_TESTCASES="on"
   elif [[ "X$OPTARG" == "Xoff" ]]; then
-    export RUN_TESTCASES="off"
-  elif [[ "X$OPTARG" == "Xst" ]]; then
-    export RUN_CPP_ST_TESTS="on"
+    export MSLITE_ENABLE_TESTCASES="off"
   else
     echo "Invalid value ${OPTARG} for option -t"
     usage
@@ -61,37 +59,3 @@ build_option_proc_a()
   export ENABLE_ASAN="$OPTARG"
 }
 
-build_option_proc_p()
-{
-  check_on_off $OPTARG p
-  export ENABLE_PROFILE="$OPTARG"
-}
-
-build_option_proc_upper_d()
-{
-  check_on_off $OPTARG D
-  if [[ "X$OPTARG" == "Xon" ]]; then
-    if [[ "X$ENABLE_SECURITY" == "Xon" ]]; then
-      echo "enable security, the dump ir is not available"
-      usage
-      exit 1
-    fi
-    export USER_ENABLE_DUMP_IR=true
-  fi
-  export ENABLE_DUMP_IR="$OPTARG"
-  echo "enable dump function graph ir"
-}
-
-build_option_proc_upper_b()
-{
-  check_on_off $OPTARG B
-  if [[ "X$OPTARG" == "Xon" ]]; then
-    if [[ "X$ENABLE_SECURITY" == "Xon" ]]; then
-      echo "enable security, the debugger is not available"
-      usage
-      exit 1
-    fi
-    export USER_ENABLE_DEBUGGER=true
-  fi
-  export ENABLE_DEBUGGER="$OPTARG"
-}

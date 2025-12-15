@@ -19,11 +19,11 @@ else()
 endif()
 
 set(ENABLE_NATIVE_JSON "off")
-if(EXISTS ${TOP_DIR}/mindspore/lite/providers/json/native_json.cfg)
+if(EXISTS ${TOP_DIR}/mindspore-lite/providers/json/native_json.cfg)
     set(ENABLE_NATIVE_JSON "on")
 endif()
 if(ENABLE_NATIVE_JSON)
-    file(STRINGS ${TOP_DIR}/mindspore/lite/providers/json/native_json.cfg native_json_path)
+    file(STRINGS ${TOP_DIR}/mindspore-lite/providers/json/native_json.cfg native_json_path)
     mindspore_add_pkg(nlohmann_json3101
             VER 3.10.1
             HEAD_ONLY ${INCLUDE}
