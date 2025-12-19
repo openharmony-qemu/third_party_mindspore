@@ -1,47 +1,28 @@
 approvers:
-- kingxian
-- guoqi1024
 - baochong
+- guoqi1024
 - zhaizhiqiang
-- stsuteng
-- kisnwang
+- jjfeing
+- YeFeng_24
+- fatmouse007fatmouse007
+- xu_anyue
 
 files:
-  "akg":
-    approvers:
-    - gaoxiong1
-    - ckey_dou
-    - anyrenwei
-
-  "graphengine":
-    approvers:
-    - jjfeing
-    - guoqi1024
-    - baochong
-    - liujunzhu
-    - kisnwang
-    - yuchaojie
-    - hwcaifubi
-
   "version.txt":
     approvers:
     - jjfeing
-    - guoqi1024
-    - baochong
-    - kisnwang
-    - yuchaojie
-    - hwcaifubi
-  
+    - YeFeng_24
+    - fatmouse007fatmouse007
+    - xu_anyue
+
   ".*\\.md$":
     approvers:
-    - kingxian
-    - guoqi1024
-    - baochong
-    - zhaizhiqiang
-    - stsuteng
-    - kisnwang
-    - gemini524
-    - Hanshize
-    - rudy_tan
-    - luojianing1
-    - tjulyj33
+    - jjfeing
+    - YeFeng_24
+    - fatmouse007fatmouse007
+    - xu_anyue
+
+  ".gitmodules":
+    approvers:
+    - YeFeng_24
+    - qll1998  # qiuleilei

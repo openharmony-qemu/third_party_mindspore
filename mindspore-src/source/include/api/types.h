@@ -60,10 +60,21 @@ struct QuantParam {
   double max;          ///< Quantization max value
 };
 
+using Key = struct MS_API Key {
+  size_t max_key_len = 32;
+  size_t len = 0;
+  unsigned char key[32] = {0};
+  Key() : len(0) {}
+  explicit Key(const char *dec_key, size_t key_len);
+};
+
+constexpr char kDecModeAesGcm[] = "AES-GCM";
+
 class Allocator;
 /// \brief The MSTensor class defines a tensor in MindSpore.
 class MS_API MSTensor {
  public:
+  /// \brief Impl class of MSTensor.
   class Impl;
   /// \brief Creates a MSTensor object, whose data need to be copied before accessed by Model, must be used in pairs
   /// with DestroyTensorPtr.
@@ -151,13 +162,17 @@ class MS_API MSTensor {
   ///
   /// \param[in] tensor A MSTensor object.
   static void DestroyTensorPtr(MSTensor *tensor) noexcept;
-
+  /// \brief Constructor of MSTensor.
   MSTensor();
+  /// \brief Constructor of MSTensor.
   explicit MSTensor(const std::shared_ptr<Impl> &impl);
+  /// \brief Constructor of MSTensor.
   // if malloc data, user need to free after constructing MSTensor, else memory leak.
   inline MSTensor(const std::string &name, DataType type, const std::vector<int64_t> &shape, const void *data,
                   size_t data_len);
+  /// \brief Constructor of MSTensor.
   explicit MSTensor(std::nullptr_t);
+  /// \brief Destructor of MSTensor.
   ~MSTensor();
 
   /// \brief Obtains the name of the MSTensor.
@@ -233,14 +248,14 @@ class MS_API MSTensor {
 
   /// \brief Get the boolean value that indicates whether the MSTensor equals tensor.
   ///
-  /// \param[in] another MSTensor.
+  /// \param[in] tensor MSTensor.
   ///
   /// \return The boolean value that indicates whether the MSTensor equals tensor.
   bool operator==(const MSTensor &tensor) const;
 
   /// \brief Get the boolean value that indicates whether the MSTensor not equals tensor.
   ///
-  /// \param[in] another MSTensor.
+  /// \param[in] tensor MSTensor.
   ///
   /// \return The boolean value that indicates whether the MSTensor not equals tensor.
   bool operator!=(const MSTensor &tensor) const;
@@ -401,16 +416,6 @@ MSTensor::MSTensor(const std::string &name, enum DataType type, const std::vecto
 std::string MSTensor::Name() const { return CharToString(CharName()); }
 
 void MSTensor::SetTensorName(const std::string &name) { SetTensorName(StringToChar(name)); }
-
-using Key = struct MS_API Key {
-  const size_t max_key_len = 32;
-  size_t len = 0;
-  unsigned char key[32] = {0};
-  Key() : len(0) {}
-  explicit Key(const char *dec_key, size_t key_len);
-};
-
-constexpr char kDecModeAesGcm[] = "AES-GCM";
 
 /// \brief CallBackParam defined input arguments for callBack function.
 struct MSCallBackParam {

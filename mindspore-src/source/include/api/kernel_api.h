@@ -28,6 +28,7 @@ namespace kernel {
 /// \brief The Kernel class is used to define a MindSpore Kernel.
 class MS_API MSKernel {
  public:
+  /// \brief Constructor of MSKernel.
   MSKernel() = default;
   /// \brief Constructor.
   ///
@@ -139,12 +140,17 @@ class MS_API MSKernel {
   /// \param[in] key define the kernel's attribute key.
   /// \param[in] value define the kernel's attribute value.
   void SetAttr(const std::string &key, const std::string &value) { attrs_[key] = value; }
-
+  /// \brief kernel's name.
   std::string name_;
+  /// \brief kernel's context.
   const mindspore::Context *context_ = nullptr;
+  /// \brief kernel's inputs.
   std::vector<mindspore::MSTensor> inputs_;
+  /// \brief kernel's outputs.
   std::vector<mindspore::MSTensor> outputs_;
+  /// \brief kernel's attrs.
   std::map<std::string, std::string> attrs_;
+  /// \brief kernel's config.
   const std::map<std::string, std::map<std::string, std::string>> *config_ = nullptr;
   const char *predict_config_ = nullptr;
 };
@@ -153,6 +159,7 @@ class MS_API MSKernel {
 template <typename Primitive>
 class MS_API IKernel : public MSKernel {
  public:
+  /// \brief Constructor of IKernel.
   IKernel() = default;
   /// \brief Constructor.
   ///
@@ -171,6 +178,7 @@ class MS_API IKernel : public MSKernel {
   const Primitive *primitive() const { return this->primitive_; }
 
  protected:
+  /// \brief kernel's primitive, which is deserialized from flatbuffers.
   const Primitive *primitive_ = nullptr;
 };
 }  // namespace kernel

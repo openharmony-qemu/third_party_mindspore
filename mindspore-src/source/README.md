@@ -1,311 +1,127 @@
-![MindSpore Logo](https://gitee.com/mindspore/mindspore/raw/master/docs/MindSpore-logo.png "MindSpore logo")
-
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mindspore.svg)](https://pypi.org/project/mindspore)
-[![PyPI](https://badge.fury.io/py/mindspore.svg)](https://badge.fury.io/py/mindspore)
-[![Downloads](https://static.pepy.tech/badge/mindspore)](https://pepy.tech/project/mindspore)
-[![DockerHub](https://img.shields.io/docker/pulls/mindspore/mindspore-cpu.svg)](https://hub.docker.com/r/mindspore/mindspore-cpu)
-[![LICENSE](https://img.shields.io/github/license/mindspore-ai/mindspore.svg?style=flat-square)](https://github.com/mindspore-ai/mindspore/blob/master/LICENSE)
-[![Slack](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://join.slack.com/t/mindspore/shared_invite/zt-dgk65rli-3ex4xvS4wHX7UDmsQmfu8w)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://gitee.com/mindspore/mindspore/pulls)
-
 [查看中文](./README_CN.md)
 
-<!-- TOC -->
+## What Is MindSpore Lite
 
-- [What Is MindSpore](#what-is-mindspore)
-    - [Automatic Differentiation](#automatic-differentiation)
-    - [Automatic Parallel](#automatic-parallel)
-- [Installation](#installation)
-    - [Pip mode method installation](#pip-mode-method-installation)
-    - [Source code compilation installation](#source-code-compilation-installation)
-    - [Docker Image](#docker-image)
-- [Quickstart](#quickstart)
-- [Docs](#docs)
-- [Community](#community)
-    - [Governance](#governance)
-    - [Communication](#communication)
-- [Contributing](#contributing)
-- [Maintenance phases](#maintenance-phases)
-- [Maintenance status](#maintenance-status)
-- [Release Notes](#release-notes)
-- [License](#license)
+MindSpore Lite provides lightweight AI inference acceleration capabilities for different hardware devices, enabling intelligent applications and providing end-to-end solutions for developers. It offers development friendly, efficient, and flexible deployment experiences for algorithm engineers and data scientists, helping the AI software and hardware application ecosystem thrive. In the future, MindSpore Lite will work with the MindSpore AI community to enrich the AI software and hardware application ecosystem.
 
-<!-- /TOC -->
+For more details please check out our [MindSpore Lite Architecture Guide](https://www.mindspore.cn/lite/docs/en/master/reference/architecture_lite.html).
 
-## What Is MindSpore
+## Example
 
-MindSpore is a new open source deep learning training/inference framework that
-could be used for mobile, edge and cloud scenarios. MindSpore is designed to
-provide development experience with friendly design and efficient execution for
-the data scientists and algorithmic engineers, native support for Ascend AI
-processor, and software hardware co-optimization. At the meantime MindSpore as
-a global AI open source community, aims to further advance the development and
-enrichment of the AI software/hardware application ecosystem.
+MindSpore Lite achieves double the inference performance for AIGC, speech algorithms, and CV model inference, and has been deployed in Huawei's flagship smartphones for commercial use. As shown in the figure below, MindSpore Lite supports image style transfer and image segmentation for CV algorithms.
 
-<img src="https://gitee.com/mindspore/mindspore/raw/master/docs/MindSpore-architecture.png" alt="MindSpore Architecture"/>
+<img src="docs/screenshot_001.png" alt="original image for image segmentation" width="180"/> <img src="docs/screenshot_002.png" alt="image segmentation rendering" width="180"/> <img src="docs/screenshot_003.png" alt="image style transfer original image" width="180"/> <img src="docs/screenshot_004.png" alt="Image style transfer rendering" width="180"/>
 
-For more details please check out our [Architecture Guide](https://www.mindspore.cn/tutorials/en/master/beginner/introduction.html).
+## Quick Start
 
-### Automatic Differentiation
+1. Compile
 
-Currently, there are two automatic differentiation techniques in mainstream deep learning frameworks:
+    MindSpore Lite has multiple different hardware backends, including:
 
-- **Operator Overloading (OO)**: Overloading the basic operators of the programming language to encapsulate their gradient rules. Record the operation trajectory of the network during forward execution in an operator overloaded manner, then apply the chain rule to the dynamically generated data flow graph to implement automatic differentiation.
-- **Source Transformation (ST)**: This technology is evolving from the functional programming framework and performs automatic differential transformation on the intermediate expression (the expression form of the program during the compilation process) in the form of just-in-time compilation (JIT), supporting complex control flow scenarios, higher-order functions and closures.
+    - For service side devices, users can compile dynamic libraries and Python wheel packages by setting compilation options such as `MSLITE_ENABLE_CLOUD_INFERENCE` for inference of upgrade and CPU hardware. For detailed compilation tutorials, please refer to [the official website of MindSpore Lite](https://www.mindspore.cn/lite/docs/en/master/mindir/build.html).
 
-PyTorch used OO. Compared to ST, OO generates gradient graph in runtime, so it does not need to take function call and control flow into consideration, which makes it easier to develop. However, OO can not perform gradient graph optimization in compilation time and the control flow has to be unfolded in runtime, so it is difficult to achieve extreme optimization in performance.
+    - For end and edge devices, different dynamic libraries can be compiled through different cross compilation toolchains. For detailed compilation tutorials, please refer to [the official website of MindSpore Lite](https://www.mindspore.cn/lite/docs/en/master/build/build.html).
 
-MindSpore implemented automatic differentiation based on ST. On the one hand, it supports automatic differentiation of automatic control flow, so it is quite convenient to build models like PyTorch. On the other hand, MindSpore can perform static compilation optimization on neural networks to achieve great performance.
+2. Model conversion
 
-<img src="https://gitee.com/mindspore/mindspore/raw/master/docs/Automatic-differentiation.png" alt="Automatic Differentiation" width="600"/>
+    MindSpore Lite supports the conversion of models serialized from various AI frameworks such as MindSpore, ONNX, TF, etc. into MindSpore Lite format IR. In order to achieve more efficient model inference, MindSpore Lite supports the conversion of models into `.ms` format or `.mindir` format, where:
 
-The implementation of MindSpore automatic differentiation can be understood as the symbolic differentiation of the program itself. Because MindSpore IR is a functional intermediate expression, it has an intuitive correspondence with the composite function in basic algebra. The derivation formula of the composite function composed of arbitrary basic functions can be derived. Each primitive operation in MindSpore IR can correspond to the basic functions in basic algebra, which can build more complex flow control.
+    - The `.mindir` model is used for inference on service side devices and is more compatible with the model structure exported by the MindSpore training framework. It is mainly suitable for Ascend cards and X86/Arm architecture CPU hardware. For detailed conversion methods, please refer to [the Conversion Tool Tutorial](https://www.mindspore.cn/lite/docs/en/master/mindir/converter.html).
 
-### Automatic Parallel
+    - The `.ms` model is mainly used for inference of end and edge devices, and is mainly suitable for terminal hardware such as Kirin NPU and Arm architecture CPU. In order to better reduce the size of the model file, the `.ms` model is serialized and deserialized through protobuffer. For detailed instructions on how to use the conversion tool, please refer to [the Conversion Tool](https://www.mindspore.cn/lite/docs/en/master/converter/converter_tool.html)
 
-The goal of MindSpore automatic parallel is to build a training method that combines data parallelism, model parallelism, and hybrid parallelism. It can automatically select a least cost model splitting strategy to achieve automatic distributed parallel training.
+3. Model inference
 
-<img src="https://gitee.com/mindspore/mindspore/raw/master/docs/Automatic-parallel.png" alt="Automatic Parallel" width="600"/>
+    MindSpore Lite provides three APIs: Python, C++, and Java, and complete usage cases for the corresponding APIs:
 
-At present, MindSpore uses a fine-grained parallel strategy of splitting operators, that is, each operator in the figure is split into a cluster to complete parallel operations. The splitting strategy during this period may be very complicated, but as a developer advocating Pythonic, you don't need to care about the underlying implementation, as long as the top-level API compute is efficient.
+    - Python API Interface Use Case
 
-## Installation
+        [`.mindir` Reasoning Case Based on Python Interface](https://www.mindspore.cn/lite/docs/en/master/mindir/runtime_python.html)
 
-### Pip mode method installation
+    - C/C++ Complete Use Cases
 
-MindSpore offers build options across multiple backends:
+        [`.mindir` model based on C/C++ Interface Inference Use Case](https://www.mindspore.cn/lite/docs/en/master/mindir/runtime_cpp.html)
 
-| Hardware Platform | Operating System | Status |
-| :---------------- | :--------------- | :----- |
-| Ascend910 | Ubuntu-x86 | ✔️ |
-|  | Ubuntu-aarch64 | ✔️ |
-|  | EulerOS-aarch64 | ✔️ |
-|  | CentOS-x86 | ✔️ |
-|  | CentOS-aarch64 | ✔️ |
-| GPU CUDA 10.1 | Ubuntu-x86 | ✔️ |
-| CPU | Ubuntu-x86 | ✔️ |
-|  | Ubuntu-aarch64 | ✔️ |
-|  | Windows-x86 | ✔️ |
+        [`.ms` Model Based on C/C++ Interface Reasoning Case](https://developer.huawei.com/consumer/en/doc/harmonyos-guides/mindspore-guidelines-based-native)
 
-For installation using `pip`, take `CPU` and `Ubuntu-x86` build version as an example:
+    - Complete Java Use Cases
 
-1. Download whl from [MindSpore download page](https://www.mindspore.cn/versions/en), and install the package.
+        [`.mindir` model based on Java interface inference use case](https://www.mindspore.cn/lite/docs/en/master/mindir/runtime_java.html)
 
-    ```bash
-    pip install https://ms-release.obs.cn-north-4.myhuaweicloud.com/1.2.0-rc1/MindSpore/cpu/ubuntu_x86/mindspore-1.2.0rc1-cp37-cp37m-linux_x86_64.whl
-    ```
+## Technical Solution
 
-2. Run the following command to verify the install.
+### MindSpore Lite Features
 
-    ```python
-    import numpy as np
-    import mindspore.context as context
-    import mindspore.nn as nn
-    from mindspore import Tensor
-    from mindspore.ops import operations as P
+<img src="docs/MindSpore-Lite-architecture.png" alt="MindSpore Lite Architecture" width="800"/>
 
-    context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
+1. Terminal and Cloud one-stop inference deployment
 
-    class Mul(nn.Cell):
-        def __init__(self):
-            super(Mul, self).__init__()
-            self.mul = P.Mul()
+    - Provide end-to-end processes for model transformation optimization, deployment, and inference.
 
-        def construct(self, x, y):
-            return self.mul(x, y)
+    - The unified IR realizes the device-cloud AI application integration.
 
-    x = Tensor(np.array([1.0, 2.0, 3.0]).astype(np.float32))
-    y = Tensor(np.array([4.0, 5.0, 6.0]).astype(np.float32))
+2. Lightweight
 
-    mul = Mul()
-    print(mul(x, y))
-    ```
+    - Provides model compression, which could help to improve performance as well.
 
-    ```text
-    [ 4. 10. 18.]
-    ```
+    - Provides the ultra-lightweight reasoning solution MindSpore Lite Micro to meet the deployment requirements in extreme environments such as smart watches and headphones.
 
-Use pip mode method to install MindSpore in different environments. Refer to the following documents.
+3. High-performance
 
-- [Using pip mode method to install MindSpore in Ascend environment](https://gitee.com/mindspore/docs/blob/master/install/mindspore_ascend_install_pip_en.md)
-- [Using pip mode method to install MindSpore in GPU environment](https://gitee.com/mindspore/docs/blob/master/install/mindspore_gpu_install_pip_en.md)
-- [Using pip mode method to install MindSpore in CPU environment](https://gitee.com/mindspore/docs/blob/master/install/mindspore_cpu_install_pip_en.md)
+    - The built-in high-performance kernel computing library NNACL supports high-performance inference for dedicated chips such as CPU, NNRt, and Ascend, maximizing hardware computing power while minimizing inference latency and power consumption.
 
-### Source code compilation installation
+    - Assembly code to improve performance of kernel operators. Supports CPU, GPU, and NPU.
 
-Use the source code compilation method to install MindSpore in different environments. Refer to the following documents.
+4. Versatility
 
-- [Using the source code compilation method to install MindSpore in Ascend environment](https://gitee.com/mindspore/docs/blob/master/install/mindspore_ascend_install_source_en.md)
-- [Using the source code compilation method to install MindSpore in GPU environment](https://gitee.com/mindspore/docs/blob/master/install/mindspore_gpu_install_source_en.md)
-- [Using the source code compilation method to install MindSpore in CPU environment](https://gitee.com/mindspore/docs/blob/master/install/mindspore_cpu_install_source_en.md)
+    - Supports deployment of multiple hardware such as server-side Ascend and CPU.
 
-### Docker Image
+    - Supports HarmonyOS and Android mobile operating systems.
 
-MindSpore docker image is hosted on [Docker Hub](https://hub.docker.com/r/mindspore),
-currently the containerized build options are supported as follows:
+## Further Understanding of MindSpore Lite
 
-| Hardware Platform | Docker Image Repository | Tag | Description |
-| :---------------- | :---------------------- | :-- | :---------- |
-| CPU | `mindspore/mindspore-cpu` | `x.y.z` | Production environment with pre-installed MindSpore `x.y.z` CPU release. |
-|  |  | `devel` | Development environment provided to build MindSpore (with `CPU` backend) from the source, refer to <https://www.mindspore.cn/install/en> for installation details. |
-|  |  | `runtime` | Runtime environment provided to install MindSpore binary package with `CPU` backend. |
-| GPU | `mindspore/mindspore-gpu` | `x.y.z` | Production environment with pre-installed MindSpore `x.y.z` GPU release. |
-|  |  | `devel` | Development environment provided to build MindSpore (with `GPU CUDA10.1` backend) from the source, refer to <https://www.mindspore.cn/install/en> for installation details. |
-|  |  | `runtime` | Runtime environment provided to install MindSpore binary package with `GPU CUDA10.1` backend. |
+If you wish to further learn and use MindSpore Lite, please refer to the following content:
 
-> **NOTICE:** For GPU `devel` docker image, it's NOT suggested to directly install the whl package after building from the source, instead we strongly RECOMMEND you transfer and install the whl package inside GPU `runtime` docker image.
+### API and documentation
 
-- CPU
+1. API documentation:
 
-    For `CPU` backend, you can directly pull and run the latest stable image using the below command:
+    - [C++ API documentation](https://www.mindspore.cn/lite/api/en/master/api_cpp/mindspore.html)
 
-    ```bash
-    docker pull mindspore/mindspore-cpu:1.1.0
-    docker run -it mindspore/mindspore-cpu:1.1.0 /bin/bash
-    ```
+    - [Java API documentation](https://www.mindspore.cn/lite/api/en/master/api_java/class_list.html)
 
-- GPU
+    - [Python API documentation](https://www.mindspore.cn/lite/api/en/master/mindspore_lite.html)
 
-    For `GPU` backend, please make sure the `nvidia-container-toolkit` has been installed in advance, here are some install guidelines for `Ubuntu` users:
+    - [HarmonyOS API Document](https://developer.huawei.com/consumer/en/doc/harmonyos-references/development-intro-api)
 
-    ```bash
-    DISTRIBUTION=$(. /etc/os-release; echo $ID$VERSION_ID)
-    curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
-    curl -s -L https://nvidia.github.io/nvidia-docker/$DISTRIBUTION/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list
+2. [MindSpore Lite Official Website Document](https://www.mindspore.cn/lite/docs/en/master/index.html)
 
-    sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit nvidia-docker2
-    sudo systemctl restart docker
-    ```
+### Key characteristic capability
 
-    Then edit the file daemon.json:
+- [Support Ascend hardware inference](https://www.mindspore.cn/lite/docs/en/master/mindir/runtime_python.html)
 
-    ```bash
-    $ vim /etc/docker/daemon.json
-    {
-        "runtimes": {
-            "nvidia": {
-                "path": "nvidia-container-runtime",
-                "runtimeArgs": []
-            }
-        }
-    }
-    ```
+- [Supporting HarmonyOS](https://developer.huawei.com/consumer/cn/sdk/mindspore-lite-kit)
 
-    Restart docker again:
+- [Quantification after Training](https://www.mindspore.cn/lite/docs/en/master/advanced/quantization.html)
 
-    ```bash
-    sudo systemctl daemon-reload
-    sudo systemctl restart docker
-    ```
+- [Lightweight Micro inference deployment](https://www.mindspore.cn/lite/docs/en/master/advanced/micro.html#%20Model%20inference%20code%20generation)
 
-    Then you can pull and run the latest stable image using the below command:
+- [Benchmark Debugging Tool](https://www.mindspore.cn/lite/docs/en/master/tools/benchmark.html)
 
-    ```bash
-    docker pull mindspore/mindspore-gpu:1.1.0
-    docker run -it -v /dev/shm:/dev/shm --runtime=nvidia --privileged=true mindspore/mindspore-gpu:1.1.0 /bin/bash
-    ```
+## Communication and Feedback
 
-    To test if the docker image works, please execute the python code below and check the output:
+- Welcome to [Gitee Issues](https://gitee.com/mindspore/mindspore-lite/issues): submit questions, reports, and suggestions;
 
-    ```python
-    import numpy as np
-    import mindspore.context as context
-    from mindspore import Tensor
-    from mindspore.ops import functional as F
+- Welcome to [Community Forum](https://discuss.mindspore.cn/c/mindspore-lite/38): engage in technical and problem-solving exchanges;
 
-    context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
+- Welcome to [Sig](https://www.mindspore.cn/sig/MindSpore%20Lite): to manage and improve workflow, participate in discussions and exchanges;
 
-    x = Tensor(np.ones([1,3,3,4]).astype(np.float32))
-    y = Tensor(np.ones([1,3,3,4]).astype(np.float32))
-    print(F.tensor_add(x, y))
-    ```
+## Surrounding communities
 
-    ```text
-    [[[ 2.  2.  2.  2.],
-    [ 2.  2.  2.  2.],
-    [ 2.  2.  2.  2.]],
+- [MindSpore](https://gitee.com/mindspore/mindspore)
 
-    [[ 2.  2.  2.  2.],
-    [ 2.  2.  2.  2.],
-    [ 2.  2.  2.  2.]],
+- [MindOne](https://github.com/mindspore-lab/mindone)
 
-    [[ 2.  2.  2.  2.],
-    [ 2.  2.  2.  2.],
-    [ 2.  2.  2.  2.]]]
-    ```
+- [Mindyolo](https://github.com/mindspore-lab/mindyolo)
 
-If you want to learn more about the building process of MindSpore docker images,
-please check out [docker](https://gitee.com/mindspore/mindspore/blob/master/scripts/docker/README.md) repo for the details.
-
-## Quickstart
-
-See the [Quick Start](https://www.mindspore.cn/tutorials/en/master/beginner/quick_start.html)
-to implement the image classification.
-
-## Docs
-
-More details about installation guide, tutorials and APIs, please see the
-[User Documentation](https://gitee.com/mindspore/docs).
-
-## Community
-
-### Governance
-
-Check out how MindSpore Open Governance [works](https://gitee.com/mindspore/community/blob/master/governance.md).
-
-### Communication
-
-- [MindSpore Slack](https://join.slack.com/t/mindspore/shared_invite/zt-dgk65rli-3ex4xvS4wHX7UDmsQmfu8w) - Communication platform for developers.
-- IRC channel at `#mindspore` (only for meeting minutes logging purpose)
-- Video Conferencing: TBD
-- Mailing-list: <https://mailweb.mindspore.cn/postorius/lists>
-
-## Contributing
-
-Welcome contributions. See our [Contributor Wiki](https://gitee.com/mindspore/mindspore/blob/master/CONTRIBUTING.md) for
-more details.
-
-## Maintenance phases
-
-Project stable branches will be in one of the following states:
-
-| **State**       | **Time frame**    | **Summary**                                          |
-|-------------|---------------|--------------------------------------------------|
-| Planning    | 1 - 3 months  | Features are under planning.                     |
-| Development | 3 months      | Features are under development.                  |
-| Maintained  | 6 - 12 months | All bugfixes are appropriate. Releases produced. |
-| Unmaintained| 0 - 3 months  | All bugfixes are appropriate. No Maintainers and No Releases produced.                                                 |
-| End Of Life (EOL) |  N/A |  Branch no longer accepting changes.    |
-
-## Maintenance status
-
-| **Branch** | **Status**   | **Initial Release Date** | **Next Phase**                         | **EOL Date**|
-|------------|--------------|--------------------------|----------------------------------------|-------------|
-| **r2.2**   | Maintained   | 2023-10-18               | Unmaintained <br> 2024-10-18 estimated |             |
-| **r2.1**   | Maintained   | 2023-07-29               | Unmaintained <br> 2024-07-29 estimated |             |
-| **r2.0**   | Maintained   | 2023-06-15               | Unmaintained <br> 2024-06-15 estimated |             |
-| **r1.10**  | End Of Life  | 2023-02-02               |                                        | 2024-02-02  |
-| **r1.9**   | End Of Life  | 2022-10-26               |                                        | 2023-10-26  |
-| **r1.8**   | End Of Life  | 2022-07-29               |                                        | 2023-07-29  |
-| **r1.7**   | End Of Life  | 2022-04-29               |                                        | 2023-04-29  |
-| **r1.6**   | End Of Life  | 2022-01-29               |                                        | 2023-01-29  |
-| **r1.5**   | End Of Life  | 2021-10-15               |                                        | 2022-10-15  |
-| **r1.4**   | End Of Life  | 2021-08-15               |                                        | 2022-08-15  |
-| **r1.3**   | End Of Life  | 2021-07-15               |                                        | 2022-07-15  |
-| **r1.2**   | End Of Life  | 2021-04-15               |                                        | 2022-04-29  |
-| **r1.1**   | End Of Life  | 2020-12-31               |                                        | 2021-09-30  |
-| **r1.0**   | End Of Life  | 2020-09-24               |                                        | 2021-07-30  |
-| **r0.7**   | End Of Life  | 2020-08-31               |                                        | 2021-02-28  |
-| **r0.6**   | End Of Life  | 2020-07-31               |                                        | 2020-12-30  |
-| **r0.5**   | End Of Life  | 2020-06-30               |                                        | 2021-06-30  |
-| **r0.3**   | End Of Life  | 2020-05-31               |                                        | 2020-09-30  |
-| **r0.2**   | End Of Life  | 2020-04-30               |                                        | 2020-08-31  |
-| **r0.1**   | End Of Life  | 2020-03-28               |                                        | 2020-06-30  |
-
-## Release Notes
-
-The release notes, see our [RELEASE](https://gitee.com/mindspore/mindspore/blob/master/RELEASE.md).
-
-## License
-
-[Apache License 2.0](https://gitee.com/mindspore/mindspore/blob/master/LICENSE)
+- [OpenHarmony](https://gitcode.com/openharmony/third_party_mindspore)

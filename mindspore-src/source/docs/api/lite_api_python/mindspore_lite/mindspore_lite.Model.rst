@@ -5,7 +5,7 @@ mindspore_lite.Model
 
     `Model` 类定义MindSpore Lite模型，便于计算图管理。
 
-    .. py:method:: build_from_file(model_path, model_type, context=None, config_path="", config_dict: dict = None)
+    .. py:method:: build_from_file(model_path, model_type, context=None, config_path="", config_dict=None, dec_key=None, dec_mode="AES-GCM", dec_num_parallel=0)
 
         从文件加载并构建模型。
 
@@ -51,15 +51,23 @@ mindspore_lite.Model
 
               那么配置参数字典中路径b的rank table将覆盖配置文件中的路径a的rank table。
 
+            - **dec_key** (Bytes, 可选) - 当导入密文模型时，使用该参数传入解密密钥。默认值：``None``。
+            - **dec_mode** (str, 可选) - 当导入密文模型时，使用该参数指定解密模式。当前支持的解密模式包括："AES-GCM"，"AES-CBC"与"SM4-CBC"。默认值： ``"AES-GCM"`` 。
+            - **dec_num_parallel** (int, 可选) - 当导入密文模型时，使用该参数开启并行解密，并指定并行线程数，取值范围0~64。默认为：``0``。
+
         异常：
             - **TypeError** - `model_path` 不是str类型。
             - **TypeError** - `model_type` 不是ModelType类型。
             - **TypeError** - `context` 既不是Context类型也不是 ``None`` 。
             - **TypeError** - `config_path` 不是str类型。
+            - **TypeError** - `dec_key` 不是Bytes类型。
+            - **TypeError** - `dec_mode` 不是str类型。
+            - **TypeError** - `dec_num_parallel` 不是int类型。
             - **RuntimeError** - `model_path` 文件路径不存在。
             - **RuntimeError** - `config_path` 文件路径不存在。
             - **RuntimeError** - 从 `config_path` 加载配置文件失败。
             - **RuntimeError** - 从文件加载并构建模型失败。
+            - **RuntimeError** - `dec_mode` 在密文导入时为空字符串。
 
     .. py:method:: get_inputs()
 
@@ -67,6 +75,16 @@ mindspore_lite.Model
 
         返回：
             list[Tensor]，模型的输入Tensor列表。
+
+    .. py:method:: get_model_info(key)
+
+        获取模型信息。
+
+        参数：
+            - **key** (str) - 获取模型信息关键字，当前支持user_info、input_shape、dynamic_dims、user_info为用户信息，input_shape为模型输入shape，dynamic_dims为动态分档模型支持的尺寸。
+
+        异常：
+            - **TypeError** - key不是str类型。
 
     .. py:method:: get_outputs()
 
@@ -101,7 +119,7 @@ mindspore_lite.Model
 
         2. 将输入大小调整为指定shape。
 
-        3. 当输入是动态shape时（模型输入的shape的维度包含-1），必须通过 `resize` 把-1换成固定维度。
+        3. 当输入是动态shape时（模型输入的shape的维度包含-1），必须通过 `resize` 把-1换成固定维度。（配置 `provider` 为 `ge` 时，模型输入的shape根据输入Tensor的shape，设置成固定维度）
 
         4. 模型中包含的shape算子是动态shape（shape算子的维度包含-1）。
 
@@ -132,4 +150,4 @@ mindspore_lite.Model
 
         教程样例：
             - `动态权重更新
-              <https://www.mindspore.cn/lite/docs/zh-CN/master/use/cloud_infer/runtime_python.html#%E5%8A%A8%E6%80%81%E6%9D%83%E9%87%8D%E6%9B%B4%E6%96%B0>`_
+              <https://www.mindspore.cn/lite/docs/zh-CN/master/mindir/runtime_python.html#%E5%8A%A8%E6%80%81%E6%9D%83%E9%87%8D%E6%9B%B4%E6%96%B0>`_

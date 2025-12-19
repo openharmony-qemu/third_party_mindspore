@@ -64,3 +64,10 @@ build_option_proc_upper_w()
     export ARM_SIMD="$OPTARG"
   fi  
 }
+
+build_option_proc_upper_s()
+{
+  check_on_off $OPTARG S
+  export MSLITE_ENABLE_GITEE_MIRROR="$OPTARG"
+  echo "enable download from gitee"  
+}

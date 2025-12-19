@@ -1,8 +1,8 @@
 set(protobuf_USE_STATIC_LIBS ON)
 set(ENABLE_NATIVE_PROTOBUF "off")
-if(EXISTS ${TOP_DIR}/mindspore/lite/providers/protobuf/native_protobuf.cfg)
+if(EXISTS ${TOP_DIR}/mindspore-lite/providers/protobuf/native_protobuf.cfg)
     set(ENABLE_NATIVE_PROTOBUF "on")
-    file(STRINGS ${TOP_DIR}/mindspore/lite/providers/protobuffer/native_protobuffer.cfg native_protobuffer_path)
+    file(STRINGS ${TOP_DIR}/mindspore-lite/providers/protobuffer/native_protobuffer.cfg native_protobuffer_path)
 endif()
 if(BUILD_LITE)
     if(MSVC)
@@ -91,7 +91,8 @@ mindspore_add_pkg(protobuf
         CMAKE_PATH cmake/
         CMAKE_OPTION -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release
         PATCHES ${PROTOBUF_PATCH_ROOT}/CVE-2021-22570.patch
-        PATCHES ${PROTOBUF_PATCH_ROOT}/CVE-2022-1941.patch)
+        PATCHES ${PROTOBUF_PATCH_ROOT}/CVE-2022-1941.patch
+        PATCHES ${PROTOBUF_PATCH_ROOT}/protobuf.patch001)
 endif()
 include_directories(${protobuf_INC})
 include_directories(${CMAKE_BINARY_DIR}/proto_py)
@@ -190,7 +191,7 @@ function(ms_protobuf_generate_py c_var h_var py_var)
                     COMMAND perl -pi.bak -e "s/import (.+_pb2.*)/from . import \\1/"
                             "${CMAKE_BINARY_DIR}/proto_py/proto/${file_name}_pb2.py"
                     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/proto_py/proto/${file_name}_pb2.py"
-                            "${TOP_DIR}/mindspore/python/mindspore/train/"
+                            "${TOP_DIR}/mindspore/mindspore/python/mindspore/train/"
                     DEPENDS protobuf::protoc ${abs_file}
                     COMMENT "Running C++ protocol buffer compiler on ${file}" VERBATIM)
         else()
@@ -205,7 +206,7 @@ function(ms_protobuf_generate_py c_var h_var py_var)
                     COMMAND perl -pi -e "s/import (.+_pb2.*)/from . import \\1/"
                             "${CMAKE_BINARY_DIR}/proto_py/proto/${file_name}_pb2.py"
                     COMMAND cp "${CMAKE_BINARY_DIR}/proto_py/proto/${file_name}_pb2.py"
-                            "${TOP_DIR}/mindspore/python/mindspore/train/"
+                            "${TOP_DIR}/mindspore/mindspore/python/mindspore/train/"
                     DEPENDS protobuf::protoc ${abs_file}
                     COMMENT "Running C++ protocol buffer compiler on ${file}" VERBATIM)
         endif()

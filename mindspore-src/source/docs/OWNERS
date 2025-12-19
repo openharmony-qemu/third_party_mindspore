@@ -1,11 +1,11 @@
 approvers:
-- gemini524
+- gemini524  # wangting
+- xuzhenyoumi  # xuzhen
 - Hanshize
 - rudy_tan
-- jonyguo
-- lvyufenghw
-- zh_qh
-- liangchenghui
-- tiancixiao
-- luojianing1
-- tjulyj33
+
+reviewers:
+- ZhangZGC
+
+options:
+  no_parent_owners: true

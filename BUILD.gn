@@ -17,19 +17,19 @@ import("//build/ohos.gni")
 
 # Define targets
 ohos_group("mindspore-all") {
-  deps = [ "mindspore-src/source/mindspore/lite/:mindspore" ]
+  deps = [ "mindspore-src/source/mindspore-lite/:mindspore" ]
 }
 
 group("mindir") {
-  deps = [ "mindspore-src/source/mindspore/lite/mindir:mindir_lib" ]
+  deps = [ "mindspore-src/source/mindspore-lite/mindir:mindir_lib" ]
 }
 
 ohos_group("mindspore-ndk") {
-  deps = [ "mindspore-src/source/mindspore/lite/:mindspore_ndk" ]
+  deps = [ "mindspore-src/source/mindspore-lite/:mindspore_ndk" ]
 }
 
 ohos_group("mindspore-lib") {
-  deps = [ "mindspore-src/source/mindspore/lite/:mindspore_lib" ]
+  deps = [ "mindspore-src/source/mindspore-lite/:mindspore_lib" ]
 }
 
 group("mindspore-test") {

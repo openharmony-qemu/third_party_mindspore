@@ -45,7 +45,7 @@ typedef struct OH_AI_CallBackParam {
 } OH_AI_CallBackParam;
 
 typedef bool (*OH_AI_KernelCallBack)(const OH_AI_TensorHandleArray inputs, const OH_AI_TensorHandleArray outputs,
-                                  const OH_AI_CallBackParam kernel_Info);
+                                     const OH_AI_CallBackParam kernel_Info);
 
 /// \brief Create a model object.
 ///
@@ -78,8 +78,8 @@ OH_AI_API size_t OH_AI_ModelCalcWorkspaceSize(OH_AI_ModelHandle model);
 /// \param[in] model_context Define the context used to store options during execution.
 ///
 /// \return OH_AI_Status.
-OH_AI_API OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size, OH_AI_ModelType model_type,
-                                        const OH_AI_ContextHandle model_context);
+OH_AI_API OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size,
+                                        OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context);
 
 /// \brief Load and build the model from model path so that it can run on a device.
 ///
@@ -89,8 +89,8 @@ OH_AI_API OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *mod
 /// \param[in] model_context Define the context used to store options during execution.
 ///
 /// \return OH_AI_Status.
-OH_AI_API OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path, OH_AI_ModelType model_type,
-                                                const OH_AI_ContextHandle model_context);
+OH_AI_API OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path,
+                                                OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context);
 
 /// \brief Resize the shapes of inputs.
 ///
@@ -100,8 +100,8 @@ OH_AI_API OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const c
 /// \param[in] shape_info_num The num of shape_infos.
 ///
 /// \return OH_AI_Status.
-OH_AI_API OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs, OH_AI_ShapeInfo *shape_infos,
-                              size_t shape_info_num);
+OH_AI_API OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
+                                         OH_AI_ShapeInfo *shape_infos, size_t shape_info_num);
 
 /// \brief Inference model.
 ///
@@ -112,8 +112,9 @@ OH_AI_API OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_Te
 /// \param[in] after CallBack after predict.
 ///
 /// \return OH_AI_Status.
-OH_AI_API OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs, OH_AI_TensorHandleArray *outputs,
-                                          const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after);
+OH_AI_API OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs,
+                                          OH_AI_TensorHandleArray *outputs, const OH_AI_KernelCallBack before,
+                                          const OH_AI_KernelCallBack after);
 
 /// \brief Run model by step. Only valid for Iot.
 ///
@@ -122,7 +123,8 @@ OH_AI_API OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_T
 /// \param[in] after CallBack after RunStep.
 ///
 /// \return OH_AI_Status.
-OH_AI_API OH_AI_Status OH_AI_ModelRunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after);
+OH_AI_API OH_AI_Status OH_AI_ModelRunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallBack before,
+                                          const OH_AI_KernelCallBack after);
 
 /// \brief Set the model running mode. Only valid for Iot.
 ///
@@ -218,8 +220,9 @@ OH_AI_API void OH_AI_TrainCfgSetOptimizationLevel(OH_AI_TrainCfgHandle train_cfg
 /// \param[in] train_cfg Define the config used by training.
 ///
 /// \return OH_AI_Status.
-OH_AI_API OH_AI_Status OH_AI_TrainModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size, OH_AI_ModelType model_type,
-                                  const OH_AI_ContextHandle model_context, const OH_AI_TrainCfgHandle train_cfg);
+OH_AI_API OH_AI_Status OH_AI_TrainModelBuild(OH_AI_ModelHandle model, const void *model_data, size_t data_size,
+                                             OH_AI_ModelType model_type, const OH_AI_ContextHandle model_context,
+                                             const OH_AI_TrainCfgHandle train_cfg);
 
 /// \brief Build the train model from model file buffer so that it can run on a device. Only valid for Lite Train.
 ///
@@ -230,8 +233,10 @@ OH_AI_API OH_AI_Status OH_AI_TrainModelBuild(OH_AI_ModelHandle model, const void
 /// \param[in] train_cfg Define the config used by training.
 ///
 /// \return OH_AI_Status.
-OH_AI_API OH_AI_Status OH_AI_TrainModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path, OH_AI_ModelType model_type,
-                                          const OH_AI_ContextHandle model_context, const OH_AI_TrainCfgHandle train_cfg);
+OH_AI_API OH_AI_Status OH_AI_TrainModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path,
+                                                     OH_AI_ModelType model_type,
+                                                     const OH_AI_ContextHandle model_context,
+                                                     const OH_AI_TrainCfgHandle train_cfg);
 
 /// \brief Train model by step. Only valid for Lite Train.
 ///
@@ -240,7 +245,8 @@ OH_AI_API OH_AI_Status OH_AI_TrainModelBuildFromFile(OH_AI_ModelHandle model, co
 /// \param[in] after CallBack after predict.
 ///
 /// \return OH_AI_Status.
-OH_AI_API OH_AI_Status OH_AI_RunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after);
+OH_AI_API OH_AI_Status OH_AI_RunStep(OH_AI_ModelHandle model, const OH_AI_KernelCallBack before,
+                                     const OH_AI_KernelCallBack after);
 
 /// \brief Sets the Learning Rate of the training. Only valid for Lite Train.
 ///
@@ -291,7 +297,8 @@ OH_AI_API OH_AI_Status OH_AI_ModelSetTrainMode(OH_AI_ModelHandle model, bool tra
 /// \param[in] momentum - batch norm momentum to use for virtual batch, -1 for internal configuration.
 ///
 /// \return OH_AI_Status.
-OH_AI_API OH_AI_Status OH_AI_ModelSetupVirtualBatch(OH_AI_ModelHandle model, int virtual_batch_multiplier, float lr, float momentum);
+OH_AI_API OH_AI_Status OH_AI_ModelSetupVirtualBatch(OH_AI_ModelHandle model, int virtual_batch_multiplier, float lr,
+                                                    float momentum);
 
 /// \brief Export training model from file. Only valid for Lite Train.
 ///
@@ -306,8 +313,8 @@ OH_AI_API OH_AI_Status OH_AI_ModelSetupVirtualBatch(OH_AI_ModelHandle model, int
 ///
 /// \return OH_AI_Status.
 OH_AI_API OH_AI_Status OH_AI_ExportModel(OH_AI_ModelHandle model, OH_AI_ModelType model_type, const char *model_file,
-                              OH_AI_QuantizationType quantization_type, bool export_inference_only,
-                              char **output_tensor_name, size_t num);
+                                         OH_AI_QuantizationType quantization_type, bool export_inference_only,
+                                         char **output_tensor_name, size_t num);
 
 /// \brief Export training model from buffer. Only valid for Lite Train.
 ///
@@ -322,9 +329,9 @@ OH_AI_API OH_AI_Status OH_AI_ExportModel(OH_AI_ModelHandle model, OH_AI_ModelTyp
 /// \param[in] num The number of output_tensor_name.
 ///
 /// \return OH_AI_Status.
-OH_AI_API OH_AI_Status OH_AI_ExportModelBuffer(OH_AI_ModelHandle model, OH_AI_ModelType model_type, char **model_data, size_t *data_size,
-                                    OH_AI_QuantizationType quantization_type, bool export_inference_only,
-                                    char **output_tensor_name, size_t num);
+OH_AI_API OH_AI_Status OH_AI_ExportModelBuffer(OH_AI_ModelHandle model, OH_AI_ModelType model_type, char **model_data,
+                                               size_t *data_size, OH_AI_QuantizationType quantization_type,
+                                               bool export_inference_only, char **output_tensor_name, size_t num);
 
 /// \brief Export model's weights, which can be used in micro only. Only valid for Lite Train.
 ///
@@ -338,8 +345,9 @@ OH_AI_API OH_AI_Status OH_AI_ExportModelBuffer(OH_AI_ModelHandle model, OH_AI_Mo
 ///
 /// \return OH_AI_Status.
 OH_AI_API OH_AI_Status OH_AI_ExportWeightsCollaborateWithMicro(OH_AI_ModelHandle model, OH_AI_ModelType model_type,
-                                                    const char *weight_file, bool is_inference, bool enable_fp16,
-                                                    char **changeable_weights_name, size_t num);
+                                                               const char *weight_file, bool is_inference,
+                                                               bool enable_fp16, char **changeable_weights_name,
+                                                               size_t num);
 
 /// \brief Load the config file of the model.
 ///
