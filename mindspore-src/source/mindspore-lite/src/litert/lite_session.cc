@@ -2151,6 +2151,7 @@ int lite::LiteSession::LoadModelAndCompileByPath(const std::string &model_path, 
     MS_LOG(ERROR) << "Compile model failed";
     model->buf = nullptr;
     delete model;
+    lite::UnmapMmapBuffer(const_cast<void *>(static_cast<const void *>(model_buf)), model_size);
     return RET_ERROR;
   }
   set_model(model);
