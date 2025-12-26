@@ -87,7 +87,7 @@ OH_AI_Status LLMWrapper::Build(const char *model_path) {
   }
   if (model_path == nullptr) {
     MS_LOG(ERROR) << "model_path is nullptr";
-    return OH_AI_STATUS_LITE_ERROR;
+    return OH_AI_STATUS_LITE_NULLPTR;
   }
   return llm_build_func_(llm_impl_handle_, model_path);
 }
@@ -99,13 +99,17 @@ OH_AI_Status LLMWrapper::SetConfig(const char *generated_config) {
   }
   if (generated_config == nullptr) {
     MS_LOG(ERROR) << "generated_config is nullptr";
-    return OH_AI_STATUS_LITE_ERROR;
+    return OH_AI_STATUS_LITE_NULLPTR;
   }
   return llm_update_func_(llm_impl_handle_, generated_config);
 }
 
 OH_AI_Status LLMWrapper::Create() {
   llm_impl_handle_ = llm_create_func_();
+  if (llm_impl_handle_ == nullptr) {
+    MS_LOG(ERROR) << "failed to create llm_impl_handle_!";
+    return OH_AI_STATUS_LITE_ERROR;
+  }
   return OH_AI_STATUS_SUCCESS;
 }
 
@@ -117,15 +121,15 @@ OH_AI_Status LLMWrapper::Generate(const char *prompt, OH_AI_LLMGenerationMode ge
   }
   if (prompt == nullptr) {
     MS_LOG(ERROR) << "prompt is nullptr";
-    return OH_AI_STATUS_LITE_ERROR;
+    return OH_AI_STATUS_LITE_NULLPTR;
   }
   if (generated_buffer == nullptr) {
     MS_LOG(ERROR) << "generated_buffer is nullptr";
-    return OH_AI_STATUS_LITE_ERROR;
+    return OH_AI_STATUS_LITE_NULLPTR;
   }
   if (finish_reason == nullptr) {
     MS_LOG(ERROR) << "finish_reason is nullptr";
-    return OH_AI_STATUS_LITE_ERROR;
+    return OH_AI_STATUS_LITE_NULLPTR;
   }
   return llm_generate_func_(llm_impl_handle_, prompt, generaion_mode, generated_buffer, buffer_size, finish_reason);
 }
