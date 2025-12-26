@@ -67,6 +67,7 @@ LLMWrapper::~LLMWrapper() {
   if (!IsLoaded()) {
     return;
   }
+  llm_destroy_func_(llm_impl_handle_);
   int ret = dlclose(library_handle_);
   if (ret != 0) {
     MS_LOG(WARNING) << "dlclose llm library " << kLLMImplLibraryName << " error: " << dlerror();
