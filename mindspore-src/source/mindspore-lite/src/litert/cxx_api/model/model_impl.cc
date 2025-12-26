@@ -387,7 +387,7 @@ Status ModelImpl::LoadConfig(const std::string &config_path) {
   int ret = lite::GetAllSectionInfoFromConfigFile(config_path, &all_config_info);
   if (ret != RET_OK) {
     MS_LOG(ERROR) << "GetAllSectionInfoFromConfigFile fail!ret: " << ret;
-    return kLiteFileError;
+    return kLiteError;
   }
   config_info_ = all_config_info;
   std::map<std::string, std::string> config_info = all_config_info[kExecutionPlan];
