@@ -540,7 +540,7 @@ Status Model::LoadConfig(const std::vector<char> &config_path) {
   auto ret = impl_->LoadConfig(CharToString(config_path));
   if (ret != kSuccess) {
     MS_LOG(ERROR) << "impl_ LoadConfig failed,";
-    return Status(kLiteFileError, "Invalid config file.");
+    return Status(kLiteError, "Invalid config file.");
   }
   return kSuccess;
 }
