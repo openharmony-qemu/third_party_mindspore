@@ -16,8 +16,8 @@
 
 #ifndef MINDSPORE_LITE_SRC_LITERT_KERNEL_CPU_NNACL_C_OP_BASE_H_
 #define MINDSPORE_LITE_SRC_LITERT_KERNEL_CPU_NNACL_C_OP_BASE_H_
-#if __has_include("mindspore-lite/srt/litert/kernel/cpu/nnacl_c/op_base.h")
-#include "mindspore-lite/srt/litert/kernel/cpu/nnacl_c/op_base.h"
+#if __has_include("mindspore/mindspore/ops/kernel/cpu/nnacl/op_base.h")
+#include "mindspore/mindspore/ops/kernel/cpu/nnacl/op_base.h"
 #undef MAX_SHAPE_SIZE
 #define MAX_SHAPE_SIZE 16
 #else

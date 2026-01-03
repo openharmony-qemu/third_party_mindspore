@@ -567,6 +567,8 @@ enum PrimType {
   PrimType_Inner_CustomIsInf = 10016,
   PrimType_Inner_Conv3D = 10017,
   PrimType_Inner_GridSampler = 10018,
+  PrimType_Inner_ThirdPartyModel = 10019,
+  PrimType_Inner_CustomGatherDGradV2 = 10020,
   PrimType_InnerOpMax,
   PrimType_InnerOpMin = PrimType_Inner_ToFormat
 };
@@ -769,6 +771,8 @@ typedef enum CalFixedMultiplierMode {
   Method_SinglePrecision,
   Method_DoublePrecision
 } CalFixedMultiplierMode;
+
+typedef enum DepthToSpaceMode {DepthToSpaceMode_DCR = 0, DepthToSpaceMode_CRD = 1} DepthToSpaceMode;
 
 #define VA_ARG_TUPLE_LEN 2
 static inline void offset_to_index_init(int offset, int cnt, ...) {

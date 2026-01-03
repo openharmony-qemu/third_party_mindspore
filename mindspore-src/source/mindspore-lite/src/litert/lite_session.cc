@@ -1002,7 +1002,12 @@ int LiteSession::InitAscend(const std::shared_ptr<InnerContext> &context) {
     MS_LOG(INFO) << "There is no Ascend device type.";
     return RET_OK;
   }
+#ifdef ENABLE_ASCEND
   return mindspore::AscendKernelPlugin::GetInstance().Register();
+#else
+  MS_LOG(INFO) << "Ascend kernel plugin is not enabled in this build.";
+  return RET_OK;
+#endif
 #else
   return RET_OK;
 #endif

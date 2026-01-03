@@ -2,6 +2,8 @@ project(nnacl)
 
 set(NNACL_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${NNACL_DIR}/..)
+include_directories(${NNACL_DIR}/include)
+include_directories(${NNACL_DIR})
 
 set(NNACL_SIMD_DIR ${CMAKE_BINARY_DIR}/src/nnacl)
 include_directories(${NNACL_SIMD_DIR}/..)

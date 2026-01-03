@@ -21,6 +21,7 @@
 #include "nnacl/errorcode.h"
 #include "nnacl/op_base.h"
 #include "nnacl/tensor_c.h"
+#include "nnacl/logging.h"
 
 bool CheckShaleValid(TensorC **tensors, int tensors_size);
 bool CheckInferShapeDone(TensorC **in, int in_size, TensorC **out, int out_size);
