@@ -34,6 +34,8 @@ option(MSLITE_ENABLE_CUSTOM_KERNEL "enable extend kernel registry" on)
 option(MSLITE_ENABLE_KERNEL_EXECUTOR "enable kernel executor" off)
 set(MSLITE_ENABLE_GRAPH_KERNEL off)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=maybe-uninitialized")
+set(SUPPORT_NNRT off)
 option(MSLITE_ENABLE_RUNTIME_CONVERT "enable runtime convert" off)
 option(MSLITE_ENABLE_RUNTIME_PASS "enable runtime pass" on)
 
@@ -51,6 +53,7 @@ option(MSLITE_ENABLE_MODEL_ENCRYPTION "enable model encryption" off)
 option(MSLITE_ENABLE_CONVERT_PYTORCH_MODEL "enable to convert pytorch model" off)
 option(MSLITE_ENABLE_MODEL_OBF "enable model obfuscation" off)
 option(MSLITE_ENABLE_FAST_HASH_TABLE "enable fast hash table" ON)
+option(MSLITE_ENABLE_CROPPER "enable cropper tool" OFF)
 
 # pre/post process
 option(MSLITE_ENABLE_OPENCV "enable opencv" on)
@@ -535,6 +538,7 @@ if(MSLITE_ENABLE_W_NO_ERROR)
     set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wno-error")
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-error")
 endif()
+
 
 if(MSLITE_ENABLE_NNRT)
     set(SUPPORT_NNRT on)
@@ -1049,7 +1053,7 @@ if(MSLITE_ENABLE_TOOLS)
     if(SUPPORT_TRAIN)
         add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tools/benchmark_train)
     endif()
-    if(NOT PLATFORM_ARM AND NOT WIN32 AND NOT (MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE))
+    if(MSLITE_ENABLE_CROPPER AND NOT PLATFORM_ARM AND NOT WIN32 AND NOT (MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE))
         add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tools/cropper)
         add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tools/schema_gen)
         add_dependencies(fbs_src gen_ops)

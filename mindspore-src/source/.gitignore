@@ -1,5 +1,5 @@
 # MindSpore Lite
-build/
+/build/
 output/
 .idea/
 

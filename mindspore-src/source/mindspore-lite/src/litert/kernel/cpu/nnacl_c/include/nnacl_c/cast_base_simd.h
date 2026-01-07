@@ -30,7 +30,7 @@
 #endif
 
 #ifdef ENABLE_ARM
-#include "nnacl_c/neon/cast_base_neon.h"
+#include "neon/cast_base_neon.h"
 #endif
 
 #endif

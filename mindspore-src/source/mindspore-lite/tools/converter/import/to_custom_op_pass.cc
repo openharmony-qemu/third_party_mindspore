@@ -15,10 +15,11 @@
  */
 
 #include <memory>
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/custom.h"
-#include "ops/op_utils.h"
+#include "mindspore/core/ops/auto_generate/gen_lite_ops.h"
+#include "mindspore/mindspore/ops/infer/custom.h"
+#include "mindspore/mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ir/graph_utils.h"
 #include "tools/converter/import/to_custom_op_pass.h"
 
 using mindspore::ops::kNameGatherDGradV2;

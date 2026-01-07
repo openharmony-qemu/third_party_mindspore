@@ -18,7 +18,7 @@
 
 #include <vector>
 #include "ops/base_operator.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "gen_ops_name.h"
 
 namespace mindspore::ops {
 class MIND_API ACosGrad : public BaseOperator {
