@@ -36,7 +36,8 @@
           "resource_management",
           "bounds_checking_function",
           "flatbuffers",
-          "runtime_core"
+          "runtime_core",
+          "qos_manager"
         ]
       },
       "build": {

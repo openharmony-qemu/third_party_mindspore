@@ -450,6 +450,9 @@ ohos_shared_library("mindspore_lib") {
     "hilog:libhilog",
     "bounds_checking_function:libsec_shared",
     "flatbuffers:libflatbuffers_static",
+    "qos_manager:qos",
+    "ipc:ipc_single",
+    "qos_manager:concurrent_task_client"
   ]
 
   output_name = "libmindspore-lite"

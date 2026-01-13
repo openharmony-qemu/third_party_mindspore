@@ -20,6 +20,8 @@
 #endif
 #include "thread/actor_threadpool.h"
 #include "thread/core_affinity.h"
+#include "qos.h"
+using namespace OHOS::QOS;
 
 namespace mindspore {
 size_t ActorThreadPool::actor_queue_size_ = kMaxHqueueSize;
@@ -32,6 +34,7 @@ void ActorWorker::RunWithSpin() {
   }
 #if !defined(__APPLE__) && !defined(_MSC_VER)
   static std::atomic_int index{0};
+  SetThreadQos(QosLevel::QOS_USER_INTERACTIVE);
   (void)pthread_setname_np(pthread_self(), ("OS_Actor_" + std::to_string(index++)).c_str());
 #endif
 #ifdef PLATFORM_86
