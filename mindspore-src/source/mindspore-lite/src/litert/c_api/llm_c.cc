@@ -32,11 +32,12 @@
 OH_AI_LLMHandle OH_AI_LLMCreateSession() {
   mindspore::LLMWrapper *llmWrapper = new (std::nothrow) mindspore::LLMWrapper();
   if (llmWrapper == nullptr) {
+    MS_LOG(ERROR) << "llmWrapper is nullptr";
     return nullptr;
   }
-  MS_LOG(INFO) << "loaded llm library at OH_AI_LLMCreate";
   llmWrapper->LoadLibrary();
   if (!llmWrapper->IsLoaded()) {
+    MS_LOG(ERROR) << "llmWrapper loadl ibrary failed";
     return nullptr;
   }
   llmWrapper->Create();
@@ -91,9 +92,11 @@ OH_AI_Status OH_AI_LLMSetSessionConfig(OH_AI_LLMHandle llm, const char *generate
 OH_AI_Status OH_AI_LLMDestroy(OH_AI_LLMHandle llm) {
   mindspore::LLMWrapper *llmWrapper = static_cast<mindspore::LLMWrapper *>(llm);
   if (llmWrapper == nullptr) {
+    MS_LOG(ERROR) << "llmWrapper is nullptr";
     return OH_AI_STATUS_LITE_NULLPTR;
   }
   if (!llmWrapper->IsLoaded()) {
+    MS_LOG(ERROR) << "llmWrapper is not loaded";
     return OH_AI_STATUS_LITE_ERROR;
   }
   delete llmWrapper;
@@ -114,9 +117,11 @@ OH_AI_Status OH_AI_LLMGenerate(OH_AI_LLMHandle llm, const char *prompt, OH_AI_LL
                                char *generated_buffer, int buffer_size, OH_AI_LLMFinishReason *finish_reason) {
   mindspore::LLMWrapper *llmWrapper = static_cast<mindspore::LLMWrapper *>(llm);
   if (llmWrapper == nullptr) {
+    MS_LOG(ERROR) << "llmWrapper is nullptr";
     return OH_AI_STATUS_LITE_NULLPTR;
   }
   if (!llmWrapper->IsLoaded()) {
+    MS_LOG(ERROR) << "llmWrapper is not loaded";
     return OH_AI_STATUS_LITE_ERROR;
   }
   return llmWrapper->Generate(prompt, generaion_mode, generated_buffer, buffer_size, finish_reason);
