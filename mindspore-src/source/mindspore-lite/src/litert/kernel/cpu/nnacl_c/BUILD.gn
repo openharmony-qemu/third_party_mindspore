@@ -50,6 +50,7 @@ config("nnacl_public_config") {
 ohos_source_set("nnacl_obj") {
   deps = [
     ":nnacl_common",
+    ":nnacl_common_train",
     ":nnacl_no_fast_math",
   ]
   part_name = "mindspore"
@@ -191,20 +192,17 @@ base_kernel_sources = [
   "base/stack_base.c",
   "base/tile_base.c",
   "base/transpose_base.c",
-  "base/unsorted_segment_sum_base.c",
   "base/unstack_base.c",
 ]
 
 # list of ${NNACL_DIR}/fp32/*.c
 fp32_kernel_sources = [
   "fp32/activation_fp32.c",
-  "fp32/adam_fp32.c",
   "fp32/adder_fp32.c",
   "fp32/add_fp32.c",
   "fp32/arg_min_max_fp32.c",
   "fp32/arithmetic_compare_fp32.c",
   "fp32/arithmetic_fp32.c",
-  "fp32/arithmetic_self_fp32.c",
   "fp32/attention_fp32.c",
   "fp32/batchnorm_fp32.c",
   "fp32/bce_with_loigts_loss_fp32.c",
@@ -225,7 +223,6 @@ fp32_kernel_sources = [
   "fp32/deconv_fp32.c",
   "fp32/deconv_winograd_fp32.c",
   "fp32/detection_post_process_fp32.c",
-  "fp32/div_fp32.c",
   "fp32/dropout_fp32.c",
   "fp32/embedding_lookup_fp32.c",
   "fp32/exp_fp32.c",
@@ -241,7 +238,6 @@ fp32_kernel_sources = [
   "fp32/lstm_fp32.c",
   "fp32/matmul_avx_fp32.c",
   "fp32/matmul_fp32.c",
-  "fp32/mul_fp32.c",
   "fp32/nllloss_fp32.c",
   "fp32/non_max_suppression_fp32.c",
   "fp32/one_hot_fp32.c",
@@ -249,7 +245,6 @@ fp32_kernel_sources = [
   "fp32/pack_fp32_opt.c",
   "fp32/pad_fp32.c",
   "fp32/pooling_fp32.c",
-  "fp32/power_fp32.c",
   "fp32/prelu_fp32.c",
   "fp32/ragged_range_fp32.c",
   "fp32/reduce_fp32.c",
@@ -259,7 +254,6 @@ fp32_kernel_sources = [
   "fp32/rmsprop_fp32.c",
   "fp32/roi_pooling_fp32.c",
   "fp32/scale_fp32.c",
-  "fp32/softmax_fp32.c",
   "fp32/softmax_grad_fusion_fp32.c",
   "fp32/space_to_batch_fp32.c",
   "fp32/sparse_to_dense_fp32.c",
@@ -884,17 +878,30 @@ gemm_mask_avx512_kernel_sources = [
   "experimental/HPC-generator/gemm_mask_avx512/nnacl_gemm_mask_avx512_9x32_mask_kernel_nhwc_fp32.c",
 ]
 
+# source files shared by infer with train
+infer_train_source = [
+  "fp32/adam_fp32.c",
+  "fp32/mul_fp32.c",
+  "fp32/div_fp32.c",
+  "fp32/arithmetic_self_fp32.c",
+  "fp32/power_fp32.c",
+  "fp32/softmax_fp32.c",
+  "base/unsorted_segment_sum_base.c"
+]
+
 fp32_kernel_sources -= no_fast_math_fp32_kernel_sources
 fp32_kernel_sources -= avx_fp32_kernel_sources
 fp32_kernel_sources -= arm64_fp32_kernel_sources
 
 # source files on all target
-nnacl_sources = common_sources
+nnacl_sources = []
+nnacl_train_sources = common_sources
+nnacl_train_sources += infer_train_source
 nnacl_sources += base_kernel_sources
 nnacl_sources += c_kernel_sources
 nnacl_sources += fp32_kernel_sources
 nnacl_sources += fp32_sparse_kernel_sources
-nnacl_sources += fp32_grad_kernel_sources
+nnacl_train_sources += fp32_grad_kernel_sources
 nnacl_sources += int8_kernel_sources
 nnacl_sources += infer_shape_sources
 nnacl_sources += infer_string_sources
@@ -906,7 +913,6 @@ not_needed(arm32_fp16_assembly_sources)
 
 # source files on arm64
 arm64_only_sources = fp16_kernel_sources
-arm64_only_sources += fp16_grad_sources
 arm64_only_sources += arm64_fp16_assembly_sources
 arm64_only_sources += arm64_assembly_sources
 arm64_only_sources += optimizing_assembly_sources
@@ -930,20 +936,34 @@ if (target_cpu == "arm") {
   nnacl_sources += arm_only_sources
   not_needed(arm64_only_sources)
   not_needed(x86_64_only_sources)
+  not_needed(fp16_grad_sources)
 } else if (target_cpu == "arm64") {
   nnacl_sources += arm64_only_sources
+  nnacl_train_sources += fp16_grad_sources
   not_needed(arm_only_sources)
   not_needed(x86_64_only_sources)
 } else if (target_cpu == "x86_64") {
   not_needed(x86_64_only_sources)
   not_needed(arm_only_sources)
   not_needed(arm64_only_sources)
+  not_needed(fp16_grad_sources)
 }
 
 ohos_source_set("nnacl_common") {
   configs = [ ":nnacl_public_config" ]
-  cflags_c = [ "-ffast-math" ]
+  cflags_c = [ "-ffast-math", "-fvisibility=hidden" ]
   sources = nnacl_sources
+  part_name = "mindspore"
+  subsystem_name = "thirdparty"
+  external_deps = [
+    "hilog:libhilog"
+  ]
+}
+
+ohos_source_set("nnacl_common_train") {
+  configs = [ ":nnacl_public_config" ]
+  cflags_c = [ "-ffast-math" ]
+  sources = nnacl_train_sources
   part_name = "mindspore"
   subsystem_name = "thirdparty"
   external_deps = [
