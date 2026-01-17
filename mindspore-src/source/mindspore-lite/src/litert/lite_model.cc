@@ -454,7 +454,7 @@ int LiteModel::GenerateModelByVersion() {
                     << ". Use a converter tool whose version is earlier than or equal to "
                     << "the inference engine version to convert the model.";
   }
-  MS_LOG(INFO) << "MindSpore Lite inference version: " << Version();
+  MS_LOG(DEBUG) << "MindSpore Lite inference version: " << Version();
   return status;
 }
 
@@ -631,7 +631,7 @@ Model *ImportFromBuffer(const char *model_buf, size_t size, bool take_buf, minds
     }
   }
 
-  MS_LOG(INFO) << "import model from lite model";
+  MS_LOG(DEBUG) << "import model from lite model";
   auto *model = new (std::nothrow) LiteModel(path);
   if (model == nullptr) {
     MS_LOG(ERROR) << "new model fail!";

@@ -141,7 +141,7 @@ char *PackWeightManager::GetSharedModelBuf(const char *model_buf, std::string mo
   *is_shared = true;
   return new_model_buf;
 #endif
-  MS_LOG(INFO) << "model buf not shared.";
+  MS_LOG(DEBUG) << "model buf not shared.";
   *is_shared = false;
   return const_cast<char *>(model_buf);
 }

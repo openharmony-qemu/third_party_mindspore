@@ -1531,7 +1531,7 @@ napi_value MSLiteModelNapi::GetInputs(napi_env env, napi_callback_info info) {
   }
 
   size_t size = inputs.size();
-  MS_LOG(INFO) << "inputs size: " << size;
+  MS_LOG(DEBUG) << "inputs size: " << size;
   napi_create_array_with_length(env, size, &jsResult);
   for (size_t i = 0; i < size; i++) {
     status = napi_set_element(env, jsResult, i, MSTensorNapi::NewInstance(env, tensor_inputs[i]));
@@ -1539,7 +1539,7 @@ napi_value MSLiteModelNapi::GetInputs(napi_env env, napi_callback_info info) {
       MS_LOG(ERROR) << "napi_set_element failed! code: " << status;
     } 
   }
-  MS_LOG(INFO) << "get model inputs success: " << inputs[0].Name().c_str();
+  MS_LOG(DEBUG) << "get model inputs success: " << inputs[0].Name().c_str();
   return jsResult;
 }
 
@@ -1902,7 +1902,7 @@ void MSLiteModelNapi::PredictAsyncCallbackComplete(napi_env env, napi_status sta
           MS_LOG(ERROR) << "napi_set_element failed! code: " << status;
         }
       }
-      MS_LOG(INFO) << "predict model success.";
+      MS_LOG(DEBUG) << "predict model success.";
     }
     CommonCallbackRoutine(env, asyncContext, valueParam);
   } else {

@@ -26,7 +26,7 @@ namespace lite {
 CacheSession::~CacheSession() {
   if (nn_executor_ != nullptr) {
     OH_NNExecutor_Destroy(&nn_executor_);
-    MS_LOG(INFO) << "Destroy NNExecutor Finish.";
+    MS_LOG(DEBUG) << "Destroy NNExecutor Finish.";
   }
 }
 
@@ -239,7 +239,7 @@ int CacheSession::LoadModelAndCompileByPath(const std::string &model_path, minds
 
 Model *CacheSession::ImportInOutFromBuffer(const char *model_buf, size_t size, bool take_buf, mindspore::ModelType model_type,
                                const std::string &path) {
-  MS_LOG(INFO) << "import model from lite model";
+  MS_LOG(DEBUG) << "import model from lite model";
   auto *model = new (std::nothrow) LiteModel(path);
   if (model == nullptr) {
     MS_LOG(ERROR) << "new model fail!";

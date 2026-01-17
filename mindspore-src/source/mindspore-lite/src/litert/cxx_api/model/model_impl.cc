@@ -517,7 +517,7 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
   std::vector<bool> copy_output_data;
   copy_output_data.resize(ori_output_tensors.size(), false);
   if (outputs->empty()) {
-    MS_LOG(INFO) << "user provided output is empty";
+    MS_LOG(DEBUG) << "user provided output is empty";
   } else if (outputs->size() != ori_output_tensors.size()) {
     MS_LOG(ERROR) << "user provided output size is not equal to model's output size";
     return kLiteError;
@@ -542,7 +542,7 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
         user_out_data = user_output.MutableData();
       }
       if (ori_out_tensor->allocator() == user_output.allocator() && user_out_data != nullptr) {
-        MS_LOG(INFO) << "use user data";
+        MS_LOG(DEBUG) << "use user data";
         ori_out_tensor->set_data(user_out_data);
         ori_out_tensor->set_own_data(false);
       } else {

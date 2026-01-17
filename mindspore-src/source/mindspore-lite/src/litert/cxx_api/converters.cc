@@ -110,7 +110,7 @@ void ContextUtils::ResetContextDefaultParam(Context *context) {
   if (context->GetThreadNum() != 0) {
     return;
   }
-  MS_LOG(INFO) << "thread num is 0, will set the optimal number of threads";
+  MS_LOG(DEBUG) << "thread num is 0, will set the optimal number of threads";
 #if defined(__ANDROID__) || defined(MS_COMPILE_IOS)
   context->SetThreadNum(kDefaultThreadNumTwo);
   MS_LOG(INFO) << "Set the number of threads to " << kDefaultThreadNumTwo;
@@ -119,7 +119,7 @@ void ContextUtils::ResetContextDefaultParam(Context *context) {
   auto core_num = lite::GetCoreNum();
   if (core_num <= kCoreNumThreshold) {
     context->SetThreadNum(kDefaultThreadNumTwo);
-    MS_LOG(INFO) << "Set the number of threads to " << kDefaultThreadNumTwo;
+    MS_LOG(DEBUG) << "Set the number of threads to " << kDefaultThreadNumTwo;
   } else {
     context->SetThreadNum(kDefaultThreadNumFour);
     MS_LOG(INFO) << "Set the number of threads to " << kDefaultThreadNumFour;

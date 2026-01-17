@@ -150,7 +150,7 @@ mindspore::MSKernelCallBack ModelC::TransCallBack(const OH_AI_KernelCallBack &ms
 }  // namespace mindspore
 
 OH_AI_ModelHandle OH_AI_ModelCreate() {
-  MS_LOG(INFO) << "Start to create ms model";
+  MS_LOG(DEBUG) << "Start to create ms model";
   auto impl = new (std::nothrow) mindspore::ModelC();
   if (impl == nullptr) {
     MS_LOG(ERROR) << "Model implement is nullptr.";
@@ -162,12 +162,12 @@ OH_AI_ModelHandle OH_AI_ModelCreate() {
     delete impl;
     return nullptr;
   }
-  MS_LOG(INFO) << "Created ms model successfully";
+  MS_LOG(DEBUG) << "Created ms model successfully";
   return static_cast<OH_AI_ModelHandle>(impl);
 }
 
 void OH_AI_ModelDestroy(OH_AI_ModelHandle *model) {
-  MS_LOG(INFO) << "Start to destroy ms model";
+  MS_LOG(DEBUG) << "Start to destroy ms model";
   if (model == nullptr || *model == nullptr) {
     MS_LOG(ERROR) << "model is nullptr.";
     return;
@@ -179,7 +179,7 @@ void OH_AI_ModelDestroy(OH_AI_ModelHandle *model) {
   }
   delete impl;
   *model = nullptr;
-  MS_LOG(INFO) << "Destroyed ms model successfully";
+  MS_LOG(DEBUG) << "Destroyed ms model successfully";
 }
 
 void OH_AI_ModelSetWorkspace(OH_AI_ModelHandle model, void *workspace, size_t workspace_size) {
@@ -228,7 +228,7 @@ OH_AI_Status OH_AI_ModelBuild(OH_AI_ModelHandle model, const void *model_data, s
 OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model_path, OH_AI_ModelType model_type,
                               const OH_AI_ContextHandle model_context) {
   uint64_t start_build = mindspore::lite::GetTimeUs();
-  MS_LOG(INFO) << "Start to build ms model from file";
+  MS_LOG(DEBUG) << "Start to build ms model from file";
   if (model == nullptr || model_path == nullptr || model_context == nullptr) {
     MS_LOG(ERROR) << "model or model_path or model_context is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
@@ -254,7 +254,7 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
   }
   auto ret = impl->model_->Build(model_path, static_cast<mindspore::ModelType>(model_type), impl->context_);
   if (ret.IsOk()) {
-    MS_LOG(INFO) << "Built ms model from file successfully";
+    MS_LOG(DEBUG) << "Built ms model from file successfully";
   } else {
     MS_LOG(ERROR) << "Built ms model from file failed, ret: " << ret;
   }
@@ -301,7 +301,7 @@ OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandle
 
 OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs, OH_AI_TensorHandleArray *outputs,
                         const OH_AI_KernelCallBack before, const OH_AI_KernelCallBack after) {
-  MS_LOG(INFO) << "Start to predict ms model";
+  MS_LOG(DEBUG) << "Start to predict ms model";
   uint64_t start_predict = mindspore::lite::GetTimeUs();
   if (model == nullptr) {
     MS_LOG(ERROR) << "model is nullptr.";
@@ -340,7 +340,7 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
   (void)impl->GetOutputs(&output_num);
   auto handle_num = outputs->handle_num;
   if (handle_num == output_num) {
-    MS_LOG(INFO) << "use user provided output";
+    MS_LOG(DEBUG) << "use user provided output";
     for (size_t i = 0; i < output_num; i++) {
       if (outputs->handle_list[i] == nullptr) {
         MS_LOG(ERROR) << "user provided output array handle_list[" << i << "] is nullptr";
@@ -364,7 +364,7 @@ OH_AI_Status OH_AI_ModelPredict(OH_AI_ModelHandle model, const OH_AI_TensorHandl
   }
 
   outputs->handle_list = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&(outputs->handle_num)));
-  MS_LOG(INFO) << "Predicted ms model successfully";
+  MS_LOG(DEBUG) << "Predicted ms model successfully";
   impl->in_use_.clear();
   uint64_t predict_time = mindspore::lite::GetTimeUs() - start_predict;
   MS_LOG(DEBUG) << "The inference time of the Lite model is: " << predict_time << "us";
@@ -399,7 +399,7 @@ OH_AI_Status OH_AI_ModelExportWeight(const OH_AI_ModelHandle model, const char *
 }
 
 OH_AI_TensorHandleArray OH_AI_ModelGetInputs(const OH_AI_ModelHandle model) {
-  MS_LOG(INFO) << "Start to get ms model inputs";
+  MS_LOG(DEBUG) << "Start to get ms model inputs";
   if (model == nullptr) {
     MS_LOG(ERROR) << "model is nullptr.";
     return {0, nullptr};
@@ -407,12 +407,12 @@ OH_AI_TensorHandleArray OH_AI_ModelGetInputs(const OH_AI_ModelHandle model) {
   auto impl = static_cast<mindspore::ModelC *>(model);
   size_t input_num = 0;
   auto handles = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetInputs(&input_num));
-  MS_LOG(INFO) << "Got ms model " << input_num << " inputs successfully";
+  MS_LOG(DEBUG) << "Got ms model " << input_num << " inputs successfully";
   return {input_num, handles};
 }
 
 OH_AI_TensorHandleArray OH_AI_ModelGetOutputs(const OH_AI_ModelHandle model) {
-  MS_LOG(INFO) << "Start to get ms model outputs";
+  MS_LOG(DEBUG) << "Start to get ms model outputs";
   if (model == nullptr) {
     MS_LOG(ERROR) << "model is nullptr.";
     return {0, nullptr};
@@ -420,7 +420,7 @@ OH_AI_TensorHandleArray OH_AI_ModelGetOutputs(const OH_AI_ModelHandle model) {
   auto impl = static_cast<mindspore::ModelC *>(model);
   size_t output_num;
   auto handles = reinterpret_cast<OH_AI_TensorHandle *>(impl->GetOutputs(&output_num));
-  MS_LOG(INFO) << "Got ms model " << output_num << " outputs successfully";
+  MS_LOG(DEBUG) << "Got ms model " << output_num << " outputs successfully";
   return {output_num, handles};
 }
 
