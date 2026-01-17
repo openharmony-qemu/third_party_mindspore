@@ -57,6 +57,10 @@ taihe_shared_library("mindspore_ani_taihe_native") {
     "${MINDSPORE_ROOT_ANI}/source/mindspore-lite:mindspore_ndk",
     "${MINDSPORE_ROOT_ANI}/source/mindspore-lite:mindspore_lib"
   ]
+  cflags_cc = [
+    "-Os",
+    "-flto=thin"
+  ]
 }
 
 generate_static_abc("mindspore_ani_abc") {

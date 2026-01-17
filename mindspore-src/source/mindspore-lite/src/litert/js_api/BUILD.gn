@@ -48,7 +48,10 @@ ohos_shared_library("mindsporelite_napi") {
     "napi:ace_napi",
     "resource_management:global_resmgr",
   ]
-
+  cflags_cc = [
+    "-Os",
+    "-flto=thin"
+  ]
   relative_install_dir = "module/ai"
   part_name = "mindspore"
   subsystem_name = "thirdparty"
