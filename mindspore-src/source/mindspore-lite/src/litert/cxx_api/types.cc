@@ -113,7 +113,7 @@ bool MSTensor::operator!=(const MSTensor &tensor) const { return !operator==(ten
 MSTensor *MSTensor::CreateTensor(const std::vector<char> &name, enum DataType type, const std::vector<int64_t> &shape,
                                  const void *data, size_t data_len, const std::vector<char> &device,
                                  int device_id) noexcept {
-  MS_LOG(INFO) << "device id: " << device_id << ", device type: " << device;
+  MS_LOG(DEBUG) << "device id: " << device_id << ", device type: " << device;
   auto device_type = CharToString(device);
   if (!device_type.empty() && device_type == "ascend") {
 #ifdef ENABLE_CLOUD_INFERENCE

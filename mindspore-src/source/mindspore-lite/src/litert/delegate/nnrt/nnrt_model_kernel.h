@@ -45,7 +45,7 @@ class NNRTModelKernel : public kernel::Kernel {
     if (!zero_copy_) {
       FreeNNTensor();
     }
-    MS_LOG(INFO) << "NNRTModelKernel Destroy.";
+    MS_LOG(DEBUG) << "NNRTModelKernel Destroy.";
   }
 
  protected:

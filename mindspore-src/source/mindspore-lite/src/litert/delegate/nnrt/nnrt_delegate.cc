@@ -211,14 +211,14 @@ Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model) 
 }
 
 Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *model, OH_NNModel *nn_model) {
-  MS_LOG(INFO) << "NNRTDelegate starts and creates NNCompilation";
+  MS_LOG(DEBUG) << "NNRTDelegate starts and creates NNCompilation";
   OH_NNCompilation *nn_compilation = OH_NNCompilation_Construct(nn_model);
   if (nn_compilation == nullptr) {
     MS_LOG(ERROR) << "Construct NNCompilation failed";
     OH_NNModel_Destroy(&nn_model);
     return kLiteError;
   }
-  MS_LOG(INFO) << "NNRTDelegate creates NNCompilation successfully";
+  MS_LOG(DEBUG) << "NNRTDelegate creates NNCompilation successfully";
 
   auto ret_code = InitNNCompilation(nn_compilation);
   if (ret_code != kSuccess) {
@@ -228,7 +228,7 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
     return kLiteError;
   }
   OH_NNModel_Destroy(&nn_model);
-  MS_LOG(INFO) << "NNRTDelegate initialized NNCompilation successfully";
+  MS_LOG(DEBUG) << "NNRTDelegate initialized NNCompilation successfully";
   OH_NNExecutor *nn_executor = nullptr;
   nn_executor = OH_NNExecutor_Construct(nn_compilation);
   if (nn_executor == nullptr) {
@@ -236,7 +236,7 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
     OH_NNCompilation_Destroy(&nn_compilation);
     return kLiteError;
   }
-  MS_LOG(INFO) << "NNRTDelegate constructed NNExecutor successfully";
+  MS_LOG(DEBUG) << "NNRTDelegate constructed NNExecutor successfully";
   OH_NNCompilation_Destroy(&nn_compilation);
 
   auto nnrt_model_kernel =
@@ -246,11 +246,11 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
     MS_LOG(ERROR) << "new NNRTModelKernel failed";
     return kLiteError;
   }
-  MS_LOG(INFO) << "NNRTDelegate created NNRTModelKernel successfully";
+  MS_LOG(DEBUG) << "NNRTDelegate created NNRTModelKernel successfully";
   nn_executor_list_.push_back(nn_executor);
 
   model->Replace(model->BeginKernelIterator(), model->EndKernelIterator(), nnrt_model_kernel);
-  MS_LOG(INFO) << "NNRTDelegate created FullModelKernel successfully";
+  MS_LOG(DEBUG) << "NNRTDelegate created FullModelKernel successfully";
   return kSuccess;
 }
 #endif
@@ -997,7 +997,7 @@ void NNRTDelegate::ShallowCopyLiteGraph(const lite::LiteGraph &lite_graph) {
   lite_graph_->all_tensors_ = lite_graph.all_tensors_;
   lite_graph_->all_nodes_ = node_list;
   lite_graph_->sub_graphs_ = subgraph_list;
-  MS_LOG(INFO) << "ShallowCopyLiteGraph success.";
+  MS_LOG(DEBUG) << "ShallowCopyLiteGraph success.";
 }
 
 void NNRTDelegate::FreeLiteGraph(lite::LiteGraph **liteGraph) {
@@ -1040,9 +1040,9 @@ NNRTDelegate::~NNRTDelegate() {
 #endif
   for (size_t i = 0; i < nn_executor_list_.size(); i++) {
     if (nn_executor_list_[i] != nullptr) {
-      MS_LOG(INFO) << "start NNExecutor Destroy.";
+      MS_LOG(DEBUG) << "start NNExecutor Destroy.";
       OH_NNExecutor_Destroy(&(nn_executor_list_[i]));
-      MS_LOG(INFO) << "Destroy NNExecutor Finish.";
+      MS_LOG(DEBUG) << "Destroy NNExecutor Finish.";
     }
   }
   if (lite_graph_ != nullptr) {

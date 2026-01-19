@@ -49,7 +49,7 @@ class CacheSession : public LiteSession {
     }
 
     graph_.all_tensors_.resize(meta_graph.allTensors()->size());
-    MS_LOG(INFO) << "convert input/output tensors";
+    MS_LOG(DEBUG) << "convert input/output tensors";
     for (auto i: graph_.input_indices_) {
       auto *tensor = meta_graph.allTensors()->template GetAs<schema::Tensor>(i);
       if (tensor == nullptr) {

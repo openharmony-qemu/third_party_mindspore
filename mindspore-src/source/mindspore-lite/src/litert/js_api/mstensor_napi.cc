@@ -48,7 +48,7 @@ MSTensorNapi::~MSTensorNapi() {
   if (nativeMSTensor_ != nullptr) {
     nativeMSTensor_ = nullptr;
   }
-  MS_LOG(INFO) << "MSLITE MSTensorNapi Instances destroy.";
+  MS_LOG(DEBUG) << "MSLITE MSTensorNapi Instances destroy.";
 }
 
 napi_value MSTensorNapi::Constructor(napi_env env, napi_callback_info info) {
@@ -82,7 +82,7 @@ void MSTensorNapi::Finalize(napi_env env, void *nativeObject, void *finalize) {
   if (nativeObject != nullptr) {
     delete reinterpret_cast<MSTensorNapi *>(nativeObject);
   }
-  MS_LOG(INFO) << "Finalize success.";
+  MS_LOG(DEBUG) << "Finalize success.";
 }
 
 napi_value MSTensorNapi::NewInstance(napi_env env, mindspore::MSTensor tensor) {
@@ -174,7 +174,7 @@ napi_value MSTensorNapi::GetName(napi_env env, napi_callback_info info) {
     return undefinedResult;
   }
 
-  MS_LOG(INFO) << "GetName success.";
+  MS_LOG(DEBUG) << "GetName success.";
   return jsResult;
 }
 
@@ -211,7 +211,7 @@ napi_value MSTensorNapi::GetShape(napi_env env, napi_callback_info info) {
     napi_set_element(env, jsResult, i, num);
   }
 
-  MS_LOG(INFO) << "GetShape success.";
+  MS_LOG(DEBUG) << "GetShape success.";
   return jsResult;
 }
 
@@ -269,7 +269,7 @@ napi_value MSTensorNapi::GetDtype(napi_env env, napi_callback_info info) {
     return undefinedResult;
   }
 
-  MS_LOG(INFO) << "GetDtype success.";
+  MS_LOG(DEBUG) << "GetDtype success.";
   return jsResult;
 }
 
@@ -370,7 +370,7 @@ napi_value MSTensorNapi::GetDataBuffer(napi_env env, napi_callback_info info) {
   }
 
   memcpy(data, tensor_data, byte_length);
-  MS_LOG(INFO) << "GetDataBuffer success.";
+  MS_LOG(DEBUG) << "GetDataBuffer success.";
   return jsResult;
 }
 
@@ -410,7 +410,7 @@ napi_value MSTensorNapi::SetData(napi_env env, napi_callback_info info) {
   }
   memcpy(tensor_data, js_data, length);
 
-  MS_LOG(INFO) << "SetFloatData success.";
+  MS_LOG(DEBUG) << "SetFloatData success.";
   return undefinedResult;
 }
 }  // namespace mindspore
