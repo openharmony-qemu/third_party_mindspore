@@ -20,7 +20,7 @@
 #include <map>
 #include <utility>
 #include "include/api/kernel.h"
-#include "neural_network_runtime/neural_network_runtime.h"
+#include "src/litert/delegate/nnrt/neural_network_runtime.h"
 #include "src/common/log_adapter.h"
 #include "src/litert/inner_context.h"
 #include "include/errorcode.h"

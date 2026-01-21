@@ -19,13 +19,12 @@
 #include "nnrt_delegate.h"
 #include "checker/primitive_check.h"
 #include "src/common/log_adapter.h"
-#include "neural_network_runtime/neural_network_runtime.h"
-#include "neural_network_runtime_inner.h"
 #include "nnrt_model_kernel.h"
 #include "schema/model_generated.h"
 #include "schema/ops_generated.h"
 #include "flatbuffers/flatbuffers.h"
 #include "litert/tensor_category.h"
+#include "src/litert/delegate/nnrt/nnrt_wrapper.h"
 #include "src/common/utils.h"
 
 namespace mindspore {
@@ -91,7 +90,9 @@ bool NNRTDelegate::CheckNPUPrefix(const std::string prefix_name) const {
   const std::string kirin_npu_name_prefix = prefix_name;
   auto device_id = nnrt_device_info_.device_id_;
   const char *device_name;
-  auto ret = OH_NNDevice_GetName(device_id, &device_name);
+
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+  auto ret = nnrtWrapper.NNDeviceGetName(device_id, &device_name);
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(WARNING) << "Get name of device: " << device_id << " failed, error: " << ret;
     return false;
@@ -110,7 +111,13 @@ bool NNRTDelegate::IsKirinNPUWithOfflineInference() const { return CheckNPUPrefi
 
 Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model) {
   uint64_t start_build_nnrt = mindspore::lite::GetTimeUs();
-  OH_NNModel *nn_model = OH_NNModel_Construct();
+
+  OH_NNModel *nn_model = nullptr;
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+
+  MS_LOG(INFO) << "loaded nnrt library at OH_NNModel_Construct";
+  nn_model = nnrtWrapper.Construct();
+  
   if (nn_model == nullptr) {
     MS_LOG(ERROR) << "Create NNModel failed, result is nullptr";
     return kLiteNullptr;
@@ -131,20 +138,23 @@ Status NNRTDelegate::BuildKirinNPUModel(DelegateModel<schema::Primitive> *model)
     MS_LOG_DEBUG << "set extension, item name: " << dst_extension.name << ", value size: " << dst_extension.valueSize;
   }
 
-  auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, lite_graph_, extensions.data(), extensions.size());
+  auto ret = nnrtWrapper.BuildFromLiteGraph(nn_model, lite_graph_, extensions.data(), extensions.size());
+
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
-    OH_NNModel_Destroy(&nn_model);
+    nnrtWrapper.Destroy(&nn_model);
     return kLiteError;
   }
 
   auto ret2 = CreateFullModelKernel(model, nn_model);
   if (ret2 != kSuccess) {
     MS_LOG(ERROR) << "Create full model kernel failed, ret: " << ret2;
+    
     return kLiteError;
   }
   uint64_t build_nnrt_time = mindspore::lite::GetTimeUs() - start_build_nnrt;
   MS_LOG(DEBUG) << "The NNRT delegate online model build time is: " << build_nnrt_time << "us";
+  
   return kSuccess;
 }
 
@@ -170,8 +180,8 @@ Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model) 
   MS_CHECK_TRUE_RET(tensor->data() != nullptr, kLiteError);
   const uint8_t *model_buf = static_cast<const uint8_t *>(tensor->data()->data());
   size_t model_size = tensor->data()->size();
-
-  OH_NNCompilation *nn_compilation = OH_NNCompilation_ConstructWithOfflineModelBuffer(model_buf, model_size);
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+  OH_NNCompilation *nn_compilation = nnrtWrapper.NNCompilationConstructWithOfflineModelBuffer(model_buf, model_size);
   if (nn_compilation == nullptr) {
     MS_LOG(ERROR) << "Construct Offline NNCompilation failed";
     return kLiteError;
@@ -181,24 +191,26 @@ Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model) 
   auto ret_code = InitNNCompilation(nn_compilation);
   if (ret_code != kSuccess) {
     MS_LOG(ERROR) << "Init NNCompilation failed";
-    OH_NNCompilation_Destroy(&nn_compilation);
+    nnrtWrapper.NNCompilationDestroy(&nn_compilation);
     return kLiteError;
   }
   MS_LOG(DEBUG) << "HiAI F InitNNCompilation success";
 
   OH_NNExecutor *nn_executor = nullptr;
-  nn_executor = OH_NNExecutor_Construct(nn_compilation);
+
+  nn_executor = nnrtWrapper.NNExecutorConstruct(nn_compilation);
   if (nn_executor == nullptr) {
     MS_LOG(ERROR) << "Construct NNExecutor failed, ret: " << ret_code;
-    OH_NNCompilation_Destroy(&nn_compilation);
+    nnrtWrapper.NNCompilationDestroy(&nn_compilation);
     return kLiteError;
   }
-  OH_NNCompilation_Destroy(&nn_compilation);
+
+  nnrtWrapper.NNCompilationDestroy(&nn_compilation);
 
   auto nnrt_model_kernel =
     new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, model->inputs(), model->outputs());
   if (nnrt_model_kernel == nullptr) {
-    OH_NNExecutor_Destroy(&nn_executor);
+    nnrtWrapper.NNExecutorDestroy(&nn_executor);
     MS_LOG(ERROR) << "new NNRTModelKernel failed";
     return kLiteError;
   }
@@ -207,15 +219,17 @@ Status NNRTDelegate::BuildOfflineModel(DelegateModel<schema::Primitive> *model) 
   (void)model->Replace(model->BeginKernelIterator(), model->EndKernelIterator(), nnrt_model_kernel);
   uint64_t build_offline_nnrt_time = mindspore::lite::GetTimeUs() - start_build_offline_nnrt;
   MS_LOG(DEBUG) << "The NNRT delegate offline model build time is: " << build_offline_nnrt_time << "us";
+  
   return kSuccess;
 }
 
 Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *model, OH_NNModel *nn_model) {
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
   MS_LOG(DEBUG) << "NNRTDelegate starts and creates NNCompilation";
-  OH_NNCompilation *nn_compilation = OH_NNCompilation_Construct(nn_model);
+  OH_NNCompilation *nn_compilation = nnrtWrapper.NNCompilationConstruct(nn_model);
   if (nn_compilation == nullptr) {
     MS_LOG(ERROR) << "Construct NNCompilation failed";
-    OH_NNModel_Destroy(&nn_model);
+    nnrtWrapper.Destroy(&nn_model);
     return kLiteError;
   }
   MS_LOG(DEBUG) << "NNRTDelegate creates NNCompilation successfully";
@@ -223,26 +237,26 @@ Status NNRTDelegate::CreateFullModelKernel(DelegateModel<schema::Primitive> *mod
   auto ret_code = InitNNCompilation(nn_compilation);
   if (ret_code != kSuccess) {
     MS_LOG(ERROR) << "Init NNCompilation failed";
-    OH_NNModel_Destroy(&nn_model);
-    OH_NNCompilation_Destroy(&nn_compilation);
+    nnrtWrapper.Destroy(&nn_model);  
+    nnrtWrapper.NNCompilationDestroy(&nn_compilation);
     return kLiteError;
   }
-  OH_NNModel_Destroy(&nn_model);
+  nnrtWrapper.Destroy(&nn_model);
   MS_LOG(DEBUG) << "NNRTDelegate initialized NNCompilation successfully";
   OH_NNExecutor *nn_executor = nullptr;
-  nn_executor = OH_NNExecutor_Construct(nn_compilation);
+  nn_executor = nnrtWrapper.NNExecutorConstruct(nn_compilation);
   if (nn_executor == nullptr) {
     MS_LOG(ERROR) << "Construct NNExecutor failed, ret: " << ret_code;
-    OH_NNCompilation_Destroy(&nn_compilation);
+    nnrtWrapper.NNCompilationDestroy(&nn_compilation);
     return kLiteError;
   }
   MS_LOG(DEBUG) << "NNRTDelegate constructed NNExecutor successfully";
-  OH_NNCompilation_Destroy(&nn_compilation);
+  nnrtWrapper.NNCompilationDestroy(&nn_compilation);
 
   auto nnrt_model_kernel =
     new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, model->inputs(), model->outputs());
   if (nnrt_model_kernel == nullptr) {
-    OH_NNExecutor_Destroy(&nn_executor);
+    nnrtWrapper.NNExecutorDestroy(&nn_executor);
     MS_LOG(ERROR) << "new NNRTModelKernel failed";
     return kLiteError;
   }
@@ -262,7 +276,7 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
       << "LiteGraph contains more than one subgraph. NNRT does not support control-flow model yet, fallback to CPU";
     return kSuccess;
   }
-
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
   OH_NNModel *full_model = CreateFullNNModel();
   if (full_model == nullptr) {
     MS_LOG(WARNING) << "Build full NNModel failed, fallback to CPU";
@@ -271,7 +285,7 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
   std::vector<bool> op_supports = QueryOpSupports(full_model);
   if (op_supports.empty()) {
     MS_LOG(WARNING) << "Query no op supports for full model, fallback to CPU";
-    OH_NNModel_Destroy(&full_model);
+    nnrtWrapper.Destroy(&full_model);   
     return kSuccess;
   }
   auto nnrt_subgraph_ranges = GetNNRTSubgraphRanges(model, op_supports);
@@ -280,31 +294,35 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
   std::vector<LiteGraph *> sub_lite_graphs;
   auto ret = CreateLiteGraphForNNRTSubgraph(nnrt_subgraph_ranges, &sub_lite_graphs);
   if (ret != kSuccess) {
-    OH_NNModel_Destroy(&full_model);
+    nnrtWrapper.Destroy(&full_model);
     for (auto *g : sub_lite_graphs) {
       FreeLiteGraph(&g);
     }
     MS_LOG(WARNING) << "Create NNRT sub LiteGraph failed, fallback to CPU";
+    
     return kSuccess;
   }
 
   std::vector<NNRTModelKernel *> nnrt_subgraph_kernels;
   ret = CreateNNRTSubgraphKernels(model, sub_lite_graphs, nnrt_subgraph_ranges, &nnrt_subgraph_kernels);
   if (ret != kSuccess) {
-    OH_NNModel_Destroy(&full_model);
+    nnrtWrapper.Destroy(&full_model);
     for (auto *g : sub_lite_graphs) {
       FreeLiteGraph(&g);
     }
     MS_LOG(WARNING) << "Create NNRT subgraph kernel failed, fallback to CPU";
+    
     return kSuccess;
   }
 
   ReplaceNNRTKernelsInDelegateModel(model, nnrt_subgraph_ranges, nnrt_subgraph_kernels);
-  OH_NNModel_Destroy(&full_model);
+
+  nnrtWrapper.Destroy(&full_model);
   for (auto *g : sub_lite_graphs) {
     FreeLiteGraph(&g);
   }
   MS_LOG(INFO) << "NNRTDelegate build success.";
+  
   return kSuccess;
 }
 
@@ -320,34 +338,46 @@ OH_NNModel *NNRTDelegate::CreateFullNNModel() {
     return nullptr;
   }
 
-  OH_NNModel *nn_model = OH_NNModel_Construct();
+  OH_NNModel *nn_model = nullptr;
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+  MS_LOG(INFO) << "loaded nnrt library at OH_NNModel_Construct";
+  nn_model = nnrtWrapper.Construct();
+  
   if (nn_model == nullptr) {
     MS_LOG(ERROR) << "Create NNModel failed, result is nullptr";
     return nullptr;
   }
 
   MS_LOG(INFO) << "NNRTDelegate starts building the NNRT Model from LiteGraph";
-  auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, lite_graph_, nullptr, 0);
+
+  auto ret = nnrtWrapper.BuildFromLiteGraph(nn_model, lite_graph_, nullptr, 0);
+  
   MS_LOG(INFO) << "NNRTDelegate has successfully built the NNRT Model from LiteGraph";
   
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
-    OH_NNModel_Destroy(&nn_model);
+    nnrtWrapper.Destroy(&nn_model);
     return nullptr;
   }
+  
   return nn_model;
 }
 
 std::vector<bool> NNRTDelegate::QueryOpSupports(OH_NNModel *nn_model) {
   const bool *is_supported = nullptr;  // Note: this memory is owned by nn_model, don't free alone.
   uint32_t op_count = 0;
-  auto ret = OH_NNModel_GetAvailableOperations(nn_model, nnrt_device_info_.device_id_, &is_supported, &op_count);
+
+  auto ret = OH_NN_FAILED;
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+  MS_LOG(INFO) << "loaded nnrt library at OH_NNModel_GetAvailableOperations";
+  ret = nnrtWrapper.GetAvailableOperations(nn_model, nnrt_device_info_.device_id_, &is_supported, &op_count);
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(WARNING) << "NNModel GetAvailableOperations failed, ret: " << ret
                     << ", maybe caused by dataParcel data length limitation";
     return {};
   }
   std::vector<bool> op_supports(is_supported, is_supported + op_count);
+  
   return op_supports;
 }
 
@@ -538,33 +568,38 @@ struct TensorLocation {
 };
 
 Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
-  auto ret_code = OH_NNCompilation_SetDevice(nn_compilation, nnrt_device_info_.device_id_);
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+  auto ret_code = nnrtWrapper.NNCompilationSetDevice(nn_compilation, nnrt_device_info_.device_id_);
   if (ret_code != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "NNCompilation set device id failed, ret: " << ret_code;
     return kLiteError;
   }
   ret_code =
-    OH_NNCompilation_SetPerformanceMode(nn_compilation, (OH_NN_PerformanceMode)(nnrt_device_info_.performance_mode_));
+    nnrtWrapper.NNCompilationSetPerformanceMode(nn_compilation, (OH_NN_PerformanceMode)(nnrt_device_info_.performance_mode_));
   if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
     MS_LOG(ERROR) << "NNCompilation set performance mode failed, ret: " << ret_code;
     return kLiteError;
   }
-  ret_code = OH_NNCompilation_SetPriority(nn_compilation, (OH_NN_Priority)(nnrt_device_info_.priority_));
+
+  ret_code = nnrtWrapper.NNCompilationSetPriority(nn_compilation, (OH_NN_Priority)(nnrt_device_info_.priority_));
   if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
     MS_LOG(ERROR) << "NNCompilation set priority failed, ret: " << ret_code;
     return kLiteError;
   }
-  ret_code = OH_NNCompilation_EnableFloat16(nn_compilation, nnrt_device_info_.enable_fp16_);
+
+  ret_code = nnrtWrapper.NNCompilationEnableFloat16(nn_compilation, nnrt_device_info_.enable_fp16_);
   if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
     MS_LOG(ERROR) << "NNCompilation enable fp16 failed, ret: " << ret_code;
     return kLiteError;
   }
 
   if (!extension_options_.cache_path_.empty()) {  // Set cache path if user indeed set it.
-    ret_code = OH_NNCompilation_SetCache(nn_compilation, extension_options_.cache_path_.c_str(),
-                                         extension_options_.cache_version_);
+    
+    ret_code = nnrtWrapper.NNCompilationSetCache(nn_compilation, extension_options_.cache_path_.c_str(),
+                                                  extension_options_.cache_version_);
     if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
       MS_LOG(ERROR) << "NNCompilation set cache failed, ret: " << ret_code;
+      
       return kLiteError;
     }
   }
@@ -604,11 +639,12 @@ Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
   }
 #endif
 
-  ret_code = OH_NNCompilation_Build(nn_compilation);
+  ret_code = nnrtWrapper.NNCompilationBuild(nn_compilation);
   if (ret_code != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "Build NNCompilation failed, ret: " << ret_code;
     return kLiteError;
   }
+  
   return kSuccess;
 }
 
@@ -616,21 +652,23 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
                                                const std::vector<LiteGraph *> &sub_lite_graphs,
                                                const std::vector<NNRTOpRange> &nnrt_subgraph_ranges,
                                                std::vector<NNRTModelKernel *> *nnrt_subgraph_kernels) {
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
   for (size_t i = 0; i < sub_lite_graphs.size(); i++) {
     auto sub_lite_graph = sub_lite_graphs[i];
+    OH_NNModel *nn_model = nullptr;
+    nn_model = nnrtWrapper.Construct();
+    auto ret = nnrtWrapper.BuildFromLiteGraph(nn_model, lite_graph_, nullptr, 0);
 
-    OH_NNModel *nn_model = OH_NNModel_Construct();
-    auto ret = OH_NNModel_BuildFromLiteGraph(nn_model, sub_lite_graph, nullptr, 0);
     if (ret != OH_NN_SUCCESS) {
       MS_LOG(ERROR) << "Build NNModel failed, ret: " << ret;
-      OH_NNModel_Destroy(&nn_model);
+      nnrtWrapper.Destroy(&nn_model);
       return kLiteError;
     }
 
-    OH_NNCompilation *nn_compilation = OH_NNCompilation_Construct(nn_model);
+    OH_NNCompilation *nn_compilation = nnrtWrapper.NNCompilationConstruct(nn_model);
     if (nn_compilation == nullptr) {
       MS_LOG(ERROR) << "Construct NNCompilation failed";
-      OH_NNModel_Destroy(&nn_model);
+      nnrtWrapper.Destroy(&nn_model);
       return kLiteError;
     }
     MS_LOG(DEBUG) << "NNRTDelegate creates NNCompilation success.";
@@ -638,17 +676,18 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
     auto ret_code = InitNNCompilation(nn_compilation);
     if (ret_code != kSuccess) {
       MS_LOG(ERROR) << "Init NNCompilation failed";
-      OH_NNCompilation_Destroy(&nn_compilation);
-      OH_NNModel_Destroy(&nn_model);
+      nnrtWrapper.NNCompilationDestroy(&nn_compilation);
+      nnrtWrapper.Destroy(&nn_model);
       return kLiteError;
     }
 
     OH_NNExecutor *nn_executor = nullptr;
-    nn_executor = OH_NNExecutor_Construct(nn_compilation);
+
+    nn_executor = nnrtWrapper.NNExecutorConstruct(nn_compilation);
     if (nn_executor == nullptr) {
       MS_LOG(ERROR) << "Construct NNExecutor failed, ret: " << ret_code;
-      OH_NNCompilation_Destroy(&nn_compilation);
-      OH_NNModel_Destroy(&nn_model);
+      nnrtWrapper.NNCompilationDestroy(&nn_compilation);
+      nnrtWrapper.Destroy(&nn_model);
       return kLiteError;
     }
     MS_LOG(DEBUG) << "NNRTDelegate creates NNExecutor success.";
@@ -701,8 +740,8 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
     }
     if (format_not_support) {
       MS_LOG(WARNING) << "Not support in/out tensor format, skip this subgraph";
-      OH_NNCompilation_Destroy(&nn_compilation);
-      OH_NNModel_Destroy(&nn_model);
+      nnrtWrapper.NNCompilationDestroy(&nn_compilation);
+      nnrtWrapper.Destroy(&nn_model);
       nnrt_subgraph_kernels->push_back(nullptr);
       continue;
     }
@@ -714,10 +753,11 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       return kLiteError;
     }
     nn_executor_list_.push_back(nn_executor);
-    OH_NNCompilation_Destroy(&nn_compilation);
-    OH_NNModel_Destroy(&nn_model);
+    nnrtWrapper.NNCompilationDestroy(&nn_compilation);
+    nnrtWrapper.Destroy(&nn_model);
     nnrt_subgraph_kernels->push_back(nnrt_model_kernel);
   }
+  
   return kSuccess;
 }
 
@@ -785,10 +825,13 @@ Status NNRTDelegate::PrepareInputs(DelegateModel<schema::Primitive> *model, OH_N
     oprend->dimensions = dimensions_list.data();
     oprend->quantParam = quant_param;
     oprend->type = OH_NN_TENSOR;
-    OH_NN_ReturnCode ret_code =
-      OH_NNExecutor_SetInput(oh_nn_executor, i, oprend, tensor.MutableData(), tensor.DataSize());
-    delete (oprend);
 
+    auto ret_code = OH_NN_FAILED;
+    auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+    MS_LOG(INFO) << "loaded nnrt library at OH_NNExecutor_SetInput";
+    ret_code = nnrtWrapper.ExecutorSetInput(oh_nn_executor, i, oprend, tensor.MutableData(), tensor.DataSize());
+    delete (oprend);
+    
     if (!tmp_quant_param.empty()) {
       delete (quant_param);
       quant_param = nullptr;
@@ -822,15 +865,19 @@ OH_NN_DataType NNRTDelegate::CastToNNRTDataType(DataType data_type) {
 
 Status NNRTDelegate::PrepareOutputs(DelegateModel<schema::Primitive> *model, OH_NNExecutor *oh_nn_executor) {
   auto output_tensors = model->outputs();
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
   for (size_t i = 0; i < output_tensors.size(); i++) {
     auto tensor = output_tensors[i];
-    OH_NN_ReturnCode ret_code = OH_NNExecutor_SetOutput(oh_nn_executor, i, tensor.MutableData(), tensor.DataSize());
+    auto ret_code = nnrtWrapper.ExecutorSetOutput(oh_nn_executor, i, tensor.MutableData(), tensor.DataSize());
+    
     if (ret_code != OH_NN_SUCCESS) {
       MS_LOG(ERROR) << "NNExecutor SetOutput failed, current out tensor is" << tensor.Name()
                     << ", OH_NN_ReturnCode = " << ret_code;
+      
       return kLiteError;
     }
   }
+  
   return kSuccess;
 }
 
@@ -1038,13 +1085,15 @@ NNRTDelegate::~NNRTDelegate() {
     hiai_handle_ = nullptr;
   }
 #endif
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
   for (size_t i = 0; i < nn_executor_list_.size(); i++) {
     if (nn_executor_list_[i] != nullptr) {
       MS_LOG(DEBUG) << "start NNExecutor Destroy.";
-      OH_NNExecutor_Destroy(&(nn_executor_list_[i]));
+      nnrtWrapper.NNExecutorDestroy(&(nn_executor_list_[i]));
       MS_LOG(DEBUG) << "Destroy NNExecutor Finish.";
     }
   }
+  
   if (lite_graph_ != nullptr) {
     #ifdef SUPPORT_NNRT_METAGRAPH
     if (IsKirinNPUWithOfflineInference()) {

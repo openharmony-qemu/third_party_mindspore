@@ -25,7 +25,7 @@
 #include "src/litert/delegate/nnrt/hiai_foundation_wrapper.h"
 #endif
 #ifdef SUPPORT_NNRT
-#include "neural_network_runtime/neural_network_runtime.h"
+#include "src/litert/delegate/nnrt/nnrt_wrapper.h"
 #endif
 
 // ================ Context ================
@@ -351,7 +351,9 @@ NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num) {
 
   const size_t *all_device_ids;
   uint32_t device_count;
-  auto ret = OH_NNDevice_GetAllDevicesID(&all_device_ids, &device_count);
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+
+  auto ret = nnrtWrapper.NNDeviceGetAllDevicesID(&all_device_ids, &device_count);
   if ((ret != OH_NN_SUCCESS) || (device_count == 0)) {
     MS_LOG(ERROR) << "NNRT get all device id failed, ret: " << ret;
     return nullptr;
@@ -366,11 +368,11 @@ NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num) {
   for (uint32_t i = 0; i < device_count; i++) {
     desc[i].device_id = all_device_ids[i];
     OH_NN_DeviceType type;
-    (void)OH_NNDevice_GetType(all_device_ids[i], &type);
+    (void)nnrtWrapper.NNDeviceGetType(all_device_ids[i], &type);
     desc[i].device_type = static_cast<OH_AI_NNRTDeviceType>(type);
 
     const char *name = nullptr;
-    (void)OH_NNDevice_GetName(all_device_ids[i], &name);
+    nnrtWrapper.NNDeviceGetName(all_device_ids[i], &name);
     if (name == nullptr) {
       MS_LOG(ERROR) << "OH_NNDevice_GetName error.";
       return nullptr;
@@ -378,6 +380,18 @@ NNRTDeviceDesc *OH_AI_GetAllNNRTDeviceDescs(size_t *num) {
     desc[i].device_name[127] = '\0';
     strncpy(desc[i].device_name, name, 127);
   }
+  
+  if (device_count > 0) {
+    auto isNPUDevice = [](const NNRTDeviceDesc &device) {
+      return strncmp(device.device_name, "NPU_", 4) == 0;
+    };
+
+    NNRTDeviceDesc *npu_end = std::stable_partition(desc, desc + device_count, isNPUDevice);
+    size_t npu_count = npu_end - desc;
+    size_t other_count = device_count - npu_count;
+    MS_LOG(INFO) << "NNRTDeviceDesc sorted, " << npu_count << "npu devices found, " << other_count << "other devices found.";
+  }
+
   *num = device_count;
   return desc;
 #else
