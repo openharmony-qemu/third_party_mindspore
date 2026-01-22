@@ -16,6 +16,8 @@
 #include "src/litert/inner_context.h"
 #include <algorithm>
 #include <memory>
+#include <unistd.h>
+#include "concurrent_task_client.h"
 #include "include/errorcode.h"
 #include "src/common/log_adapter.h"
 #include "src/common/log_util.h"
@@ -40,6 +42,7 @@ namespace {
 const constexpr int kMaxInnerContextDeviceNums = 3;
 const constexpr int kNumCoreNumTimes = 5;
 constexpr int kDefaultParallelNum = 2;
+static std::once_flag ms_qos_authflag;
 }  // namespace
 
 InnerContext::InnerContext() {
@@ -71,6 +74,13 @@ int InnerContext::CreateThreadPool(bool is_control_flow) {
     if (thread_pool_ == nullptr) {
 #ifdef ENABLE_MINDRT
 #ifndef MS_COMPILE_IOS
+      std::call_once(ms_qos_authflag, []() {
+        pid_t pid = getpid();
+        std::unordered_map<std::string, std::string> payload;
+        payload["pid"] = std::to_string(pid);
+        OHOS::ConcurrentTask::ConcurrentTaskClient::GetInstance().RequestAuth(payload);
+        MS_LOG(INFO) << "QoS authentication requeset complete";
+      });
       if (inter_op_parallel_num_ > 1) {
         thread_pool_ = ParallelThreadPool::CreateThreadPool(this->inter_op_parallel_num_, this->thread_num_,
                                                             this->affinity_core_list_, bind_mode_, runner_id_);
