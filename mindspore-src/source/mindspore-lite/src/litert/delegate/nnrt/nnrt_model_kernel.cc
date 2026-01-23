@@ -17,9 +17,8 @@
 #include "nnrt_model_kernel.h"
 #include "nnrt_allocator.h"
 #include "litert/cxx_api/tensor/tensor_impl.h"
-#include "neural_network_runtime_inner.h"
 #include "src/common/utils.h"
-
+#include "src/litert/delegate/nnrt/nnrt_wrapper.h"
 namespace mindspore{
 namespace {
 constexpr auto kDynamicDims = "DynamicDims";
@@ -80,22 +79,25 @@ int NNRTModelKernel::Execute() {
   }
   MS_LOG(DEBUG) << "Running NNRtModel Kernel...";
   OH_NN_ReturnCode ret_code = OH_NN_SUCCESS;
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
   if (predict_config_ != nullptr) {
     bool support = false;
-    ret_code = OH_NN_IsSupportAIPP(support);
+    auto ret_code = nnrtWrapper.IsSupportAIPP(support);
     if (ret_code != OH_NN_SUCCESS) {
       MS_LOG(ERROR) << "Aipp not support in current device";
       return lite::RET_NOT_SUPPORT_AIPP;
     }
-    ret_code = OH_NNExecutor_RunSyncWithAipp(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
-                                             nn_output_tensors_.data(), nn_output_tensors_.size(), predict_config_);
+
+    ret_code = nnrtWrapper.ExecutorRunSyncWithAipp(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
+                                                    nn_output_tensors_.data(), nn_output_tensors_.size(), predict_config_);
     if (ret_code != OH_NN_SUCCESS) {
       MS_LOG(ERROR) << "Inference failed when Aipp invoked the NNRT interface";
       return lite::RET_INFER_AIPP_FAIL;
     }
   } else {
-    ret_code = OH_NNExecutor_RunSync(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
-                                     nn_output_tensors_.data(), nn_output_tensors_.size());
+
+    ret_code = nnrtWrapper.NNExecutorRunSync(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
+                                              nn_output_tensors_.data(), nn_output_tensors_.size());
   }
 
   if (ret_code != OH_NN_SUCCESS) {
@@ -112,7 +114,8 @@ int NNRTModelKernel::SetInputs() {
   if (!zero_copy_) {
     OH_NN_ReturnCode ret{OH_NN_FAILED};
     size_t nn_input_count = 0;
-    ret = OH_NNExecutor_GetInputCount(oh_nn_executor_, &nn_input_count);
+    auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+    nnrtWrapper.NNExecutorGetInputCount(oh_nn_executor_, &nn_input_count);
     if (ret != OH_NN_SUCCESS) {
       MS_LOG(ERROR) << "OH_NNExecutor_GetInputCount failed.";
       return lite::RET_ERROR;
@@ -122,26 +125,32 @@ int NNRTModelKernel::SetInputs() {
       return lite::RET_ERROR;
     }
     for (size_t i = 0; i < nn_input_count; i++) {
-      NN_TensorDesc *tensor_desc_tmp = OH_NNExecutor_CreateInputTensorDesc(oh_nn_executor_, i);
+
+      NN_TensorDesc *tensor_desc_tmp = nnrtWrapper.NNExecutorCreateInputTensorDesc(oh_nn_executor_, i);
       if (tensor_desc_tmp == nullptr) {
         MS_LOG(ERROR) << "OH_NNExecutor_CreateInputTensorDesc failed, i = " << i;
         return lite::RET_ERROR;
       }
       nn_input_tensor_descs_.emplace_back(tensor_desc_tmp);
-      NN_Tensor *tensor_tmp = OH_NNTensor_Create(nnrt_device_info_.device_id_, tensor_desc_tmp);
+
+      NN_Tensor *tensor_tmp = nnrtWrapper.NNTensorCreate(nnrt_device_info_.device_id_, tensor_desc_tmp);
       if (tensor_tmp == nullptr) {
         MS_LOG(ERROR) << "OH_NNTensor_Create input failed, i = " << i;
+        
         return lite::RET_ERROR;
       }
       nn_input_tensors_.emplace_back(tensor_tmp);
-      void *nn_data = OH_NNTensor_GetDataBuffer(nn_input_tensors_[i]);
+
+      void *nn_data = nnrtWrapper.NNTensorGetDataBuffer(nn_input_tensors_[i]);
       size_t tensor_size;
       ret = OH_NNTensorDesc_GetByteSize(tensor_desc_tmp, &tensor_size);
       if (ret != OH_NN_SUCCESS || tensor_size != inputs_[i].DataSize()) {
         MS_LOG(ERROR) << "NN_Tensor size is not equal to MSTensor, i = " << i;
+        
         return lite::RET_ERROR;
       }
       memcpy(nn_data, inputs_[i].MutableData(), inputs_[i].DataSize());
+      
     }
   } else {
     for (size_t i = 0; i < inputs_.size(); i++) {
@@ -165,7 +174,8 @@ int NNRTModelKernel::SetOutputs() {
   if (!zero_copy_) {
     OH_NN_ReturnCode ret{OH_NN_FAILED};
     size_t nn_output_count = 0;
-    ret = OH_NNExecutor_GetOutputCount(oh_nn_executor_, &nn_output_count);
+    auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+    ret = nnrtWrapper.NNExecutorGetOutputCount(oh_nn_executor_, &nn_output_count);
     if (ret != OH_NN_SUCCESS) {
       MS_LOG(ERROR) << "OH_NNExecutor_GetOutputCount failed.";
       return lite::RET_ERROR;
@@ -174,23 +184,28 @@ int NNRTModelKernel::SetOutputs() {
       MS_LOG(ERROR) << "output count is not equal between ms and nnrt.";
       return lite::RET_ERROR;
     }
+    
     for (size_t i = 0; i < nn_output_count; i++) {
-      NN_TensorDesc *tensor_desc_tmp = OH_NNExecutor_CreateOutputTensorDesc(oh_nn_executor_, i);
+
+      NN_TensorDesc *tensor_desc_tmp = nnrtWrapper.NNExecutorCreateOutputTensorDesc(oh_nn_executor_, i);
       if (tensor_desc_tmp == nullptr) {
         MS_LOG(ERROR) << "OH_NNExecutor_CreateOutputTensorDesc failed, i = " << i;
         return lite::RET_ERROR;
       }
       nn_output_tensor_descs_.emplace_back(tensor_desc_tmp);
-      NN_Tensor *tensor_tmp = OH_NNTensor_Create(nnrt_device_info_.device_id_, tensor_desc_tmp);
+
+      NN_Tensor *tensor_tmp = nnrtWrapper.NNTensorCreate(nnrt_device_info_.device_id_, tensor_desc_tmp);
       if (tensor_tmp == nullptr) {
         MS_LOG(ERROR) << "OH_NNTensor_Create output failed, i = " << i;
         return lite::RET_ERROR;
       }
       nn_output_tensors_.emplace_back(tensor_tmp);
-      auto data = OH_NNTensor_GetDataBuffer(nn_output_tensors_[i]);
+
+      auto data = nnrtWrapper.NNTensorGetDataBuffer(nn_output_tensors_[i]);
       reinterpret_cast<LiteTensorImpl *>(outputs_[i].impl().get())->lite_tensor()->FreeData();
       outputs_[i].SetData(data, false);
     }
+    
   } else {
     for (size_t i = 0; i < outputs_.size(); i++) {
       if (outputs_[i].allocator() == nullptr) {
@@ -210,14 +225,16 @@ int NNRTModelKernel::SetOutputs() {
 }
 
 void NNRTModelKernel::FreeNNTensor() {
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
   for (size_t i = 0; i < nn_input_tensors_.size(); i++) {
-    OH_NNTensor_Destroy(&nn_input_tensors_[i]);
-    OH_NNTensorDesc_Destroy(&nn_input_tensor_descs_[i]);
+    nnrtWrapper.NNTensorDestroy(&nn_input_tensors_[i]);
+    nnrtWrapper.NNTensorDescDestroy(&nn_input_tensor_descs_[i]);
   }
   for (size_t i = 0; i < nn_output_tensors_.size(); i++) {
-    OH_NNTensor_Destroy(&nn_output_tensors_[i]);
-    OH_NNTensorDesc_Destroy(&nn_output_tensor_descs_[i]);
+    nnrtWrapper.NNTensorDestroy(&nn_output_tensors_[i]);
+    nnrtWrapper.NNTensorDescDestroy(&nn_output_tensor_descs_[i]);
   }
+  
 }
 
 }  // namespace mindspore

@@ -468,6 +468,7 @@ ohos_shared_library("mindspore_lib") {
       ]
       print("enabled feature: mindspore_feature_nnrt_metagraph")
     }
+
     sources += [
       "src/litert/delegate/nnrt/checker/primitive_check.cc",
       "src/litert/delegate/nnrt/nnrt_delegate.cc",
@@ -475,16 +476,13 @@ ohos_shared_library("mindspore_lib") {
       "src/litert/delegate/nnrt/nnrt_allocator.cc",
       "src/litert/delegate/nnrt/extension_options_parser.cc",
       "src/litert/delegate/nnrt/nnrt_utils.cc",
+      "src/litert/delegate/nnrt/nnrt_wrapper.cc",
     ]
     include_dirs += [
       "src/delegate/nnrt/include",
       "../mindspore/mindspore/core/ir",
       "mindir/include",
       "mindir/inner_headers",
-    ]
-    external_deps += [
-      "neural_network_runtime:libneural_network_core",
-      "neural_network_runtime:libneural_network_runtime",
     ]
     deps += [ "mindir:mindir_lib" ]
     defines += [ "SUPPORT_NNRT" ]
@@ -523,6 +521,7 @@ ohos_shared_library("mindspore_ndk") {
     "src",
     "src/c_api/",
     "src/litert/kernel/cpu/",
+    "src/litert/delegate/nnrt/",
     "../mindspore/mindspore/core/mindrt/",
     "../mindspore/mindspore/core/mindrt/include/",
     "../../third_party/",
@@ -552,10 +551,6 @@ ohos_shared_library("mindspore_ndk") {
       defines += [ "SUPPORT_NNRT_METAGRAPH" ]
       print("enabled feature: mindspore_feature_nnrt_metagraph")
     }
-    external_deps += [
-      "neural_network_runtime:libneural_network_core",
-      "neural_network_runtime:libneural_network_runtime",
-    ]
   }
 
   configs = [
