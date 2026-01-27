@@ -497,6 +497,8 @@ ohos_shared_library("mindspore_lib") {
     "-Wno-inconsistent-missing-override",
     "-Wno-macro-redefined",
     "-Wno-constant-conversion",
+    "-Os",
+    "-flto=thin"
   ]
   part_name = "mindspore"
   subsystem_name = "thirdparty"
@@ -571,6 +573,8 @@ ohos_shared_library("mindspore_ndk") {
     "-Wno-inconsistent-missing-override",
     "-Wno-macro-redefined",
     "-Wno-constant-conversion",
+    "-Os",
+    "-flto=thin"
   ]
   part_name = "mindspore"
   subsystem_name = "thirdparty"
@@ -752,6 +756,8 @@ ohos_shared_library("mindspore_train_lib") {
     "-Wno-inconsistent-missing-override",
     "-Wno-macro-redefined",
     "-Wno-constant-conversion",
+    "-Os",
+    "-flto=thin"
   ]
   part_name = "mindspore"
   subsystem_name = "thirdparty"
