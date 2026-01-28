@@ -401,9 +401,9 @@ ObfCreateFunc DeObfRegister::NewDeObfProcessor = DeObfRegister::Fail;
 bool (DeObfProcessor::*DeObfRegister::GetModelDeObfReg)(const void *meta_graph, Model *model);
 void (DeObfProcessor::*DeObfRegister::DeObfuscateReg)(Model *model);
 DeObfRet (DeObfProcessor::*DeObfRegister::CreateDeObfNodeReg)(const schema::Primitive *&src_prim, int i, int schema__version);
-void *DeObfRegister::deobf_handle = nullptr;
 
 int LiteModel::GenerateModelByVersion() {
+  void *deobf_handle = nullptr;
   if (this->buf == nullptr) {
     MS_LOG(ERROR) << "Model buffer not inited";
     return RET_ERROR;
@@ -417,13 +417,14 @@ int LiteModel::GenerateModelByVersion() {
     return RET_ERROR;
   }
   int status = RET_ERROR;
-  if(dlopen("libdeobfuscator_lib.z.so", RTLD_NOLOAD) == nullptr) {
-    DeObfRegister::deobf_handle = dlopen("libdeobfuscator_lib.z.so", RTLD_NOW | RTLD_GLOBAL);
+  deobf_handle = dlopen("libdeobfuscator_lib.z.so", RTLD_NOLOAD);
+  if(deobf_handle == nullptr) {
+    deobf_handle = dlopen("libdeobfuscator_lib.z.so", RTLD_NOW | RTLD_LOCAL);
   }
-  if(DeObfRegister::deobf_handle == nullptr) {
+  if(deobf_handle == nullptr) {
     MS_LOG(WARNING) << "Deobfuscate ability is disabled, so obfuscated models can not be executed.";
   } else {
-    auto CreateDeObfFunc = reinterpret_cast<ObfCreateFunc>(dlsym(DeObfRegister::deobf_handle, "CreateDeObfFunc"));
+    auto CreateDeObfFunc = reinterpret_cast<ObfCreateFunc>(dlsym(deobf_handle, "CreateDeObfFunc"));
     if (CreateDeObfFunc == nullptr) {
       MS_LOG(WARNING) << "cannot fetch CreateDeObfFunc";
     } else {
@@ -445,8 +446,12 @@ int LiteModel::GenerateModelByVersion() {
     auto deobf_ptr = reinterpret_cast<DeObfProcessor *>(this->deobf);
     (deobf_ptr->*DeObfRegister::DeObfuscateReg)(this);
   }
-  if(DeObfRegister::deobf_handle != nullptr) {
-    dlclose(DeObfRegister::deobf_handle);
+  if(deobf_handle != nullptr) {
+    dlclose(deobf_handle);
+    deobf_handle = nullptr;
+  }
+  if(deobf_handle != nullptr) {
+    MS_LOG(ERROR) << "dlclose deobf_handle failed.";
   }
   if (IsVersionGreaterThan(GetShortVersionStr(this->graph_.version_), GetShortVersionStr(Version()))) {
     MS_LOG(WARNING) << "The current model version " << this->graph_.version_
