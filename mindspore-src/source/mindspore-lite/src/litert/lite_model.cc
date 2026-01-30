@@ -437,6 +437,10 @@ int LiteModel::GenerateModelByVersion() {
       auto deobf_ptr = reinterpret_cast<DeObfProcessor *>(this->deobf);
       auto ret = (deobf_ptr->*DeObfRegister::GetModelDeObfReg)(meta_graph, this);
       if(!ret){
+        if(deobf_handle != nullptr) {
+          dlclose(deobf_handle);
+          deobf_handle = nullptr;
+        }
         return RET_ERROR;
       }
     }
@@ -449,9 +453,6 @@ int LiteModel::GenerateModelByVersion() {
   if(deobf_handle != nullptr) {
     dlclose(deobf_handle);
     deobf_handle = nullptr;
-  }
-  if(deobf_handle != nullptr) {
-    MS_LOG(ERROR) << "dlclose deobf_handle failed.";
   }
   if (IsVersionGreaterThan(GetShortVersionStr(this->graph_.version_), GetShortVersionStr(Version()))) {
     MS_LOG(WARNING) << "The current model version " << this->graph_.version_
