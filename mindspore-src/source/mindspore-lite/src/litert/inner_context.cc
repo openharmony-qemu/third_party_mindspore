@@ -17,7 +17,9 @@
 #include <algorithm>
 #include <memory>
 #include <unistd.h>
+#ifdef MS_COMPILE_OHOS
 #include "concurrent_task_client.h"
+#endif
 #include "include/errorcode.h"
 #include "src/common/log_adapter.h"
 #include "src/common/log_util.h"
@@ -74,6 +76,7 @@ int InnerContext::CreateThreadPool(bool is_control_flow) {
     if (thread_pool_ == nullptr) {
 #ifdef ENABLE_MINDRT
 #ifndef MS_COMPILE_IOS
+#ifdef MS_COMPILE_OHOS
       std::call_once(ms_qos_authflag, []() {
         pid_t pid = getpid();
         std::unordered_map<std::string, std::string> payload;
@@ -81,6 +84,7 @@ int InnerContext::CreateThreadPool(bool is_control_flow) {
         OHOS::ConcurrentTask::ConcurrentTaskClient::GetInstance().RequestAuth(payload);
         MS_LOG(INFO) << "QoS authentication requeset complete";
       });
+#endif
       if (inter_op_parallel_num_ > 1) {
         thread_pool_ = ParallelThreadPool::CreateThreadPool(this->inter_op_parallel_num_, this->thread_num_,
                                                             this->affinity_core_list_, bind_mode_, runner_id_);
