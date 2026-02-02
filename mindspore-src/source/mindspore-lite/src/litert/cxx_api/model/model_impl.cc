@@ -33,7 +33,6 @@
 #include "src/litert/lite_session.h"
 #include "src/litert/model_manager.h"
 #include "src/common/file_utils.h"
-#include "src/litert/delegate/nnrt/nnrt_wrapper.h"
 #if defined(ENABLE_PRE_INFERENCE) && defined(__linux__) && !defined(Debug)
 #include "src/common/random_data_generator.h"
 #endif
@@ -1032,11 +1031,8 @@ lite::LiteSession *ModelImpl::CreateLiteSession(const std::shared_ptr<lite::Inne
       const auto &extensions = nnrt_device_info.extensions_;
       lite::nnrt::ExtensionOptions extension_options;
       mindspore::lite::nnrt::ExtensionOptionsParser::Parse(extensions, &extension_options);
-
-      auto has_cache = false;
-      auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
-      MS_LOG(INFO) << "loaded nnrt library at OH_NNModel_HasCache";
-      has_cache = nnrtWrapper.HasCache(extension_options.cache_path_.c_str(), extension_options.model_name.c_str(), extension_options.cache_version_);      
+      auto has_cache = OH_NNModel_HasCache(extension_options.cache_path_.c_str(), extension_options.model_name.c_str(),
+                                           extension_options.cache_version_);
       if (has_cache) {
         session = reinterpret_cast<lite::LiteSession *>(new (std::nothrow) lite::CacheSession());
         if (session == nullptr) {

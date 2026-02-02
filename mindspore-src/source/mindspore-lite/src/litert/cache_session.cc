@@ -19,15 +19,13 @@
 #include "src/common/tensor_util.h"
 #include "src/common/mmap_utils.h"
 #include "src/common/file_utils.h"
-#include "src/litert/delegate/nnrt/nnrt_wrapper.h"
 #include "src/litert/delegate/nnrt/nnrt_model_kernel.h"
 
 namespace mindspore {
 namespace lite {
 CacheSession::~CacheSession() {
   if (nn_executor_ != nullptr) {
-    auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
-    nnrtWrapper.NNExecutorDestroy(&nn_executor_);
+    OH_NNExecutor_Destroy(&nn_executor_);
     MS_LOG(DEBUG) << "Destroy NNExecutor Finish.";
   }
 }
@@ -275,8 +273,7 @@ int CacheSession::ScheduleToNNRTKernel() {
 bool CacheSession::IsKirinNPUWithOnlineInference(size_t device_id) {
   const std::string kirin_npu_name_prefix = "NPU_";
   const char *device_name;
-  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
-  auto ret = nnrtWrapper.NNDeviceGetName(device_id, &device_name);
+  auto ret = OH_NNDevice_GetName(device_id, &device_name);
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(WARNING) << "Get name of device: " << device_id << " failed, error: " << ret;
     return false;
@@ -290,8 +287,7 @@ bool CacheSession::IsKirinNPUWithOnlineInference(size_t device_id) {
 }
 
 Status CacheSession::CreateFullModelKernel() {
-  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
-  OH_NNCompilation* nn_compilation = nnrtWrapper.NNCompilationConstructForCache();
+  OH_NNCompilation* nn_compilation = OH_NNCompilation_ConstructForCache();
   if (nn_compilation == nullptr) {
     MS_LOG(ERROR) << "Construct NNCompilation failed";
     return kLiteError;
@@ -301,24 +297,24 @@ Status CacheSession::CreateFullModelKernel() {
   auto ret_code = InitNNCompilation(nn_compilation);
   if (ret_code != kSuccess) {
     MS_LOG(ERROR) << "Init NNCompilation failed";
-    nnrtWrapper.NNCompilationDestroy(&nn_compilation);
+    OH_NNCompilation_Destroy(&nn_compilation);
     return kLiteError;
   }
 
   OH_NNExecutor *nn_executor = nullptr;
-  nn_executor = nnrtWrapper.NNExecutorConstruct(nn_compilation);
+  nn_executor = OH_NNExecutor_Construct(nn_compilation);
   if (nn_executor == nullptr) {
     MS_LOG(ERROR) << "Construct NNExecutor failed, ret: " << ret_code;
-    nnrtWrapper.NNCompilationDestroy(&nn_compilation);
+    OH_NNCompilation_Destroy(&nn_compilation);
     return kLiteError;
   }
-  
-  nnrtWrapper.NNCompilationDestroy(&nn_compilation);
+  OH_NNCompilation_Destroy(&nn_compilation);
+
   ms_inputs_ = LiteTensorsToMSTensors(inputs_);
   ms_outputs_ = LiteTensorsToMSTensors(outputs_);
   auto nnrt_model_kernel = new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, ms_inputs_, ms_outputs_);
   if (nnrt_model_kernel == nullptr) {
-    nnrtWrapper.NNExecutorDestroy(&nn_executor);
+    OH_NNExecutor_Destroy(&nn_executor);
     MS_LOG(ERROR) << "new NNRTModelKernel failed";
     return kLiteError;
   }
@@ -341,38 +337,36 @@ Status CacheSession::CreateFullModelKernel() {
   kernel_exec->set_desc(delegate_desc);
   kernel_exec->set_context(context_.get());
   kernels_.push_back(kernel_exec);
+
   return kSuccess;
 }
 
 Status CacheSession::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
-  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
-  auto ret_code = nnrtWrapper.NNCompilationSetDevice(nn_compilation, nnrt_device_info_.device_id_);
+  auto ret_code = OH_NNCompilation_SetDevice(nn_compilation, nnrt_device_info_.device_id_);
   if (ret_code != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "NNCompilation set device id failed, ret: " << ret_code;
     return kLiteError;
   }
-
-  ret_code = nnrtWrapper.NNCompilationSetPerformanceMode(nn_compilation, (OH_NN_PerformanceMode)(nnrt_device_info_.performance_mode_));
+  ret_code = OH_NNCompilation_SetPerformanceMode(nn_compilation,
+                                                 (OH_NN_PerformanceMode)(nnrt_device_info_.performance_mode_));
   if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
     MS_LOG(ERROR) << "NNCompilation set performance mode failed, ret: " << ret_code;
     return kLiteError;
   }
-
-  ret_code = nnrtWrapper.NNCompilationSetPriority(nn_compilation, (OH_NN_Priority)(nnrt_device_info_.priority_));
+  ret_code = OH_NNCompilation_SetPriority(nn_compilation, (OH_NN_Priority)(nnrt_device_info_.priority_));
   if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
     MS_LOG(ERROR) << "NNCompilation set priority failed, ret: " << ret_code;
     return kLiteError;
   }
-
-  ret_code = nnrtWrapper.NNCompilationEnableFloat16(nn_compilation, nnrt_device_info_.enable_fp16_);
+  ret_code = OH_NNCompilation_EnableFloat16(nn_compilation, nnrt_device_info_.enable_fp16_);
   if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
     MS_LOG(ERROR) << "NNCompilation enable fp16 failed, ret: " << ret_code;
     return kLiteError;
   }
 
   if (!extension_options_.cache_path_.empty()) {
-    ret_code = nnrtWrapper.NNCompilationSetCache(nn_compilation, extension_options_.cache_path_.c_str(),
-                                                  extension_options_.cache_version_);
+    ret_code = OH_NNCompilation_SetCache(nn_compilation, extension_options_.cache_path_.c_str(),
+                                         extension_options_.cache_version_);
     if ((ret_code != OH_NN_SUCCESS) && (ret_code != OH_NN_OPERATION_FORBIDDEN)) {
       MS_LOG(ERROR) << "NNCompilation set cache failed, ret: " << ret_code;
       return kLiteError;
@@ -385,9 +379,9 @@ Status CacheSession::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
   size_t extension_size = nnrt_device_info_.extensions_.size();
   for (size_t i = 0; i < extension_size; i++) {
     auto &src_extensoin = nnrt_device_info_.extensions_[i];
-    ret_code = nnrtWrapper.NNCompilationAddExtensionConfig(nn_compilation, src_extensoin.name.c_str(),
-                                                            (char *)((void *)src_extensoin.value.data()),
-                                                            src_extensoin.value.size());
+    ret_code = OH_NNCompilation_AddExtensionConfig(nn_compilation, src_extensoin.name.c_str(),
+                                                   (char *)((void *)src_extensoin.value.data()),
+                                                   src_extensoin.value.size());
     if (ret_code != OH_NN_SUCCESS) {
       MS_LOG(ERROR) << "OH_NNCompilation_AddExtensionConfig " << i << ": "<< src_extensoin.name << " failed, ret: "
                     << ret_code;
@@ -395,7 +389,7 @@ Status CacheSession::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
     }
   }
 
-  ret_code = nnrtWrapper.NNCompilationBuild(nn_compilation);
+  ret_code = OH_NNCompilation_Build(nn_compilation);
   if (ret_code != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "Build NNCompilation failed, ret: " << ret_code;
     return kLiteError;
