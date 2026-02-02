@@ -21,7 +21,9 @@
 #include "src/litert/inner_context.h"
 #include "src/litert/lite_model.h"
 #include "src/litert/delegate/nnrt/extension_options_parser.h"
-#include "src/litert/delegate/nnrt/nnrt_wrapper.h"
+#include "neural_network_runtime/neural_network_runtime_type.h"
+#include "neural_network_runtime/neural_network_runtime.h"
+#include "neural_network_runtime_inner.h"
 
 namespace mindspore {
 namespace lite {

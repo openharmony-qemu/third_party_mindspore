@@ -18,7 +18,7 @@
 #define LITE_HIAI_FOUNDATION_WRAPPER_H
 
 #include <string>
-#include "src/litert/delegate/nnrt/neural_network_runtime.h"
+#include "neural_network_runtime/neural_network_runtime.h"
 
 namespace mindspore::lite {
 bool LoadHiaiFLibraryFromPath(void **handle_ptr);
