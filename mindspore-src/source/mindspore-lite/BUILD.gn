@@ -570,7 +570,7 @@ ohos_shared_library("mindspore_ndk") {
 
   output_name = "libmindspore_lite_ndk"
   output_extension = "so"
-  innerapi_tags = [ "ndk"]
+  innerapi_tags = [ "ndk", "llndk" ]
   cflags_cc = [
     "-Wno-ignored-qualifiers",
     "-Wunused-private-field",
