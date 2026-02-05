@@ -22,6 +22,7 @@
 #include "src/litert/delegate/nnrt/nnrt_allocator.h"
 #include "src/litert/delegate/nnrt/nnrt_utils.h"
 #include "src/common/log.h"
+#include "src/litert/delegate/nnrt/nnrt_wrapper.h"
 
 namespace mindspore {
 namespace lite {
@@ -38,8 +39,9 @@ void NNRTAllocator::ClearFreeList() {
       MS_LOG(ERROR) << "membuf in free_list_ is nullptr.";
       continue;
     }
-    OH_NNTensor_Destroy(&membuf->tensor_);
-    OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
+    auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+    nnrtWrapper.NNTensorDestroy(&membuf->tensor_);
+    nnrtWrapper.NNTensorDescDestroy(&membuf->tensor_desc_);
     delete membuf;
     membuf = nullptr;
   }
@@ -67,8 +69,9 @@ void NNRTAllocator::FreeAllocatedTensor(void *data, lite::Tensor *tensor) {
   membuf->ref_count_ = 0;
   (void)allocated_list_.erase(iter);
   (void)allocated_lite_tensors_.erase(data);
-  OH_NNTensor_Destroy(&membuf->tensor_);
-  OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+  nnrtWrapper.NNTensorDestroy(&membuf->tensor_);
+  nnrtWrapper.NNTensorDescDestroy(&membuf->tensor_desc_);
   delete membuf;
   membuf = nullptr;
   data = nullptr;
@@ -95,32 +98,41 @@ NNRTAllocator::~NNRTAllocator() {
 
 OH_NN_ReturnCode NNRTAllocator::SetTensorDesc(NN_TensorDesc *tensor_desc, const std::vector<int> &shape,
                                               const TypeId data_type, const Format format, const std::string &name) {
-  OH_NN_ReturnCode ret = OH_NNTensorDesc_SetShape(tensor_desc, shape.data(), shape.size());
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+  OH_NN_ReturnCode ret = nnrtWrapper.NNTensorDescSetShape(tensor_desc, shape.data(), shape.size());
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "OH_NNTensorDesc_SetShape failed, shape: " << shape << ", name: " << name;
     return ret;
   }
-  ret = OH_NNTensorDesc_SetDataType(tensor_desc, CastToNNRtDataType(data_type));
+  
+  ret = nnrtWrapper.NNTensorDescSetDataType(tensor_desc, CastToNNRtDataType(data_type));
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "OH_NNTensorDesc_SetDataType failed, data_type: " << data_type << ", name: " << name;
+    
     return ret;
   }
-  ret = OH_NNTensorDesc_SetFormat(tensor_desc, CastToNNRtFormat(format));
+
+  ret = nnrtWrapper.NNTensorDescSetFormat(tensor_desc, CastToNNRtFormat(format));
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "OH_NNTensorDesc_SetFormat failed, format: " << format << ", name: " << name;
+    
     return ret;
   }
-  ret = OH_NNTensorDesc_SetName(tensor_desc, name.c_str());
+
+  ret = nnrtWrapper.NNTensorDescSetName(tensor_desc, name.c_str());
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "OH_NNTensorDesc_SetName failed, name: " << name;
+    
     return ret;
   }
+  
   return ret;
 }
 
 NN_TensorDesc *NNRTAllocator::CreateNNRtTensorDesc(const std::vector<int> &shape, const TypeId data_type,
                                                    const Format format, const std::string &name) {
-  auto tensor_desc = OH_NNTensorDesc_Create();
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+  auto tensor_desc = nnrtWrapper.NNTensorDescCreate();
   if (tensor_desc == nullptr) {
     MS_LOG(ERROR) << "OH_NNTensorDesc_Create failed, name: " << name;
     return nullptr;
@@ -128,7 +140,7 @@ NN_TensorDesc *NNRTAllocator::CreateNNRtTensorDesc(const std::vector<int> &shape
   OH_NN_ReturnCode ret = SetTensorDesc(tensor_desc, shape, data_type, format, name);
   if (ret != OH_NN_SUCCESS) {
     MS_LOG(ERROR) << "SetTensorDesc failed, name: " << name;
-    OH_NNTensorDesc_Destroy(&tensor_desc);
+    nnrtWrapper.NNTensorDescDestroy(&tensor_desc);
     return nullptr;
   }
   return tensor_desc;
@@ -163,22 +175,24 @@ void *NNRTAllocator::MallocByDesc(size_t size, const std::vector<int> &shape, co
     delete membuf;
     return nullptr;
   }
-  membuf->tensor_ = OH_NNTensor_Create(device_id_, membuf->tensor_desc_);
+  auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
+  membuf->tensor_ = nnrtWrapper.NNTensorCreate(device_id_, membuf->tensor_desc_);
   if (membuf->tensor_ == nullptr) {
     MS_LOG(ERROR) << "OH_NNTensor_CreateWithSize failed, name: " << name;
-    OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
-    delete membuf;
-    return nullptr;
-  }
-  membuf->data = OH_NNTensor_GetDataBuffer(membuf->tensor_);
-  if (membuf->data == nullptr) {
-    MS_LOG(ERROR) << "OH_NNTensor_GetDataBuffer failed, name: " << name;
-    OH_NNTensor_Destroy(&membuf->tensor_);
-    OH_NNTensorDesc_Destroy(&membuf->tensor_desc_);
+    nnrtWrapper.NNTensorDescDestroy(&membuf->tensor_desc_);
     delete membuf;
     return nullptr;
   }
 
+  membuf->data = nnrtWrapper.NNTensorGetDataBuffer(membuf->tensor_);
+  if (membuf->data == nullptr) {
+    MS_LOG(ERROR) << "OH_NNTensor_GetDataBuffer failed, name: " << name;
+    nnrtWrapper.NNTensorDestroy(&membuf->tensor_);
+    nnrtWrapper.NNTensorDescDestroy(&membuf->tensor_desc_);
+    delete membuf;
+    return nullptr;
+  }
+  
   membuf->size = size;
   allocated_list_[membuf->data] = membuf;
   return membuf->data;
