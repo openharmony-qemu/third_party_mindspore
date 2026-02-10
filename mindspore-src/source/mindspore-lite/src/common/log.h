@@ -28,6 +28,17 @@
 #define LITE_LOG_HEAR_FILE_REL_PATH "mindspore-lite/src/common/log.h"
 #endif
 
+static constexpr const char* GetFileNameFromPath(const char* path) noexcept {
+  const char* file = path;
+  while (*path) {
+    if (*path == '/' || *path == '\\') {
+      file = path + 1;
+    }
+    ++path;
+  }
+  return file;
+}
+
 // Get start index of file relative path in __FILE__
 static constexpr size_t GetRealPathPos() noexcept {
   return sizeof(__FILE__) > sizeof(LITE_LOG_HEAR_FILE_REL_PATH) ? sizeof(__FILE__) - sizeof(LITE_LOG_HEAR_FILE_REL_PATH)
@@ -35,9 +46,10 @@ static constexpr size_t GetRealPathPos() noexcept {
 }
 
 namespace mindspore {
-#define LITE_FILE_NAME                                                                          \
-  (sizeof(__FILE__) > GetRealPathPos() ? static_cast<const char *>(__FILE__) + GetRealPathPos() \
-                                       : static_cast<const char *>(__FILE__))
+#define LITE_FILE_NAME                 \
+  GetFileNameFromPath(                                                         \
+    (sizeof(__FILE__) > GetRealPathPos() ? static_cast<const char *>(__FILE__) + GetRealPathPos() \
+                                       : static_cast<const char *>(__FILE__)))
 
 struct LiteLocationInfo {
   LiteLocationInfo(const char *file, int line, const char *func) : file_(file), line_(line), func_(func) {}
