@@ -224,6 +224,35 @@ TEST_F(InferTest, TestAddNode) {
 
 TEST_F(InferTest, TestModel) {
   size_t model_size;
+  char *buff = lite::ReadFile("./models/immersive_v1.ms", &model_size);
+  ASSERT_NE(nullptr, buff);
+  MS_LOG(INFO) << "immersive_v1 size is:" << model_size;
+  auto model = lite::Model::Import(buff, model_size);
+  ASSERT_NE(nullptr, model);
+  delete[] buff;
+  auto context = std::make_shared<lite::InnerContext>();
+  context->device_list_[0].device_info_.cpu_device_info_.cpu_bind_mode_ = lite::NO_BIND;
+  context->thread_num_ = 1;
+  ASSERT_EQ(lite::RET_OK, context->Init());
+  auto session = lite::LiteSession::CreateSession(context);
+  ASSERT_NE(nullptr, session);
+  MS_LOG(INFO) << "CreateSession success" ;
+  auto ret = session->CompileGraph(model);
+  ASSERT_EQ(lite::RET_OK, ret);
+  auto inputs = session->GetInputs();
+  ASSERT_EQ(inputs.size(), 1);
+  MS_LOG(INFO) << "GetInputs success" ;
+  auto inTensor = inputs.front();
+  ASSERT_NE(nullptr, inTensor);
+  (void)inTensor->MutableData();
+  ret = session->RunGraph();
+  ASSERT_EQ(lite::RET_OK, ret);
+  auto outputs = session->GetOutputs();
+  MS_LOG(INFO) << "Passed";
+}
+
+TEST_F(InferTest, TestModel) {
+  size_t model_size;
   char *buff = lite::ReadFile("./models/model_hebing_3branch.ms", &model_size);
   ASSERT_NE(nullptr, buff);
   auto model = lite::Model::Import(buff, model_size);
