@@ -37,8 +37,6 @@ config("mindir_secure_disable_android") {
     "-UANDROID",
     "-U__ANDROID__",
     "-U__ANDROID_API__",
-    "-Os",
-    "-flto=thin"
   ]
   ldflags = [
     "-Wl,--no-as-needed",
