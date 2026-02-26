@@ -13,7 +13,7 @@
 
 import("//build/test.gni")
 
-module_output_path = "mindspore/"
+module_output_path = "mindspore/mindspore_lite/"
 
 config("module_private_config") {
   include_dirs = [
