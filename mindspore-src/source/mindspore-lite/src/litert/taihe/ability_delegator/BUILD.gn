@@ -59,7 +59,9 @@ taihe_shared_library("mindspore_ani_taihe_native") {
   ]
   cflags_cc = [
     "-Os",
-    "-flto=thin"
+    "-flto=thin",
+    "-fstack-protector-all",
+    "-D_FORTIFY_SOURCE=2",
   ]
 }
 
