@@ -88,19 +88,13 @@ class MS_CORE_API ForkUtils {
   template <class T>
   void DeregCallbacks(const T *obj) noexcept {
 #if !defined(_WIN32)
-    // try {
-      FORK_UTILS_LOG("Deregister fork callback info.");
-      for (auto iter = fork_callbacks_.begin(); iter != fork_callbacks_.end(); (void)++iter) {
-        if (iter->class_obj == obj) {
-          (void)fork_callbacks_.erase(iter);
-          break;
-        }
+    FORK_UTILS_LOG("Deregister fork callback info.");
+    for (auto iter = fork_callbacks_.begin(); iter != fork_callbacks_.end(); (void)++iter) {
+      if (iter->class_obj == obj) {
+        (void)fork_callbacks_.erase(iter);
+        break;
       }
-    // } catch (const std::exception &e) {
-    //   FORK_UTILS_LOG("Deregister fork callback info failed: %s", e.what());
-    // } catch (...) {
-    //   FORK_UTILS_LOG("Deregister fork callback info failed: Unknown exception.");
-    // }
+    }
 #endif
   }
 
