@@ -22,6 +22,7 @@
 #include "ohos.ai.mindSporeLite.impl.hpp"
 #include "taihe/runtime.hpp"
 #include "ms_utils_ani.h"
+#include "static_core/plugins/ets/runtime/ani/ani.h"
 
 namespace {
 
@@ -121,8 +122,27 @@ class MSTensorImpl {
 
 class ModelImpl {
  public:
-  ModelImpl(std::shared_ptr<mindspore::Model> native_model) { this->native_model_ = native_model; }
-
+  ModelImpl(std::shared_ptr<mindspore::Model> native_model) { 
+    this->native_model_ = native_model; 
+    taihe::env_guard guard;
+    ani_env *env = guard.get_env();
+    ani_module module;
+    env->FindModule("example", &module);
+    ani_function fn{};
+    env->Module_FindFunction(module, "RegisterNativeAllocation", "l:v", &fn);
+    env->Function_Call_Void(fn, sizeof(*native_model));
+    MS_LOG(ERROR) << "sizeof(*native_model) = " << sizeof(*native_model);
+  }
+  ~ModelImpl() {
+    taihe::env_guard guard;
+    ani_env *env = guard.get_env();
+    ani_module module;
+    env->FindModule("example", &module);
+    ani_function fn{};
+    env->Module_FindFunction(module, "RegisterNativeFree", "l:v", &fn);
+    env->Function_Call_Void(fn, sizeof(*native_model_));
+    MS_LOG(ERROR) << "sizeof(*native_model_) = " << sizeof(*native_model_);
+  }
   ::taihe::optional<double> getLearningRate() {
     auto lr = this->native_model_->GetLearningRate();
     return ::taihe::optional<double>{std::in_place, lr};
