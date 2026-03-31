@@ -22,9 +22,15 @@
 #include "ohos.ai.mindSporeLite.impl.hpp"
 #include "taihe/runtime.hpp"
 #include "ms_utils_ani.h"
+#include "src/litert/context_default_utils.h"
 #include "static_core/plugins/ets/runtime/ani/ani.h"
 
 namespace {
+
+bool HasNoContextConfiguration(const ::ohos::ai::mindSporeLite::Context &context) {
+  return mindspore::lite::ShouldUseDefaultCpuContext(static_cast<bool>(context.target), static_cast<bool>(context.cpu),
+                                                     static_cast<bool>(context.nnrt));
+}
 
 class MSTensorImpl {
  public:
@@ -450,7 +456,7 @@ class NNRTDeviceDescriptionImpl {
   model_info_native->model_path = std::string(model);
   model_info_native->mode = mindspore_ani::kPath;
   // parser context
-  if (bool(context)) {
+  if (bool(context) && !HasNoContextConfiguration(context.value())) {
     int32_t context_status =
       mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context.value());
     if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
@@ -516,11 +522,15 @@ void loadModelFromFileContextCallback(::taihe::string_view model, ::ohos::ai::mi
   model_info_native->model_path = std::string(model);
   model_info_native->mode = mindspore_ani::kPath;
   // parser context
-  int32_t context_status = mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context);
-  if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
-    MS_LOG(ERROR) << "ANI some context parameter set failed, maybe predict fail";
+  if (HasNoContextConfiguration(context)) {
+    ConfigureDefaultCpuContext(context_native);
   } else {
-    MS_LOG(INFO) << "ANI set context parameter success";
+    int32_t context_status = mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context);
+    if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
+      MS_LOG(ERROR) << "ANI some context parameter set failed, maybe predict fail";
+    } else {
+      MS_LOG(INFO) << "ANI set context parameter success";
+    }
   }
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
@@ -552,7 +562,7 @@ void loadModelFromFileContextCallback(::taihe::string_view model, ::ohos::ai::mi
   MS_LOG(DEBUG) << "ANI loadModelFromBufferSync size is: " << model.size();
   model_info_native->mode = mindspore_ani::kBuffer;
   // parser context
-  if (bool(context)) {
+  if (bool(context) && !HasNoContextConfiguration(context.value())) {
     int32_t context_status =
       mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context.value());
     if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
@@ -619,9 +629,13 @@ void loadModelFromBufferContextCallback(::taihe::array_view<uint8_t> model,
   MS_LOG(DEBUG) << "ANI loadModelFromBufferCallback size is: " << model.size();
   model_info_native->mode = mindspore_ani::kBuffer;
   // parser context
-  int32_t context_status = mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context);
-  if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
-    MS_LOG(ERROR) << "ANIsome context parameter set failed, maybe predict fail";
+  if (HasNoContextConfiguration(context)) {
+    ConfigureDefaultCpuContext(context_native);
+  } else {
+    int32_t context_status = mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context);
+    if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
+      MS_LOG(ERROR) << "ANIsome context parameter set failed, maybe predict fail";
+    }
   }
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
@@ -660,7 +674,7 @@ void loadModelFromBufferContextCallback(::taihe::array_view<uint8_t> model,
   model_info_native->mode = mindspore_ani::kFD;
   MS_LOG(DEBUG) << "ANI mmap_buffers fd is:" << fd;
   // parser context
-  if (bool(context)) {
+  if (bool(context) && !HasNoContextConfiguration(context.value())) {
     int32_t context_status =
       mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context.value());
     if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
@@ -747,10 +761,14 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
   model_info_native->model_buffer_total = size;
   model_info_native->mode = mindspore_ani::kFD;
   // parser context
-  int32_t context_status = mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context);
-  if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
-    MS_LOG(ERROR) << "ANI some context parameter set failed, turn for default context predict";
+  if (HasNoContextConfiguration(context)) {
     ConfigureDefaultCpuContext(context_native);
+  } else {
+    int32_t context_status = mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context);
+    if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
+      MS_LOG(ERROR) << "ANI some context parameter set failed, turn for default context predict";
+      ConfigureDefaultCpuContext(context_native);
+    }
   }
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
@@ -799,7 +817,7 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
     context_native->train_cfg.optimization_level = opt_value;
   }
   // parser context
-  if (bool(context)) {
+  if (bool(context) && !HasNoContextConfiguration(context.value())) {
     int32_t context_status =
       mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context.value());
     if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
@@ -856,7 +874,7 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
     context_native->train_cfg.optimization_level = opt_value;
   }
   // parser context
-  if (bool(context)) {
+  if (bool(context) && !HasNoContextConfiguration(context.value())) {
     int32_t context_status =
       mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context.value());
     if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
@@ -918,7 +936,7 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
     context_native->train_cfg.optimization_level = opt_value;
   }
   // parser context
-  if (bool(context)) {
+  if (bool(context) && !HasNoContextConfiguration(context.value())) {
     int32_t context_status =
       mindspore_ani::TransTaiheContext(model_info_native.get(), context_native.get(), context.value());
     if (context_status != mindspore_ani::MS_SUCCESS_ANI) {
