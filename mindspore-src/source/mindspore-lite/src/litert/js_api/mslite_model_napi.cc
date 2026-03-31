@@ -802,11 +802,13 @@ int32_t MSLiteModelNapi::ParseContextInfo(napi_env env, napi_value args, Context
 
   std::vector<std::string> str_values;
   auto ret = CommonNapi::GetPropertyStringArray(env, args, "target", str_values);
-  if (ret != SUCCESS) {
+  if (ret != ERR_NOT_EXISTED_PARAM && ret != SUCCESS) {
     MS_LOG(ERROR) << "Get context target failed.";
     return ret;
   }
-  context.target.assign(str_values.begin(), str_values.end());
+  if (!str_values.empty()) {
+    context.target.assign(str_values.begin(), str_values.end());
+  }
 
   ret = GetCpuDeviceInfo(env, args, context);
   if (ret != ERR_NOT_EXISTED_PARAM && ret != SUCCESS) {
