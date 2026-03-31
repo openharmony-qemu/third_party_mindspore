@@ -104,6 +104,12 @@ enum TypeId : int {
   kObjectTypeSparseTensorType,
   kObjectTypeMapTensorType,
   kSparseTypeEnd,
+  //
+  // OP Heterogeneous Backend Types
+  //
+  kBackendTypeBegin = kSparseTypeEnd,
+  kBackendTypeCPU,
+  kBackendTypeEnd,
   // New types should placed at the end of enum,
   // in order to keep fit with the type of existing model on the lite side.
 };

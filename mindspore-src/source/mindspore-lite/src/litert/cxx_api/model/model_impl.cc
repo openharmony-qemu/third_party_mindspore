@@ -397,7 +397,8 @@ Status ModelImpl::LoadConfig(const std::string &config_path) {
     return kSuccess;
   }
 
-  lite::ParserExecutionPlan(&config_info, &execution_plan_);
+  lite::ParserMultiExecutionPlan(&config_info, &execution_plan_, &hete_execution_plan_);
+  MS_LOG(INFO) << "Execution plan from config file parse success.";
   return kSuccess;
 }
 
@@ -1056,6 +1057,7 @@ lite::LiteSession *ModelImpl::CreateLiteSession(const std::shared_ptr<lite::Inne
     return nullptr;
   }
   session->InitExecutionConfig(&execution_plan_);
+  session->InitHeteExecutionConfig(&hete_execution_plan_);
   session->SetConfigInfo(&config_info_);
 
   auto ret = session->Init(context);

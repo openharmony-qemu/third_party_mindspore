@@ -42,6 +42,13 @@ int GetAllSectionInfoFromConfigFile(const std::string &file, ConfigInfos *config
 void ParserExecutionPlan(const std::map<std::string, std::string> *config_infos,
                          std::map<std::string, TypeId> *data_type_plan);
 
+void ParseTargetTypeID(const std::string &key, const std::string &real_value, bool &has_data_type,
+                       TypeId &type_id, bool &has_backend_type, TypeId &backend_type_id);
+
+void ParserMultiExecutionPlan(const std::map<std::string, std::string> *config_infos,
+                              std::map<std::string, TypeId> *data_type_plan,
+                              std::map<std::string, TypeId> *op_backend_plan);
+
 }  // namespace lite
 }  // namespace mindspore
 

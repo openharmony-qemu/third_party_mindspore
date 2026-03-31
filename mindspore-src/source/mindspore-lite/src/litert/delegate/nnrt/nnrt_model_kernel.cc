@@ -166,6 +166,7 @@ int NNRTModelKernel::SetInputs() {
       }
       nn_input_tensors_.emplace_back(tensor_tmp);
     }
+    MS_LOG(DEBUG) << "Enable NNRTAllocator for input tensor success.";
   }
   return lite::RET_OK;
 }
@@ -220,6 +221,7 @@ int NNRTModelKernel::SetOutputs() {
       }
       nn_output_tensors_.emplace_back(tensor_tmp);
     }
+    MS_LOG(DEBUG) << "Enable NNRTAllocator for output tensor success.";
   }
   return lite::RET_OK;
 }

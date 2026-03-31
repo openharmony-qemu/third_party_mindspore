@@ -35,8 +35,8 @@ int DynamicSession::CompileGraph(Model *model) {
   InitGraphOutputTensors(model);
   // scheduler kernels
   Scheduler scheduler(context_.get(), ms_context_, model, &tensors_, &inputs_, &outputs_, is_train_session_,
-                      &is_infershape_, &is_control_flow_, &infer_along_running_, execution_plan_, delegate_,
-                      delegate_device_type_);
+                      &is_infershape_, &is_control_flow_, &infer_along_running_, execution_plan_, hete_execution_plan_,
+                      delegate_, delegate_device_type_);
   scheduler.SetupSchedulerCb(std::move(sched_cb_));
   scheduler.SetConfig(config_info_);
   ret = scheduler.Schedule(&kernels_);

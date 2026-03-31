@@ -523,6 +523,14 @@ int Scheduler::ReplaceDelegateKernels(std::vector<kernel::KernelExec *> *dst_ker
       const_cast<mindspore::schema::MetaGraph *>(mindspore::schema::GetMetaGraph(this->src_model_->buf)));
     delegate->SetMetaGraph(meta_graph);
     delegate->SetDequantTensors(this->src_tensors_);
+    if (hete_execution_plan_ != nullptr && !hete_execution_plan_->empty()) {
+      delegate->enable_hete_ = true;
+      delegate->hete_execution_plan_ = hete_execution_plan_;
+      MS_LOG(INFO) << "hete_execution_plan_ is valid and enable heterogeneous inference in Delegate. "
+                   << "hete_execution_plan_ size:" << hete_execution_plan_->size();
+    } else {
+      MS_LOG(INFO) << "Disable heterogeneous inference in Delegate.";
+    }
   }
 #endif
 

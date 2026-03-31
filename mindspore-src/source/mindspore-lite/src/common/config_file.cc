@@ -24,6 +24,11 @@ constexpr size_t kLengthOfParentheses = 2;
 constexpr size_t kMinSectionLineLength = 2;
 constexpr size_t kMaxValidLineCount = 100000;
 constexpr size_t kMaxLineCount = 100100;
+const std::string kDataType = "data_type";
+const std::string kDataTypeFloat16 = "float16";
+const std::string kDataTypeFloat32 = "float32";
+const std::string kBackend = "backend";
+const std::string kBackendCPU = "CPU";
 }  // namespace
 
 namespace mindspore {
@@ -150,6 +155,77 @@ void ParserExecutionPlan(const std::map<std::string, std::string> *config_infos,
       continue;
     }
     (void)data_type_plan->insert(std::make_pair(op_name, type_id));
+  }
+}
+
+void ParseTargetTypeID(const std::string &key, const std::string &real_value,
+                       bool &has_data_type, TypeId &type_id,
+                       bool &has_op_backend, TypeId &backend_type_id) {
+  if (key == kDataType) {
+    has_data_type = true;
+    if (real_value == kDataTypeFloat32) {
+      type_id = kNumberTypeFloat32;
+    } else if (real_value == kDataTypeFloat16) {
+      type_id = kNumberTypeFloat16;
+    } else {
+      MS_LOG(WARNING) << "Invalid value in execution_plan: " << real_value;
+      type_id = kTypeUnknown;
+    }
+  } else if (key == kBackend) {
+    has_op_backend = true;
+    if (real_value == kBackendCPU) {
+      backend_type_id = kBackendTypeCPU;
+    } else {
+      MS_LOG(WARNING) << "Invalid value in hete_execution_plan: " << real_value;
+      backend_type_id = kTypeUnknown;
+    }
+  }
+  MS_LOG(INFO) << "Success to parse curent info in execution_plan: " << real_value 
+               << ", type_id:" << type_id << ", backend_type_id:" << backend_type_id;
+}
+
+void ParserMultiExecutionPlan(
+    const std::map<std::string, std::string> *config_infos,
+    std::map<std::string, TypeId> *data_type_plan,
+    std::map<std::string, TypeId> *op_backend_plan) {
+  for (auto info : *config_infos) {
+    std::string op_name = info.first;
+    std::string value = info.second;
+    if (value.empty()) {
+      MS_LOG(WARNING) << "Empty info in hete_execution_plan";
+      continue;
+    }
+    if (value[0] == '"' && value[value.length() - 1] == '"') {
+      value = value.substr(1, value.length() - kLengthOfParentheses);
+    }
+    std::istringstream iss(value);
+    std::string attr;
+    bool has_data_type = false;
+    bool has_op_backend = false;
+    TypeId type_id = kTypeUnknown;
+    TypeId backend_type_id = kTypeUnknown;
+    while (std::getline(iss, attr, ';')) {
+      size_t valid_index = attr.find(':');
+      if (valid_index == std::string::npos) {
+        MS_LOG(WARNING) << "Invalid info in execution_plan: " << value;
+        continue;
+      }
+      std::string key = attr.substr(0, valid_index);
+      std::string real_value = attr.substr(valid_index + 1);
+      ParseTargetTypeID(key, real_value, has_data_type, type_id, has_op_backend,
+                        backend_type_id);
+    }
+    if (has_data_type && type_id != kTypeUnknown) {
+      MS_LOG(DEBUG) << "Current op: " << op_name
+                    << "set data_type to: " << type_id;
+      (void)data_type_plan->insert(std::make_pair(op_name, type_id));
+    }
+    if (has_op_backend && backend_type_id != kTypeUnknown) {
+      MS_LOG(DEBUG) << "Current op: " << op_name
+                    << "set backend_type to: " << backend_type_id;
+      (void)op_backend_plan->insert(std::make_pair(op_name, backend_type_id));
+    }
+    MS_LOG(INFO) << "Success to parse current config.";
   }
 }
 }  // namespace lite
