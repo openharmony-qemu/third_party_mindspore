@@ -29,6 +29,7 @@ class LitePassManager : public PassManager {
       : PassManager(name, run_only_once) {}
   virtual ~LitePassManager() = default;
   void AddPass(const PassPtr &pass) override;
+  void AddPass(const PassPtr &pass, const std::set<std::string> &pass_blacklists);
   bool Run(const FuncGraphPtr &func_graph) const override;
   bool Run(const FuncGraphPtr &func_graph, const std::vector<PassPtr> &passes) const override;
 

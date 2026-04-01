@@ -532,7 +532,7 @@ int AnfTransform::RunConstFoldPass(const FuncGraphPtr &old_graph, const std::sha
     const_fold_pm->AddPass(std::make_shared<opt::ConstFoldPass>(param->fmk_type, param->train_model));
   }
   const_fold_pm->AddPass(std::make_shared<opt::UpdateConv2DParamPass>());
-  const_fold_pm->AddPass(std::make_shared<opt::ClipConvertActivationPass>());
+  const_fold_pm->AddPass(std::make_shared<opt::ClipConvertActivationPass>(), param->fusion_blacklists);
   optimizer->AddPassManager(const_fold_pm);
   if (optimizer->Optimize(old_graph) == nullptr) {
     MS_LOG(ERROR) << "run const fold failed.";
