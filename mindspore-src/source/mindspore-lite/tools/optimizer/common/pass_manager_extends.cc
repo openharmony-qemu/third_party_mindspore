@@ -63,9 +63,19 @@ bool PassManager::Run(const FuncGraphPtr &func_graph) const {
 void PassManager::AddFusionPass(const PassPtr &pass, bool condition) { MS_LOG(ERROR) << "stub func"; }
 
 void LitePassManager::AddPass(const PassPtr &pass) {
-  if (pass != nullptr) {
-    passes_.push_back(pass);
+  AddPass(pass, {});
+}
+
+void LitePassManager::AddPass(const PassPtr &pass, const std::set<std::string> &pass_blacklists) {
+  if (pass == nullptr) {
+    MS_LOG(ERROR) << "pass is nullptr";
+    return;
   }
+  if (pass_blacklists.find(pass->name()) != pass_blacklists.end()) {
+    MS_LOG(INFO) << "disable pass: " << pass->name();
+    return;
+  }
+  passes_.push_back(pass);
 }
 
 bool LitePassManager::RunPass(const FuncGraphPtr &func_graph, size_t pass_id, const PassPtr &pass) const {
