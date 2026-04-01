@@ -32,6 +32,7 @@
 #include "include/js_api/mslite_model_callback_napi.h"
 #include "src/common/log.h"
 #include "mindspore-lite/src/common/log.h"
+#include "src/litert/context_default_utils.h"
 #include "include/c_api/model_c.h"
 #include "include/c_api/context_c.h"
 #include "include/c_api/types_c.h"
@@ -798,6 +799,28 @@ int32_t MSLiteModelNapi::ParseContextInfo(napi_env env, napi_value args, Context
   if ((status != napi_ok) || (valueType != napi_object)) {
     MS_LOG(ERROR) << "context is invaild.";
     return ERR_NOT_EXISTED_PARAM;
+  }
+
+  bool has_target = false;
+  bool has_cpu = false;
+  bool has_nnrt = false;
+  status = napi_has_named_property(env, args, "target", &has_target);
+  if (status != napi_ok) {
+    MS_LOG(ERROR) << "Get context target property state failed.";
+    return ERR_INVALID_OPERATION;
+  }
+  status = napi_has_named_property(env, args, "cpu", &has_cpu);
+  if (status != napi_ok) {
+    MS_LOG(ERROR) << "Get context cpu property state failed.";
+    return ERR_INVALID_OPERATION;
+  }
+  status = napi_has_named_property(env, args, "nnrt", &has_nnrt);
+  if (status != napi_ok) {
+    MS_LOG(ERROR) << "Get context nnrt property state failed.";
+    return ERR_INVALID_OPERATION;
+  }
+  if (lite::ShouldUseDefaultCpuContext(has_target, has_cpu, has_nnrt)) {
+    return SUCCESS;
   }
 
   std::vector<std::string> str_values;
