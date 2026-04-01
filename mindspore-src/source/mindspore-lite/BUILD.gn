@@ -452,9 +452,7 @@ ohos_shared_library("mindspore_lib") {
     "flatbuffers:libflatbuffers_static",
     "qos_manager:qos",
     "ipc:ipc_single",
-    "qos_manager:concurrent_task_client",
-    "runtime_core:ani",
-    "runtime_core:libarkruntime"
+    "qos_manager:concurrent_task_client"
   ]
 
   output_name = "libmindspore-lite"
