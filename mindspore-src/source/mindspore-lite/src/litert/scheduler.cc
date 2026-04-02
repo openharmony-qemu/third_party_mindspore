@@ -892,7 +892,7 @@ int Scheduler::InferSubGraphShape(size_t subgraph_index) {
     }
     auto ret = InferNodeShape(node);
     if (ret == RET_INFER_INVALID) {
-      MS_LOG(INFO) << "InferShape interrupted, name: " << node->name_
+      MS_LOG(DEBUG) << "InferShape interrupted, name: " << node->name_
                    << ", type: " << GetPrimitiveTypeName(primitive, context_->get_schema_version())
                    << ", set infer flag to false.";
       subgraph_infershape_ret = RET_INFER_INVALID;
