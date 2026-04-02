@@ -957,12 +957,13 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromFile(napi_env env, napi_callback_
   std::unique_ptr<MSLiteModelAsyncContext> asyncContext = std::make_unique<MSLiteModelAsyncContext>();
 
   int32_t ret;
+  asyncContext->status = SUCCESS;
   for (size_t i = PARAM0; i < argc; i++) {
     if (i == PARAM0) {
       ret = ParseModelInfo(env, argv[i], asyncContext->model_info);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing model failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else if (i == PARAM1) {
       napi_typeof(env, argv[i], &valueType);
@@ -972,7 +973,7 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromFile(napi_env env, napi_callback_
         ret = ParseContextInfo(env, argv[i], asyncContext->context);
         if (ret != SUCCESS) {
           MS_LOG(ERROR) << "Parsing context failed.";
-          return result;
+          asyncContext->status = ret;
         }
       }
     } else if (i == PARAM2) {
@@ -988,6 +989,10 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromFile(napi_env env, napi_callback_
   }
 
   if (asyncContext->callbackRef == nullptr) {
+    if (asyncContext->status != SUCCESS) {
+        MS_LOG(ERROR) << "Parsing args failed.";
+        return result;
+    }
     status = napi_create_promise(env, &asyncContext->deferred, &result);
     if (status != napi_ok) {
       MS_LOG(ERROR) << "create promise failed.";
@@ -1005,10 +1010,7 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromFile(napi_env env, napi_callback_
   napi_create_string_utf8(env, "LoadMSLiteModelFromFile", NAPI_AUTO_LENGTH, &resource);
   status = napi_create_async_work(
     env, nullptr, resource,
-    [](napi_env env, void *data) {
-      auto context = static_cast<MSLiteModelAsyncContext *>(data);
-      context->status = SUCCESS;
-    },
+    [](napi_env env, void *data) {},
     GetMSLiteModelAsyncCallbackComplete, static_cast<void *>(asyncContext.get()), &asyncContext->work);
   if (status != napi_ok) {
     result = nullptr;
@@ -1032,24 +1034,25 @@ napi_value MSLiteModelNapi::LoadMSLiteTrainModelFromFile(napi_env env, napi_call
 
   asyncContext->model_info.train_model = true;
   int32_t ret;
+  asyncContext->status = SUCCESS;
   for (size_t i = PARAM0; i < argc; i++) {
     if (i == PARAM0) {
       ret = ParseModelInfo(env, argv[i], asyncContext->model_info);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing model failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else if (i == PARAM1) {
       ret = ParseTrainCfgInfo(env, argv[i], asyncContext->context.train_cfg);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing TrainCfg failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else if (i == PARAM2) {
       ret = ParseContextInfo(env, argv[i], asyncContext->context);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing context failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else {
       MS_LOG(ERROR) << "Invalid input params.";
@@ -1058,6 +1061,10 @@ napi_value MSLiteModelNapi::LoadMSLiteTrainModelFromFile(napi_env env, napi_call
   }
 
   if (asyncContext->callbackRef == nullptr) {
+    if (asyncContext->status != SUCCESS) {
+        MS_LOG(ERROR) << "Parsing args failed.";
+        return result;
+    }
     status = napi_create_promise(env, &asyncContext->deferred, &result);
     if (status != napi_ok) {
       MS_LOG(ERROR) << "create promise failed.";
@@ -1075,10 +1082,7 @@ napi_value MSLiteModelNapi::LoadMSLiteTrainModelFromFile(napi_env env, napi_call
   napi_create_string_utf8(env, "LoadMSLiteTrainModelFromFile", NAPI_AUTO_LENGTH, &resource);
   status = napi_create_async_work(
     env, nullptr, resource,
-    [](napi_env env, void *data) {
-      auto context = static_cast<MSLiteModelAsyncContext *>(data);
-      context->status = SUCCESS;
-    },
+    [](napi_env env, void *data) {},
     GetMSLiteModelAsyncCallbackComplete, static_cast<void *>(asyncContext.get()), &asyncContext->work);
   if (status != napi_ok) {
     result = nullptr;
@@ -1102,24 +1106,25 @@ napi_value MSLiteModelNapi::LoadMSLiteTrainModelFromBuffer(napi_env env, napi_ca
 
   asyncContext->model_info.train_model = true;
   int32_t ret;
+  asyncContext->status = SUCCESS;
   for (size_t i = PARAM0; i < argc; i++) {
     if (i == PARAM0) {
       ret = ParseModelInfo(env, argv[i], asyncContext->model_info);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing model failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else if (i == PARAM1) {
       ret = ParseTrainCfgInfo(env, argv[i], asyncContext->context.train_cfg);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing TrainCfg failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else if (i == PARAM2) {
       ret = ParseContextInfo(env, argv[i], asyncContext->context);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing context failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else {
       MS_LOG(ERROR) << "Invalid input params.";
@@ -1128,6 +1133,10 @@ napi_value MSLiteModelNapi::LoadMSLiteTrainModelFromBuffer(napi_env env, napi_ca
   }
 
   if (asyncContext->callbackRef == nullptr) {
+    if (asyncContext->status != SUCCESS) {
+        MS_LOG(ERROR) << "Parsing args failed.";
+        return result;
+    }
     status = napi_create_promise(env, &asyncContext->deferred, &result);
     if (status != napi_ok) {
       MS_LOG(ERROR) << "create promise failed.";
@@ -1145,10 +1154,7 @@ napi_value MSLiteModelNapi::LoadMSLiteTrainModelFromBuffer(napi_env env, napi_ca
   napi_create_string_utf8(env, "LoadMSLiteTrainModelFromBuffer", NAPI_AUTO_LENGTH, &resource);
   status = napi_create_async_work(
     env, nullptr, resource,
-    [](napi_env env, void *data) {
-      auto context = static_cast<MSLiteModelAsyncContext *>(data);
-      context->status = SUCCESS;
-    },
+    [](napi_env env, void *data) {},
     GetMSLiteModelAsyncCallbackComplete, static_cast<void *>(asyncContext.get()), &asyncContext->work);
   if (status != napi_ok) {
     result = nullptr;
@@ -1172,24 +1178,25 @@ napi_value MSLiteModelNapi::LoadMSLiteTrainModelFromFd(napi_env env, napi_callba
 
   asyncContext->model_info.train_model = true;
   int32_t ret;
+  asyncContext->status = SUCCESS;
   for (size_t i = PARAM0; i < argc; i++) {
     if (i == PARAM0) {
       ret = ParseModelInfo(env, argv[i], asyncContext->model_info);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing model failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else if (i == PARAM1) {
       ret = ParseTrainCfgInfo(env, argv[i], asyncContext->context.train_cfg);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing TrainCfg failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else if (i == PARAM2) {
       ret = ParseContextInfo(env, argv[i], asyncContext->context);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing context failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else {
       MS_LOG(ERROR) << "Invalid input params.";
@@ -1198,6 +1205,10 @@ napi_value MSLiteModelNapi::LoadMSLiteTrainModelFromFd(napi_env env, napi_callba
   }
 
   if (asyncContext->callbackRef == nullptr) {
+    if (asyncContext->status != SUCCESS) {
+        MS_LOG(ERROR) << "Parsing args failed.";
+        return result;
+    }
     status = napi_create_promise(env, &asyncContext->deferred, &result);
     if (status != napi_ok) {
       MS_LOG(ERROR) << "create promise failed.";
@@ -1215,10 +1226,7 @@ napi_value MSLiteModelNapi::LoadMSLiteTrainModelFromFd(napi_env env, napi_callba
   napi_create_string_utf8(env, "LoadMSLiteTrainModelFromFd", NAPI_AUTO_LENGTH, &resource);
   status = napi_create_async_work(
     env, nullptr, resource,
-    [](napi_env env, void *data) {
-      auto context = static_cast<MSLiteModelAsyncContext *>(data);
-      context->status = SUCCESS;
-    },
+    [](napi_env env, void *data) {},
     GetMSLiteModelAsyncCallbackComplete, static_cast<void *>(asyncContext.get()), &asyncContext->work);
   if (status != napi_ok) {
     result = nullptr;
@@ -1243,12 +1251,13 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromBuffer(napi_env env, napi_callbac
   std::unique_ptr<MSLiteModelAsyncContext> asyncContext = std::make_unique<MSLiteModelAsyncContext>();
 
   int32_t ret;
+  asyncContext->status = SUCCESS;
   for (size_t i = PARAM0; i < argc; i++) {
     if (i == PARAM0) {
       ret = ParseModelInfo(env, argv[i], asyncContext->model_info);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing model failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else if (i == PARAM1) {
       napi_typeof(env, argv[i], &valueType);
@@ -1258,7 +1267,7 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromBuffer(napi_env env, napi_callbac
         ret = ParseContextInfo(env, argv[i], asyncContext->context);
         if (ret != SUCCESS) {
           MS_LOG(ERROR) << "Parsing context failed.";
-          return result;
+          asyncContext->status = ret;
         }
       }
     } else if (i == PARAM2) {
@@ -1272,8 +1281,11 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromBuffer(napi_env env, napi_callbac
       return result;
     }
   }
-
   if (asyncContext->callbackRef == nullptr) {
+    if (asyncContext->status != SUCCESS) {
+        MS_LOG(ERROR) << "Parsing args failed.";
+        return result;
+    }
     status = napi_create_promise(env, &asyncContext->deferred, &result);
     if (status != napi_ok) {
       MS_LOG(ERROR) << "create promise failed.";
@@ -1291,10 +1303,7 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromBuffer(napi_env env, napi_callbac
   napi_create_string_utf8(env, "LoadMSLiteModelFromBuffer", NAPI_AUTO_LENGTH, &resource);
   status = napi_create_async_work(
     env, nullptr, resource,
-    [](napi_env env, void *data) {
-      auto context = static_cast<MSLiteModelAsyncContext *>(data);
-      context->status = SUCCESS;
-    },
+    [](napi_env env, void *data) {},
     GetMSLiteModelAsyncCallbackComplete, static_cast<void *>(asyncContext.get()), &asyncContext->work);
   if (status != napi_ok) {
     result = nullptr;
@@ -1319,12 +1328,13 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromFd(napi_env env, napi_callback_in
   std::unique_ptr<MSLiteModelAsyncContext> asyncContext = std::make_unique<MSLiteModelAsyncContext>();
 
   int32_t ret;
+  asyncContext->status = SUCCESS;
   for (size_t i = PARAM0; i < argc; i++) {
     if (i == PARAM0) {
       ret = ParseModelInfo(env, argv[i], asyncContext->model_info);
       if (ret != SUCCESS) {
         MS_LOG(ERROR) << "Parsing model failed.";
-        return result;
+        asyncContext->status = ret;
       }
     } else if (i == PARAM1) {
       napi_typeof(env, argv[i], &valueType);
@@ -1334,7 +1344,7 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromFd(napi_env env, napi_callback_in
         ret = ParseContextInfo(env, argv[i], asyncContext->context);
         if (ret != SUCCESS) {
           MS_LOG(ERROR) << "Parsing context failed.";
-          return result;
+          asyncContext->status = ret;
         }
       }
     } else if (i == PARAM2) {
@@ -1350,6 +1360,10 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromFd(napi_env env, napi_callback_in
   }
 
   if (asyncContext->callbackRef == nullptr) {
+    if (asyncContext->status != SUCCESS) {
+        MS_LOG(ERROR) << "Parsing args failed.";
+        return result;
+    }
     status = napi_create_promise(env, &asyncContext->deferred, &result);
     if (status != napi_ok) {
       MS_LOG(ERROR) << "create promise failed.";
@@ -1367,10 +1381,7 @@ napi_value MSLiteModelNapi::LoadMSLiteModelFromFd(napi_env env, napi_callback_in
   napi_create_string_utf8(env, "LoadMSLiteModelFromFd", NAPI_AUTO_LENGTH, &resource);
   status = napi_create_async_work(
     env, nullptr, resource,
-    [](napi_env env, void *data) {
-      auto context = static_cast<MSLiteModelAsyncContext *>(data);
-      context->status = SUCCESS;
-    },
+    [](napi_env env, void *data) {},
     GetMSLiteModelAsyncCallbackComplete, static_cast<void *>(asyncContext.get()), &asyncContext->work);
   if (status != napi_ok) {
     result = nullptr;
