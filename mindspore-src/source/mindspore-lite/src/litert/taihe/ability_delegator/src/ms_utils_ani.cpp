@@ -110,12 +110,12 @@ int32_t GetDeviceInfoContextANI(MSLiteContextInfoANI *context_ptr,
 }
 
 std::shared_ptr<mindspore::Model> BuildModelFromBufferANI(void *buffer, size_t size,
-                                                          const std::shared_ptr<mindspore::Context> &context, bool is_fd) {
+                                                          const std::shared_ptr<mindspore::Context> &context,
+                                                          bool is_fd) {
   if (buffer == nullptr || size <= 0) {
-    if(is_fd){
+    if (is_fd) {
       ThrowBusinessError(MS_LOAD_FD_NATIVE_ERROR_PREDICT);
-    }
-    else{
+    } else {
       ThrowBusinessError(MS_LOAD_BUFFER_ERROR_PREDICT);
     }
     return nullptr;
@@ -123,10 +123,9 @@ std::shared_ptr<mindspore::Model> BuildModelFromBufferANI(void *buffer, size_t s
   auto model_ptr = std::make_shared<mindspore::Model>();
   auto ret = model_ptr->Build(buffer, size, mindspore::kMindIR, context);
   if (ret != mindspore::kSuccess) {
-    if(is_fd){
+    if (is_fd) {
       ThrowBusinessError(MS_LOAD_FD_NATIVE_ERROR_PREDICT);
-    }
-    else{
+    } else {
       ThrowBusinessError(MS_LOAD_BUFFER_NATIVE_ERROR_PREDICT);
     }
     return nullptr;
@@ -185,7 +184,8 @@ std::shared_ptr<mindspore::Model> CreateModelANI(MSLiteModelInfoANI *model_info_
   // load model
   switch (model_info_ptr->mode) {
     case MSLiteLoadModelMode::kBuffer:
-      return BuildModelFromBufferANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total, context, false);
+      return BuildModelFromBufferANI(model_info_ptr->model_buffer_data, model_info_ptr->model_buffer_total, context,
+                                     false);
 
     case MSLiteLoadModelMode::kPath:
       return BuildModelFromPathANI(model_info_ptr->model_path, context);
@@ -296,6 +296,8 @@ std::shared_ptr<mindspore::Model> CreateTrainModelANI(MSLiteModelInfoANI *model_
 void ParseTargetTaihe(const ::ohos::ai::mindSporeLite::Context &context, MSLiteContextInfoANI *context_info_ptr) {
   auto taihe_target = context.target;
   if (!bool(taihe_target)) {
+    context_info_ptr->target.push_back("cpu");
+    MS_LOG(WARNING) << "ANI target is {}, set default target to cpu.";
     return;
   }
   for (const auto &t : taihe_target.value()) {
