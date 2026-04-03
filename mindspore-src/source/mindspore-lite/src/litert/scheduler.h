@@ -40,8 +40,9 @@ class Scheduler {
   Scheduler(InnerContext *ctx, const mindspore::Context *ms_ctx, Model *src_model, std::vector<Tensor *> *src_tensors,
             std::vector<Tensor *> *input_tensors, std::vector<Tensor *> *output_tensors, bool is_train_session,
             int *is_infershape, bool *is_control_flow, bool *infer_along_running,
-            std::map<std::string, TypeId> *executions, std::shared_ptr<Delegate> delegate = nullptr,
-            int delegate_device_type = -1)
+            std::map<std::string, TypeId> *executions,
+            std::map<std::string, TypeId> *hete_executions,
+            std::shared_ptr<Delegate> delegate = nullptr, int delegate_device_type = -1)
       : context_(ctx),
         ms_context_(ms_ctx),
         src_model_(src_model),
@@ -54,7 +55,8 @@ class Scheduler {
         is_infershape_(is_infershape),
         delegate_(delegate),
         delegate_device_type_(delegate_device_type),
-        execution_plan_(executions) {}
+        execution_plan_(executions),
+        hete_execution_plan_(hete_executions) {}
   ~Scheduler() = default;
   int Schedule(std::vector<kernel::KernelExec *> *dst_kernels);
   void SetupSchedulerCb(std::unique_ptr<SchedulerCb> cb) { sched_cb_ = std::move(cb); }
@@ -172,6 +174,7 @@ class Scheduler {
   std::set<lite::LiteGraph::Node *> partial_cnode_inferred_{};
   ControlFlowSchedulerPtr control_flow_scheduler_ = nullptr;
   std::map<std::string, TypeId> *execution_plan_ = nullptr;
+  std::map<std::string, TypeId> *hete_execution_plan_ = nullptr;
   const std::map<std::string, std::map<std::string, std::string>> *config_info_ = nullptr;
   std::shared_ptr<ShapeFusionPass> shape_fusion_pass_ = nullptr;
   std::vector<int> infer_subgraph_index_;

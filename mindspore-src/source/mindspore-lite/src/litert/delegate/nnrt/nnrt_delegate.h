@@ -56,6 +56,9 @@ class NNRTDelegate : public Delegate {
   static std::vector<NNRTOpRange> GetNNRTSubgraphRanges(DelegateModel<schema::Primitive> *model,
                                                         const std::vector<bool> &op_supports);
   bool IsBuildOffline() const { return build_offline_; }
+  bool enable_hete_ = false;
+  std::map<std::string, TypeId> *hete_execution_plan_ = nullptr;
+
  private:
   void InitExtensionOptions();
   Status BuildNormalModel(DelegateModel<schema::Primitive> *model);
@@ -80,6 +83,8 @@ class NNRTDelegate : public Delegate {
   Status DequantLiteGraph(LiteGraph *lite_graph);
   int DequantNodeInputs(LiteGraph::Node *node);
   schema::Tensor *TensorToSchemaTensor(Tensor *lite_tensor, schema::Tensor *schema_tensor);
+  void ApplyCPUOp(std::vector<bool> &op_supports);
+  void PrintNodeNameFormat();
 
 #ifdef SUPPORT_NNRT_METAGRAPH
   bool CheckNPUPrefix(const std::string prefix_name) const;
@@ -101,6 +106,7 @@ class NNRTDelegate : public Delegate {
   std::vector<schema::Tensor *> replaced_schema_tensors_;
   void *hiai_handle_{nullptr};
   bool build_offline_ = false;
+  int schema_version_ = SCHEMA_VERSION::SCHEMA_CUR;
 };
 }  // namespace lite
 }  // namespace mindspore

@@ -143,6 +143,7 @@ class ModelImpl {
   bool IsValidDoubleNum(const std::string &num_str);
   int ModelDeObfuscate();
   std::map<std::string, TypeId> execution_plan_;
+  std::map<std::string, TypeId> hete_execution_plan_;
   std::map<std::string, std::map<std::string, std::string>> config_info_;
   const char *predict_config_ = nullptr;
 };
