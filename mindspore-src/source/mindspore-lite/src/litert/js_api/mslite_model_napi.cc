@@ -32,7 +32,6 @@
 #include "include/js_api/mslite_model_callback_napi.h"
 #include "src/common/log.h"
 #include "mindspore-lite/src/common/log.h"
-#include "src/litert/context_default_utils.h"
 #include "include/c_api/model_c.h"
 #include "include/c_api/context_c.h"
 #include "include/c_api/types_c.h"
@@ -793,6 +792,10 @@ int32_t MSLiteModelNapi::ParseModelInfo(napi_env env, napi_value root, ModelInfo
   return SUCCESS;
 }
 
+constexpr bool ShouldUseDefaultCpuContext(bool has_target, bool has_cpu, bool has_nnrt) {
+  return !has_target && !has_cpu && !has_nnrt;
+}
+
 int32_t MSLiteModelNapi::ParseContextInfo(napi_env env, napi_value args, ContextInfo &context) {
   napi_valuetype valueType;
   napi_status status = napi_typeof(env, args, &valueType);
@@ -819,7 +822,7 @@ int32_t MSLiteModelNapi::ParseContextInfo(napi_env env, napi_value args, Context
     MS_LOG(ERROR) << "Get context nnrt property state failed.";
     return ERR_INVALID_OPERATION;
   }
-  if (lite::ShouldUseDefaultCpuContext(has_target, has_cpu, has_nnrt)) {
+  if (ShouldUseDefaultCpuContext(has_target, has_cpu, has_nnrt)) {
     return SUCCESS;
   }
 
