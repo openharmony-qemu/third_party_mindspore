@@ -107,7 +107,8 @@ void NNRTWrapper::LoadLibrary() {
                    LoadFunctionHelper(nncore_library_handle_, "OH_NNTensorDesc_SetName", &nncore_tensordescsetname_func_) &&
                    LoadFunctionHelper(nncore_library_handle_, "OH_NNTensorDesc_Create", &nncore_tensordesccreate_func_) &&
                    LoadFunctionHelper(nncore_library_handle_, "OH_NNDevice_GetAllDevicesID", &nncore_devicegetalldevicesid_func_) &&
-                   LoadFunctionHelper(nncore_library_handle_, "OH_NNDevice_GetType", &nncore_devicegettype_func_);
+                   LoadFunctionHelper(nncore_library_handle_, "OH_NNDevice_GetType", &nncore_devicegettype_func_) &&
+                   LoadFunctionHelper(nncore_library_handle_, "OH_NNTensorDesc_GetDataType", &nncore_tensordescgetdatatype_func_);
   
   if (!nncore_ok) {
     MS_LOG(ERROR) << "failed to load necessary nncore functions for mslite";
@@ -451,5 +452,13 @@ OH_NN_ReturnCode NNRTWrapper::NNDeviceGetType(size_t deviceID, OH_NN_DeviceType 
     return OH_NN_FAILED;
   }
   return nncore_devicegettype_func_(deviceID, deviceType);
+}
+
+OH_NN_ReturnCode NNRTWrapper::OH_NNTensorDesc_GetDataType(const NN_TensorDesc *tensorDesc, OH_NN_DataType *dataType) {
+   if (!IsLoaded()) {
+      MS_LOG(ERROR) << "nnrt wrapper is not created";
+      return OH_NN_FAILED;
+   }
+   return nncore_tensordescgetdatatype_func_(tensorDesc, dataType);
 }
 }  // namespace mindspore

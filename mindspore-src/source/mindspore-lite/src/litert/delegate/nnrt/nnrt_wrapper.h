@@ -119,6 +119,8 @@ typedef OH_NN_ReturnCode (*NNDeviceGetAllDevicesIDFunc)(const size_t **allDevice
 
 typedef OH_NN_ReturnCode (*NNDeviceGetTypeFunc)(size_t deviceID, OH_NN_DeviceType *deviceType);
 
+typedef OH_NN_ReturnCode (*NNTensorDescGetDataTypeFunc)(const NN_TensorDesc *tensorDesc, OH_NN_DataType *dataType);
+
 namespace mindspore {
   class NNRTWrapper {
     public:
@@ -186,6 +188,7 @@ namespace mindspore {
 
       OH_NN_ReturnCode NNDeviceGetAllDevicesID(const size_t **allDevicesID, uint32_t *deviceCount);
       OH_NN_ReturnCode NNDeviceGetType(size_t deviceID, OH_NN_DeviceType *deviceType);
+      OH_NN_ReturnCode OH_NNTensorDesc_GetDataType(const NN_TensorDesc *tensorDesc, OH_NN_DataType *dataType);
 
     private:
       NNRTWrapper() = default;
@@ -235,6 +238,8 @@ namespace mindspore {
       NNTensorDescCreateFunc nncore_tensordesccreate_func_ = nullptr;
       NNDeviceGetAllDevicesIDFunc nncore_devicegetalldevicesid_func_ = nullptr;
       NNDeviceGetTypeFunc nncore_devicegettype_func_ = nullptr;
+
+      NNTensorDescGetDataTypeFunc nncore_tensordescgetdatatype_func_ = nullptr;
   };
 } // namespace mindspore
 
