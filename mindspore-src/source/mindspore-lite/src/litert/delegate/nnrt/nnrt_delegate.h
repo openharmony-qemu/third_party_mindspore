@@ -83,6 +83,8 @@ class NNRTDelegate : public Delegate {
   Status DequantLiteGraph(LiteGraph *lite_graph);
   int DequantNodeInputs(LiteGraph::Node *node);
   schema::Tensor *TensorToSchemaTensor(Tensor *lite_tensor, schema::Tensor *schema_tensor);
+  bool IsTensorUsedByOtherNodes(LiteGraph *lite_graph, size_t tensor_index,
+                                size_t current_node_index);
   void ApplyCPUOp(std::vector<bool> &op_supports);
   void PrintNodeNameFormat();
 
