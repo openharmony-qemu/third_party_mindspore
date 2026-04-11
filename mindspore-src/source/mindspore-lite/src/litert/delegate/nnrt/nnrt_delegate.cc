@@ -53,16 +53,13 @@ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
                << ", hete_execution_plan_=" << (hete_execution_plan_ ? "valid" : "NULL");
 
   // dequant litegraph
-  MS_LOG(INFO) << "Step 1: DequantLiteGraph";
   auto ret_dequant = DequantLiteGraph(lite_graph_);
   if (ret_dequant != kSuccess) {
     MS_LOG(ERROR) << "Dequant litegraph failed.";
     return kLiteError;
   }
-  MS_LOG(INFO) << "Step 1: DequantLiteGraph SUCCESS";
 
 #ifdef SUPPORT_NNRT_METAGRAPH
-  MS_LOG(INFO) << "Step 2: SUPPORT_NNRT_METAGRAPH defined";
   InitExtensionOptions();
 
   if (enable_hete_ == false) {
@@ -70,26 +67,19 @@ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
   }
 
   bool is_kirin_online = IsKirinNPUWithOnlineInference();
-  MS_LOG(INFO) << "Step 3: IsKirinNPUWithOnlineInference() = " << is_kirin_online;
 
   if (is_kirin_online) {
     MS_LOG(INFO) << "Path: Kirin NPU with online inference";
     if (enable_hete_ && hete_execution_plan_ != nullptr && !(*hete_execution_plan_).empty()) {
       MS_LOG(INFO) << "Path: Heterogeneous inference ENABLED, hete_execution_plan_ size = "
                    << hete_execution_plan_->size();
-      MS_LOG(INFO) << "Step 4: Calling BuildNormalModel()";
       auto ret = BuildNormalModel(model);
-      MS_LOG(INFO) << "Step 4: BuildNormalModel() returned: " << ret;
-      MS_LOG(INFO) << "========== NNRTDelegate::Build EXIT (BuildNormalModel) ==========";
       return ret;
     }
-    MS_LOG(INFO) << "Path: Heterogeneous inference DISABLED, calling BuildKirinNPUModel()";
-    MS_LOG(INFO) << "========== NNRTDelegate::Build EXIT (BuildKirinNPUModel) ==========";
     return BuildKirinNPUModel(model);
   }
 
   bool is_kirin_offline = IsKirinNPUWithOfflineInference();
-  MS_LOG(INFO) << "Step 5: IsKirinNPUWithOfflineInference() = " << is_kirin_offline;
 
   if (is_kirin_offline) {
     MS_LOG(INFO) << "Path: Kirin NPU with offline inference, calling BuildOfflineModel()";
@@ -376,7 +366,6 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
     return kSuccess;
   }
 
-  MS_LOG(INFO) << "Step 1: Creating full NNModel";
   auto& nnrtWrapper = mindspore::NNRTWrapper::GetInstance();
   OH_NNModel *full_model = CreateFullNNModel();
   if (full_model == nullptr) {
@@ -384,16 +373,11 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
     MS_LOG(INFO) << "========== BuildNormalModel EXIT (kSuccess - create failed) ==========";
     return kSuccess;
   }
-  MS_LOG(INFO) << "Step 1: Full NNModel created successfully";
 
-  MS_LOG(INFO) << "Step 2: Printing node name format";
   PrintNodeNameFormat();
 
-  MS_LOG(INFO) << "Step 3: Querying op supports";
   std::vector<bool> op_supports = QueryOpSupports(full_model);
-  MS_LOG(INFO) << "Step 3: Op supports queried, size=" << op_supports.size();
 
-  MS_LOG(INFO) << "Step 4: Applying CPU op config";
   ApplyCPUOp(op_supports);
 
   if (op_supports.empty()) {
@@ -403,61 +387,37 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
     return kSuccess;
   }
 
-  MS_LOG(INFO) << "Step 5: Getting NNRT subgraph ranges";
   auto nnrt_subgraph_ranges = GetNNRTSubgraphRanges(model, op_supports);
-  MS_LOG(INFO) << "Step 5: Found NNRT subgraph count: " << nnrt_subgraph_ranges.size();
 
-  MS_LOG(INFO) << "Step 6: Creating LiteGraph for NNRT subgraphs";
   std::vector<LiteGraph *> sub_lite_graphs;
   auto ret = CreateLiteGraphForNNRTSubgraph(nnrt_subgraph_ranges, &sub_lite_graphs);
   if (ret != kSuccess) {
     MS_LOG(ERROR) << "Create NNRT sub LiteGraph failed, ret=" << ret;
     nnrtWrapper.Destroy(&full_model);
-    MS_LOG(INFO) << "Step 6a: Cleaning up " << sub_lite_graphs.size() << " subgraphs";
     for (size_t i = 0; i < sub_lite_graphs.size(); i++) {
-      MS_LOG(INFO) << "Step 6a: Freeing subgraph " << i;
       FreeLiteGraph(&sub_lite_graphs[i]);
     }
     MS_LOG(WARNING) << "Create NNRT sub LiteGraph failed, fallback to CPU";
-    MS_LOG(INFO) << "========== BuildNormalModel EXIT (kSuccess - create failed) ==========";
     return kSuccess;
   }
-  MS_LOG(INFO) << "Step 6: Created " << sub_lite_graphs.size() << " sub LiteGraphs successfully";
 
-  MS_LOG(INFO) << "Step 7: Creating NNRT subgraph kernels";
   std::vector<NNRTModelKernel *> nnrt_subgraph_kernels;
   ret = CreateNNRTSubgraphKernels(model, sub_lite_graphs, nnrt_subgraph_ranges, &nnrt_subgraph_kernels);
   if (ret != kSuccess) {
     MS_LOG(ERROR) << "Create NNRT subgraph kernels failed, ret=" << ret;
     nnrtWrapper.Destroy(&full_model);
-    MS_LOG(INFO) << "Step 7a: Cleaning up " << sub_lite_graphs.size() << " subgraphs";
     for (size_t i = 0; i < sub_lite_graphs.size(); i++) {
-      MS_LOG(INFO) << "Step 7a: Freeing subgraph " << i;
       FreeLiteGraph(&sub_lite_graphs[i]);
     }
     MS_LOG(WARNING) << "Create NNRT subgraph kernel failed, fallback to CPU";
-    MS_LOG(INFO) << "========== BuildNormalModel EXIT (kSuccess - kernel failed) ==========";
     return kSuccess;
   }
-  MS_LOG(INFO) << "Step 7: Created " << nnrt_subgraph_kernels.size() << " NNRT subgraph kernels successfully";
 
-  MS_LOG(INFO) << "Step 8: Replacing NNRT kernels in delegate model";
   ReplaceNNRTKernelsInDelegateModel(model, nnrt_subgraph_ranges, nnrt_subgraph_kernels);
-  MS_LOG(INFO) << "Step 8: Kernels replaced successfully";
-
-  MS_LOG(INFO) << "Step 9: Destroying full NNModel";
   nnrtWrapper.Destroy(&full_model);
-  MS_LOG(INFO) << "Step 9: Full NNModel destroyed";
-
-  MS_LOG(INFO) << "Step 10: Freeing " << sub_lite_graphs.size() << " sub LiteGraphs";
   for (size_t i = 0; i < sub_lite_graphs.size(); i++) {
-    MS_LOG(INFO) << "Step 10: Freeing subgraph " << i << ", ptr=" << sub_lite_graphs[i];
     // FreeLiteGraph(&sub_lite_graphs[i]);
-    MS_LOG(INFO) << "Step 10: Subgraph " << i << " freed";
   }
-  MS_LOG(INFO) << "Step 10: All sub LiteGraphs freed";
-
-  MS_LOG(INFO) << "========== BuildNormalModel EXIT (kSuccess - build complete) ==========";
   return kSuccess;
 }
 
@@ -787,12 +747,8 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
                  << ", all_nodes_.size()=" << (sub_lite_graph ? sub_lite_graph->all_nodes_.size() : 0)
                  << ", all_tensors_.size()=" << (sub_lite_graph ? sub_lite_graph->all_tensors_.size() : 0);
 
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 1 - Construct NNModel";
     OH_NNModel *nn_model = nullptr;
     nn_model = nnrtWrapper.Construct();
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 1 - NNModel constructed, ptr=" << nn_model;
-
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 2 - BuildFromLiteGraph";
 
     MS_LOG(INFO) << "Subgraph " << i << ": BEFORE BuildFromLiteGraph - checking all subgraphs integrity";
     for (size_t j = 0; j < sub_lite_graphs.size(); j++) {
@@ -804,7 +760,6 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
     }
 
     auto ret = nnrtWrapper.BuildFromLiteGraph(nn_model, sub_lite_graph, nullptr, 0);
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 2 - BuildFromLiteGraph returned " << ret;
 
     MS_LOG(INFO) << "Subgraph " << i << ": AFTER BuildFromLiteGraph - checking all subgraphs integrity";
     for (size_t j = 0; j < sub_lite_graphs.size(); j++) {
@@ -825,16 +780,13 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       return kLiteError;
     }
 
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 3 - Construct NNCompilation";
     OH_NNCompilation *nn_compilation = nnrtWrapper.NNCompilationConstruct(nn_model);
     if (nn_compilation == nullptr) {
       MS_LOG(ERROR) << "Subgraph " << i << ": Construct NNCompilation failed";
       nnrtWrapper.Destroy(&nn_model);
       return kLiteError;
     }
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 3 - NNCompilation constructed";
 
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 4 - Init NNCompilation";
     auto ret_code = InitNNCompilation(nn_compilation);
     if (ret_code != kSuccess) {
       MS_LOG(ERROR) << "Subgraph " << i << ": Init NNCompilation failed";
@@ -842,9 +794,7 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       nnrtWrapper.Destroy(&nn_model);
       return kLiteError;
     }
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 4 - NNCompilation initialized";
 
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 5 - Construct NNExecutor";
     OH_NNExecutor *nn_executor = nnrtWrapper.NNExecutorConstruct(nn_compilation);
     if (nn_executor == nullptr) {
       MS_LOG(ERROR) << "Subgraph " << i << ": Construct NNExecutor failed";
@@ -852,11 +802,9 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       nnrtWrapper.Destroy(&nn_model);
       return kLiteError;
     }
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 5 - NNExecutor constructed";
 
     bool format_not_support = false;
     std::vector<MSTensor> in_tensors;
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 6 - Processing input tensors";
 
     if (sub_lite_graph->sub_graphs_.empty() || sub_lite_graph->sub_graphs_[0] == nullptr) {
       MS_LOG(ERROR) << "Subgraph " << i << ": sub_lite_graph->sub_graphs_ is empty or NULL!";
@@ -901,7 +849,6 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       }
     }
 
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 7 - Processing output tensors";
     std::vector<MSTensor> out_tensors;
     MS_LOG(INFO) << "Subgraph " << i << ": sub_graphs_[0]->output_indices_.size() = "
                  << sub_lite_graph->sub_graphs_[0]->output_indices_.size();
@@ -947,25 +894,18 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       continue;
     }
 
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 8 - Creating NNRTModelKernel";
     auto nnrt_model_kernel =
       new (std::nothrow) NNRTModelKernel(nn_executor, nnrt_device_info_, in_tensors, out_tensors);
     if (nnrt_model_kernel == nullptr) {
       MS_LOG(ERROR) << "Subgraph " << i << ": new NNRTModelKernel failed";
       return kLiteError;
     }
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 8 - NNRTModelKernel created";
 
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 9 - Adding executor to list and destroying NNCompilation";
     nn_executor_list_.push_back(nn_executor);
     nnrtWrapper.NNCompilationDestroy(&nn_compilation);
     nnrtWrapper.Destroy(&nn_model);
     nnrt_subgraph_kernels->push_back(nnrt_model_kernel);
-    MS_LOG(INFO) << "Subgraph " << i << ": Step 9 - Completed";
-    MS_LOG(INFO) << "========== Subgraph " << i << " completed ==========";
   }
-
-  MS_LOG(INFO) << "========== CreateNNRTSubgraphKernels EXIT (kSuccess) ==========";
   return kSuccess;
 }
 
