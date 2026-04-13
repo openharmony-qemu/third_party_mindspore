@@ -22,7 +22,6 @@
 #include "ohos.ai.mindSporeLite.impl.hpp"
 #include "taihe/runtime.hpp"
 #include "ms_utils_ani.h"
-#include "src/litert/context_default_utils.h"
 
 namespace {
 
@@ -365,9 +364,6 @@ class ModelImpl {
       for (size_t i = 0; i < changeableWeightsName.value().size(); i++) {
         changeable_weights_name.push_back(std::string(changeableWeightsName.value()[i]));
       }
-    } else {
-      MS_LOG(ERROR) << "changeableWeightsName is undefined, exportWeightsCollaborateWithMicro failed!";
-      ThrowBusinessError(mindspore_ani::MS_LOAD_CONTEXT_ERROR);
     }
     auto ret = mindspore::Serialization::ExportWeightsCollaborateWithMicro(
       *(this->native_model_.get()), static_cast<mindspore::ModelType>(mindspore::kMindIR), weight_file, is_inference,
@@ -441,8 +437,8 @@ class NNRTDeviceDescriptionImpl {
       MS_LOG(ERROR) << "ANI some context parameter set failed, maybe predict fail";
     }
   } else {
-    MS_LOG(ERROR) << "ANI Context is undefined, loadModelFromFileSync failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_CONTEXT_ERROR);
+    MS_LOG(DEBUG) << "ANI start set default ConfigureDefaultCpuContext.";
+    ConfigureDefaultCpuContext(context_native);
   }
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
@@ -544,8 +540,8 @@ void loadModelFromFileContextCallback(::taihe::string_view model, ::ohos::ai::mi
       MS_LOG(ERROR) << "Some context parameter set failed, maybe predict fail";
     }
   } else {
-    MS_LOG(ERROR) << "ANI Context is undefined, loadModelFromBufferSync failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_CONTEXT_ERROR);
+    MS_LOG(DEBUG) << "ANI start set default ConfigureDefaultCpuContext.";
+    ConfigureDefaultCpuContext(context_native);
   }
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
@@ -655,8 +651,8 @@ void loadModelFromBufferContextCallback(::taihe::array_view<uint8_t> model,
       MS_LOG(ERROR) << "ANI some context parameter set failed, maybe predict fail";
     }
   } else {
-    MS_LOG(ERROR) << "ANI Context is undefined, loadModelFromFdSync failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_CONTEXT_ERROR);
+    MS_LOG(DEBUG) << "ANI start set default ConfigureDefaultCpuContext.";
+    ConfigureDefaultCpuContext(context_native);
   }
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
@@ -788,9 +784,6 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
       opt_value = static_cast<int32_t>(train_cfg.optimizationLevel.value());
     }
     context_native->train_cfg.optimization_level = opt_value;
-  } else {
-    MS_LOG(ERROR) << "ANI trainCfg is undefined, loadTrainModelFromFile failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_CONTEXT_ERROR);
   }
   // parser context
   if (bool(context)) {
@@ -800,8 +793,8 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
       MS_LOG(ERROR) << "ANI some context parameter set failed, maybe predict fail.";
     }
   } else {
-    MS_LOG(ERROR) << "ANI context is undefined, loadTrainModelFromFile failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_CONTEXT_ERROR);
+    MS_LOG(DEBUG) << "ANI start set default ConfigureDefaultCpuContext.";
+    ConfigureDefaultCpuContext(context_native);
   }
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
@@ -848,9 +841,6 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
       opt_value = static_cast<int32_t>(train_cfg.optimizationLevel.value());
     }
     context_native->train_cfg.optimization_level = opt_value;
-  } else {
-    MS_LOG(ERROR) << "ANI trainCfg is undefined, loadTrainModelFromBuffer failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_CONTEXT_ERROR);
   }
   // parser context
   if (bool(context)) {
@@ -860,8 +850,8 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
       MS_LOG(ERROR) << "Some context parameter set failed, maybe predict fail";
     }
   } else {
-    MS_LOG(ERROR) << "ANI context is undefined, loadTrainModelFromBuffer failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_CONTEXT_ERROR);
+    MS_LOG(DEBUG) << "ANI start set default ConfigureDefaultCpuContext.";
+    ConfigureDefaultCpuContext(context_native);
   }
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
@@ -914,9 +904,6 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
       opt_value = static_cast<int32_t>(train_cfg.optimizationLevel.value());
     }
     context_native->train_cfg.optimization_level = opt_value;
-  } else {
-    MS_LOG(ERROR) << "ANI trainCfg is undefined, loadTrainModelFromFd failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_CONTEXT_ERROR);
   }
   // parser context
   if (bool(context)) {
@@ -926,8 +913,8 @@ void loadModelFromFdContextCallback(int32_t model, ::ohos::ai::mindSporeLite::Co
       MS_LOG(ERROR) << "ANI some context parameter set failed, maybe predict fail";
     }
   } else {
-    MS_LOG(ERROR) << "ANI context is undefined, loadTrainModelFromFd failed!";
-    ThrowBusinessError(mindspore_ani::MS_LOAD_CONTEXT_ERROR);
+    MS_LOG(DEBUG) << "ANI start set default ConfigureDefaultCpuContext.";
+    ConfigureDefaultCpuContext(context_native);
   }
   // create native model
   std::shared_ptr<mindspore::Model> native_model =
