@@ -1089,16 +1089,6 @@ schema::Tensor *NNRTDelegate::TensorToSchemaTensor(Tensor *lite_tensor, schema::
 int NNRTDelegate::DequantNodeInputs(LiteGraph::Node *node) {
   auto in_size = node->input_indices_.size();
   int ret = RET_OK;
-
-  size_t current_node_index = 0;
-  auto &node_indices = lite_graph_->sub_graphs_[0]->node_indices_;
-  for (size_t i = 0; i < node_indices.size(); i++) {
-    if (lite_graph_->all_nodes_[node_indices[i]] == node) {
-      current_node_index = node_indices[i];
-      break;
-    }
-  }
-
   for (size_t i = 0; i < in_size; i++) {
     auto tensor_index = node->input_indices_[i];
     auto *src_tensor = lite_graph_->all_tensors_[tensor_index];
@@ -1108,28 +1098,10 @@ int NNRTDelegate::DequantNodeInputs(LiteGraph::Node *node) {
           src_tensor->dataType() == kNumberTypeInt32)) {
       continue;
     }
-
-    if (dequant_schema_tensors_.find(tensor_index) != dequant_schema_tensors_.end()) {
-      MS_LOG(DEBUG) << "Tensor " << tensor_index << " already dequantized, skipping";
-      continue;
-    }
-    size_t original_data_size = input->Size();
-
     auto dst_tensor = TensorToSchemaTensor(input, src_tensor);
     if (dst_tensor != nullptr) {
       dequant_schema_tensors_.emplace(tensor_index, dst_tensor);
       replaced_schema_tensors_.emplace_back(src_tensor);
-
-      MS_LOG(DEBUG) << "Created dequant tensor " << tensor_index << ", original size: "
-                    << original_data_size / 1024 << " KB";
-      bool used_by_current_only = !IsTensorUsedByOtherNodes(lite_graph_, tensor_index, current_node_index);
-      if (used_by_current_only && input->data() != nullptr) {
-        MS_LOG(DEBUG) << "Tensor " << tensor_index << " used by current node only, "
-                     << "immediately freeing original data (size: " << input->Size() / 1024 << " KB)";
-
-        free(input->data());
-        input->set_data(nullptr);
-      }
     } else {
       MS_LOG(ERROR) << "create dequant schema tensor failed, node: " << node->name_
                     << ", tensor_index: " << tensor_index;
@@ -1138,39 +1110,6 @@ int NNRTDelegate::DequantNodeInputs(LiteGraph::Node *node) {
     }
   }
   return ret;
-}
-
-bool NNRTDelegate::IsTensorUsedByOtherNodes(LiteGraph *lite_graph, size_t tensor_index,
-                                            size_t current_node_index) {
-  auto &node_indices = lite_graph->sub_graphs_[0]->node_indices_;
-  size_t current_pos = 0;
-  for (size_t i = 0; i < node_indices.size(); i++) {
-    if (node_indices[i] == current_node_index) {
-      current_pos = i;
-      break;
-    }
-  }
-
-  for (size_t i = 0; i < node_indices.size(); i++) {
-    if (i == current_pos) {
-      continue;
-    }
-    auto *node = lite_graph->all_nodes_[node_indices[i]];
-    for (auto idx : node->input_indices_) {
-      if (idx == tensor_index) {
-        MS_LOG(DEBUG) << "Tensor " << tensor_index << " is used by node " << node_indices[i] << " (input)";
-        return true;
-      }
-    }
-    for (auto idx : node->output_indices_) {
-      if (idx == tensor_index) {
-        MS_LOG(DEBUG) << "Tensor " << tensor_index << " is used by node " << node_indices[i] << " (output)";
-        return true;
-      }
-    }
-  }
-  MS_LOG(DEBUG) << "Tensor " << tensor_index << " is only used by current node " << current_node_index;
-  return false;
 }
 
 Status NNRTDelegate::DequantLiteGraph(LiteGraph *lite_graph) {
@@ -1194,17 +1133,6 @@ Status NNRTDelegate::DequantLiteGraph(LiteGraph *lite_graph) {
   for (auto iter : dequant_schema_tensors_) {
     lite_graph_->all_tensors_[iter.first] = iter.second;
   }
-
-  size_t dequant_map_size = dequant_schema_tensors_.size();
-  size_t replaced_vec_size = replaced_schema_tensors_.size();
-
-  dequant_schema_tensors_.clear();
-  replaced_schema_tensors_.clear();
-
-  MS_LOG(DEBUG) << "DequantLiteGraph completed, freed temporary resources: "
-               << "dequant_map(" << dequant_map_size << " entries), "
-               << "replaced_vec(" << replaced_vec_size << " entries)";
-
   return kSuccess;
 }
 
