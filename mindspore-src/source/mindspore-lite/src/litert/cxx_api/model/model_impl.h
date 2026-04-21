@@ -144,6 +144,9 @@ class ModelImpl {
   int ModelDeObfuscate();
   std::map<std::string, TypeId> execution_plan_;
   std::map<std::string, TypeId> hete_execution_plan_;
+  // Store a copy of original config for validation (prevents accumulation from auto-insertion)
+  std::map<std::string, TypeId> original_hete_execution_plan_;
+  bool xpu_backend_set_ = true;
   std::map<std::string, std::map<std::string, std::string>> config_info_;
   const char *predict_config_ = nullptr;
 };

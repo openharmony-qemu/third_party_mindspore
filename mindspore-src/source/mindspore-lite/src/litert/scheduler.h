@@ -42,6 +42,8 @@ class Scheduler {
             int *is_infershape, bool *is_control_flow, bool *infer_along_running,
             std::map<std::string, TypeId> *executions,
             std::map<std::string, TypeId> *hete_executions,
+            std::map<std::string, TypeId> *original_hete_executions,
+            bool xpu_backend_set,
             std::shared_ptr<Delegate> delegate = nullptr, int delegate_device_type = -1)
       : context_(ctx),
         ms_context_(ms_ctx),
@@ -56,7 +58,9 @@ class Scheduler {
         delegate_(delegate),
         delegate_device_type_(delegate_device_type),
         execution_plan_(executions),
-        hete_execution_plan_(hete_executions) {}
+        hete_execution_plan_(hete_executions),
+        original_hete_execution_plan_(original_hete_executions),
+        xpu_backend_set_(xpu_backend_set) {}
   ~Scheduler() = default;
   int Schedule(std::vector<kernel::KernelExec *> *dst_kernels);
   void SetupSchedulerCb(std::unique_ptr<SchedulerCb> cb) { sched_cb_ = std::move(cb); }
@@ -175,6 +179,8 @@ class Scheduler {
   ControlFlowSchedulerPtr control_flow_scheduler_ = nullptr;
   std::map<std::string, TypeId> *execution_plan_ = nullptr;
   std::map<std::string, TypeId> *hete_execution_plan_ = nullptr;
+  std::map<std::string, TypeId> *original_hete_execution_plan_ = nullptr;
+  bool xpu_backend_set_ = true;
   const std::map<std::string, std::map<std::string, std::string>> *config_info_ = nullptr;
   std::shared_ptr<ShapeFusionPass> shape_fusion_pass_ = nullptr;
   std::vector<int> infer_subgraph_index_;
