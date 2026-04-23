@@ -39,6 +39,11 @@ OH_AI_API OH_AI_ContextHandle OH_AI_ContextCreate();
 /// \param[in] context Context object handle address.
 OH_AI_API void OH_AI_ContextDestroy(OH_AI_ContextHandle *context);
 
+/// \brief Need to destroy the context object.
+///
+/// \return 1: need to destroy.
+int32_t OH_AI_Inner_ContextNeedDestroy();
+
 /// \brief Set the number of threads at runtime.
 ///
 /// \param[in] context Context object handle.
