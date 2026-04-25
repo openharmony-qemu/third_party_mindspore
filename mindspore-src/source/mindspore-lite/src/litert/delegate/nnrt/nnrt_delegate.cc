@@ -15,6 +15,7 @@
  */
 
 #include <unordered_set>
+#include <set>
 #include <numeric>
 #include "nnrt_delegate.h"
 #include "checker/primitive_check.h"
@@ -46,11 +47,6 @@ void NNRTDelegate::InitExtensionOptions() {
 }
 
 Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
-  MS_LOG(INFO) << "========== NNRTDelegate::Build ENTER ==========";
-  MS_LOG(INFO) << "Build input: model=" << (model ? "valid" : "NULL")
-               << ", lite_graph_=" << (lite_graph_ ? "valid" : "NULL")
-               << ", enable_hete_=" << enable_hete_
-               << ", hete_execution_plan_=" << (hete_execution_plan_ ? "valid" : "NULL");
 
   // dequant litegraph
   auto ret_dequant = DequantLiteGraph(lite_graph_);
@@ -63,16 +59,24 @@ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
   InitExtensionOptions();
 
   if (enable_hete_ == false) {
-    MS_LOG(INFO) << "enable_hete_ is false, heterogeneous inference disabled";
+    MS_LOG(DEBUG) << "enable_hete_ is false, heterogeneous inference disabled";
   }
 
   bool is_kirin_online = IsKirinNPUWithOnlineInference();
 
   if (is_kirin_online) {
-    MS_LOG(INFO) << "Path: Kirin NPU with online inference";
+    MS_LOG(DEBUG) << "Path: Kirin NPU with online inference";
+    if (xpu_backend_set_ == false) {
+      MS_LOG(ERROR) << "Config should use 'backend:CPU' for heterogeneous execution.";
+      return kLiteError;
+    }
     if (enable_hete_ && hete_execution_plan_ != nullptr && !(*hete_execution_plan_).empty()) {
-      MS_LOG(INFO) << "Path: Heterogeneous inference ENABLED, hete_execution_plan_ size = "
+      MS_LOG(DEBUG) << "Path: Heterogeneous inference ENABLED, hete_execution_plan_ size = "
                    << hete_execution_plan_->size();
+      if (!CheckXpuConfig()) {
+        MS_LOG(ERROR) << "XPU backend config invalid, Build cannot proceed.";
+        return kLiteError;
+      }
       auto ret = BuildNormalModel(model);
       return ret;
     }
@@ -82,18 +86,18 @@ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
   bool is_kirin_offline = IsKirinNPUWithOfflineInference();
 
   if (is_kirin_offline) {
-    MS_LOG(INFO) << "Path: Kirin NPU with offline inference, calling BuildOfflineModel()";
+    MS_LOG(DEBUG) << "Path: Kirin NPU with offline inference, calling BuildOfflineModel()";
     build_offline_ = true;
-    MS_LOG(INFO) << "========== NNRTDelegate::Build EXIT (BuildOfflineModel) ==========";
+    MS_LOG(DEBUG) << "========== NNRTDelegate::Build EXIT (BuildOfflineModel) ==========";
     return BuildOfflineModel(model);
   }
 
-  MS_LOG(WARNING) << "Path: No specific Kirin NPU type detected, returning kSuccess (no kernel built!)";
+  MS_LOG(DEBUG) << "Path: No specific Kirin NPU type detected, returning kSuccess (no kernel built!)";
 #else
   MS_LOG(INFO) << "SUPPORT_NNRT_METAGRAPH NOT defined, returning kSuccess (no kernel built!)";
 #endif
 
-  MS_LOG(INFO) << "========== NNRTDelegate::Build EXIT (kSuccess) ==========";
+  MS_LOG(DEBUG) << "========== NNRTDelegate::Build EXIT (kSuccess) ==========";
   return kSuccess;
 }
 
@@ -116,6 +120,41 @@ bool NNRTDelegate::IsCustomModel() const {
 }
 
 #ifdef SUPPORT_NNRT_METAGRAPH
+bool NNRTDelegate::CheckXpuConfig() {
+  MS_LOG(DEBUG) << "NNRTDelegate::Build - xpu_backend_set_=" << xpu_backend_set_ << ", enable_hete_=" << enable_hete_;
+  std::set<std::string> model_op_names;
+  if (lite_graph_ != nullptr && !lite_graph_->all_nodes_.empty()) {
+    for (auto *node : lite_graph_->all_nodes_) {
+      if (node != nullptr && !node->name_.empty()) {
+        model_op_names.insert(node->name_);
+      }
+    }
+  }
+  for (const auto &[op_name, backend] : *original_hete_execution_plan_) {
+    MS_LOG(DEBUG) << "Checking operator '" << op_name << "' from config";
+    if (model_op_names.count(op_name) > 0) {
+      MS_LOG(DEBUG) << "Operator '" << op_name << "' validated";
+      continue;
+    }
+
+    MS_LOG(ERROR) << "Operator '" << op_name << "' not found in model (case-sensitive match required).";
+    std::string op_list_str;
+    for (const auto &name : model_op_names) {
+      if (!op_list_str.empty()) {
+        op_list_str += ", ";
+      }
+      op_list_str += name;
+    }
+    MS_LOG(ERROR) << "Model operators: " << op_list_str;
+    MS_LOG(ERROR) << "Please check:";
+    MS_LOG(ERROR) << "  1. Operator name spelling (case-sensitive)";
+    MS_LOG(ERROR) << "  2. Config file matches the current model version";
+    return false;
+  }
+  MS_LOG(INFO) << "All " << original_hete_execution_plan_->size() << " operators from config validated successfully";
+  return true;
+}
+
 bool NNRTDelegate::CheckNPUPrefix(const std::string prefix_name) const {
   const std::string kirin_npu_name_prefix = prefix_name;
   auto device_id = nnrt_device_info_.device_id_;
@@ -339,7 +378,15 @@ void NNRTDelegate::ApplyCPUOp(std::vector<bool> &op_supports)
       MS_LOG(ERROR) << "Current node is null at index [" << i << "].";
       continue;
     }
-    if (hete_op && ((*hete_execution_plan_)[node->name_] == kBackendTypeCPU)) {
+    // Use find() instead of operator[] to avoid auto-insertion
+    bool is_cpu_op = false;
+    if (hete_op) {
+      auto it = hete_execution_plan_->find(node->name_);
+      if (it != hete_execution_plan_->end() && it->second == kBackendTypeCPU) {
+        is_cpu_op = true;
+      }
+    }
+    if (is_cpu_op) {
       MS_LOG(INFO) << "Current node " << node->name_ << ", node type "
                    << GetPrimitiveTypeName(node->primitive_, schema_version_);
       op_supports[i] = false;

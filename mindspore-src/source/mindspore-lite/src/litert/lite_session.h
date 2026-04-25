@@ -80,6 +80,10 @@ class MS_API LiteSession {
   void InitHeteExecutionConfig(std::map<std::string, TypeId> *config) {
     hete_execution_plan_ = config;
   }
+  void InitOriginalHeteExecutionConfig(std::map<std::string, TypeId> *config) {
+    original_hete_execution_plan_ = config;
+  }
+  void SetXpuBackendSet(bool xpu_backend_set) { xpu_backend_set_ = xpu_backend_set; }
   void set_model(Model *model) { this->model_ = model; }
   const std::vector<kernel::KernelExec *> &get_kernels() const { return this->kernels_; }
   const Delegate *get_delegate() const { return this->delegate_.get(); }
@@ -258,6 +262,8 @@ class MS_API LiteSession {
   int delegate_device_type_ = -1;  // -1: not specified; 0: CPU; 1: GPU; 2: NPU
   std::map<std::string, TypeId> *execution_plan_ = nullptr;
   std::map<std::string, TypeId> *hete_execution_plan_ = nullptr;
+  std::map<std::string, TypeId> *original_hete_execution_plan_ = nullptr;  // Original config for validation
+  bool xpu_backend_set_ = true;  // Whether XPU backend is set in config, used for validation and error message
   const std::map<std::string, std::map<std::string, std::string>> *config_info_ = nullptr;
   std::vector<kernel::KernelExec *> non_tail_call_kernels_;
   std::string model_id_;

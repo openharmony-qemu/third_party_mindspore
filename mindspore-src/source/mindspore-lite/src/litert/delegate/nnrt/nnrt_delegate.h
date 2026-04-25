@@ -58,6 +58,8 @@ class NNRTDelegate : public Delegate {
   bool IsBuildOffline() const { return build_offline_; }
   bool enable_hete_ = false;
   std::map<std::string, TypeId> *hete_execution_plan_ = nullptr;
+  std::map<std::string, TypeId> *original_hete_execution_plan_ = nullptr;  // Original config for validation
+  bool xpu_backend_set_ = true;  // Config validation status
 
  private:
   void InitExtensionOptions();
@@ -90,6 +92,7 @@ class NNRTDelegate : public Delegate {
   bool CheckNPUPrefix(const std::string prefix_name) const;
   bool IsKirinNPUWithOnlineInference() const;
   bool IsKirinNPUWithOfflineInference() const;
+  bool CheckXpuConfig();
   Status BuildKirinNPUModel(DelegateModel<schema::Primitive> *model);
   Status BuildOfflineModel(DelegateModel<schema::Primitive> *model);
   Status CreateFullModelKernel(DelegateModel<schema::Primitive> *model, OH_NNModel *nn_model);

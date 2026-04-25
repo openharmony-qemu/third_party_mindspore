@@ -390,15 +390,23 @@ Status ModelImpl::LoadConfig(const std::string &config_path) {
     MS_LOG(ERROR) << "GetAllSectionInfoFromConfigFile fail!ret: " << ret;
     return kLiteError;
   }
-  config_info_ = all_config_info;
   std::map<std::string, std::string> config_info = all_config_info[kExecutionPlan];
   if (config_info.empty()) {
     MS_LOG(WARNING) << "No valid execution plan info in config file.";
     return kSuccess;
   }
 
-  lite::ParserMultiExecutionPlan(&config_info, &execution_plan_, &hete_execution_plan_);
-  MS_LOG(INFO) << "Execution plan from config file parse success.";
+  auto parse_ret = lite::ParserMultiExecutionPlan(&config_info, &execution_plan_, &hete_execution_plan_);
+
+  if (parse_ret != RET_OK) {
+    MS_LOG(ERROR) << "LoadConfig failed: please use 'backend:CPU' only";
+    xpu_backend_set_ = false;
+    return kLiteError;
+  }
+  original_hete_execution_plan_ = hete_execution_plan_;
+  config_info_ = all_config_info;
+  MS_LOG(DEBUG) << "LoadConfig succeeded - loaded " << hete_execution_plan_.size()
+               << " heterogeneous execution plan(s)";
   return kSuccess;
 }
 
@@ -1058,6 +1066,8 @@ lite::LiteSession *ModelImpl::CreateLiteSession(const std::shared_ptr<lite::Inne
   }
   session->InitExecutionConfig(&execution_plan_);
   session->InitHeteExecutionConfig(&hete_execution_plan_);
+  session->InitOriginalHeteExecutionConfig(&original_hete_execution_plan_);
+  session->SetXpuBackendSet(xpu_backend_set_);
   session->SetConfigInfo(&config_info_);
 
   auto ret = session->Init(context);
