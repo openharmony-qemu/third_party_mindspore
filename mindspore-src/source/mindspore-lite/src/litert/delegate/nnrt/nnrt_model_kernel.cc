@@ -221,13 +221,23 @@ int NNRTModelKernel::SetOutputs() {
         MS_LOG(ERROR) << "tensor_desc_tmp==nullptr,i=" << i;
         return lite::RET_ERROR;
       }
-      (void)nnrtWrapper.OH_NNTensorDesc_GetDataType(tensor_desc_tmp, &npuDataType);
+
+      OH_NN_ReturnCode ret = nnrtWrapper.OH_NNTensorDesc_GetDataType(tensor_desc_tmp, &npuDataType);
+      if (ret != OH_NN_SUCCESS) {
+        MS_LOG(ERROR) << "OH_NNTensorDesc_GetDataType failed, i=" << i;
+        nnrtWrapper.NNTensorDescDestroy(&tensor_desc_tmp);
+        return lite::RET_ERROR;
+      }
+
       if (npuDataType == OH_NN_FLOAT32) {
         if (outputs_[i].DataType() == static_cast<mindspore::DataType>(mindspore::kNumberTypeFloat16)) {
           // need reset ms model output to fp32
           outputs_[i].SetDataType(static_cast<mindspore::DataType>(mindspore::kNumberTypeFloat32));
         }
       }
+
+      nnrtWrapper.NNTensorDescDestroy(&tensor_desc_tmp);
+      tensor_desc_tmp = nullptr;
 
       void *data = outputs_[i].MutableData();
       NN_Tensor *tensor_tmp = reinterpret_cast<lite::NNRTAllocator *>(outputs_[i].allocator().get())->GetNNTensor(data);
