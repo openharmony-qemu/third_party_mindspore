@@ -56,7 +56,13 @@ int PadInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **ou
   int output_shape[DEFAULT_PAD_NDIMS] = {0};
   size_t output_shape_size = 0;
   for (size_t i = 0; i < input->shape_size_; i++) {
-    int shape = input->shape_[i] + param->paddings_[2 * i] + param->paddings_[2 * i + 1];
+    NNACL_CHECK_FALSE(INT_ADD_OVERFLOW(input->shape_[i], param->paddings_[2 * i]),
+                          NNACL_INFER_INVALID);
+    int tmp = input->shape_[i] + param->paddings_[2 * i];
+    NNACL_CHECK_FALSE(INT_ADD_OVERFLOW(tmp, param->paddings_[2 * i + 1]),
+                          NNACL_INFER_INVALID);
+    int shape = tmp + param->paddings_[2 * i + 1];
+    output->shape_[i] = shape;
     ShapePush(output_shape, &output_shape_size, shape);
   }
 

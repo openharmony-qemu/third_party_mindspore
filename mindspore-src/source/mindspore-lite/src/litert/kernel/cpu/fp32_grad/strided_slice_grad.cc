@@ -120,6 +120,13 @@ int StridedSliceGradCPUKernel::ReSize() {
     if (param_->begins_[i] > output_shape_[i]) {
       param_->begins_[i] = output_shape_[i];
     }
+
+    // Recalculate in_shape_ after all modifications to ends_ and begins_
+    int ax = param_->ends_[i] - param_->begins_[i];
+    if (ax < 0) {
+      ax = 0;
+    }
+    param_->in_shape_[i] = ax;
   }
   return RET_OK;
 }
