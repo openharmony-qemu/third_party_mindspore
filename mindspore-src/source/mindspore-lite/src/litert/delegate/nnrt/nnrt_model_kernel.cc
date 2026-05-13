@@ -90,6 +90,10 @@ int NNRTModelKernel::Execute() {
 
     ret_code = nnrtWrapper.ExecutorRunSyncWithAipp(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
                                                     nn_output_tensors_.data(), nn_output_tensors_.size(), predict_config_);
+    if (ret_code == OH_NN_UNAVAILABLE_DEVICE) {
+      MS_LOG(ERROR) << "OH_NNExcutor_RunSync run failed, OH_NN_ReturnCode = " << ret_code;
+      return lite::RET_OP_EXECUTE_FAILURE;
+    }
     if (ret_code != OH_NN_SUCCESS) {
       MS_LOG(ERROR) << "Inference failed when Aipp invoked the NNRT interface";
       return lite::RET_INFER_AIPP_FAIL;
@@ -98,6 +102,11 @@ int NNRTModelKernel::Execute() {
 
     ret_code = nnrtWrapper.NNExecutorRunSync(oh_nn_executor_, nn_input_tensors_.data(), nn_input_tensors_.size(),
                                               nn_output_tensors_.data(), nn_output_tensors_.size());
+  }
+
+  if (ret_code == OH_NN_UNAVAILABLE_DEVICE) {
+    MS_LOG(ERROR) << "OH_NNExcutor_RunSync run failed, OH_NN_ReturnCode = " << ret_code;
+    return lite::RET_OP_EXECUTE_FAILURE;
   }
 
   if (ret_code != OH_NN_SUCCESS) {
