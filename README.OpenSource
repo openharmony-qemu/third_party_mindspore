@@ -1,11 +1,11 @@
 [
   {
-    "Name": "MindSpore",
+    "Name": "MindSpore Lite",
     "License": "Apache License 2.0",
     "License File": "LICENSE",
     "Version Number": "v2.7.0",
-    "Owner": "chengfeng27@huawei.com",
-    "Upstream URL": "https://gitee.com/mindspore/mindspore-lite/repository/archive/v2.7.0.zip",
-    "Description": "MindSpore is a new open source deep learning training/inference framework that could be used for mobile, edge and cloud scenarios."
+    "Owner": "zhuguodong8@huawei.com",
+    "Upstream URL": "https://raw.gitcode.com/mindspore/mindspore-lite/archive/refs/heads/v2.7.0.tar.gz",
+    "Description": "MindSpore Lite delivers lightweight AI inference acceleration capabilities for diverse hardware devices, empowering smart applications. It provides developers with an end-to-end solution and offers algorithm engineers and data scientists a user-friendly development experience characterized by efficient execution and flexible deployment."
   }
 ]
