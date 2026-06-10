@@ -295,10 +295,17 @@ ohos_source_set("cpu_kernel_obj") {
 
   deps = [ "nnacl_c/:nnacl_obj" ]
 
-  external_deps = [
-    "flatbuffers:libflatbuffers_static",
-    "hilog:libhilog",
-  ]
+  if (is_standard_system) {
+    external_deps = [
+      "flatbuffers:libflatbuffers_static",
+      "hilog:libhilog"
+    ]
+  } else {
+    external_deps = [
+      "flatbuffers:libflatbuffers_static",
+      "hilog_lite:hilog_shared"
+    ]
+  }
 
   include_dirs = [
     "./",
@@ -349,6 +356,11 @@ ohos_source_set("cpu_kernel_obj") {
     "-Wno-macro-redefined",
     "-Wno-constant-conversion",
   ]
+
+  if (is_small_system) {
+    cflags_cc += [ "-fPIC" ]
+  }
+
   part_name = "mindspore"
   subsystem_name = "thirdparty"
 }

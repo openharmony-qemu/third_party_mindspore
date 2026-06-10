@@ -34,9 +34,13 @@ ohos_group("mindspore-lib") {
 
 group("mindspore-test") {
   testonly = true
-  deps = [
-    "test:mindspore_fuzz_test",
-    "test:mindspore_system_test",
-    "test:mindspore_unit_test",
-  ]
+  if (is_standard_system) {
+    deps = [
+      "test:mindspore_fuzz_test",
+      "test:mindspore_system_test",
+      "test:mindspore_unit_test",
+    ]
+  } else {
+    deps = []
+  }
 }

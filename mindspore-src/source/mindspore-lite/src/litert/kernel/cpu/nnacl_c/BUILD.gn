@@ -29,6 +29,15 @@ config("nnacl_public_config") {
     "-Wno-ignored-qualifiers",
     "-Wno-unknown-pragmas"
   ]
+  if (is_small_system) {
+    cflags_c += [
+      "-fasm",
+      "-fPIC",
+    ]
+    asmflags = [
+      "-march=armv8.2-a+fp16+dotprod",
+    ]
+  }
   if (target_cpu == "arm" || target_cpu == "arm64") {
     defines += [
       "ENABLE_ARM",
@@ -955,9 +964,15 @@ ohos_source_set("nnacl_common") {
   sources = nnacl_sources
   part_name = "mindspore"
   subsystem_name = "thirdparty"
-  external_deps = [
-    "hilog:libhilog"
-  ]
+  if (is_standard_system) {
+    external_deps = [
+      "hilog:libhilog"
+    ]
+  } else {
+    external_deps = [
+      "hilog_lite:hilog_shared"
+    ]
+  }
 }
 
 ohos_source_set("nnacl_common_train") {
@@ -966,9 +981,15 @@ ohos_source_set("nnacl_common_train") {
   sources = nnacl_train_sources
   part_name = "mindspore"
   subsystem_name = "thirdparty"
-  external_deps = [
-    "hilog:libhilog"
-  ]
+  if (is_standard_system) {
+    external_deps = [
+      "hilog:libhilog"
+    ]
+  } else {
+    external_deps = [
+      "hilog_lite:hilog_shared"
+    ]
+  }
 }
 
 ohos_source_set("nnacl_no_fast_math") {

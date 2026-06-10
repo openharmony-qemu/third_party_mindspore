@@ -58,19 +58,27 @@ ohos_shared_library("mindir_lib") {
     "src/mindir_1.cc",
     "src/mindir_2.cc",
     "src/mindir_memory_manager.cc",
-    "src/mindir_nnrt_lite_graph.cc",
     "src/mindir_tensor.cc",
     "src/utils.cc",
   ]
-  external_deps = [
-    "c_utils:utils",
-    "hdf_core:libhdi",
-    "hilog:libhilog",
-    "bounds_checking_function:libsec_shared",
-    "drivers_interface_nnrt:nnrt_idl_headers",
-    "flatbuffers:libflatbuffers_static",
-    "hilog:libhilog",
-  ]
+  if (is_standard_system) {
+    sources += [ "src/mindir_nnrt_lite_graph.cc" ]
+    external_deps = [
+      "c_utils:utils",
+      "hdf_core:libhdi",
+      "hilog:libhilog",
+      "bounds_checking_function:libsec_shared",
+      "drivers_interface_nnrt:nnrt_idl_headers",
+      "flatbuffers:libflatbuffers_static",
+      "hilog:libhilog",
+    ]
+  } else {
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "flatbuffers:libflatbuffers_static",
+      "hilog_lite:hilog_shared",
+    ]
+  }
   configs = [
     ":mindir_secure_disable_android",
     "../:link_option_lto",

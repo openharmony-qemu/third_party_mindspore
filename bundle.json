@@ -18,7 +18,8 @@
       ],
       "features": [ "mindspore_feature_nnrt_metagraph" ],
       "adapted_system_type": [
-        "standard"
+        "standard",
+        "small"
       ],
       "rom": "",
       "ram": "",
@@ -37,7 +38,8 @@
           "bounds_checking_function",
           "flatbuffers",
           "runtime_core",
-          "qos_manager"
+          "qos_manager",
+          "hilog_lite"
         ]
       },
       "build": {

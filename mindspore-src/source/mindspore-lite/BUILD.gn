@@ -79,11 +79,16 @@ ohos_group("mindspore") {
   deps = [
     ":mindspore_lib",
     ":mindspore_ndk",
-    ":mindspore_train_lib",
     "mindir:mindir_lib",
-    "src/litert/js_api:mindsporelite_napi",
     "src/litert/taihe/ability_delegator:mindspore_taihe"
   ]
+  if (is_standard_system) {
+    deps += [ ":mindspore_train_lib" ]
+    deps += [ "src/litert/js_api:mindsporelite_napi" ]
+  }
+  if (is_small_system) {
+    deps += [ "tools/benchmark:benchmark_bin" ]
+  }
 }
 
 # Inference library
@@ -348,9 +353,11 @@ missing_sources = [
 
 all_sources += missing_sources
 SUPPORT_NNRT = false
-# currently, only arm/arm64 real machine support nnrt
-if ((target_cpu == "arm" || target_cpu == "arm64") && !is_emulator) {
-  SUPPORT_NNRT = true
+
+if (is_standard_system) {
+  if ((target_cpu == "arm" || target_cpu == "arm64") && !is_emulator) {
+    SUPPORT_NNRT = true
+  }
 }
 
 config("link_option_lto") {
@@ -413,8 +420,14 @@ ohos_shared_library("mindspore_lib") {
     "RUNTIME_PASS_CLIP",
     "ENABLE_MULTI_LAYOUT",
     "VERSION_STR=\"2.7.0\"",
-    "ENABLE_HI_APP_EVENT",
   ]
+
+  if (is_standard_system) {
+    defines += [
+      "ENABLE_HI_APP_EVENT",
+      "ENABLE_QOS",
+    ]
+  }
 
   if (target_cpu == "arm") {
     defines += [
@@ -444,16 +457,23 @@ ohos_shared_library("mindspore_lib") {
     ":link_option_lto",
   ]
 
-  remove_configs = [ "//build/config/compiler:no_rtti" ]
-
-  external_deps = [
-    "hilog:libhilog",
-    "bounds_checking_function:libsec_shared",
-    "flatbuffers:libflatbuffers_static",
-    "qos_manager:qos",
-    "ipc:ipc_single",
-    "qos_manager:concurrent_task_client"
-  ]
+  if (is_standard_system) {
+    remove_configs = [ "//build/config/compiler:no_rtti" ]
+    external_deps = [
+      "hilog:libhilog",
+      "bounds_checking_function:libsec_shared",
+      "flatbuffers:libflatbuffers_static",
+      "qos_manager:qos",
+      "ipc:ipc_single",
+      "qos_manager:concurrent_task_client"
+    ]
+  } else {
+    external_deps = [
+      "hilog_lite:hilog_shared",
+      "bounds_checking_function:libsec_shared",
+      "flatbuffers:libflatbuffers_static",
+    ]
+  }
 
   output_name = "libmindspore-lite"
   output_extension = "so"
@@ -500,6 +520,9 @@ ohos_shared_library("mindspore_lib") {
     "-Os",
     "-flto=thin"
   ]
+  if (is_small_system) {
+    cflags_cc += [ "-fPIC" ]
+  }
   part_name = "mindspore"
   subsystem_name = "thirdparty"
 }
@@ -507,10 +530,10 @@ ohos_shared_library("mindspore_lib") {
 # NDK lib
 ohos_shared_library("mindspore_ndk") {
   branch_protector_ret = "pac_ret"
-  deps = [
-    ":mindspore_lib",
-    ":mindspore_train_lib",
-  ]
+  deps = [ ":mindspore_lib" ]
+  if (is_standard_system) {
+    deps += [ ":mindspore_train_lib" ]
+  }
 
   sources = c_api_sources
 
@@ -536,13 +559,23 @@ ohos_shared_library("mindspore_ndk") {
     "RUNTIME_PASS_CLIP",
     "ENABLE_MULTI_LAYOUT",
     "VERSION_STR=\"2.7.0\"",
-    "ENABLE_HI_APP_EVENT"
   ]
 
-  external_deps = [
-    "flatbuffers:libflatbuffers_static",
-    "hilog:libhilog"
-  ]
+  if (is_standard_system) {
+    defines += [ "ENABLE_HI_APP_EVENT" ]
+  }
+
+  if (is_standard_system) {
+    external_deps = [
+      "flatbuffers:libflatbuffers_static",
+      "hilog:libhilog"
+    ]
+  } else {
+    external_deps = [
+      "flatbuffers:libflatbuffers_static",
+      "hilog_lite:hilog_shared"
+    ]
+  }
 
   if (SUPPORT_NNRT) {
 
@@ -561,7 +594,9 @@ ohos_shared_library("mindspore_ndk") {
     ":secure_option",
   ]
   public_configs = [ ":mindspore_api" ]
-  remove_configs = [ "//build/config/compiler:no_rtti" ]
+  if (is_standard_system) {
+    remove_configs = [ "//build/config/compiler:no_rtti" ]
+  }
 
   output_name = "libmindspore_lite_ndk"
   output_extension = "so"
@@ -576,6 +611,9 @@ ohos_shared_library("mindspore_ndk") {
     "-Os",
     "-flto=thin"
   ]
+  if (is_small_system) {
+    cflags_cc += [ "-fPIC" ]
+  }
   part_name = "mindspore"
   subsystem_name = "thirdparty"
 }
@@ -683,84 +721,86 @@ fp32_train_kernel_sources = [
 not_needed(fp16_train_kernel_sources)
 all_train_sources += fp32_train_kernel_sources
 
-ohos_shared_library("mindspore_train_lib") {
-  branch_protector_ret = "pac_ret"
-  deps = [
-    ":mindspore_lib",
-  ]
-
-  sources = all_train_sources
-
-  include_dirs = [
-    "./",
-    "../",
-    "../../",
-    "../core",
-    "src",
-    "src/c_api/",
-    "src/train/",
-    "src/litert/kernel/cpu/",
-    "../mindspore/mindspore/core/mindrt/",
-    "../mindspore/mindspore/core/mindrt/include/",
-    "../../third_party/",
-    "./schema/",
-    "../mindspore/mindspore/core/include/"
-  ]
-
-  defines = [
-    "ENABLE_MINDRT",
-    "MS_COMPILE_OHOS",
-    "PRIMITIVE_WRITEABLE",
-    "VERSION_STR=\"2.7.0\"",
-  ]
-
-  if (target_cpu == "arm") {
-    defines += [
-      "ENABLE_ARM",
-      "ENABLE_ARM32",
-      "ENABLE_NEON",
+if (is_standard_system) {
+  ohos_shared_library("mindspore_train_lib") {
+    branch_protector_ret = "pac_ret"
+    deps = [
+      ":mindspore_lib",
     ]
-  } else if (target_cpu == "arm64") {
-    defines += [
-      "ENABLE_ARM",
-      "ENABLE_ARM64",
-      "ENABLE_NEON",
-      "ENABLE_FP16",
-      "USE_OPENCL_WRAPPER",
-      "MS_OPENCL_PROFILE=false",
-      "CL_TARGET_OPENCL_VERSION=200",
-      "CL_HPP_TARGET_OPENCL_VERSION=120",
-      "CL_HPP_MINIMUM_OPENCL_VERSION=120",
+
+    sources = all_train_sources
+
+    include_dirs = [
+      "./",
+      "../",
+      "../../",
+      "../core",
+      "src",
+      "src/c_api/",
+      "src/train/",
+      "src/litert/kernel/cpu/",
+      "../mindspore/mindspore/core/mindrt/",
+      "../mindspore/mindspore/core/mindrt/include/",
+      "../../third_party/",
+      "./schema/",
+      "../mindspore/mindspore/core/include/"
     ]
+
+    defines = [
+      "ENABLE_MINDRT",
+      "MS_COMPILE_OHOS",
+      "PRIMITIVE_WRITEABLE",
+      "VERSION_STR=\"2.7.0\"",
+    ]
+
+    if (target_cpu == "arm") {
+      defines += [
+        "ENABLE_ARM",
+        "ENABLE_ARM32",
+        "ENABLE_NEON",
+      ]
+    } else if (target_cpu == "arm64") {
+      defines += [
+        "ENABLE_ARM",
+        "ENABLE_ARM64",
+        "ENABLE_NEON",
+        "ENABLE_FP16",
+        "USE_OPENCL_WRAPPER",
+        "MS_OPENCL_PROFILE=false",
+        "CL_TARGET_OPENCL_VERSION=200",
+        "CL_HPP_TARGET_OPENCL_VERSION=120",
+        "CL_HPP_MINIMUM_OPENCL_VERSION=120",
+      ]
+    }
+    configs = [
+      ":mindspore_api",
+      ":disable_android",
+      ":train_kernel_option",
+      ":secure_option",
+      ":link_option_lto",
+    ]
+
+    remove_configs = [ "//build/config/compiler:no_rtti" ]
+    external_deps = [ "hilog:libhilog",
+    "flatbuffers:libflatbuffers_static",
+    "bounds_checking_function:libsec_shared", ]
+    innerapi_tags = [ "platformsdk" ]
+    output_name = "libmindspore-lite-train"
+    output_extension = "so"
+    defines += [ "SUPPORT_TRAIN" ]
+    cflags_cc = [
+      "-Wno-ignored-qualifiers",
+      "-Wunused-private-field",
+      "-Wno-unused-private-field",
+      "-Wno-inconsistent-missing-override",
+      "-Wno-macro-redefined",
+      "-Wno-constant-conversion",
+      "-Os",
+      "-flto=thin"
+    ]
+    part_name = "mindspore"
+    subsystem_name = "thirdparty"
   }
-  configs = [
-    ":mindspore_api",
-    ":disable_android",
-    ":train_kernel_option",
-    ":secure_option",
-    ":link_option_lto",
-  ]
-
-  remove_configs = [ "//build/config/compiler:no_rtti" ]
-  external_deps = [ "hilog:libhilog",
-  "flatbuffers:libflatbuffers_static",
-  "bounds_checking_function:libsec_shared", ]
-  innerapi_tags = [ "platformsdk" ]
-  output_name = "libmindspore-lite-train"
-  output_extension = "so"
-  defines += [ "SUPPORT_TRAIN" ]
-  cflags_cc = [
-    "-Wno-ignored-qualifiers",
-    "-Wunused-private-field",
-    "-Wno-unused-private-field",
-    "-Wno-inconsistent-missing-override",
-    "-Wno-macro-redefined",
-    "-Wno-constant-conversion",
-    "-Os",
-    "-flto=thin"
-  ]
-  part_name = "mindspore"
-  subsystem_name = "thirdparty"
 }
 
 # Build configurations

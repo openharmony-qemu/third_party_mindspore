@@ -15,53 +15,113 @@
 
 import("//build/ohos.gni")
 
-ohos_executable("benchmark_bin") {
-  sources = [
-    "../../../ccsrc/plugin/device/cpu/kernel/nnacl/nnacl_common.c",
-    "../../src/common/file_utils.cc",
-    "../../src/common/utils.cc",
-    "../../src/common/config_file.cc",
-    "../common/flag_parser.cc",
-    "../common/opengl_util.cc",
-    "../common/string_util.cc",
-    "benchmark_base.cc",
-    "benchmark_c_api.cc",
-    "benchmark_unified_api.cc",
-    "main.cc",
-    "run_benchmark.cc",
-  ]
-
-  include_dirs = [
-    "../../",  # src
-    "../../../core/",  # core
-    "../../../../",  #
-    "../../../../third_party/",  # third_party
-    "../../../ccsrc/plugin/device/cpu/kernel/",  # nnacl
-  ]
-
-  defines = [
-    "MS_COMPILE_OHOS",
-  ]
-
-  if (target_cpu == "arm") {
-    defines += [
-      "ENABLE_ARM",
-      "ENABLE_ARM32",
+if (is_small_system) {
+  executable("benchmark_bin") {
+    sources = [
+      "../../src/litert/kernel/cpu/nnacl_c/nnacl_common.c",
+      "../../src/common/file_utils.cc",
+      "../../src/common/utils.cc",
+      "../../src/common/config_file.cc",
+      "../common/flag_parser.cc",
+      "../common/opengl_util.cc",
+      "../common/string_util.cc",
+      "benchmark_base.cc",
+      "benchmark_c_api.cc",
+      "benchmark_unified_api.cc",
+      "main.cc",
+      "run_benchmark.cc",
     ]
-  } else if (target_cpu == "arm64") {
-    defines += [
-      "ENABLE_ARM",
-      "ENABLE_ARM64",
+
+    include_dirs = [
+      "//third_party/flatbuffers/include",
+      "//third_party/json/single_include",
+      "../../",
+      "../../../core/",
+      "../../../../",
+      "../../../../third_party/",
+      "../../src/litert/kernel/cpu/nnacl_c/",
     ]
+
+    defines = [ "MS_COMPILE_OHOS" ]
+
+    if (target_cpu == "arm") {
+      defines += [
+        "ENABLE_ARM",
+        "ENABLE_ARM32",
+      ]
+    } else if (target_cpu == "arm64") {
+      defines += [
+        "ENABLE_ARM",
+        "ENABLE_ARM64",
+      ]
+    }
+    cflags_cc = [ "-Wno-unused-const-variable" ]
+    deps = [
+      "../../:mindspore_lib",
+      "../../:mindspore_ndk",
+    ]
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+    ]
+    include_dirs += [
+      "//third_party/bounds_checking_function/include",
+    ]
+
+    output_name = "benchmark"
+    output_dir = "$root_out_dir/usr"
   }
-  remove_configs = [ "//build/config/compiler:no_rtti" ]
-  cflags_cc = [ "-Wno-unused-const-variable" ]
-  deps = [
-    "../../:mindspore_lib",
-    "../../:mindspore_ndk",
-  ]
-  external_deps = [ "flatbuffers:libflatbuffers_static" ]
-  output_name = "benchmark_bin"
-  install_enable = true
-  part_name = "mindspore"
+} else {
+  ohos_executable("benchmark_bin") {
+    sources = [
+      "../../../mindspore-lite/src/litert/kernel/cpu/nnacl_c/nnacl_common.c",
+      "../../src/common/file_utils.cc",
+      "../../src/common/utils.cc",
+      "../../src/common/config_file.cc",
+      "../common/flag_parser.cc",
+      "../common/opengl_util.cc",
+      "../common/string_util.cc",
+      "benchmark_base.cc",
+      "benchmark_c_api.cc",
+      "benchmark_unified_api.cc",
+      "main.cc",
+      "run_benchmark.cc",
+    ]
+
+    include_dirs = [
+      "//third_party/flatbuffers/include",
+      "//third_party/json/single_include",
+      "../../",
+      "../../../core/",
+      "../../../../",
+      "../../../../third_party/",
+      "../../../mindspore-lite/src/litert/kernel/cpu/",
+    ]
+
+    defines = [
+      "MS_COMPILE_OHOS",
+    ]
+
+    if (target_cpu == "arm") {
+      defines += [
+        "ENABLE_ARM",
+        "ENABLE_ARM32",
+      ]
+    } else if (target_cpu == "arm64") {
+      defines += [
+        "ENABLE_ARM",
+        "ENABLE_ARM64",
+      ]
+    }
+    remove_configs = [ "//build/config/compiler:no_rtti" ]
+    cflags_cc = [ "-Wno-unused-const-variable" ]
+    deps = [
+      "../../:mindspore_lib",
+      "../../:mindspore_ndk",
+    ]
+    external_deps = [ "flatbuffers:libflatbuffers_static" ]
+    output_name = "benchmark_bin"
+    install_enable = true
+    part_name = "mindspore"
+    subsystem_name = "thirdparty"
+  }
 }

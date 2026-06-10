@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <memory>
 #include <unistd.h>
-#ifdef MS_COMPILE_OHOS
+#if defined(MS_COMPILE_OHOS) && defined(ENABLE_QOS)
 #include "concurrent_task_client.h"
 #endif
 #include "include/errorcode.h"
@@ -76,7 +76,7 @@ int InnerContext::CreateThreadPool(bool is_control_flow) {
     if (thread_pool_ == nullptr) {
 #ifdef ENABLE_MINDRT
 #ifndef MS_COMPILE_IOS
-#ifdef MS_COMPILE_OHOS
+#if defined(MS_COMPILE_OHOS) && defined(ENABLE_QOS)
       std::call_once(ms_qos_authflag, []() {
         pid_t pid = getpid();
         std::unordered_map<std::string, std::string> payload;

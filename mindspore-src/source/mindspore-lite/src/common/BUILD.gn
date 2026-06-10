@@ -17,12 +17,17 @@ lite_src_common_mid_sources = [
   "random_data_generator.cc",
   "string_util.cc",
   "dynamic_library_loader.cc",
-  "hi_app_event/hi_app_event.cc",
-  "hi_app_event/hi_app_event_thread.cc",
 ]
 
 ohos_source_set("lite_common_mid_obj") {
   sources = lite_src_common_mid_sources
+
+  if (is_standard_system) {
+    sources += [
+      "hi_app_event/hi_app_event.cc",
+      "hi_app_event/hi_app_event_thread.cc",
+    ]
+  }
 
   include_dirs = [
     "../",
@@ -36,13 +41,6 @@ ohos_source_set("lite_common_mid_obj") {
     "../../../mindspore/mindspore/core/mindrt/include/",
   ]
 
-  external_deps = [
-    "flatbuffers:libflatbuffers_static",
-    "bounds_checking_function:libsec_shared",
-    "hiappevent:hiappevent_innerapi",
-    "hilog:libhilog",
-  ]
-
   configs = [
     "../../:disable_android",
     "../../:secure_option",
@@ -53,8 +51,23 @@ ohos_source_set("lite_common_mid_obj") {
     "MS_COMPILE_OHOS",
     "PRIMITIVE_WRITEABLE",
     "VERSION_STR=\"2.1.0\"",
-    "ENABLE_HI_APP_EVENT",
   ]
+
+  if (is_standard_system) {
+    defines += [ "ENABLE_HI_APP_EVENT" ]
+    external_deps = [
+      "flatbuffers:libflatbuffers_static",
+      "bounds_checking_function:libsec_shared",
+      "hiappevent:hiappevent_innerapi",
+      "hilog:libhilog",
+    ]
+  } else {
+    external_deps = [
+      "flatbuffers:libflatbuffers_static",
+      "bounds_checking_function:libsec_shared",
+      "hilog_lite:hilog_shared",
+    ]
+  }
   if (target_cpu == "arm") {
     defines += [
       "ENABLE_ARM",
@@ -83,6 +96,10 @@ ohos_source_set("lite_common_mid_obj") {
     "-Wno-macro-redefined",
     "-Wno-constant-conversion",
   ]
+
+  if (is_small_system) {
+    cflags_cc += [ "-fPIC" ]
+  }
 
   part_name = "mindspore"
   subsystem_name = "thirdparty"
