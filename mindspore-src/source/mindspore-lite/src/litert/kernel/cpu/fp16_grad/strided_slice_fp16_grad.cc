@@ -91,6 +91,11 @@ void StridedSliceGradCPUKernelFp16::FillEmptyDims() {
     if (param_->begins_[i] < 0) {
       param_->begins_[i] += param_->in_shape_[i];
     }
+    if (param_->begins_[i] >= output_shape_[i]) {
+      MS_LOG(ERROR) << "begins_[" << i << "] = " << param_->begins_[i]
+                    << " >= output_shape_[" << i << "] = " << output_shape_[i];
+      param_->begins_[i] = 0;
+    }
     if (param_->ends_[i] < 0) {
       param_->ends_[i] += param_->in_shape_[i];
     }
