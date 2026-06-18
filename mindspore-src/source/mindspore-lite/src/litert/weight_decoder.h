@@ -368,6 +368,11 @@ class MS_API WeightDecoder {
     MS_ASSERT(nz_cnt == coors.size());
     auto channel_cnt = quant_params->size();
     MS_CHECK_GT(channel_cnt, 0, RET_ERROR);
+    if (elem_cnt % channel_cnt != 0) {
+      MS_LOG(ERROR) << "elem_cnt (" << elem_cnt
+                    << ") is not divisible by channel_cnt (" << channel_cnt << ")";
+      return RET_ERROR;
+    }
     auto elem_perchannel = elem_cnt / channel_cnt;
     MS_CHECK_GT(elem_perchannel, 0, RET_ERROR);
     for (size_t i = 0; i < nz_cnt; i++) {
@@ -385,6 +390,11 @@ class MS_API WeightDecoder {
       auto coor = coors[i];
       for (size_t j = 0; j < coor; j++) {
         auto cur_channel = data_index / elem_perchannel;
+        if (cur_channel >= channel_cnt) {
+          MS_LOG(ERROR) << "cur_channel (" << cur_channel
+                        << ") >= channel_cnt (" << channel_cnt << "), data_index=" << data_index;
+          return RET_ERROR;
+        }
         auto zp = quant_params->Get(cur_channel)->zeroPoint();
         un_sparsed_data.push_back(zp);
         data_index++;
@@ -405,6 +415,11 @@ class MS_API WeightDecoder {
 
     for (; data_index < dst_data_size / sizeof(T); data_index++) {
       auto cur_channel = data_index / elem_perchannel;
+      if (cur_channel >= channel_cnt) {
+        MS_LOG(ERROR) << "cur_channel (" << cur_channel
+                      << ") >= channel_cnt (" << channel_cnt << "), data_index=" << data_index;
+        return RET_ERROR;
+      }
       auto zp = quant_params->Get(cur_channel)->zeroPoint();
       un_sparsed_data.push_back(static_cast<T>(zp));
     }

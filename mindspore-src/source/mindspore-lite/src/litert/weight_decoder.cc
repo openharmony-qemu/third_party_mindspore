@@ -269,6 +269,16 @@ STATUS WeightDecoder::SparseDecompress(const SchemaTensorWrapper &src_tensor, Te
     coor_vec.push_back(coor);
   }
 
+  size_t coor_sum = 0;
+  for (auto c: coor_vec) {
+    coor_sum += c;
+  }
+  if (coor_sum + nz_cnt > static_cast<size_t>(elem_cnt)) {
+    MS_LOG(ERROR) << "Invalid sparse data: sum(coors) + nz_cnt ("
+                  << (coor_sum + nz_cnt) << ") > elem_cnt (" << elem_cnt << ")";
+    return RET_ERROR;
+  }
+
   if (dst_tensor->data() != nullptr) {
     MS_LOG(ERROR) << "data_c not null";
     return RET_ERROR;

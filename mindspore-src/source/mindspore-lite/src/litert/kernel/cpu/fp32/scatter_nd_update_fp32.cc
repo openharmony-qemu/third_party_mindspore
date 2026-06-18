@@ -42,7 +42,8 @@ int ScatterNdUpdateCPUKernel::ScatterNdUpdate(int task_id) {
   CHECK_NULL_RETURN(update_data);
   CHECK_NULL_RETURN(output_data);
   param_->data_type_len = output_tensor->data_type() == kNumberTypeFloat16 ? FP16_DATA_TYPE_LEN : sizeof(float);
-  auto ret = ScatterNDUpdate(output_data, update_data, output_unit_offsets_.data(), param_, task_id);
+  auto ret =
+    ScatterNDUpdate(output_data, output_tensor->Size(), update_data, output_unit_offsets_.data(), param_, task_id);
   if (ret != RET_OK) {
     MS_LOG(ERROR) << "Execute ScatterNDUpdate failed, ret: " << ret;
     return RET_ERROR;
