@@ -94,6 +94,19 @@ int ScatterNDCPUKernel::ReSize() {
   for (int i = indices_shape.size() - C3NUM; i >= 0; i--) {
     param_->num_unit *= update_shape.at(i);
   }
+
+  // check index valid
+  int *indices_data = reinterpret_cast<int *>(indices->data());
+  CHECK_NULL_RETURN(indices_data);
+  for (int i = 0; i < param_->num_unit; i++) {
+    for (int j = 0; j < indice_unit_rank; j++) {
+      int index = indices_data[i * indice_unit_rank + j];
+      if (index < 0 || index >= shape_data[j]) {
+        MS_LOG(ERROR) << "indices[" << i << "][" << j << "]=" << index << " out of range [0, " << shape_data[j] << ")";
+        return RET_ERROR;
+      }
+    }
+  }
   return RET_OK;
 }
 
@@ -104,7 +117,7 @@ int ScatterNDCPUKernel::ScatterND(int task_id) {
   CHECK_NULL_RETURN(update_data);
   CHECK_NULL_RETURN(output_data);
   param_->data_type_len = output_tensor->data_type() == kNumberTypeFloat16 ? FP16_DATA_TYPE_LEN : sizeof(float);
-  return ScatterNDUpdate(output_data, update_data, output_unit_offsets_.data(), param_, task_id);
+  return ScatterNDUpdate(output_data, output_tensor->Size(), update_data, output_unit_offsets_.data(), param_, task_id);
 }
 
 int ScatterNDRun(void *cdata, int task_id, float, float) {

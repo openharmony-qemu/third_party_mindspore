@@ -17,13 +17,14 @@
 #ifndef NNACL_BASE_SCATTER_ND_BINARY_H_
 #define NNACL_BASE_SCATTER_ND_BINARY_H_
 
+#include <stddef.h>
 #include "nnacl_c/scatter_nd_parameter.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-int ScatterNDUpdate(void *output, const void *update, int *output_unit_offsets, const ScatterNDParameter *param,
-                    int task_id);
+int ScatterNDUpdate(void *output, size_t output_size_bytes, const void *update, int *output_unit_offsets,
+                    const ScatterNDParameter *param, int task_id);
 
 int ScatterNDAdd(const void *update, void *output, int *output_unit_offsets, const ScatterNDParameter *param, int type,
                  int task_id);

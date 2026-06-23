@@ -61,8 +61,11 @@ int ScatterNDAdd(const void *update, void *output, int *output_unit_offsets, con
   return NNACL_OK;
 }
 
-int ScatterNDUpdate(void *output, const void *update, int *output_unit_offsets, const ScatterNDParameter *param,
-                    int task_id) {
+int ScatterNDUpdate(void *output, size_t output_size_bytes, const void *update, int *output_unit_offsets,
+                    const ScatterNDParameter *param, int task_id) {
+  if (output == NULL || update == NULL || output_unit_offsets == NULL || param == NULL) {
+    return NNACL_NULL_PTR;
+  }
   if (param->op_parameter.thread_num_ == 0) {
     return NNACL_ERR;
   }
@@ -71,13 +74,24 @@ int ScatterNDUpdate(void *output, const void *update, int *output_unit_offsets, 
   int end = MSMIN(begin + unit_per_thread, param->num_unit);
 
   int data_type_len = param->data_type_len;
+  if (param->unit_size < 0 || data_type_len < 0) {
+    return NNACL_ERR;
+  }
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(param->unit_size, data_type_len, NNACL_ERR);
+  int copy_size_bytes = param->unit_size * data_type_len;
 
   for (int i = begin; i < end; i++) {
+    if (output_unit_offsets[i] < 0) {
+      return NNACL_ERR;
+    }
     NNACL_CHECK_INT_MUL_NOT_OVERFLOW(output_unit_offsets[i], data_type_len, NNACL_ERR);
-    NNACL_CHECK_INT_MUL_NOT_OVERFLOW(i, param->unit_size * data_type_len, NNACL_ERR);
-    (void)memcpy((int8_t *)output + output_unit_offsets[i] * data_type_len,
-                 (int8_t *)update + i * param->unit_size * data_type_len, param->unit_size * data_type_len);
+    int output_offset_bytes = output_unit_offsets[i] * data_type_len;
+    if ((size_t)output_offset_bytes > output_size_bytes ||
+        (size_t)copy_size_bytes > output_size_bytes - (size_t)output_offset_bytes) {
+      return NNACL_ERR;
+    }
+    NNACL_CHECK_INT_MUL_NOT_OVERFLOW(i, copy_size_bytes, NNACL_ERR);
+    (void)memcpy((int8_t *)output + output_offset_bytes, (int8_t *)update + i * copy_size_bytes, copy_size_bytes);
   }
   return NNACL_OK;
 }

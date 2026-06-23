@@ -104,6 +104,7 @@ int ScatterNDBinaryCPUKernel::ReSize() {
                         << ")";
           return RET_ERROR;
         }
+        if (index < 0) index += input_shape[j];
         tmp_stride += index * out_strides.at(j) * param_->unit_size;
       }
       output_unit_offsets_.push_back(tmp_stride);
