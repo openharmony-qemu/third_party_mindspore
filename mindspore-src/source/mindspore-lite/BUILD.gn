@@ -739,6 +739,7 @@ ohos_shared_library("mindspore_train_lib") {
     ":train_kernel_option",
     ":secure_option",
     ":link_option_lto",
+    ":train_size_optimization",
   ]
 
   remove_configs = [ "//build/config/compiler:no_rtti" ]
@@ -801,4 +802,13 @@ config("secure_option") {
 
 config("train_kernel_option") {
   cflags_cc = [ "-fno-finite-math-only" ]
+}
+
+config("train_size_optimization") {
+  cflags_cc = [
+    "-fno-unwind-tables",
+  ]
+  ldflags = [
+    "-Wl,--strip-all",
+  ]
 }
