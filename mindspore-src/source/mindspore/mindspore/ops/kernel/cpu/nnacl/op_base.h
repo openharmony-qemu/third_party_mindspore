@@ -246,8 +246,6 @@
 #define NNACL_CHECK_TRUE_RET(value, errcode)
 #define NNACL_CHECK_TRUE_RET_VOID(value)
 #define NNACL_CHECK_FALSE(value, errcode)
-#define NNACL_CHECK_INT_MUL_NOT_OVERFLOW(value1, value2, errcode)
-#define NNACL_CHECK_INT_ADD_NOT_OVERFLOW(value1, value2, errcode)
 
 #define NNACL_CHECK_ZERO_RETURN_ERR(val)
 #define NNACL_CHECK_ZERO_RETURN(val)
@@ -278,10 +276,6 @@
     }                                     \
   } while (0)
 
-#define NNACL_CHECK_INT_MUL_NOT_OVERFLOW(value1, value2, errcode) \
-  NNACL_CHECK_TRUE_RET(!(INT_MUL_OVERFLOW(value1, value2)), errcode)
-#define NNACL_CHECK_INT_ADD_NOT_OVERFLOW(value1, value2, errcode) \
-  NNACL_CHECK_TRUE_RET(!(INT_ADD_OVERFLOW(value1, value2)), errcode)
 #define NNACL_CHECK_MALLOC_SIZE(malloc_size) \
   NNACL_CHECK_FALSE((malloc_size) > MALLOC_MAX_SIZE, NNACL_MALLOC_SIZE_INVALID)
 
@@ -320,6 +314,19 @@
     }                                     \
   } while (0)
 #endif
+
+#define NNACL_CHECK_INT_MUL_NOT_OVERFLOW(value1, value2, errcode) \
+  do {                                                            \
+    if (INT_MUL_OVERFLOW(value1, value2)) {                       \
+      return errcode;                                             \
+    }                                                             \
+  } while (0)
+#define NNACL_CHECK_INT_ADD_NOT_OVERFLOW(value1, value2, errcode) \
+  do {                                                            \
+    if (INT_ADD_OVERFLOW(value1, value2)) {                       \
+      return errcode;                                             \
+    }                                                             \
+  } while (0)
 
 enum PrimType {
   PrimType_NONE = 0,

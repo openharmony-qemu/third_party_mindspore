@@ -34,17 +34,32 @@ int DoTileOneDimension(uint8_t *input_data, uint8_t *output_data, size_t dim, co
   }
   for (int i = 0; i < src_dim_size; ++i) {
     for (int j = 0; j < tile->multiples_[dim]; ++j) {
-      int in_pos = tile->in_strides_[dim] * i;
-      int out_pos = tile->out_strides_[dim] * (i + j * src_dim_size);
-      DoTileOneDimension(input_data + in_pos * tile->data_size_, output_data + out_pos * tile->data_size_, dim + 1,
-                         tile);
+      int64_t in_pos = (int64_t)tile->in_strides_[dim] * i;
+      int64_t out_index = (int64_t)i + (int64_t)j * src_dim_size;
+      if (in_pos < 0 || in_pos > INT_MAX || out_index < 0 || out_index > INT_MAX) {
+        return NNACL_ERRCODE_MUL_OVERFLOW;
+      }
+      int64_t out_pos = (int64_t)tile->out_strides_[dim] * out_index;
+      if (out_pos < 0 || out_pos > INT_MAX) {
+        return NNACL_ERRCODE_MUL_OVERFLOW;
+      }
+      if (SIZE_MUL_OVERFLOW((size_t)in_pos, tile->data_size_) ||
+          SIZE_MUL_OVERFLOW((size_t)out_pos, tile->data_size_)) {
+        return NNACL_ERRCODE_MUL_OVERFLOW;
+      }
+      int ret =
+        DoTileOneDimension(input_data + (size_t)in_pos * tile->data_size_,
+                           output_data + (size_t)out_pos * tile->data_size_, dim + 1, tile);
+      if (ret != NNACL_OK) {
+        return ret;
+      }
     }
   }
   return NNACL_OK;
 }
 
-void Tile(void *input_data, void *output_data, const TileStruct *tile) {
-  DoTileOneDimension((uint8_t *)input_data, (uint8_t *)output_data, 0, tile);
+int Tile(void *input_data, void *output_data, const TileStruct *tile) {
+  return DoTileOneDimension((uint8_t *)input_data, (uint8_t *)output_data, 0, tile);
 }
 
 void TileSimple(void *input_data, void *output_data, size_t begin, size_t end, const TileStruct *tile) {
