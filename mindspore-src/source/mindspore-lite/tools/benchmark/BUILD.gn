@@ -73,7 +73,7 @@ if (is_small_system) {
 } else {
   ohos_executable("benchmark_bin") {
     sources = [
-      "../../../mindspore-lite/src/litert/kernel/cpu/nnacl_c/nnacl_common.c",
+      "../../../ccsrc/plugin/device/cpu/kernel/nnacl/nnacl_common.c",
       "../../src/common/file_utils.cc",
       "../../src/common/utils.cc",
       "../../src/common/config_file.cc",
@@ -88,13 +88,11 @@ if (is_small_system) {
     ]
 
     include_dirs = [
-      "//third_party/flatbuffers/include",
-      "//third_party/json/single_include",
-      "../../",
-      "../../../core/",
-      "../../../../",
-      "../../../../third_party/",
-      "../../../mindspore-lite/src/litert/kernel/cpu/",
+      "../../",  # src
+      "../../../core/",  # core
+      "../../../../",  #
+      "../../../../third_party/",  # third_party
+      "../../../ccsrc/plugin/device/cpu/kernel/",  # nnacl
     ]
 
     defines = [
@@ -122,6 +120,5 @@ if (is_small_system) {
     output_name = "benchmark_bin"
     install_enable = true
     part_name = "mindspore"
-    subsystem_name = "thirdparty"
   }
 }
