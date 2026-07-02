@@ -34,9 +34,17 @@ config("nnacl_public_config") {
       "-fasm",
       "-fPIC",
     ]
-    asmflags = [
-      "-march=armv8.2-a+fp16+dotprod",
-    ]
+    if (target_cpu == "arm64") {
+      # board_arch 来自 device config.gni，未设置时默认 armv8.2-a
+      if (board_arch == "") {
+        _arch = "armv8.2-a"
+      } else {
+        _arch = board_arch
+      }
+      asmflags = [
+        "-march=${_arch}+fp16+dotprod",
+        ]
+    }
   }
   if (target_cpu == "arm" || target_cpu == "arm64") {
     defines += [
