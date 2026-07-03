@@ -34,55 +34,59 @@ ohos_taihe("run_taihe_ms") {
   ]
 }
 
-taihe_shared_library("mindspore_ani_taihe_native") {
-  taihe_generated_file_path = "$taihe_generated_file_path"
-  part_name = "$part_name"
-  subsystem_name = "$subsystem_name"
-  sources = get_target_outputs(":run_taihe_ms")
-  include_dirs = [
-    "${MINDSPORE_ROOT_ANI}/source/",
-    "${MINDSPORE_ROOT_ANI}/source/include/api",
-    "${MINDSPORE_ROOT_ANI}/source/mindspore/mindspore/core",
-    "${MINDSPORE_ROOT_ANI}/source/mindspore/mindspore/core/include",
-    "${MINDSPORE_ROOT_ANI}/source/mindspore-lite",
-    "${MINDSPORE_ROOT_ANI}/source/mindspore-lite/src/litert/taihe/ability_delegator/include"
-  ]
-  sources += [
-    "src/ani_constructor.cpp",
-    "src/ohos.ai.mindSporeLite.impl.cpp",
-    "src/ms_utils_ani.cpp",
-  ]
-  deps = [
-    ":run_taihe_ms",
-    "${MINDSPORE_ROOT_ANI}/source/mindspore-lite:mindspore_ndk",
-    "${MINDSPORE_ROOT_ANI}/source/mindspore-lite:mindspore_lib"
-  ]
-  cflags_cc = [
-    "-Os",
-    "-flto=thin"
-  ]
-}
+if (is_standard_system) {
+  taihe_shared_library("mindspore_ani_taihe_native") {
+    taihe_generated_file_path = "$taihe_generated_file_path"
+    part_name = "$part_name"
+    subsystem_name = "$subsystem_name"
+    sources = get_target_outputs(":run_taihe_ms")
+    include_dirs = [
+      "${MINDSPORE_ROOT_ANI}/source/",
+      "${MINDSPORE_ROOT_ANI}/source/include/api",
+      "${MINDSPORE_ROOT_ANI}/source/mindspore/mindspore/core",
+      "${MINDSPORE_ROOT_ANI}/source/mindspore/mindspore/core/include",
+      "${MINDSPORE_ROOT_ANI}/source/mindspore-lite",
+      "${MINDSPORE_ROOT_ANI}/source/mindspore-lite/src/litert/taihe/ability_delegator/include"
+    ]
+    sources += [
+      "src/ani_constructor.cpp",
+      "src/ohos.ai.mindSporeLite.impl.cpp",
+      "src/ms_utils_ani.cpp",
+    ]
+    deps = [
+      ":run_taihe_ms",
+      "${MINDSPORE_ROOT_ANI}/source/mindspore-lite:mindspore_ndk",
+      "${MINDSPORE_ROOT_ANI}/source/mindspore-lite:mindspore_lib"
+    ]
+    cflags_cc = [
+      "-Os",
+      "-flto=thin"
+    ]
+  }
 
-generate_static_abc("mindspore_ani_abc") {
-  base_url = "$taihe_generated_file_path"
-  files = [ "$taihe_generated_file_path/@ohos.ai.mindSporeLite.ets" ]
-  is_boot_abc = "True"
-  device_dst_file = "/system/framework/mindspore_ani_abc.abc"
-  dependencies = [ ":run_taihe_ms" ]
+  generate_static_abc("mindspore_ani_abc") {
+    base_url = "$taihe_generated_file_path"
+    files = [ "$taihe_generated_file_path/@ohos.ai.mindSporeLite.ets" ]
+    is_boot_abc = "True"
+    device_dst_file = "/system/framework/mindspore_ani_abc.abc"
+    dependencies = [ ":run_taihe_ms" ]
 
-}
+  }
 
-ohos_prebuilt_etc("mindspore_ani_etc") {
-  source = "$target_out_dir/mindspore_ani_abc.abc"           
-  module_install_dir = "framework"
-  part_name = "$part_name"
-  subsystem_name = "$subsystem_name"
-  deps = [ ":mindspore_ani_abc" ]
+  ohos_prebuilt_etc("mindspore_ani_etc") {
+    source = "$target_out_dir/mindspore_ani_abc.abc"
+    module_install_dir = "framework"
+    part_name = "$part_name"
+    subsystem_name = "$subsystem_name"
+    deps = [ ":mindspore_ani_abc" ]
+  }
 }
 
 group("mindspore_taihe") {
-  deps = [
-    ":mindspore_ani_etc",
-    ":mindspore_ani_taihe_native",
-  ]
+  if (is_standard_system) {
+    deps = [
+      ":mindspore_ani_etc",
+      ":mindspore_ani_taihe_native",
+    ]
+  }
 }

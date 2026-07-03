@@ -13,26 +13,28 @@
 
 import("//build/ohos.gni")
 
-group("mindspore_unit_test") {
-  testonly = true
-  deps = [ "unittest:unit_test" ]
-}
+if (is_standard_system) {
+  group("mindspore_unit_test") {
+    testonly = true
+    deps = [ "unittest:unit_test" ]
+  }
 
-group("mindspore_system_test") {
-  testonly = true
-  deps = [ "systemtest:system_test" ]
-}
+  group("mindspore_system_test") {
+    testonly = true
+    deps = [ "systemtest:system_test" ]
+  }
 
-group("mindspore_fuzz_test") {
-  testonly = true
-  deps = [ "fuzztest:fuzz_test" ]
-}
+  group("mindspore_fuzz_test") {
+    testonly = true
+    deps = [ "fuzztest:fuzz_test" ]
+  }
 
-group("mindspore_test_target") {
-  testonly = true
-  deps = []
+  group("mindspore_test_target") {
+    testonly = true
+    deps = []
 
-  deps += [ ":mindspore_unit_test" ]
-  deps += [ ":mindspore_system_test" ]
-  deps += [ ":mindspore_fuzz_test" ]
+    deps += [ ":mindspore_unit_test" ]
+    deps += [ ":mindspore_system_test" ]
+    deps += [ ":mindspore_fuzz_test" ]
+  }
 }
