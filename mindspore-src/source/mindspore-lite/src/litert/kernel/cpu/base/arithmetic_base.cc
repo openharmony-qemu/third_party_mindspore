@@ -224,7 +224,7 @@ int ArithmeticBaseCPUKernel::UpdateParameter() {
   return RET_OK;
 }
 
-int ArithmeticBaseCPUKernel::BroadCastInputConstTensor(int input_index, MatricInfo *matric, int *elements_num,
+int ArithmeticBaseCPUKernel::BroadCastInputConstTensor(int input_index, MatricInfo *matric, int64_t *elements_num,
                                                        int *input_shape, int *input_strides,
                                                        bool prefer_explicit_broadcast, bool *exist_broadcast) {
   if (!matric->is_const) {
