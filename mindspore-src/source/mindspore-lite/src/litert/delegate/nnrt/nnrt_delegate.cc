@@ -462,9 +462,6 @@ Status NNRTDelegate::BuildNormalModel(DelegateModel<schema::Primitive> *model) {
 
   ReplaceNNRTKernelsInDelegateModel(model, nnrt_subgraph_ranges, nnrt_subgraph_kernels);
   nnrtWrapper.Destroy(&full_model);
-  for (size_t i = 0; i < sub_lite_graphs.size(); i++) {
-    // FreeLiteGraph(&sub_lite_graphs[i]);
-  }
   return kSuccess;
 }
 
