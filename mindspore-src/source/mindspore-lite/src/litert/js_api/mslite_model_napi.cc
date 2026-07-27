@@ -1612,10 +1612,10 @@ napi_value MSLiteModelNapi::Resize(napi_env env, napi_callback_info info) {
     return undefinedResult;
   }
   std::vector<MSTensor> inputs = modelNapi->native_model_->GetInputs();
-  std::vector<MSTensor> tensor_inputs;
   std::vector<std::vector<int64_t>> dims;
 
-  // set inputs data
+  // only check the input count here, input data is not set in resize,
+  // it will be set and verified against the resized shape in predict
   uint32_t array_length = 0;
   status = napi_get_array_length(env, argv[PARAM0], &array_length);
   if (status != napi_ok || array_length <= 0) {
@@ -1625,61 +1625,6 @@ napi_value MSLiteModelNapi::Resize(napi_env env, napi_callback_info info) {
   if (inputs.size() != array_length) {
     MS_LOG(ERROR) << "array length not equal to model inputs size.";
     return undefinedResult;
-  }
-  for (size_t i = 0; i < array_length; i++) {
-    napi_value element = nullptr;
-    status = napi_get_element(env, argv[PARAM0], i, &element);
-    if (status != napi_ok) {
-      MS_LOG(ERROR) << "can not get element";
-      return undefinedResult;
-    }
-
-    std::string property_name = "getData";
-    bool exist = false;
-    napi_value data_func = nullptr;
-
-    status = napi_has_named_property(env, element, property_name.c_str(), &exist);
-    if (status != napi_ok || !exist) {
-      MS_LOG(ERROR) << "can not find target property";
-      return undefinedResult;
-    }
-
-    if (status != napi_ok || !exist) {
-      MS_LOG(ERROR) << "can not find " << property_name.c_str() << " property.";
-      return undefinedResult;
-    }
-
-    if (napi_get_named_property(env, element, property_name.c_str(), &data_func) != napi_ok) {
-      MS_LOG(ERROR) << "get " << property_name.c_str() << " property fail.";
-      return undefinedResult;
-    }
-    void *js_data = nullptr;
-    size_t length = 0;
-    napi_value return_val;
-
-    status = napi_call_function(env, element, data_func, 0, nullptr, &return_val);
-    if (status != napi_ok || return_val == nullptr) {
-      MS_LOG(ERROR) << "napi call function error.";
-      return undefinedResult;
-    }
-
-    status = napi_get_arraybuffer_info(env, return_val, &js_data, &length);
-    if (status != napi_ok || js_data == nullptr) {
-      MS_LOG(ERROR) << "get js data error.";
-      return undefinedResult;
-    }
-    if (inputs[i].DataSize() != length) {
-      MS_LOG(ERROR) << "tensor size is: " << static_cast<int>(inputs[i].DataSize()) << ", but data length got "
-                    << static_cast<int>(length);
-      return undefinedResult;
-    }
-
-    auto tensor_data = inputs[i].MutableData();
-    if (tensor_data == nullptr) {
-      MS_LOG(ERROR) << "malloc data for tensor failed.";
-      return undefinedResult;
-    }
-    memcpy(tensor_data, js_data, length);
   }
 
   napi_value dim_num = nullptr;
@@ -1737,7 +1682,7 @@ napi_value MSLiteModelNapi::Resize(napi_env env, napi_callback_info info) {
     MS_LOG(ERROR) << "resize failed";
     return undefinedResult;
   }
-  status = napi_get_boolean(env, result, &jsResult);
+  status = napi_get_boolean(env, true, &jsResult);
   if (status != napi_ok) {
     MS_LOG(ERROR) << "get bool error";
     return undefinedResult;
