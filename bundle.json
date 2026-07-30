@@ -37,7 +37,8 @@
           "bounds_checking_function",
           "flatbuffers",
           "runtime_core",
-          "qos_manager"
+          "qos_manager",
+          "taihe_ffi_gen"
         ]
       },
       "build": {
