@@ -2024,12 +2024,12 @@ int lite::LiteSession::ReshapeWeightTensor(lite::Tensor *orig_tensor, lite::Tens
 
 int lite::LiteSession::UpdateWeights(std::vector<lite::Tensor *> modify_tensors) {
   unsigned int num_of_found_tensors = 0;
-  for (auto tensor : tensors_) {
-    for (auto modify : modify_tensors) {
-      if (modify == nullptr) {
-        MS_LOG(ERROR) << "Tensor is nullptr";
-        return RET_PARAM_INVALID;
-      }
+  for (auto modify : modify_tensors) {
+    if (modify == nullptr) {
+      MS_LOG(ERROR) << "Tensor is nullptr";
+      return RET_PARAM_INVALID;
+    }
+    for (auto tensor : tensors_) {
       if (modify->tensor_name() == tensor->tensor_name()) {
         if (tensor->Size() != modify->Size()) {
           model_buff_changed_ = true;

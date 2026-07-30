@@ -154,6 +154,12 @@ int MatMulDynamicSdotInt8Kernel::MatMulDynamicArm64SdotImpl(int task_id) {
       size_t col = MSMIN(C16NUM, cur_oc - c);
       auto col_offset = cur_stride + c;
       auto b_ptr = batch_b_ptr_ + col_offset * param_->deep_align_;
+      if (col_offset >= param_->col_align_ || cur_stride >= param_->col_align_) {
+        MS_LOG(ERROR) << "Invalid offset: cur_stride=" << cur_stride
+                      << " col_offset=" << col_offset
+                      << " col_align=" << param_->col_align_;
+        return RET_ERROR;
+      }
       int *weight_sums_ptr = current_sums + c;
 
       void *out_ptr = static_cast<int8_t *>(batch_c_ptr_) + (r * param_->col_ + col_offset) * data_type_size;
