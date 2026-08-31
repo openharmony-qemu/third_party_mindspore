@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import("//build/ohos.gni")
+import("//third_party/mindspore/ohos_deps.gni")
 
 # ohos_group("mindir_test") {
 #   deps = [
@@ -45,6 +46,7 @@ config("mindir_secure_disable_android") {
 
 ohos_shared_library("mindir_lib") {
   branch_protector_ret = "pac_ret"
+  output_extension = "so"
   include_dirs = [
     "../",
     "../../mindspore/mindspore/core/include/",
@@ -56,19 +58,24 @@ ohos_shared_library("mindir_lib") {
     "src/mindir_1.cc",
     "src/mindir_2.cc",
     "src/mindir_memory_manager.cc",
-    "src/mindir_nnrt_lite_graph.cc",
     "src/mindir_tensor.cc",
     "src/utils.cc",
   ]
   external_deps = [
-    "c_utils:utils",
-    "hdf_core:libhdi",
-    "hilog:libhilog",
     "bounds_checking_function:libsec_shared",
-    "drivers_interface_nnrt:nnrt_idl_headers",
     "flatbuffers:libflatbuffers_static",
-    "hilog:libhilog",
+    ohos_hilog_dep,
   ]
+
+  if (is_standard_system) {
+    sources += [ "src/mindir_nnrt_lite_graph.cc" ]
+    external_deps += [
+      "c_utils:utils",
+      "hdf_core:libhdi",
+      "drivers_interface_nnrt:nnrt_idl_headers",
+    ]
+  }
+
   configs = [
     ":mindir_secure_disable_android",
     "../:link_option_lto",

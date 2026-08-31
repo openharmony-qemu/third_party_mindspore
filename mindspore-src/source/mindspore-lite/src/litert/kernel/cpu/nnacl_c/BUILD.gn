@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import("//build/ohos.gni")
+import("//third_party/mindspore/ohos_deps.gni")
 
 config("nnacl_public_config") {
   include_dirs = [
@@ -20,15 +21,24 @@ config("nnacl_public_config") {
     "include/",
   ]
 
-  configs = [ "../../../../../../mindspore-lite/:disable_android" ]
+  configs = [
+    "../../../../../../mindspore-lite/:disable_android",
+    "../../../../../../mindspore-lite/:nnacl_asm_config",
+  ]
 
   defines = [ "MS_COMPILE_OHOS" ]
   cflags_c = [
+    "-fPIC",
     "-fomit-frame-pointer",
     "-fstrict-aliasing",
     "-Wno-ignored-qualifiers",
     "-Wno-unknown-pragmas"
   ]
+  if (is_small_system) {
+    cflags_c += [
+      "-fasm",
+    ]
+  }
   if (target_cpu == "arm" || target_cpu == "arm64") {
     defines += [
       "ENABLE_ARM",
@@ -955,9 +965,7 @@ ohos_source_set("nnacl_common") {
   sources = nnacl_sources
   part_name = "mindspore"
   subsystem_name = "thirdparty"
-  external_deps = [
-    "hilog:libhilog"
-  ]
+  external_deps = [ ohos_hilog_dep ]
 }
 
 ohos_source_set("nnacl_common_train") {
@@ -966,9 +974,7 @@ ohos_source_set("nnacl_common_train") {
   sources = nnacl_train_sources
   part_name = "mindspore"
   subsystem_name = "thirdparty"
-  external_deps = [
-    "hilog:libhilog"
-  ]
+  external_deps = [ ohos_hilog_dep ]
 }
 
 ohos_source_set("nnacl_no_fast_math") {

@@ -20,7 +20,7 @@
 #endif
 #include "thread/actor_threadpool.h"
 #include "thread/core_affinity.h"
-#ifdef MS_COMPILE_OHOS
+#if defined(MS_COMPILE_OHOS) && defined(ENABLE_QOS)
 #include "qos.h"
 using namespace OHOS::QOS;
 #endif
@@ -36,7 +36,7 @@ void ActorWorker::RunWithSpin() {
   }
 #if !defined(__APPLE__) && !defined(_MSC_VER)
   static std::atomic_int index{0};
-#ifdef MS_COMPILE_OHOS
+#if defined(MS_COMPILE_OHOS) && defined(ENABLE_QOS)
   SetThreadQos(QosLevel::QOS_USER_INTERACTIVE);
 #endif
   (void)pthread_setname_np(pthread_self(), ("OS_Actor_" + std::to_string(index++)).c_str());

@@ -14,6 +14,7 @@
 # ============================================================================
 
 import("//build/ohos.gni")
+import("//third_party/mindspore/ohos_deps.gni")
 ohos_source_set("mindrt_obj") {
   sources = [
     "src/actor/actor.cc",
@@ -48,8 +49,13 @@ ohos_source_set("mindrt_obj") {
     "BUILD_LITE",
   ]
 
-  external_deps = [ "hilog:libhilog", "qos_manager:qos" ]
-  remove_configs = [ "//build/config/compiler:no_rtti" ]
+  external_deps = [ ohos_hilog_dep ]
+  if (is_standard_system) {
+    external_deps += [ "qos_manager:qos" ]
+    remove_configs = [ "//build/config/compiler:no_rtti" ]
+  }
+
+  cflags_cc = [ "-fPIC" ]
 
   part_name = "mindspore"
   subsystem_name = "thirdparty"
