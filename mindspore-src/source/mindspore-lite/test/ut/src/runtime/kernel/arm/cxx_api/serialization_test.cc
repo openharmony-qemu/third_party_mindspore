@@ -67,6 +67,14 @@ TEST_F(TestCxxApiLiteSerialization, test_export_to_buffer) {
   status = Serialization::ExportModel(model, mindspore::kMindIR, &modef_buffer_infer, mindspore::kNoQuant, false);
   ASSERT_TRUE(status == mindspore::kSuccess);
 
+  auto invalid_quantization_type = static_cast<mindspore::QuantizationType>(999);
+  status = Serialization::ExportModel(model, mindspore::kMindIR, "./invalid_quantization.ms",
+                                      invalid_quantization_type, false);
+  ASSERT_EQ(status, mindspore::kLiteParamInvalid);
+  status = Serialization::ExportModel(model, mindspore::kMindIR, &modef_buffer_infer, invalid_quantization_type,
+                                      false);
+  ASSERT_EQ(status, mindspore::kLiteParamInvalid);
+
   std::ifstream file(exported_file.c_str(), std::ifstream::binary);
   ASSERT_TRUE(file);
 
