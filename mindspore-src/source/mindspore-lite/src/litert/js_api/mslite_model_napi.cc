@@ -80,6 +80,13 @@ const std::unordered_map<std::string, DeviceType> kDeviceTypes{
   {"nnrt", kNNRt},
   {"gpu", kGPU},
 };
+
+// ArkTS-only check: the ArkTS enum only defines NO_QUANT/WEIGHT_QUANT/FULL_QUANT, so any other value
+// is rejected here. The C API and the C++ Serialization::ExportModel keep their legacy silent
+// fallback (see A2L_ConvertQT), so this check must NOT be moved into serialization.cc.
+bool IsValidQuantizationType(int32_t value) {
+  return value == mindspore::kNoQuant || value == mindspore::kWeightQuant || value == mindspore::kFullQuant;
+}
 }  // namespace
 
 MSLiteModelNapi::MSLiteModelNapi() : native_model_(nullptr), env_(nullptr) {
@@ -2281,6 +2288,10 @@ napi_value MSLiteModelNapi::ExportModel(napi_env env, napi_callback_info info) {
   if (argCount >= ARGS_TWO) {
     if (napi_get_value_int32(env, argv[PARAM1], &quantization_type_value) != napi_ok) {
       MS_LOG(WARNING) << "fail to get int32_t value from quantizationType";
+      return undefinedResult;
+    }
+    if (!IsValidQuantizationType(quantization_type_value)) {
+      MS_LOG(ERROR) << "quantizationType value is set to: " << quantization_type_value << ", which is out of range";
       return undefinedResult;
     }
     quantization_type = static_cast<mindspore::QuantizationType>(quantization_type_value);

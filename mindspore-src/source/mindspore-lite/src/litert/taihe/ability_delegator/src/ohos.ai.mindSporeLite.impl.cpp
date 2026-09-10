@@ -25,6 +25,13 @@
 
 namespace {
 
+// ArkTS-only check: the ArkTS enum only defines NO_QUANT/WEIGHT_QUANT/FULL_QUANT, so any other value
+// is rejected here. The C API and the C++ Serialization::ExportModel keep their legacy silent
+// fallback (see A2L_ConvertQT), so this check must NOT be moved into serialization.cc.
+bool IsValidQuantizationType(int32_t value) {
+  return value == mindspore::kNoQuant || value == mindspore::kWeightQuant || value == mindspore::kFullQuant;
+}
+
 class MSTensorImpl {
  public:
   MSTensorImpl(mindspore::MSTensor native_tensor) {
@@ -325,6 +332,10 @@ class ModelImpl {
     int32_t quantization_type_value = 0;
     if (bool(quantizationType)) {
       quantization_type_value = static_cast<int32_t>(quantizationType.value().get_value());
+      if (!IsValidQuantizationType(quantization_type_value)) {
+        MS_LOG(ERROR) << "quantizationType value is set to: " << quantization_type_value << ", which is out of range";
+        return false;
+      }
     }
     bool export_inference_only = true;
     if (bool(exportInferenceOnly)) {
