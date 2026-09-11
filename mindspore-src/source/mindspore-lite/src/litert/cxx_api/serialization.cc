@@ -27,12 +27,6 @@
 #include "src/litert/lite_session.h"
 
 namespace mindspore {
-namespace {
-bool IsValidQuantizationType(QuantizationType quantization_type) {
-  return quantization_type == kNoQuant || quantization_type == kWeightQuant || quantization_type == kFullQuant;
-}
-}  // namespace
-
 Key::Key(const char *dec_key, size_t key_len) {
   len = 0;
   if (key_len >= max_key_len) {
@@ -169,11 +163,6 @@ Status Serialization::ExportModel(const Model &model, ModelType model_type, Buff
     MS_LOG(ERROR) << "Unsupported Export Format " << model_type;
     return kLiteParamInvalid;
   }
-  if (!IsValidQuantizationType(quantization_type)) {
-    MS_LOG(ERROR) << "Invalid quantization type: " << quantization_type
-                  << ". Supported values are 0 (NO_QUANT), 1 (WEIGHT_QUANT), and 2 (FULL_QUANT).";
-    return kLiteParamInvalid;
-  }
   if (model.impl_->session_ == nullptr) {
     MS_LOG(ERROR) << "Model session is nullptr.";
     return kLiteError;
@@ -202,11 +191,6 @@ Status Serialization::ExportModel(const Model &model, ModelType model_type, cons
   }
   if (model_type != kMindIR && model_type != kMindIR_Lite) {
     MS_LOG(ERROR) << "Unsupported Export Format " << model_type;
-    return kLiteParamInvalid;
-  }
-  if (!IsValidQuantizationType(quantization_type)) {
-    MS_LOG(ERROR) << "Invalid quantization type: " << quantization_type
-                  << ". Supported values are 0 (NO_QUANT), 1 (WEIGHT_QUANT), and 2 (FULL_QUANT).";
     return kLiteParamInvalid;
   }
   auto ret = model.impl_->session_->Export(
