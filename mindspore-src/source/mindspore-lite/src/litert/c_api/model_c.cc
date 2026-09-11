@@ -265,8 +265,8 @@ OH_AI_Status OH_AI_ModelBuildFromFile(OH_AI_ModelHandle model, const char *model
 }
 
 OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandleArray inputs, OH_AI_ShapeInfo *shape_infos,
-                       size_t shape_info_num) {
-  MS_LOG(INFO) << "Start to resize ms model";
+                               size_t shape_info_num) {
+  MS_LOG(DEBUG) << "Start to resize ms model";
   if (model == nullptr || shape_infos == nullptr) {
     MS_LOG(ERROR) << "model or shape_infos is nullptr.";
     return OH_AI_STATUS_LITE_NULLPTR;
@@ -275,7 +275,6 @@ OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandle
   for (size_t i = 0; i < inputs.handle_num; ++i) {
     vec_inputs.push_back(*static_cast<mindspore::MSTensor *>(inputs.handle_list[i]));
   }
-
   std::vector<std::vector<int64_t>> vec_dims;
   for (size_t i = 0; i < shape_info_num; i++) {
     std::vector<int64_t> shape(shape_infos[i].shape, shape_infos[i].shape + shape_infos[i].shape_num);
@@ -284,6 +283,7 @@ OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandle
       return OH_AI_STATUS_LITE_PARAM_INVALID;
     }
     vec_dims.push_back(shape);
+    MS_LOG(DEBUG) << "resize input " << i << " to shape: " << shape;
   }
   auto impl = static_cast<mindspore::ModelC *>(model);
   if (impl->model_->GetUseAipp()) {
@@ -291,11 +291,11 @@ OH_AI_Status OH_AI_ModelResize(OH_AI_ModelHandle model, const OH_AI_TensorHandle
     return OH_AI_STATUS_LITE_ERROR;
   }
   auto ret = impl->model_->Resize(vec_inputs, vec_dims);
-  if (ret.IsOk()) {
-    MS_LOG(INFO) << "Resized ms model successfully";
-  } else {
+  if (!ret.IsOk()) {
     MS_LOG(ERROR) << "Resized ms model failed, ret: " << ret;
+    return static_cast<OH_AI_Status>(ret.StatusCode());
   }
+  MS_LOG(DEBUG) << "Resized ms model successfully";
   return static_cast<OH_AI_Status>(ret.StatusCode());
 }
 
