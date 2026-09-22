@@ -33,6 +33,7 @@
           "drivers_interface_nnrt",
           "ability_runtime",
           "napi",
+          "node",
           "resource_management",
           "bounds_checking_function",
           "flatbuffers",
