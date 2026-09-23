@@ -150,6 +150,12 @@ class MS_API LiteModel : public Model {
         auto src_prim = reinterpret_cast<const schema::Primitive *>(c_node->primitive());
         auto deobf_ptr = reinterpret_cast<DeObfProcessor *>(this->deobf);
         DeObfRet ret = (deobf_ptr->*DeObfRegister::CreateDeObfNodeReg)(src_prim,i,schema_version_);
+        // Take ownership of the malloc'd deobfuscated primitive buffers so that 
+        // LiteModel::Free() releases them together with node_bufs_.
+        for (auto &prim_buf : deobf_ptr->prim_bufs_) {
+          this->node_bufs_.push_back(prim_buf);
+        }
+        deobf_ptr->prim_bufs_.clear();
         if(ret == kDeObfFailed){
           delete node;
           return false;
