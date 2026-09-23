@@ -46,6 +46,7 @@ ohos_shared_library("mindsporelite_napi") {
     "c_utils:utils",
     "hilog:libhilog",
     "napi:ace_napi",
+    "node:node_header_notice",
     "resource_management:global_resmgr",
   ]
   cflags_cc = [
