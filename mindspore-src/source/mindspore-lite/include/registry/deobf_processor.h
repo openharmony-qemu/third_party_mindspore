@@ -47,6 +47,9 @@ namespace mindspore::lite {
       std::vector<uint32_t> all_nodes_stat_;
       bool model_obfuscated_ = false;
       void *model_deobf = nullptr;
+      // Raw malloc'd deobfuscated primitive buffers produced by CreateDeObfNode.
+      // LiteModel drains them into LiteModel::node_bufs_ so LiteModel::Free() releases them.
+      std::vector<void *> prim_bufs_;
   };
 
   typedef void (*ObfCreateFunc)(Model &model);
