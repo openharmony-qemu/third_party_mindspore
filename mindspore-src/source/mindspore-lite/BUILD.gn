@@ -455,12 +455,6 @@ ohos_shared_library("mindspore_lib") {
     "qos_manager:concurrent_task_client"
   ]
 
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
-
   output_name = "libmindspore-lite"
   output_extension = "so"
   innerapi_tags = [ "platformsdk" ]
@@ -549,12 +543,6 @@ ohos_shared_library("mindspore_ndk") {
     "flatbuffers:libflatbuffers_static",
     "hilog:libhilog"
   ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
 
   if (SUPPORT_NNRT) {
 
@@ -700,12 +688,6 @@ ohos_shared_library("mindspore_train_lib") {
   deps = [
     ":mindspore_lib",
   ]
-  
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
 
   sources = all_train_sources
 
