@@ -15,6 +15,7 @@
 
 import("//build/ohos.gni")
 ohos_source_set("mindrt_obj") {
+  branch_protector_ret = "pac_ret"
   sources = [
     "src/actor/actor.cc",
     "src/actor/actormgr.cc",
@@ -49,6 +50,11 @@ ohos_source_set("mindrt_obj") {
   ]
 
   external_deps = [ "hilog:libhilog", "qos_manager:qos" ]
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   remove_configs = [ "//build/config/compiler:no_rtti" ]
 
   part_name = "mindspore"

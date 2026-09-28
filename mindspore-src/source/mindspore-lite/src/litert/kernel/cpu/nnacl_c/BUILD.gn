@@ -48,11 +48,17 @@ config("nnacl_public_config") {
 }
 
 ohos_source_set("nnacl_obj") {
+  branch_protector_ret = "pac_ret"
   deps = [
     ":nnacl_common",
     ":nnacl_common_train",
     ":nnacl_no_fast_math",
   ]
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   part_name = "mindspore"
   subsystem_name = "thirdparty"
 }
