@@ -22,6 +22,7 @@ lite_src_common_mid_sources = [
 ]
 
 ohos_source_set("lite_common_mid_obj") {
+  branch_protector_ret = "pac_ret"
   sources = lite_src_common_mid_sources
 
   include_dirs = [
@@ -42,6 +43,12 @@ ohos_source_set("lite_common_mid_obj") {
     "hiappevent:hiappevent_innerapi",
     "hilog:libhilog",
   ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
 
   configs = [
     "../../:disable_android",
