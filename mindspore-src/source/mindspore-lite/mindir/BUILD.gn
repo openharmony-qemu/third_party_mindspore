@@ -69,11 +69,6 @@ ohos_shared_library("mindir_lib") {
     "flatbuffers:libflatbuffers_static",
     "hilog:libhilog",
   ]
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
   configs = [
     ":mindir_secure_disable_android",
     "../:link_option_lto",

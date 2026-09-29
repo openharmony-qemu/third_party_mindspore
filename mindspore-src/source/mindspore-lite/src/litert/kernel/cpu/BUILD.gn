@@ -291,7 +291,6 @@ if (target_cpu == "x86_64") {
 }
 
 ohos_source_set("cpu_kernel_obj") {
-  branch_protector_ret = "pac_ret"
   sources = all_cpu_kernel_sources
 
   deps = [ "nnacl_c/:nnacl_obj" ]
@@ -300,12 +299,6 @@ ohos_source_set("cpu_kernel_obj") {
     "flatbuffers:libflatbuffers_static",
     "hilog:libhilog",
   ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
 
   include_dirs = [
     "./",

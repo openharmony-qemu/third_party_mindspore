@@ -49,11 +49,6 @@ ohos_shared_library("mindsporelite_napi") {
     "node:node_header_notice",
     "resource_management:global_resmgr",
   ]
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
   cflags_cc = [
     "-Os",
     "-flto=thin"
