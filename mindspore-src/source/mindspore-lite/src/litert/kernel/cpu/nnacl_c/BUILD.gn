@@ -48,11 +48,17 @@ config("nnacl_public_config") {
 }
 
 ohos_source_set("nnacl_obj") {
+  branch_protector_ret = "pac_ret"
   deps = [
     ":nnacl_common",
     ":nnacl_common_train",
     ":nnacl_no_fast_math",
   ]
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   part_name = "mindspore"
   subsystem_name = "thirdparty"
 }
@@ -950,6 +956,7 @@ if (target_cpu == "arm") {
 }
 
 ohos_source_set("nnacl_common") {
+  branch_protector_ret = "pac_ret"
   configs = [ ":nnacl_public_config" ]
   cflags_c = [ "-ffast-math", "-fvisibility=hidden" ]
   sources = nnacl_sources
@@ -958,9 +965,15 @@ ohos_source_set("nnacl_common") {
   external_deps = [
     "hilog:libhilog"
   ]
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
 }
 
 ohos_source_set("nnacl_common_train") {
+  branch_protector_ret = "pac_ret"
   configs = [ ":nnacl_public_config" ]
   cflags_c = [ "-ffast-math" ]
   sources = nnacl_train_sources
@@ -969,12 +982,23 @@ ohos_source_set("nnacl_common_train") {
   external_deps = [
     "hilog:libhilog"
   ]
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
 }
 
 ohos_source_set("nnacl_no_fast_math") {
+  branch_protector_ret = "pac_ret"
   configs = [ ":nnacl_public_config" ]
   cflags_c = [ "-fno-fast-math" ]
   sources = no_fast_math_fp32_kernel_sources
   part_name = "mindspore"
   subsystem_name = "thirdparty"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
 }
