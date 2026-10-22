@@ -357,17 +357,6 @@ config("link_option_lto") {
   ldflags = ["-Wl,--lto-O0"]
 }
 
-# CFI(LTO)要求同一 .so 内所有 bitcode 的 target triple 一致。
-# nnacl_c/:nnacl_public_config 固定使用 -march=armv8.2-a+dotprod+fp16(arm32 下
-# triple 变为 thumbv8.2a),链接进同一 .so 的其余 cfi 编译单元必须对齐该 march,
-# 否则 lld 报 "Linking two modules of different target triples"。
-config("armv82_march_config") {
-  if (target_cpu == "arm") {
-    cflags = [ "-march=armv8.2-a+dotprod+fp16" ]
-    cflags_cc = [ "-march=armv8.2-a+dotprod+fp16" ]
-  }
-}
-
 config("mindspore_lib_include") {
   include_dirs = [
     "./",
@@ -453,7 +442,6 @@ ohos_shared_library("mindspore_lib") {
     ":opencl_option",
     ":secure_option",
     ":link_option_lto",
-    ":armv82_march_config",
   ]
 
   remove_configs = [ "//build/config/compiler:no_rtti" ]
@@ -466,12 +454,6 @@ ohos_shared_library("mindspore_lib") {
     "ipc:ipc_single",
     "qos_manager:concurrent_task_client"
   ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
 
   output_name = "libmindspore-lite"
   output_extension = "so"
@@ -561,12 +543,6 @@ ohos_shared_library("mindspore_ndk") {
     "flatbuffers:libflatbuffers_static",
     "hilog:libhilog"
   ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
 
   if (SUPPORT_NNRT) {
 
@@ -711,14 +687,7 @@ ohos_shared_library("mindspore_train_lib") {
   branch_protector_ret = "pac_ret"
   deps = [
     ":mindspore_lib",
-    "src/litert/kernel/cpu/nnacl_c/:nnacl_obj",
   ]
-  
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
 
   sources = all_train_sources
 
@@ -771,7 +740,6 @@ ohos_shared_library("mindspore_train_lib") {
     ":secure_option",
     ":link_option_lto",
     ":train_size_optimization",
-    ":armv82_march_config",
   ]
 
   remove_configs = [ "//build/config/compiler:no_rtti" ]
