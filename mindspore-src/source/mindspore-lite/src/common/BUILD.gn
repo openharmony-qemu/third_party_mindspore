@@ -1,4 +1,5 @@
 import("//build/ohos.gni")
+import("//third_party/mindspore/ohos_deps.gni")
 
 lite_src_common_mid_sources = [
   "config_file.cc",
@@ -17,12 +18,17 @@ lite_src_common_mid_sources = [
   "random_data_generator.cc",
   "string_util.cc",
   "dynamic_library_loader.cc",
-  "hi_app_event/hi_app_event.cc",
-  "hi_app_event/hi_app_event_thread.cc",
 ]
 
 ohos_source_set("lite_common_mid_obj") {
   sources = lite_src_common_mid_sources
+
+  if (is_standard_system) {
+    sources += [
+      "hi_app_event/hi_app_event.cc",
+      "hi_app_event/hi_app_event_thread.cc",
+    ]
+  }
 
   include_dirs = [
     "../",
@@ -36,13 +42,6 @@ ohos_source_set("lite_common_mid_obj") {
     "../../../mindspore/mindspore/core/mindrt/include/",
   ]
 
-  external_deps = [
-    "flatbuffers:libflatbuffers_static",
-    "bounds_checking_function:libsec_shared",
-    "hiappevent:hiappevent_innerapi",
-    "hilog:libhilog",
-  ]
-
   configs = [
     "../../:disable_android",
     "../../:secure_option",
@@ -53,8 +52,17 @@ ohos_source_set("lite_common_mid_obj") {
     "MS_COMPILE_OHOS",
     "PRIMITIVE_WRITEABLE",
     "VERSION_STR=\"2.1.0\"",
-    "ENABLE_HI_APP_EVENT",
   ]
+
+  external_deps = [
+    "flatbuffers:libflatbuffers_static",
+    "bounds_checking_function:libsec_shared",
+    ohos_hilog_dep,
+  ]
+  if (is_standard_system) {
+    defines += [ "ENABLE_HI_APP_EVENT" ]
+    external_deps += [ "hiappevent:hiappevent_innerapi" ]
+  }
   if (target_cpu == "arm") {
     defines += [
       "ENABLE_ARM",
@@ -76,6 +84,7 @@ ohos_source_set("lite_common_mid_obj") {
   }
 
   cflags_cc = [
+    "-fPIC",
     "-Wno-ignored-qualifiers",
     "-Wunused-private-field",
     "-Wno-unused-private-field",

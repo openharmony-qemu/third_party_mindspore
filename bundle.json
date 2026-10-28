@@ -18,7 +18,8 @@
       ],
       "features": [ "mindspore_feature_nnrt_metagraph" ],
       "adapted_system_type": [
-        "standard"
+        "standard",
+        "small"
       ],
       "rom": "",
       "ram": "",
@@ -39,7 +40,8 @@
           "flatbuffers",
           "runtime_core",
           "qos_manager",
-          "taihe_ffi_gen"
+          "taihe_ffi_gen",
+          "hilog_lite"
         ]
       },
       "build": {

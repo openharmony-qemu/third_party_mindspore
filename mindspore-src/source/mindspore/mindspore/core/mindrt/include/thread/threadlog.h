@@ -18,6 +18,9 @@
 #define MINDSPORE_CORE_MINDRT_RUNTIME_THREADPOOL_LOG_H_
 #ifdef MS_COMPILE_OHOS
 #include "hilog/log.h"
+#ifndef LOG_APP
+#define LOG_APP LOG_CORE
+#endif
 #endif
 namespace mindspore {
 #ifdef THREAD_POOL_DEBUG

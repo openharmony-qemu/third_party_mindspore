@@ -26,6 +26,9 @@
 #define LOG_TAG "MS_LITE"
 #define FORMAT "[%{public}s:%{public}d] %{public}s# %{public}s"
 #include "hilog/log.h"
+#ifndef LOG_APP
+#define LOG_APP LOG_CORE
+#endif
 #endif
 
 // namespace to support utils module definition namespace mindspore constexpr const char *ANDROID_LOG_TAG = "MS_LITE";
