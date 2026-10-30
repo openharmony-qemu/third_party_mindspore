@@ -57,6 +57,8 @@ ohos_source_set("mindrt_obj") {
 
   cflags_cc = [ "-fPIC" ]
 
+  configs = [ "//third_party/mindspore:mindspore_cxx_config" ]
+
   part_name = "mindspore"
   subsystem_name = "thirdparty"
 }

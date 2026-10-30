@@ -456,6 +456,7 @@ ohos_shared_library("mindspore_lib") {
     ":opencl_option",
     ":secure_option",
     ":link_option_lto",
+    "//third_party/mindspore:mindspore_cxx_config",
   ]
 
   external_deps = [
@@ -582,6 +583,7 @@ ohos_shared_library("mindspore_ndk") {
     ":mindspore_api",
     ":disable_android",
     ":secure_option",
+    "//third_party/mindspore:mindspore_cxx_config",
   ]
   public_configs = [ ":mindspore_api" ]
   if (is_standard_system) {

@@ -79,6 +79,7 @@ ohos_shared_library("mindir_lib") {
   configs = [
     ":mindir_secure_disable_android",
     "../:link_option_lto",
+    "//third_party/mindspore:mindspore_cxx_config",
   ]
   public_configs = [ ":mindir_config" ]
   defines = [ "MS_COMPILE_OHOS" ]
