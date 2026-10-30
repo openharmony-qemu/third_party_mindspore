@@ -56,6 +56,7 @@ if (is_small_system) {
       ]
     }
     cflags_cc = [ "-Wno-unused-const-variable" ]
+    configs += [ "//third_party/mindspore:mindspore_cxx_config" ]
     deps = [
       "../../:mindspore_lib",
       "../../:mindspore_ndk",

@@ -45,6 +45,7 @@ ohos_source_set("lite_common_mid_obj") {
   configs = [
     "../../:disable_android",
     "../../:secure_option",
+    "//third_party/mindspore:mindspore_cxx_config",
   ]
 
   defines = [

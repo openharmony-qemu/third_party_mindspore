@@ -15,6 +15,12 @@
 
 import("//build/ohos.gni")
 
+config("mindspore_cxx_config") {
+  if (!is_standard_system) {
+    cflags_cc = [ "-std=c++17" ]
+  }
+}
+
 # Define targets
 ohos_group("mindspore-all") {
   deps = [ "mindspore-src/source/mindspore-lite/:mindspore" ]

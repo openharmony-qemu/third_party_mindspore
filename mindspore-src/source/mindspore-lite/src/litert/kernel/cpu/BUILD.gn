@@ -352,6 +352,8 @@ ohos_source_set("cpu_kernel_obj") {
     "-Wno-constant-conversion",
   ]
 
+  configs = [ "//third_party/mindspore:mindspore_cxx_config" ]
+
   part_name = "mindspore"
   subsystem_name = "thirdparty"
 }
