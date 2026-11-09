@@ -98,7 +98,7 @@ Status NNRTDelegate::Build(DelegateModel<schema::Primitive> *model) {
 #endif
 
   MS_LOG(DEBUG) << "========== NNRTDelegate::Build EXIT (kSuccess) ==========";
-  return kSuccess;
+  return BuildNormalModel(model);
 }
 
 bool NNRTDelegate::IsCustomModel() const {
