@@ -777,7 +777,7 @@ Status NNRTDelegate::InitNNCompilation(OH_NNCompilation *nn_compilation) const {
 }
 
 Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> *model,
-                                               const std::vector<LiteGraph *> &sub_lite_graphs,
+                                               std::vector<LiteGraph *> &sub_lite_graphs,
                                                const std::vector<NNRTOpRange> &nnrt_subgraph_ranges,
                                                std::vector<NNRTModelKernel *> *nnrt_subgraph_kernels) {
   MS_LOG(INFO) << "========== CreateNNRTSubgraphKernels ENTER ==========";
@@ -823,6 +823,9 @@ Status NNRTDelegate::CreateNNRTSubgraphKernels(DelegateModel<schema::Primitive> 
       nnrtWrapper.Destroy(&nn_model);
       return kLiteError;
     }
+    // BuildFromLiteGraph succeeded: ownership of sub_lite_graph has been transferred to NNRt (OH_NNModel),
+    // which releases it when nn_model is destroyed. Clear the slot so the caller will not free it again.
+    sub_lite_graphs[i] = nullptr;
 
     OH_NNCompilation *nn_compilation = nnrtWrapper.NNCompilationConstruct(nn_model);
     if (nn_compilation == nullptr) {

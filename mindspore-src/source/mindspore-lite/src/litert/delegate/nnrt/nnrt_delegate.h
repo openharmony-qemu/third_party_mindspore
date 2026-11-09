@@ -71,7 +71,7 @@ class NNRTDelegate : public Delegate {
     std::vector<LiteGraph *> *sub_lite_graphs);
   Status CreateNNRTSubgraphKernels(
     DelegateModel<schema::Primitive> *model,
-    const std::vector<LiteGraph *> &sub_lite_graphs,
+    std::vector<LiteGraph *> &sub_lite_graphs,
     const std::vector<NNRTOpRange> &nnrt_subgraph_ranges,
     std::vector<NNRTModelKernel *> *nnrt_subgraph_kernels);
   void ReplaceNNRTKernelsInDelegateModel(DelegateModel<schema::Primitive> *model,
