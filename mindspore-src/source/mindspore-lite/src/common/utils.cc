@@ -16,7 +16,9 @@
 
 #if defined(__ANDROID__) || defined(MS_COMPILE_OHOS)
 #include <sys/auxv.h>
+#ifdef ENABLE_ARM64
 #include <asm/hwcap.h>
+#endif
 #endif
 #include "src/common/utils.h"
 #if defined(_MSC_VER) || defined(_WIN32)
